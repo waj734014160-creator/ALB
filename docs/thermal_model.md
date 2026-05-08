@@ -621,6 +621,146 @@ $$
 +\int_\Omega \frac{\rho c_v h^{n+1}}{\Delta t} T^n v\,d\Omega
 $$
 
+若改用前述无量纲温度场，记计算域为
+
+$$
+\hat{\Omega} = \{(\bar{x},\bar{z})\},
+\qquad
+d\hat{\Omega}=d\bar{x}\,d\bar{z}
+$$
+
+并取无量纲测试函数 $\bar v\in V_0$。从正则化后的无量纲强形式出发：
+
+$$
+\mathrm{St}_{\Omega}\,\bar h\frac{\partial \bar T}{\partial \bar t}
++ \bar q_x\frac{\partial \bar T}{\partial \bar x}
++ \frac{1}{l_r}\bar q_z\frac{\partial \bar T}{\partial \bar z}
+=
+\frac{1}{\mathrm{Pe}_{\text{stab}}}
+\left(
+\frac{\partial^2 \bar T}{\partial \bar x^2}
++ \frac{1}{l_r^2}\frac{\partial^2 \bar T}{\partial \bar z^2}
+\right)
++ \bar\Phi_E
+$$
+
+将扩散项移到左端，并乘以 $\bar v$ 在 $\hat{\Omega}$ 上积分：
+
+$$
+\int_{\hat{\Omega}}
+\mathrm{St}_{\Omega}\,\bar h
+\frac{\partial \bar T}{\partial \bar t}\bar v\,d\hat{\Omega}
++
+\int_{\hat{\Omega}}
+\left(
+\bar q_x\frac{\partial \bar T}{\partial \bar x}
++ \frac{1}{l_r}\bar q_z\frac{\partial \bar T}{\partial \bar z}
+\right)\bar v\,d\hat{\Omega}
+-
+\int_{\hat{\Omega}}
+\frac{1}{\mathrm{Pe}_{\text{stab}}}
+\left(
+\frac{\partial^2 \bar T}{\partial \bar x^2}
++ \frac{1}{l_r^2}\frac{\partial^2 \bar T}{\partial \bar z^2}
+\right)\bar v\,d\hat{\Omega}
+=
+\int_{\hat{\Omega}}\bar\Phi_E\bar v\,d\hat{\Omega}
+$$
+
+对扩散项分部积分，有
+
+$$
+-
+\int_{\hat{\Omega}}
+\frac{1}{\mathrm{Pe}_{\text{stab}}}
+\left(
+\frac{\partial^2 \bar T}{\partial \bar x^2}
++ \frac{1}{l_r^2}\frac{\partial^2 \bar T}{\partial \bar z^2}
+\right)\bar v\,d\hat{\Omega}
+=
+\int_{\hat{\Omega}}
+\frac{1}{\mathrm{Pe}_{\text{stab}}}
+\left(
+\frac{\partial \bar T}{\partial \bar x}
+\frac{\partial \bar v}{\partial \bar x}
++ \frac{1}{l_r^2}
+\frac{\partial \bar T}{\partial \bar z}
+\frac{\partial \bar v}{\partial \bar z}
+\right)d\hat{\Omega}
+- \int_{\partial\hat{\Omega}}
+\frac{1}{\mathrm{Pe}_{\text{stab}}}
+\left(
+\frac{\partial \bar T}{\partial \bar x}n_{\bar x}
++ \frac{1}{l_r^2}\frac{\partial \bar T}{\partial \bar z}n_{\bar z}
+\right)\bar v\,d\hat{\Gamma}
+$$
+
+入口和两侧 Dirichlet 边界上 $\bar v=0$；出口若采用自然边界，则边界项取零。因此无量纲 Galerkin 弱式为：
+
+$$
+\int_{\hat{\Omega}}
+\mathrm{St}_{\Omega}\,\bar h
+\frac{\partial \bar T}{\partial \bar t}\bar v\,d\hat{\Omega}
++
+\int_{\hat{\Omega}}
+\frac{1}{\mathrm{Pe}_{\text{stab}}}
+\left(
+\frac{\partial \bar T}{\partial \bar x}
+\frac{\partial \bar v}{\partial \bar x}
++ \frac{1}{l_r^2}
+\frac{\partial \bar T}{\partial \bar z}
+\frac{\partial \bar v}{\partial \bar z}
+\right)d\hat{\Omega}
++
+\int_{\hat{\Omega}}
+\left(
+\bar q_x\frac{\partial \bar T}{\partial \bar x}
++ \frac{1}{l_r}\bar q_z\frac{\partial \bar T}{\partial \bar z}
+\right)\bar v\,d\hat{\Omega}
+=
+\int_{\hat{\Omega}}\bar\Phi_E\bar v\,d\hat{\Omega}
+$$
+
+其中扩散项中的 $1/l_r^2$ 来自轴向坐标缩放 $z=l_rR\bar z$，对流项中的 $1/l_r$ 来自一阶轴向导数缩放。若采用物理约化的纯对流温度方程，只需令 $\mathrm{Pe}_{\text{stab}}^{-1}=0$；若只求稳态场，则同时去掉第一项。
+
+用无量纲时间步长
+
+$$
+\Delta\bar t=\Omega\Delta t
+$$
+
+做隐式 Euler 离散，可得 $t_{n+1}$ 层的无量纲有限元方程：
+
+$$
+\int_{\hat{\Omega}}
+\frac{\mathrm{St}_{\Omega}\,\bar h^{n+1}}{\Delta\bar t}
+\bar T^{n+1}\bar v\,d\hat{\Omega}
++
+\int_{\hat{\Omega}}
+\frac{1}{\mathrm{Pe}_{\text{stab}}}
+\left(
+\frac{\partial \bar T^{n+1}}{\partial \bar x}
+\frac{\partial \bar v}{\partial \bar x}
++ \frac{1}{l_r^2}
+\frac{\partial \bar T^{n+1}}{\partial \bar z}
+\frac{\partial \bar v}{\partial \bar z}
+\right)d\hat{\Omega}
++
+\int_{\hat{\Omega}}
+\left(
+\bar q_x^{n+1}\frac{\partial \bar T^{n+1}}{\partial \bar x}
++ \frac{1}{l_r}\bar q_z^{n+1}\frac{\partial \bar T^{n+1}}{\partial \bar z}
+\right)\bar v\,d\hat{\Omega}
+=
+\int_{\hat{\Omega}}\bar\Phi_E^{n+1}\bar v\,d\hat{\Omega}
++
+\int_{\hat{\Omega}}
+\frac{\mathrm{St}_{\Omega}\,\bar h^{n+1}}{\Delta\bar t}
+\bar T^n\bar v\,d\hat{\Omega}
+$$
+
+这个无量纲弱式与有量纲实现的矩阵结构一一对应：瞬态质量项对应 $\mathrm{St}_{\Omega}\bar h/\Delta\bar t$，稳定化扩散项对应 $\mathrm{Pe}_{\text{stab}}^{-1}$，对流项对应 $\bar q_x\partial_{\bar x}\bar T + l_r^{-1}\bar q_z\partial_{\bar z}\bar T$，右端载荷对应 $\bar\Phi_E$。
+
 对应代码：
 
 - 扩散 + 对流：`_advection_diffusion_form`

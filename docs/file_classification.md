@@ -1,4 +1,4 @@
-# RE_ALB File Classification
+# ALB_MAIN File Classification
 
 本文档记录当前项目文件面向的主要需求、代表目录/文件、建议处理方式和风险点。
 本阶段只建立分类清单和后续整理建议，不移动文件、不修改 import、不清理训练产物。

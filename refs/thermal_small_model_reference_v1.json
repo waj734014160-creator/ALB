@@ -1,0 +1,79 @@
+{
+  "name": "thermal_small_model_reference_v1",
+  "purpose": "Machine-precision regression reference for current ThermalHydroBearing output before maintenance changes.",
+  "hyd_config": {
+    "nx": 11,
+    "nz": 7,
+    "e": 0.25,
+    "angle": 30.0,
+    "max_iter": 120,
+    "error_set": 1e-08,
+    "iter_method": "newton"
+  },
+  "thermal_config": {
+    "t_in": 40.0,
+    "beta": 0.03,
+    "relax": 0.6,
+    "max_iter": 8,
+    "tol": 0.05,
+    "coupling": "full",
+    "pressure_backend": "skfem",
+    "supg": true,
+    "args_nodim": false,
+    "delta_t_scale": 30.0
+  },
+  "input": {
+    "uxy": [
+      2e-05,
+      0.0
+    ],
+    "uxyt": [
+      0.0,
+      0.0
+    ],
+    "nodim": false
+  },
+  "output_keys": [
+    "field_x",
+    "field_z",
+    "force",
+    "friction",
+    "input_uxy",
+    "input_uxyt",
+    "pressure_field",
+    "q_orifice_total",
+    "t_eff",
+    "temperature",
+    "temperature_field",
+    "temperature_film",
+    "temperature_x",
+    "temperature_z",
+    "thermal_converged",
+    "thermal_iterations",
+    "thermal_transient",
+    "viscosity",
+    "viscosity_field",
+    "viscosity_field_grid",
+    "w"
+  ],
+  "scalar_summary": {
+    "force": [
+      -0.05837761764669001,
+      0.2302142187827867
+    ],
+    "friction": 0.9143189102603053,
+    "q_orifice_total": 0.0,
+    "t_eff": 44.3310744694272,
+    "viscosity": 0.01729847084170844,
+    "thermal_iterations": 3,
+    "thermal_converged": true,
+    "pressure_field_shape": [
+      12,
+      8
+    ],
+    "temperature_field_shape": [
+      12,
+      8
+    ]
+  }
+}

@@ -61,6 +61,11 @@ _FILM_MODEL_PARAM_KEYS = [
     "vf",
 ]
 
+_PRESSURE_BACKEND_ERROR = (
+    "pressure_backend only supports 'skfem'; the legacy h_eff branch is retained "
+    "in code for reference and is not user-selectable"
+)
+
 
 def _transform_film_args(input_args: Dict[str, float]):
     return film_args_trans(*(input_args[key] for key in _FILM_MODEL_PARAM_KEYS))
@@ -1295,9 +1300,7 @@ class NodimThermalHydroBearing(BaseCSystem):
         """Replace the bearing's film model with the nondim viscosity-aware variant."""
         backend = str(self.config.pressure_backend).lower()
         if backend != "skfem":
-            raise ValueError(
-                "pressure_backend only supports 'skfem'; the legacy h_eff branch is retained in code for reference and is not user-selectable"
-            )
+            raise ValueError(_PRESSURE_BACKEND_ERROR)
 
         old_model = self.bearing.main_model
         if isinstance(
@@ -1860,9 +1863,7 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
     def _ensure_pressure_backend(self):
         backend = str(self.config.pressure_backend).lower()
         if backend != "skfem":
-            raise ValueError(
-                "pressure_backend only supports 'skfem'; the legacy h_eff branch is retained in code for reference and is not user-selectable"
-            )
+            raise ValueError(_PRESSURE_BACKEND_ERROR)
 
         old_model = self.bearing.main_model
         if isinstance(

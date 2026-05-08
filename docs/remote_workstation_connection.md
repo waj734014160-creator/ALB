@@ -73,6 +73,41 @@ Example task name from the boundary-augmented ALBNN run:
 ALB_BoundaryAugTrain_20260508
 ```
 
+## PowerShell Runner Notes
+
+PowerShell 5.1 can turn native program `stderr` into a terminating error when
+`$ErrorActionPreference = 'Stop'` is combined with `2>&1 | Tee-Object`. This can
+make Task Scheduler report `LAST_RESULT=1` even when the Python process only
+printed a solver warning. Avoid this pattern for long ALB sampling/training
+runners.
+
+Preferred patterns:
+
+- Let Task Scheduler own the long-running top-level runner.
+- Do not launch long work with `Start-Process` directly from an SSH session.
+- Do not use `codex exec` or another Codex CLI agent in a timed watcher for
+  remote status checks. It consumes Codex quota each cycle and should be
+  reserved for explicit one-shot human-requested analysis.
+- If a scheduled controller needs child processes, redirect stdout and stderr
+  to separate files and check child exit codes explicitly.
+- Do not depend on `Tee-Object` for native long-running Python logs.
+- Count CSV rows with a line iterator such as `switch -File`, not
+  `Get-Content -ReadCount ... | Measure-Object -Line`, because chunked reads can
+  undercount rows.
+
+Incident note from `2026-05-08`: the targeted residual sampling shards initially
+used 15 concurrent scheduled tasks with `2>&1 | Tee-Object`. Many shard tasks
+reported `LAST_RESULT=1` after solver messages such as `iter of filmsystem is
+max`. The replacement runner uses a scheduled wave controller with lower
+concurrency and explicit log files.
+
+Quota incident note from `2026-05-08`: the legacy
+`codex_cli_boundary_watch_20260508.ps1` monitor ran `codex exec` periodically to
+inspect the old `RE_ALB_boundary_sample_20260508` task. It was obsolete and
+could rapidly consume Codex quota. Future remote monitoring must use direct
+PowerShell/Python status scripts unless the user explicitly requests a one-time
+Codex CLI review.
+
 ## Path Finding
 
 Local doc path:
