@@ -20,17 +20,10 @@ this repository.
 
 ## ALBNN / Thermal Sampling
 
-- Thermal ALBNN base input columns:
-  `ex, ey, vx, vy, sx, sy, lambda_value, beta_nondim, lr, cq0, cq1, cq2`
-- Oil-film solver default `max_iter` is `120`.
-- Avoid unstable tail-force sampling regions when generating general-purpose
-  training data:
-  - `lr < 0.30`
-  - `lambda_value / lr > 10`
-  - `ecc = sqrt(ex^2 + ey^2) > 0.88`
-- Detailed mesh and tail-force analysis:
-  see the G-drive result folder created on `2026-05-07` for
-  `mesh_independence_120x80`.
+Thermal ALBNN sampling and remote training details live in
+`../SURROGATE_TRAIN/docs/albnn_training_info.md`. The current model uses 12
+base inputs and outputs `fx, fy`; re-read that document and the live
+`SURROGATE_TRAIN/task/task_albnn_data.py` before making training claims.
 
 ## Remote Computer Connection
 
