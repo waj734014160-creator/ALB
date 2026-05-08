@@ -1,0 +1,122 @@
+{
+  // 转速设置
+  freq: 50,
+  // 涡动圈数
+  n: 3,
+  // 单圈点数
+  pt: 30,
+  // dt
+  dt: 0.0001,
+  //// ALB设置
+  // 油膜参数设置
+  // e,偏心率
+  'e': 0.0,
+  // angel,偏位角
+  angel: 0,
+  // LX,无量纲径向长度,°
+  lx: 80,
+  // LZ, 无量纲轴向长度
+  lz: 2,
+  // NX,x方向网格数
+  nx: 59,
+  // NZ,z方向网格数
+  nz: 39,
+  // u,液体动力粘度
+  u: 0.0195,
+  // c,轴承名义间隙, m
+  c: 120E-6,
+  // r，轴承半径, m
+  r: 0.04,
+  // l，轴承长度, m
+  l: 0.06,
+  // 无量纲化压力，油源压力, Pa
+  ps: 7E6,
+  // rho,液体密度, kg/m^3
+  rho: 872,
+  // 是否使用雷诺边界
+  reynold: true,
+  // 连续边界条件
+  coe: false,
+  // 大气环境压力, Pa
+  p_set: 0,
+  // 收敛误差
+  error_set: 1E-10,
+  // 最大迭代次数
+  max_iter: 30,
+  // 阻尼
+  damp: 0.8,
+  // 是否考虑涡激振动
+  vib: false,
+  // x方向涡动速度, m/s
+  dxt: null,
+  // y方向涡动速度, m/s
+  dyt: null,
+  // 涡动频率比
+  vf: 1,
+  // 迭代方法
+  iter_method: 'newton',
+  // 保存路径
+  path: 'null',
+  // 是否保存结果压力
+  save_p: false,
+  // 是否保存油膜厚度
+  save_h: false,
+
+
+  // 轴承微槽参数设置
+  // x方向范围
+  xrange: [0.49, 0.51],
+  // z方向范围
+  zrange: [0.2, 0.8],
+  // 槽深
+  h_tank: 2,
+
+
+  // 反馈增益
+  gxy: [[1, 0], [0, 1]],
+  gxyt: [[0, 0], [0, 0]],
+  // 伺服阀模型选择, moog和static
+  servo: 'moog',
+
+
+  //// 控制器参数设置
+  // 比例系数
+  kp: 0.2,
+  // 积分系数
+  ki: 0.0,
+  // 微分系数
+  kd: 0.2,
+
+  //// rotor
+  // rotor划分文件位置
+  rotor_path: "E:/项目文件/202103 - 173计划 - 舰艇涡轮机主动智能声纹控制技术/jwk-转子文件/elements.xls",
+  // 瓦块转动偏置, °
+  bias: 0,
+  // 传感器角度x, y
+  sensor_angles: [0, 90],
+
+
+  //// fuzzy PID参数
+  delta_error_range: [-1, 1, 0.01],
+  // kp范围
+  kp_range: [0, 1, 0.01],
+  // ki范围
+  ki_range: [0, 1, 0.01],
+  // kd范围
+  kd_range: [0, 1, 0.01],
+  // 规则设置文件路径
+  rule_path: 'F:/BaiduSyncdisk/程序/program/RE_ALB/Test/bearing/alb_fuzzy/fuzzy_rules.csv',
+
+
+  //// 计算动特性参数设置
+  // x方向幅值
+  a: 10e-6,
+  // y方向幅值
+  b: 10e-6,
+  // 轴心x位置
+  a0: 20e-6,
+  // 轴心y位置
+  b0: -20e-6,
+  // FFT重复次数
+  repeat: 30,
+}

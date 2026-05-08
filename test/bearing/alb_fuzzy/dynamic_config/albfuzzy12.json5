@@ -1,0 +1,89 @@
+{
+  share_name: [
+    // 油膜参数设置
+    // e,偏心率
+    'e',
+    // angel,偏位角
+    'angel',
+    // LX,无量纲径向长度,°
+    'lx',
+    // LZ, 无量纲轴向长度
+    'lz',
+    // NX,x方向网格数
+    'nx',
+    // NZ,z方向网格数
+    'nz',
+    // u,液体动力粘度
+    'u',
+    // c,轴承名义间隙, m
+    'c',
+    // r，轴承半径, m
+    'r',
+    // l，轴承长度, m
+    'l',
+    // 无量纲化压力，油源压力, Pa
+    'ps',
+    // rho,液体密度, kg/m^3
+    'rho',
+    // 是否使用雷诺边界
+    'reynold',
+    // 连续边界条件
+    'coe',
+    // 大气环境压力, Pa
+    'p_set',
+    // 收敛误差
+    'error_set',
+    // 最大迭代次数
+    'max_iter',
+    // 阻尼
+    'damp',
+    // 是否考虑涡激振动
+    'vib',
+    // x方向涡动速度, m/s
+    'dxt',
+    // y方向涡动速度, m/s
+    'dyt',
+    // 涡动频率比
+    'vf',
+    // 迭代方法
+    'iter_method',
+    // 保存路径
+    'path',
+    // 轴承微槽参数设置
+    // x方向范围
+    'xrange',
+    // z方向范围
+    'zrange',
+    // 槽深
+    'h_tank',
+    // ALB参数设置
+    // 反馈增益
+    'gxy',
+    'gxyt',
+    // 伺服阀模型选择, moog和static
+    'servo',
+    // 时间步
+    'dt',
+    // 转频
+    'freq',
+    // 是否保存油膜压力
+    'save_p',
+    // 是否保存油膜厚度
+    'save_h',
+    // 传感器角度
+    'sensor_angles',
+    // 瓦块转动偏置
+    'bias',
+    // fuzzy PID参数
+    'delta_error_range',
+    // kp范围
+    'kp_range',
+    // ki范围
+    'ki_range',
+    // kd范围
+    'kd_range',
+    // 规则设置文件路径
+    'rule_path',
+  ],
+  node_link: 12,
+}
