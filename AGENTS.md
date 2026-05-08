@@ -34,20 +34,9 @@ this repository.
 
 ## Remote Computer Connection
 
-Full remote workstation connection workflow:
+Remote workstation access is available by SSH over LAN or ZeroTier. Keep
+detailed connection checks, paths, and long-job launch notes in
 `docs/remote_workstation_connection.md`.
-
-- Connection method: `SSH or SMB/RPC on LAN or ZeroTier; WinRM and RDP are not currently open over ZeroTier`
-- Hostname: `desktop-1pvi7rp`
-- LAN IP: `192.168.3.90`
-- ZeroTier IP: `10.182.216.22`
-- Port: `SSH 22; SMB 445; RPC 135`
-- Username: `desktop-1pvi7rp\workstationg`
-- Local SSH key: `C:/Users/73401/.ssh/re_alb_desktop_1pvi7rp_ed25519`
-- Work directory on remote host: `F:/GWJ/20260507-train`
-- Shared data directory: `F:/GWJ/20260507-train/outputs`
-- GPU / compute notes: `NVIDIA T600, 4 GB VRAM, driver 528.95, CUDA 12.0`
-- Startup command notes: `F:/GWJ/20260507-train/run_full_ascii.ps1 starts the thermal ALBNN pipeline`
 
 Do not store passwords, private keys, recovery codes, or API keys in this file.
 Store those in the OS credential manager, SSH agent, or another local secret
