@@ -49,6 +49,35 @@ does not include passwords, private keys, or one-time tokens.
 - GPU / compute notes: `NVIDIA T600, 4 GB VRAM, driver 528.95, CUDA 12.0`
 - Startup command notes: `F:/GWJ/20260507-train/run_full_ascii.ps1 starts the thermal ALBNN pipeline`
 
+### Remote Workflow
+
+Use the ZeroTier IP first when not on the same LAN. Verify the host before
+starting work:
+
+```powershell
+Test-Connection -ComputerName 10.182.216.22 -Count 2 -Quiet
+Test-NetConnection -ComputerName 10.182.216.22 -Port 22
+ssh-keyscan -T 8 -p 22 10.182.216.22
+```
+
+Expected identity checks:
+
+```powershell
+ssh -i C:/Users/73401/.ssh/re_alb_desktop_1pvi7rp_ed25519 desktop-1pvi7rp\workstationg@10.182.216.22 hostname
+ssh -i C:/Users/73401/.ssh/re_alb_desktop_1pvi7rp_ed25519 desktop-1pvi7rp\workstationg@10.182.216.22 whoami
+```
+
+Expected results are `DESKTOP-1PVI7RP` and
+`desktop-1pvi7rp\workstationg`. The remote SSH default shell behaves like
+`cmd`; for PowerShell pipelines, send an encoded PowerShell command or wrap the
+whole remote script carefully.
+
+Do not rely on `Start-Process` launched inside an SSH session for long training
+jobs; the child process can die when the SSH session closes. For persistent
+remote training, write a `.ps1` runner under `F:/GWJ/20260507-train` and launch
+it with Windows Task Scheduler, then monitor logs under
+`F:/GWJ/20260507-train/outputs/.../reports/logs`.
+
 Do not store passwords, private keys, recovery codes, or API keys in this file.
 Store those in the OS credential manager, SSH agent, or another local secret
 store instead.
