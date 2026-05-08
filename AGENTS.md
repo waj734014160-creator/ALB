@@ -34,12 +34,13 @@ this repository.
 
 ## Remote Computer Connection
 
-The following LAN-only connection information is safe to keep here when it does
-not include passwords, private keys, or one-time tokens.
+The following LAN / ZeroTier connection information is safe to keep here when it
+does not include passwords, private keys, or one-time tokens.
 
-- Connection method: `SSH or SMB/RPC on LAN; WinRM and RDP are not currently open`
+- Connection method: `SSH or SMB/RPC on LAN or ZeroTier; WinRM and RDP are not currently open over ZeroTier`
 - Hostname: `desktop-1pvi7rp`
 - LAN IP: `192.168.3.90`
+- ZeroTier IP: `10.182.216.22`
 - Port: `SSH 22; SMB 445; RPC 135`
 - Username: `desktop-1pvi7rp\workstationg`
 - Local SSH key: `C:/Users/73401/.ssh/re_alb_desktop_1pvi7rp_ed25519`
