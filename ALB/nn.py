@@ -289,6 +289,38 @@ class ALBNN:
         return self.predict(self._x, nodim=nodim)
 
 
+class AsinhTargetScaler:
+    """Sklearn-like target scaler with a reversible asinh force transform."""
+
+    def __init__(self, base_scaler, scale: float = 5.0):
+        self.base_scaler = base_scaler
+        self.scale = float(scale)
+        self.feature_names_in_ = None
+
+    def fit(self, y):
+        frame = pd.DataFrame(y)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        self.base_scaler.fit(self._forward(frame))
+        return self
+
+    def transform(self, y):
+        frame = pd.DataFrame(y, columns=self.feature_names_in_)
+        return self.base_scaler.transform(self._forward(frame))
+
+    def fit_transform(self, y):
+        return self.fit(y).transform(y)
+
+    def inverse_transform(self, y_scaled):
+        transformed = self.base_scaler.inverse_transform(y_scaled)
+        return self._inverse(transformed)
+
+    def _forward(self, y):
+        return np.arcsinh(np.asarray(y, dtype=float) / self.scale)
+
+    def _inverse(self, transformed):
+        return np.sinh(np.asarray(transformed, dtype=float)) * self.scale
+
+
 class ALBNet:
     def __init__(self, model: Net, scaled_X, scaled_y, albnet_config):
         """

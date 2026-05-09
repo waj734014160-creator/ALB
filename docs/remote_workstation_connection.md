@@ -67,11 +67,56 @@ Persistent training workflow:
 3. Monitor task state with `schtasks /Query`.
 4. Monitor logs under `F:/GWJ/20260507-train/outputs/.../reports/logs`.
 
+The preferred local wrappers are:
+
+```powershell
+E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_start_albnn_train.py
+E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_query_albnn_status.py
+```
+
+The start wrapper generates a temporary local PowerShell runner, uploads it with
+`scp`, starts a Task Scheduler job, and disables the one-shot schedule after the
+manual start to prevent a duplicate later run. The status wrapper uses several
+short SSH commands instead of one large encoded PowerShell command so it is not
+sensitive to command-line length limits.
+
 Example task name from the boundary-augmented ALBNN run:
 
 ```text
 ALB_BoundaryAugTrain_20260508
 ```
+
+### Launch Notes
+
+2026-05-09 force<5 retraining:
+
+- Task: `ALB_TrainForce5_20260509`
+- Runner: `F:/GWJ/20260507-train/run_train_force5_20260509.ps1`
+- Data:
+  `outputs/heat_albnn_79x39_thermal60_filtered_40000/data/force5_total_20260509`
+- Model:
+  `outputs/heat_albnn_79x39_thermal60_filtered_40000/models/force5_total_aug_v2_standard_384_384_192_96_lr7em04`
+- Logs:
+  `outputs/heat_albnn_79x39_thermal60_filtered_40000/reports/logs/train_force5_total_aug_v2_standard_384_384_192_96_lr7em04.*.log`
+- The task completed with exit code `0` and remains disabled to prevent any
+  duplicate scheduled start.
+
+2026-05-09 force<5 minmax retraining:
+
+- Task: `ALB_TrainForce5Minmax_20260509`
+- Runner: `F:/GWJ/20260507-train/run_train_force5_minmax_20260509.ps1`
+- Local launch wrapper:
+  `../SURROGATE_TRAIN/run/remote/remote_start_albnn_train.py`
+- Local status wrapper:
+  `../SURROGATE_TRAIN/run/remote/remote_query_albnn_status.py`
+- Data:
+  `outputs/heat_albnn_79x39_thermal60_filtered_40000/data/force5_total_20260509`
+- Model:
+  `outputs/heat_albnn_79x39_thermal60_filtered_40000/models/force5_total_aug_v2_minmax_384_384_192_96_lr7em04`
+- Logs:
+  `outputs/heat_albnn_79x39_thermal60_filtered_40000/reports/logs/train_force5_total_aug_v2_minmax_384_384_192_96_lr7em04.*.log`
+- Use the local status wrapper for live state; the task was disabled after the
+  manual start to prevent duplicate scheduled starts.
 
 ## PowerShell Runner Notes
 

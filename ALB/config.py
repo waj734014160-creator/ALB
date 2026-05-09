@@ -5,6 +5,8 @@ from typing import Optional, Union
 
 import numpy as np
 
+from ALB.damping import AdaptiveDampConfig, normalize_adaptive_damp_config
+
 
 @dataclass
 class ConfigData:
@@ -93,8 +95,10 @@ class HydConfig(ConfigData):
     ngauss: int = 50  # Number of Gauss iterations for Gauss iteration method
     gdamp: float = 1.2  # Relaxation factor for Gauss iteration method
     err: float = 1e-3  # Allowable residual for Gauss iteration method
+    adaptive_damp: Optional[AdaptiveDampConfig] = None
 
     def __post_init__(self):
+        self.adaptive_damp = normalize_adaptive_damp_config(self.adaptive_damp)
         if not 0 <= self.e < 1:
             raise ValueError("e must be in [0, 1)")
         if self.ps <= 0:
@@ -177,6 +181,7 @@ class HydConfig(ConfigData):
             "ngauss",
             "gdamp",
             "err",
+            "adaptive_damp",
         ]
         direct_args = {
             key: config_dict[key] for key in direct_keys if key in config_dict
@@ -481,6 +486,7 @@ class ThermalConfig(ConfigData):
     relax: float = 0.5
     tol: float = 1e-3
     max_iter: int = 60
+    adaptive_damp: Optional[AdaptiveDampConfig] = None
     miu_min: float = 1e-4
     miu_max: float = 1.0
     coupling: str = "full"
@@ -509,6 +515,7 @@ class ThermalConfig(ConfigData):
     """Transient time step, seconds."""
 
     def __post_init__(self):
+        self.adaptive_damp = normalize_adaptive_damp_config(self.adaptive_damp)
         if self.beta_nondim is None and self.t_ref_nondim is None:
             return
         if self.delta_t_scale is None or float(self.delta_t_scale) <= 0.0:
@@ -789,6 +796,7 @@ class NodimPadConfig(ConfigData):
     error_set: float = 1e-10
     max_iter: int = 120
     damp: float = 0.8
+    adaptive_damp: Optional[AdaptiveDampConfig] = None
     node_link: int = None
     save_p: bool = False
     save_h: bool = False
@@ -809,6 +817,7 @@ class NodimPadConfig(ConfigData):
     thermal_config: Optional[ThermalConfig] = None
 
     def __post_init__(self):
+        self.adaptive_damp = normalize_adaptive_damp_config(self.adaptive_damp)
         if self.lambda_value <= 0:
             raise ValueError("lambda_value must be > 0")
         if self.lr <= 0:

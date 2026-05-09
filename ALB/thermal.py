@@ -10,6 +10,7 @@ from skfem.helpers import dot, grad
 
 from ALB.base import BaseCSystem, BasePostProcess
 from ALB.config import ThermalConfig, build_thermal_config  # noqa: F401  re-exported
+from ALB.damping import AdaptiveDampController
 from ALB.film import (
     FilmOutput,
     NodimNewtonFilm,
@@ -1336,6 +1337,7 @@ class NodimThermalHydroBearing(BaseCSystem):
             reynold=old_model.args.get("reynold", True),
             error_set=getattr(old_model, "_error_set", 1e-7),
             damp=getattr(old_model, "_damp", 0.8),
+            adaptive_damp=getattr(old_model, "_adaptive_damp_config", None),
             save_p=save_switch.get("p", False),
             save_h=save_switch.get("h", False),
             mesh=old_model.mesh,
@@ -1627,6 +1629,9 @@ class NodimThermalHydroBearing(BaseCSystem):
 
         # Initial viscosity field = uniform reference
         miu_field = np.full(n_nodes, self._miu0, dtype=float)
+        relax_controller = AdaptiveDampController(
+            self.config.relax, self.config.adaptive_damp
+        )
         converged = False
         n_iter = 0
 
@@ -1677,15 +1682,15 @@ class NodimThermalHydroBearing(BaseCSystem):
                 miu_target = self._viscosity_from_temperature(t_film)
 
             # Relax
-            miu_new = (
-                1.0 - self.config.relax
-            ) * miu_field + self.config.relax * miu_target
+            relax = relax_controller.value
+            miu_new = (1.0 - relax) * miu_field + relax * miu_target
 
             rel_err = float(
                 np.max(np.abs(miu_new - miu_field))
                 / max(float(np.max(np.abs(miu_field))), 1e-12)
             )
             miu_field = miu_new
+            relax_controller.update(rel_err)
 
             if rel_err < self.config.tol:
                 converged = True
@@ -1723,6 +1728,9 @@ class NodimThermalHydroBearing(BaseCSystem):
             "converged": bool(converged),
             "iterations": n_iter,
             "viscosity_field": miu_field.copy(),
+            "relax": float(relax_controller.value),
+            "relax_history": list(relax_controller.history),
+            "adaptive_damp_enabled": bool(relax_controller.enabled),
         }
 
         result = dict(hydro)
@@ -1732,6 +1740,11 @@ class NodimThermalHydroBearing(BaseCSystem):
                 "viscosity": self._last_thermal["viscosity"],
                 "thermal_converged": self._last_thermal["converged"],
                 "thermal_iterations": self._last_thermal["iterations"],
+                "thermal_relax": self._last_thermal["relax"],
+                "thermal_relax_history": self._last_thermal["relax_history"],
+                "thermal_adaptive_damp_enabled": self._last_thermal[
+                    "adaptive_damp_enabled"
+                ],
                 "temperature": thermal["temperature"],
                 "temperature_film": t_film,
                 "temperature_x": thermal["mesh"].p[0].copy(),
@@ -1879,6 +1892,7 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
             reynold=old_model.args.get("reynold", True),
             error_set=getattr(old_model, "_error_set", 1e-7),
             damp=getattr(old_model, "_damp", 0.8),
+            adaptive_damp=getattr(old_model, "_adaptive_damp_config", None),
             save_p=save_switch.get("p", False),
             save_h=save_switch.get("h", False),
             mesh=old_model.mesh,

@@ -321,3 +321,12 @@
 - test/gui_bearing.py（新增）
 - test/gomoku_game.py（新增）
 - /memories/repo/comment_conventions.md（新增）
+
+## 2026-05-09
+
+### Daily documentation maintenance
+- Scheduled maintenance pass for split workspace `G:/ALB_PROJECTS`.
+- Detailed report: `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260509.md`.
+- Stable docs changed: none; current split index, remote-workstation, ALBNN training, and file-classification docs already contain the clear facts found today.
+- Old-file candidate for next-day confirmation: `ARTIFACTS_ARCHIVE/test/couple/logs/film-5305.log`.
+- Human confirmation needed before any archive/delete action; no source code, remote work, training, sampling, commits, moves, or deletes were performed.

@@ -104,6 +104,7 @@ def _create_newton_model(
         "vf",
         "error_set",
         "damp",
+        "adaptive_damp",
         "save_p",
         "save_h",
     ]
@@ -144,6 +145,7 @@ def _create_skfem_model(
         "vf",
         "error_set",
         "damp",
+        "adaptive_damp",
         "save_p",
         "save_h",
     ]
@@ -407,6 +409,7 @@ class NodimHydrostaticBearing(FilmSystem):
         error_set=1e-10,
         max_iter=120,
         damp=0.8,
+        adaptive_damp=None,
         e=0.0,
         angle=0.0,
         node_link=None,
@@ -459,6 +462,7 @@ class NodimHydrostaticBearing(FilmSystem):
             reynold=reynold,
             error_set=error_set,
             damp=damp,
+            adaptive_damp=adaptive_damp,
             save_p=save_p,
             save_h=save_h,
             mesh=mesh,

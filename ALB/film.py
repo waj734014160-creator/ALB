@@ -38,6 +38,7 @@ from .boundary import (
     set_continuity_boundary,
     set_value_boundary,
 )
+from .damping import AdaptiveDampController, normalize_adaptive_damp_config
 from .gauss import gauss_seidel_iteration_film, gauss_seidel_iteration_matrix
 
 # from .logger import delogger, logger
@@ -640,6 +641,12 @@ class NodimNewtonFilm(FilmModel):
         else:
             damp = 0.8
         self._damp = damp
+        self._adaptive_damp_config = normalize_adaptive_damp_config(
+            kwargs.get("adaptive_damp")
+        )
+        self._adaptive_damp = AdaptiveDampController(
+            self._damp, self._adaptive_damp_config
+        )
         self._dp = []
 
     # Initialize pressure and cache baseline matrices for Newton iterations.
@@ -649,10 +656,25 @@ class NodimNewtonFilm(FilmModel):
 
         :param **kwargs: Optional keyword arguments.
         """
+        self.reset_adaptive_damp()
         self.pre_solve(**kwargs)
         result = self.solve()
         self.matrixs_init_for_iter_solve()
         return result
+
+    def reset_adaptive_damp(self):
+        """Reset adaptive pressure damping for a fresh pressure solve."""
+        self._adaptive_damp.reset(self._damp)
+
+    @property
+    def current_damp(self):
+        """Return the relaxation value for the next pressure update."""
+        return self._adaptive_damp.value
+
+    @property
+    def adaptive_damp_history(self):
+        """Return recorded pressure adaptive damping decisions."""
+        return list(self._adaptive_damp.history)
 
     def matrixs_init_for_iter_solve(self):
         """Cache baseline matrices and right-hand vectors for iteration."""
@@ -680,7 +702,7 @@ class NodimNewtonFilm(FilmModel):
         k = scipy.sparse.csc_matrix(k)
         f = self.rights["fe"] - self._ready_values["ke"].dot(self.latest_result)
         self._dp = sl.spsolve(k, f)
-        p = self.latest_result + self._dp * self._damp
+        p = self.latest_result + self._dp * self.current_damp
         p = self._reynold_boundary(p)
 
         self.add_result(p)
@@ -728,7 +750,7 @@ class NodimNewtonFilm(FilmModel):
 
             self._dp = sl.spsolve(J_reg, -Phi)
 
-        p = p + self._dp * self._damp
+        p = p + self._dp * self.current_damp
         # p = self._reynold_boundary(p)
 
         # x_lim = self.args['x_lim']
@@ -772,10 +794,8 @@ class NodimNewtonFilm(FilmModel):
         error = self.calc_error()
         # Save the current scalar error for external diagnostics.
         self.errors = error
-        if error > self._error_set:
-            return False
-        else:
-            return True
+        self._adaptive_damp.update(error)
+        return error <= self._error_set
 
     def set_reynold_boundary(self, sw: bool):
         """
@@ -1746,6 +1766,8 @@ class FilmSystem(BaseSystem):
             for simple_model in self.simple_models:
                 if hasattr(simple_model, "init"):
                     simple_model.init()
+        if hasattr(self.main_model, "reset_adaptive_damp"):
+            self.main_model.reset_adaptive_damp()
         for i in range(self.max_iter):
             # Update auxiliary models before each film solve step.
             for simple_model in self.simple_models:

@@ -1,6 +1,6 @@
 ﻿# coding: utf-8
 import copy
-from typing import Iterable, Union
+from typing import TYPE_CHECKING, Iterable, Union
 
 import numpy as np
 import pandas as pd
@@ -30,6 +30,9 @@ from ALB.thermal import (
     build_thermal_config,  # noqa: F401  re-exported for backward compatibility
     wrap_pad_collection_with_thermal,
 )
+
+if TYPE_CHECKING:
+    from ALB.nn import ALBNet
 
 _NODIM_ALB_FORBIDDEN_PAD_KWARGS = {"miu", "c", "r", "l", "ps", "rho", "w", "w_rad"}
 _NODIM_ALB_LEGACY_REQUIRED_KEYS = [
@@ -695,9 +698,7 @@ class ALBLinearAgent(BaseSimpleModel):
 
 
 class ALBNNAgent(BaseSimpleModel):
-    from ALB.nn import ALBNet
-
-    def __init__(self, net: ALBNet, agent=None, *args, **kwargs):
+    def __init__(self, net: "ALBNet", agent=None, *args, **kwargs):
         """
         ALBNNAgent is an agent for ALB system using neural network to predict the force
         :param net: ALBNet, the neural network model for ALB

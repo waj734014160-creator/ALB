@@ -477,7 +477,7 @@ class GasSkfemNewtonFilm(SkfemNewtonFilm):
         self.set_boundary(self, method="round", p_set=boundary_pressure, coe=coe)
 
         p_trial = spsolve(self.matrixs["ke"], self.rights["fe"])
-        p_new = p_last + self._damp * (p_trial - p_last)
+        p_new = p_last + self.current_damp * (p_trial - p_last)
         p_new = self._apply_pressure_floor(p_new, pressure_floor)
 
         self._dp = p_new - p_last
@@ -548,6 +548,7 @@ class GasBearing(FilmSystem):
             gamma=gas_config.gamma,
             error_set=gas_config.error_set,
             damp=gas_config.damp,
+            adaptive_damp=gas_config.adaptive_damp,
             save_p=gas_config.save_p,
             save_h=gas_config.save_h,
         )

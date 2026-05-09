@@ -3,6 +3,8 @@
 /__pycache__
 **/__pycache__/
 /test/logs
+/docs/daily_maintenance/logs/
+/docs/daily_maintenance/latest_codex_daily_doc_maintenance_status.txt
 /.ipynb_checkpoints/
 .vscode/
 *.py[cod]
