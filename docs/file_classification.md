@@ -8,7 +8,8 @@
 - Keep source layout unchanged. `ALB/` remains the stable Python package boundary.
 - Preserve experiment evidence. `outputs/` is treated as an archive candidate by default, not a deletion target.
 - Separate repeatable tests from exploratory work. Pytest files, diagnostics, notebooks, GUI tools, and artifacts should be labeled differently.
-- Treat the current git state as fragile. The worktree contains old uppercase directory deletions and new lowercase untracked directories, so actual moves or deletions must be a separate step.
+- Treat the current git state as live user work. Moves, deletions, or artifact
+  cleanup must be a separate confirmed step.
 
 ## Demand Categories
 
@@ -17,6 +18,7 @@
 | Stable library code | `ALB/`, `pyproject.toml` | Keep in place and document module responsibilities. | Moving files would require import rewrites and broad tests. |
 | Task and batch entrypoints | `task/`, `ALB/task.py` | Keep current entrypoints; later split reusable workflows from one-off scripts. | Some scripts use local absolute paths and copy task files to outputs. |
 | Run scripts and experiments | `run/`, `run/validation/`, `run/JKW/` | Keep repeatable scripts; classify generated subdirectories as artifacts. | Some scripts are paper/demo specific and may write into `run/_*` directories. |
+| Remote ALBNN tooling | `ALB/remote/`, `test/remote/`, `refs/remote_albnn_*_reference_v1.json` | Keep as the stable implementation and regression baseline for remote helpers. | Compatibility wrappers live in sibling `SURROGATE_TRAIN/run/remote/`; avoid restoring duplicate implementations there. |
 | Pytest and engineering validation | `test/*.py`, `test/bearing/`, `test/config/`, `test/thermal/` | Separate regression/unit/integration/validation/diagnostic purposes in documentation first. | `test/` also contains notebooks, GUI, logs, and figures, so pytest semantics are mixed. |
 | Historical data processing and notebooks | `data_process/`, `learning_note/`, `test/**/*.ipynb` | Preserve as research history; later migrate to `notebooks/` or `experiments/notebooks/`. | Many notebooks may contain embedded output and hard-coded local paths. |
 | Documentation and conventions | `docs/`, `AGENTS.md`, `README.md` | Keep and improve; use docs as the first layer of project organization. | Existing docs may have encoding issues and should be reviewed before reuse. |
@@ -25,7 +27,9 @@
 
 ## ALB Module Map
 
-`ALB/` should stay as the public package for now. The following map is a documentation-only view of responsibilities.
+`ALB/` should stay as the public package for now. The following map is a
+documentation-only view of responsibilities. For the maintained package
+orientation and public interface groups, read `docs/alb_package_overview.md`.
 
 | Area | Files | Purpose |
 | --- | --- | --- |
@@ -35,6 +39,7 @@
 | Thermal and nondimensional models | `thermal.py`, `nondim.py` | Thermal-hydrodynamic coupling, viscosity-temperature coupling, nondimensional scales and solver wrappers. |
 | Rotor coupling | `rotor.py`, `orbit.py`, `couple.py` | ROSS rotor integration, orbit generation, rotor-bearing coupling, time response workflows. |
 | Surrogate models | `nn.py` | ALBNN and thermal surrogate model definitions, feature augmentation, inference/training helpers. |
+| Remote workstation tools | `remote/` | SSH, PowerShell, Task Scheduler, ALBNN launch/status/queue helpers used by sibling training workflows. |
 | Utilities, config, and results | `tool.py`, `config.py`, `results.py`, `postprocess.py`, `logger.py` | Config objects, json5 readers, result trees, logging, plotting/postprocess helpers, assorted utilities. |
 
 Notes:
@@ -55,7 +60,7 @@ Notes:
 | Thermal diagnostics and comparisons | `outputs/thermal_kc_compare`, `outputs/thermal_force_time_term_compare`, `outputs/transient_thermal` | Archive as validation and diagnostic results. |
 | Demo and paper figures | `run/_compare_orifice`, `run/_paper_textured_foil`, `run/_tilting_pad_demo`, `outputs/_gas_bearing_demo` | Preserve if referenced by docs, reports, or notebooks. |
 | Smoke and tiny sample outputs | `outputs/albnn_smoke*`, `outputs/albnn_data_smoke*`, `outputs/albnn_data_parallel_smoke` | Cleanup candidates only after checking they are not used as quick regression fixtures. |
-| Remote training and monitoring files | `outputs/codex_cli_boundary_watch_20260508*`, `outputs/run_boundary_sample_remote.ps1`, `outputs/tmp_boundary_sample_remote.py` | Later migrate scripts to `scripts/remote/` or `run/`; keep logs as archive evidence. |
+| Remote helper regression artifacts | `refs/remote_albnn_*_reference_v1.json`, `test/remote/` | Keep with `ALB.remote`; these files preserve CLI/wrapper behavior during refactors. |
 
 Do not recommend deleting `.csv`, `.json`, `.pth`, or `.pkl` files without checking whether they are paired experiment assets.
 
@@ -81,7 +86,7 @@ These are optional target structures for later phases. They are not implemented 
 | `archive/YYYYMMDD_<experiment>/` | Preserved output bundles grouped by date and experiment purpose. |
 | `notebooks/alb/`, `notebooks/control/`, `notebooks/ansys/`, `notebooks/symbolic/`, `notebooks/misc/` | Exploratory notebooks currently under `learning_note/`, `data_process/`, and `test/`. |
 | `experiments/diagnostics/` | One-off diagnostic scripts that are useful but not formal pytest cases. |
-| `scripts/remote/` | LAN/remote training watcher scripts and boundary sampling helpers. |
+| `ALB/remote/` | Stable LAN/remote helper APIs. Sibling `SURROGATE_TRAIN/run/remote/` should remain thin compatibility wrappers. |
 | `tools/manual/` | GUI demos, manual visualization helpers, email/Nastran utilities, and non-test scripts. |
 | `test/artifacts/` | Test-generated plots, logs, HTML, and reference output snapshots. |
 

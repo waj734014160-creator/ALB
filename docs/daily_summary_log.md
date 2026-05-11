@@ -324,9 +324,95 @@
 
 ## 2026-05-09
 
-### Daily documentation maintenance
+### 今日目标
+- 维护 `G:/ALB_PROJECTS` split workspace 的稳定文档，压缩过时远程训练信息。
+- 明确 `ALB.remote` 与 `SURROGATE_TRAIN/run/remote` 的职责边界。
+- 记录当前 force3 GELU minmax patience-500 远程训练和默认监控行为。
+
+### 代码与文档修改
+- `ALB_MAIN/docs/file_classification.md`：补充 `ALB/remote/`、`test/remote/` 和 remote reference 文件分类，移除旧大小写目录迁移描述。
+- `SURROGATE_TRAIN/docs/file_classification.md`：从旧 `RE_ALB`/核心包分类改为训练项目专用分类。
+- `SURROGATE_TRAIN/docs/albnn_training_info.md`：更新 force5 minmax 已完成指标、force3 当前训练状态和本地 monitor 日志路径。
+- `SURROGATE_TRAIN/README.md`：补充 remote wrapper、queue config 和 queue log 的项目职责说明。
+- `SURROGATE_TRAIN/TODO.md`：保留 pending 状态说明；`SURROGATE_TRAIN/docs/PLAN.md` 在当日仍作为 historical 计划检查，后续于 2026-05-10 确认删除。
+
+### 今日完成内容
+- 完成远程工具职责沉淀：核心实现位于 `ALB_MAIN/ALB/remote`，训练项目只保留兼容 wrapper 和实验 JSON 配置。
+- force5 minmax 训练状态由“running”更新为 completed，并补充独立验证指标。
+- force3 GELU minmax patience-500 训练记录为维护时仍在运行，且已有本地监控日志。
+- 未移动、删除或归档任何训练数据、模型、日志或配置文件。
+
+### 验证与结果
+- force3 状态查询时间：`2026-05-09 20:15 +08:00`。
+- 当前状态：`running`，epoch `2500/30000`，elapsed `17.7` min，Python PID `1568`。
+- 本地 monitor 日志：
+  `SURROGATE_TRAIN/outputs/queue_logs/force3_gelu_minmax_p500_monitor_20260509_200142.stdout.log`。
+
+### 关键结论
+- 后续远程 ALBNN 训练默认应启动本地监控；优先使用 JSON queue wrapper。
+- `run/remote/configs/*.json` 属于实验参数，应留在 `SURROGATE_TRAIN`，不要搬入 `ALB_MAIN`。
+- 旧计划内容可通过审计报告和每日摘要保留证据链；`SURROGATE_TRAIN/docs/PLAN.md` 文件本身后续于 2026-05-10 确认删除。
+
+### 风险与遗留问题
+- `daily_summary_log.md` 仍包含早期历史内容和中文模板，本次只做文末追加/替换，没有重排历史记录。
+- force3 训练仍在运行，最终指标需要训练完成后再次写入 `albnn_training_info.md`。
+
+### 明日计划
+- force3 训练完成后同步最终 `validation_summary.json`、`metadata.json` 和 queue monitor 摘要。
+- 继续检查旧计划与实际训练状态是否还有冲突项。
+
+### 相关文件
+- docs/file_classification.md
+- ../SURROGATE_TRAIN/docs/file_classification.md
+- ../SURROGATE_TRAIN/docs/albnn_training_info.md
+- ../SURROGATE_TRAIN/README.md
+- ../SURROGATE_TRAIN/TODO.md
+
+## 2026-05-10
+
+### Daily Documentation Maintenance
 - Scheduled maintenance pass for split workspace `G:/ALB_PROJECTS`.
-- Detailed report: `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260509.md`.
-- Stable docs changed: none; current split index, remote-workstation, ALBNN training, and file-classification docs already contain the clear facts found today.
-- Old-file candidate for next-day confirmation: `ARTIFACTS_ARCHIVE/test/couple/logs/film-5305.log`.
-- Human confirmation needed before any archive/delete action; no source code, remote work, training, sampling, commits, moves, or deletes were performed.
+- Detailed report: `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260510.md`.
+- Stable docs updated: added current split ownership notes to `ARTIFACTS_ARCHIVE/docs/file_classification.md`, `DATA_POSTPROCESS/docs/file_classification.md`, `PARAM_SCAN/docs/file_classification.md`, and `VALIDATION/docs/file_classification.md`.
+- Human confirmations resolved: delete `ARTIFACTS_ARCHIVE/test/couple/logs/film-5305.log`; keep `SURROGATE_TRAIN/docs/PLAN.md` deleted; retain only one day of scheduler logs under `ALB_MAIN/docs/daily_maintenance/logs`; archive `SURROGATE_TRAIN/outputs/queue_logs` with their corresponding model artifacts after training ends.
+- Applied cleanup: removed `film-5305.log` and the 2026-05-09 scheduler run logs under `ALB_MAIN/docs/daily_maintenance/logs`.
+- No source code, remote SSH, training, sampling, commits, moves, renames, or artifact archives were performed.
+
+## 2026-05-11
+
+### Documentation Maintenance
+- Manual maintenance pass for split workspace `G:/ALB_PROJECTS`.
+- Detailed report: `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260511.md`.
+- New stable ALB package orientation: `ALB_MAIN/docs/alb_package_overview.md`.
+- `ALB_MAIN/AGENTS.md` now points agents to the package overview before public
+  API or module-boundary changes.
+- `SURROGATE_TRAIN` docs now record local packaged-model testing with
+  `run/analysis/compare_packaged_albnn_force_kc.py`.
+- Local model test summary: 12 complete local models tested from
+  `SURROGATE_TRAIN/models`; 1 passed all downstream shell/core criteria and 11
+  failed the configured force-comparison thresholds.
+- Passing model:
+  `valid40000_aug_v2_standard_384_384_192_96_lr7em04_isolated`.
+- Aggregate model-test report:
+  `SURROGATE_TRAIN/outputs/analysis_logs/compare_packaged_albnn_force_kc_20260511/aggregate_summary.csv`.
+- Local incomplete model cleanup already removed three partial directories that
+  had `best_albnn.pth` but lacked `metadata.json` and `validation_summary.json`;
+  remote model directories were not deleted.
+- No code behavior, training, sampling, remote launch, commit, or artifact
+  archive was performed during this documentation maintenance pass.
+
+### Scheduled Daily Documentation Maintenance
+- Scheduled pass refreshed
+  `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260511.md`.
+- Stable docs changed: `SURROGATE_TRAIN/TODO.md` and
+  `SURROGATE_TRAIN/docs/file_classification.md` now avoid describing the old
+  force3 queue as the active workflow.
+- Local evidence checked: active 28-input `sqrt28` training PID `73756` was
+  still present and `loss_history.csv` had advanced; this live tick was not
+  copied into stable docs.
+- Remote 100000-sample monitor evidence was ambiguous after the last running
+  snapshot, so the uncertainty is kept in the audit report for human review.
+- Old-file candidates for next-day confirmation: same-day scheduler logs under
+  `ALB_MAIN/docs/daily_maintenance/logs/codex_daily_doc_maintenance_20260511_*`.
+- No source code, remote SSH, training, sampling, commits, deletes, moves,
+  renames, or artifact archives were performed.

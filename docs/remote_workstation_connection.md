@@ -70,53 +70,76 @@ Persistent training workflow:
 The preferred local wrappers are:
 
 ```powershell
+E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_queue_albnn_activation_sweep.py --config ../SURROGATE_TRAIN/run/remote/configs/<queue>.json
 E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_start_albnn_train.py
 E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_query_albnn_status.py
+E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_monitor_job.py --task-name <task> --process-match <needle>
 ```
+
+The stable implementation is maintained in `ALB.remote`:
+`albnn_queue`, `albnn_start`, `albnn_status`, `monitor`, and `transport`. The
+`SURROGATE_TRAIN/run/remote` scripts are compatibility entry points so existing
+commands and JSON queue configs continue to work.
 
 The start wrapper generates a temporary local PowerShell runner, uploads it with
 `scp`, starts a Task Scheduler job, and disables the one-shot schedule after the
-manual start to prevent a duplicate later run. The status wrapper uses several
-short SSH commands instead of one large encoded PowerShell command so it is not
-sensitive to command-line length limits.
+manual start to prevent a duplicate later run. The ALBNN status wrapper now
+delegates its Task Scheduler, process, file, and log checks to
+`ALB.remote.monitor`, which uses several short SSH commands instead of one large
+encoded PowerShell command so it is not sensitive to command-line length
+limits.
 
-Example task name from the boundary-augmented ALBNN run:
+Default future launch behavior: remote ALBNN training should also start local
+monitoring. Prefer the JSON queue wrapper for launches because it resumes active
+jobs, polls status, and syncs `status.json`, `status.jsonl`, and log tails under
+`../SURROGATE_TRAIN/outputs/queue_logs`. If a job is launched directly with the
+start wrapper, start the matching queue monitor immediately.
 
-```text
-ALB_BoundaryAugTrain_20260508
+Training launch preflight: the remote start wrapper checks that both configured
+training CSVs exist and are non-empty before it creates a Task Scheduler run.
+For generation-to-training watchers, still gate queue launch on split success,
+train/validation CSV presence, split summary presence, nonzero row counts, and
+zero train/validation input overlap. Do not start a training queue only because
+generation metadata reached the requested attempted row count.
+
+For non-training long jobs such as sample generation, use the generic monitor
+wrapper instead of ad-hoc SSH status snippets. It queries Task Scheduler,
+matching processes, metadata progress, CSV/log file timestamps, and ETA through
+short PowerShell commands.
+
+Generic one-shot monitor pattern for a remote generation task:
+
+```powershell
+E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_monitor_job.py `
+  --task-name <task-name> `
+  --process-match <stable-commandline-needle> `
+  --metadata <remote-metadata-json> `
+  --csv <remote-output-csv> `
+  --log stdout=<remote-stdout-log> `
+  --log stderr=<remote-stderr-log>
 ```
 
-### Launch Notes
+## ALBNN Job Pointers
 
-2026-05-09 force<5 retraining:
+Current ALBNN data, model, task, and sampling lessons live in
+`../SURROGATE_TRAIN/docs/albnn_training_brief.md`; detailed dated history lives
+in `../SURROGATE_TRAIN/docs/albnn_training_log.md`. Keep this connection
+document focused on stable remote-operation mechanics and only record short
+pointers that help operators find the active job.
 
-- Task: `ALB_TrainForce5_20260509`
-- Runner: `F:/GWJ/20260507-train/run_train_force5_20260509.ps1`
-- Data:
-  `outputs/heat_albnn_79x39_thermal60_filtered_40000/data/force5_total_20260509`
-- Model:
-  `outputs/heat_albnn_79x39_thermal60_filtered_40000/models/force5_total_aug_v2_standard_384_384_192_96_lr7em04`
-- Logs:
-  `outputs/heat_albnn_79x39_thermal60_filtered_40000/reports/logs/train_force5_total_aug_v2_standard_384_384_192_96_lr7em04.*.log`
-- The task completed with exit code `0` and remains disabled to prevent any
-  duplicate scheduled start.
+Active remote ALBNN workflow pointers:
 
-2026-05-09 force<5 minmax retraining:
+- Live progress buffer:
+  `../SURROGATE_TRAIN/docs/current_runtime_status.md`.
+- First-read ALBNN workflow brief:
+  `../SURROGATE_TRAIN/docs/albnn_training_brief.md`.
 
-- Task: `ALB_TrainForce5Minmax_20260509`
-- Runner: `F:/GWJ/20260507-train/run_train_force5_minmax_20260509.ps1`
-- Local launch wrapper:
-  `../SURROGATE_TRAIN/run/remote/remote_start_albnn_train.py`
-- Local status wrapper:
-  `../SURROGATE_TRAIN/run/remote/remote_query_albnn_status.py`
-- Data:
-  `outputs/heat_albnn_79x39_thermal60_filtered_40000/data/force5_total_20260509`
-- Model:
-  `outputs/heat_albnn_79x39_thermal60_filtered_40000/models/force5_total_aug_v2_minmax_384_384_192_96_lr7em04`
-- Logs:
-  `outputs/heat_albnn_79x39_thermal60_filtered_40000/reports/logs/train_force5_total_aug_v2_minmax_384_384_192_96_lr7em04.*.log`
-- Use the local status wrapper for live state; the task was disabled after the
-  manual start to prevent duplicate scheduled starts.
+Do not keep active task names, PIDs, ETAs, queue roots, or current model names
+in this stable connection manual. Put live state in `current_runtime_status.md`
+and dated run history in `albnn_training_log.md`.
+
+Older completed or stopped ALBNN runs should stay in the surrogate-training
+document unless they introduce a reusable remote-operation lesson.
 
 ## PowerShell Runner Notes
 
@@ -133,8 +156,21 @@ Preferred patterns:
 - Do not use `codex exec` or another Codex CLI agent in a timed watcher for
   remote status checks. It consumes Codex quota each cycle and should be
   reserved for explicit one-shot human-requested analysis.
+- Keep remote launcher logs structured and English-only by default. Native
+  Windows tools such as `schtasks.exe` may emit localized text over SSH; mixed
+  PowerShell CLIXML, UTF-8, and CP936/GBK output can produce replacement
+  characters and has caused local Python `UnicodeEncodeError` during queue
+  launches. Capture native command output for exit-code checks, but do not print
+  it in normal logs; expose raw output only behind an explicit verbose/debug
+  flag.
+- For Python wrappers that may print remote output on Windows, configure
+  `stdout` and `stderr` as UTF-8 with replacement handling, and set
+  `PYTHONIOENCODING=utf-8` when one wrapper launches another.
 - If a scheduled controller needs child processes, redirect stdout and stderr
   to separate files and check child exit codes explicitly.
+- For long watcher/controller tasks, set Task Scheduler `ExecutionTimeLimit`
+  explicitly to at least the runner deadline. The default can be `PT72H`, which
+  may stop a healthy watcher before a multi-day dependency chain completes.
 - Do not depend on `Tee-Object` for native long-running Python logs.
 - Count CSV rows with a line iterator such as `switch -File`, not
   `Get-Content -ReadCount ... | Measure-Object -Line`, because chunked reads can
