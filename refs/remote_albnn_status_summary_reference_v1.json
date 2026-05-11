@@ -1,0 +1,28 @@
+{
+  "generated_at": "2026-05-09T19:29:27",
+  "source_script": "G:\\ALB_PROJECTS\\SURROGATE_TRAIN\\run\\remote\\remote_query_albnn_status.py",
+  "input": {
+    "remote_time": "2026-05-09T12:30:00+08:00",
+    "task_name": "ALB_TrainForce5SmallGeluMinmax_20260509",
+    "model_name": "force5_total_aug_v2_minmax_gelu_256_256_128_64_lr7em04",
+    "model_dir": "F:/GWJ/20260507-train/outputs/heat_albnn_79x39_thermal60_filtered_40000/models/force5_total_aug_v2_minmax_gelu_256_256_128_64_lr7em04",
+    "processes": [],
+    "run_log_tail": [
+      "START_TIME=2026-05-09T10:00:00+08:00",
+      "MODEL_DIR=F:/GWJ/model",
+      "END_TIME=2026-05-09T12:30:00+08:00",
+      "EXIT_CODE=0"
+    ],
+    "stdout_tail": [
+      "epoch 100/30000: train=1.2340e-03, test=2.3450e-03",
+      "epoch 180/30000: train=9.8700e-04, test=1.2340e-03",
+      "early stop at epoch 180"
+    ],
+    "stderr_tail": [
+      "solver warning example"
+    ],
+    "validation_summary_text": "{\"n\": 128, \"r2_fx\": 0.98123456, \"r2_fy\": 0.97234567, \"mae_fx\": 0.04123456, \"mae_fy\": 0.05234567, \"rmse_fx\": 0.06123456, \"rmse_fy\": 0.07234567, \"median_relative_norm_error\": 0.08345678}",
+    "metadata_text": "{\"scaler\": \"minmax\", \"activation\": {\"name\": \"gelu\", \"sine_omega0\": null}, \"target_transform\": {\"name\": \"none\", \"scale\": null}}"
+  },
+  "summary": "task: ALB_TrainForce5SmallGeluMinmax_20260509\nmodel: force5_total_aug_v2_minmax_gelu_256_256_128_64_lr7em04\nstate: completed\nmodel_dir: F:/GWJ/20260507-train/outputs/heat_albnn_79x39_thermal60_filtered_40000/models/force5_total_aug_v2_minmax_gelu_256_256_128_64_lr7em04\nelapsed_min: 150.0\nlatest_epoch: 180/30000\navg_epoch_per_min: 1.20\nearly_stop: true\nscaler: minmax\nactivation: gelu\ntarget_transform: none\nvalidation_n: 128\nvalidation_r2_fx: 0.981235\nvalidation_r2_fy: 0.972346\nvalidation_mae_fx: 0.041235\nvalidation_mae_fy: 0.052346\nvalidation_rmse_fx: 0.061235\nvalidation_rmse_fy: 0.072346\nmedian_relative_norm_error: 0.083457\nstderr_tail:\n  solver warning example"
+}

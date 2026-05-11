@@ -1,0 +1,148 @@
+from types import SimpleNamespace
+
+import numpy as np
+import pandas as pd
+import torch
+
+from ALB.nn import (
+    ALBNN,
+    ALBNN_BASE_INPUT_COLS,
+    Cq2SigLogMinMaxScaler,
+    albnn_augment_frame,
+)
+
+
+class IdentityScaler:
+    def __init__(self, columns):
+        self.feature_names_in_ = np.asarray(columns, dtype=object)
+
+    def transform(self, frame):
+        return frame[list(self.feature_names_in_)].to_numpy(dtype=np.float32)
+
+    def inverse_transform(self, frame):
+        return np.asarray(frame, dtype=float)
+
+
+class ZeroNet:
+    def eval(self):
+        return None
+
+    def __call__(self, x):
+        return torch.zeros((x.shape[0], 2), dtype=torch.float32)
+
+
+def test_aug_v2_allows_subset_input_columns():
+    frame = pd.DataFrame(
+        {
+            "ex": [0.1],
+            "ey": [0.2],
+            "lambda_value": [1.5],
+            "lr": [0.5],
+        }
+    )
+
+    augmented = albnn_augment_frame(frame, feature_set="aug_v2")
+
+    assert "e_norm" in augmented
+    assert "lambda_over_lr" in augmented
+    assert "cq0_over_lr" not in augmented
+
+
+def test_sqrt28_feature_set_has_fixed_thermal_input_contract():
+    frame = pd.DataFrame(
+        {
+            col: [value]
+            for col, value in zip(
+                ALBNN_BASE_INPUT_COLS,
+                [
+                    0.1,
+                    -0.2,
+                    0.03,
+                    -0.04,
+                    0.5,
+                    -0.6,
+                    1.5,
+                    0.03,
+                    0.7,
+                    5.0,
+                    0.02,
+                    0.003,
+                ],
+            )
+        }
+    )
+
+    augmented = albnn_augment_frame(frame, feature_set="sqrt28")
+
+    assert augmented.shape[1] == 28
+    assert (
+        list(augmented.columns[: len(ALBNN_BASE_INPUT_COLS)])
+        == ALBNN_BASE_INPUT_COLS
+    )
+    assert "sqrt_abs_ex" in augmented
+    assert "sqrt_abs_cq2" in augmented
+    assert "e_norm" in augmented
+    assert "v_norm" in augmented
+    assert "s_norm" in augmented
+    assert "sqrt_lambda_over_lr" in augmented
+
+
+def test_albnn_input_fills_changed_inputs_from_config_and_extra_inputs():
+    input_cols = ALBNN_BASE_INPUT_COLS + ["gamma", "delta"]
+    config = SimpleNamespace(
+        c=1.0,
+        freq=1.0,
+        vf=1.0,
+        ps=1.0,
+        l=1.0,
+        r=1.0,
+        lambda_value=1.2,
+        beta_nondim=0.03,
+        lr=1.0,
+        cq0=5.0,
+        cq1=0.02,
+        cq2=0.002,
+        gamma=2.5,
+        extra_inputs={"delta": 4.0},
+    )
+    net = ALBNN(
+        ZeroNet(),
+        IdentityScaler(input_cols),
+        IdentityScaler(["fx", "fy"]),
+        config=config,
+        input_cols=input_cols,
+        use_augment=False,
+    )
+
+    net.input([0.1, 0.2], [0.0, 0.0], [0.3, 0.4], nodim=True)
+    output = net.output(nodim=True)
+
+    assert output.shape == (1, 2)
+
+
+def test_cq2_sig_log_minmax01_maps_inputs_to_unit_range():
+    frame = pd.DataFrame(
+        {
+            "ex": [-0.5, 0.5],
+            "ey": [-0.25, 0.25],
+            "vx": [-0.1, 0.1],
+            "vy": [-0.2, 0.2],
+            "sx": [-0.3, 0.3],
+            "sy": [-0.4, 0.4],
+            "lambda_value": [0.1, 5.0],
+            "beta_nondim": [0.0, 0.12],
+            "lr": [0.3, 10.0],
+            "cq0": [0.5, 51.0],
+            "cq1": [2e-5, 0.8],
+            "cq2": [2e-4, 2.2e-2],
+        }
+    )
+
+    scaler = Cq2SigLogMinMaxScaler(feature_range=(0.0, 1.0))
+    scaled = scaler.fit_transform(frame)
+    recovered = scaler.inverse_transform(scaled)
+
+    assert np.nanmin(scaled) >= 0.0
+    assert np.nanmax(scaled) <= 1.0
+    assert scaled[:, list(frame.columns).index("cq2")].tolist() == [0.0, 1.0]
+    np.testing.assert_allclose(recovered, frame.to_numpy(dtype=float), rtol=1e-12)

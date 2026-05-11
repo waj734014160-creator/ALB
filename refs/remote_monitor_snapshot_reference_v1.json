@@ -1,0 +1,59 @@
+{
+  "snapshot": {
+    "remote_time": "2026-05-10T12:28:55+08:00",
+    "state": "running",
+    "task": {
+      "name": "ALB_GenerateTrainValid40000ExpansionAfterTwoTrainings_20260510",
+      "state": "Running",
+      "enabled": false,
+      "last_task_result": 267009
+    },
+    "processes": [
+      {
+        "ProcessId": 32452
+      }
+    ],
+    "progress": {
+      "target": 40000,
+      "valid": 2129,
+      "attempted": 2560,
+      "invalid": 431,
+      "elapsed_s": 1105.8947785999917,
+      "valid_rate": 0.831640625,
+      "remaining": 37871.0,
+      "valid_per_s": 1.9251415445642245,
+      "eta_s": 19672.320058646334
+    },
+    "solver_settings": {
+      "damp": 0.7,
+      "max_iter": 40,
+      "thermal_max_iter": 40
+    },
+    "metadata_info": {
+      "exists": true,
+      "path": "F:/GWJ/20260507-train/outputs/heat_albnn_79x39_thermal60_filtered_40000/data/train_valid40000_expansion_damp070_iter40_20260510/albnn_valid40000_seed20260510_expansion40000_damp070_iter40_20260510_metadata.json",
+      "length": 4096,
+      "last_write_time": "2026-05-10T12:28:52+08:00"
+    },
+    "csv_info": {
+      "exists": true,
+      "path": "F:/GWJ/20260507-train/outputs/heat_albnn_79x39_thermal60_filtered_40000/data/train_valid40000_expansion_damp070_iter40_20260510/albnn_valid40000_seed20260510_expansion40000_damp070_iter40_20260510.csv",
+      "length": 900000,
+      "last_write_time": "2026-05-10T12:28:52+08:00"
+    },
+    "logs": {
+      "stdout": {
+        "info": {
+          "exists": true,
+          "path": "F:/GWJ/20260507-train/outputs/heat_albnn_79x39_thermal60_filtered_40000/reports/logs/generate_train_valid40000_expansion40000_damp070_iter40_20260510.stdout.log",
+          "length": 12000,
+          "last_write_time": "2026-05-10T12:28:55+08:00"
+        },
+        "tail": [
+          "iter of filmsystem is max"
+        ]
+      }
+    }
+  },
+  "summary": "remote_time: 2026-05-10T12:28:55+08:00\nstate: running\ntask: ALB_GenerateTrainValid40000ExpansionAfterTwoTrainings_20260510 state=Running enabled=False last_result=267009\nprocesses: 1 pid=32452\nprogress: 2129/40000 valid, attempted=2560\nvalid_rate: 0.8316\nvalid_per_s: 1.9251\neta: 5:27:52\neta_finish_remote_time: 2026-05-10T17:56:47+08:00\nsolver: damp=0.7 max_iter=40 thermal_max_iter=40\nmetadata_info: F:/GWJ/20260507-train/outputs/heat_albnn_79x39_thermal60_filtered_40000/data/train_valid40000_expansion_damp070_iter40_20260510/albnn_valid40000_seed20260510_expansion40000_damp070_iter40_20260510_metadata.json bytes=4096 write=2026-05-10T12:28:52+08:00\ncsv_info: F:/GWJ/20260507-train/outputs/heat_albnn_79x39_thermal60_filtered_40000/data/train_valid40000_expansion_damp070_iter40_20260510/albnn_valid40000_seed20260510_expansion40000_damp070_iter40_20260510.csv bytes=900000 write=2026-05-10T12:28:52+08:00\nlog[stdout]: F:/GWJ/20260507-train/outputs/heat_albnn_79x39_thermal60_filtered_40000/reports/logs/generate_train_valid40000_expansion40000_damp070_iter40_20260510.stdout.log bytes=12000 write=2026-05-10T12:28:55+08:00\nlog[stdout]_tail:\n  iter of filmsystem is max"
+}

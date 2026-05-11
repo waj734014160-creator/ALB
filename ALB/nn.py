@@ -25,7 +25,7 @@ ALBNN_BASE_INPUT_COLS = [
 ]
 ALBNN_OUTPUT_COLS = ["fx", "fy"]
 ALBNN_LOG_INPUT_COLS = {"lambda_value", "lr", "cq0", "cq1", "cq2"}
-ALBNN_FEATURE_SETS = {"default", "aug_v2"}
+ALBNN_FEATURE_SETS = {"default", "aug_v2", "sqrt28"}
 
 
 def albnn_augment_frame(frame: pd.DataFrame, feature_set: str = "default") -> pd.DataFrame:
@@ -34,6 +34,33 @@ def albnn_augment_frame(frame: pd.DataFrame, feature_set: str = "default") -> pd
         raise ValueError(f"Unknown ALBNN feature_set: {feature_set}")
 
     augmented = frame.copy()
+    if feature_set == "sqrt28":
+        # Strict 28-column contract for the 12-input thermal ALBNN workflow:
+        # base 12 + sqrt_abs(base 12) + 4 sqrt-style aggregate features.
+        for col in frame.columns:
+            values = frame[col].to_numpy(dtype=float)
+            augmented[f"sqrt_abs_{col}"] = np.sqrt(np.abs(values))
+        cols = set(frame.columns)
+        if {"ex", "ey"} <= cols:
+            ex = frame["ex"].to_numpy(dtype=float)
+            ey = frame["ey"].to_numpy(dtype=float)
+            augmented["e_norm"] = np.sqrt(ex**2 + ey**2)
+        if {"vx", "vy"} <= cols:
+            vx = frame["vx"].to_numpy(dtype=float)
+            vy = frame["vy"].to_numpy(dtype=float)
+            augmented["v_norm"] = np.sqrt(vx**2 + vy**2)
+        if {"sx", "sy"} <= cols:
+            sx = frame["sx"].to_numpy(dtype=float)
+            sy = frame["sy"].to_numpy(dtype=float)
+            augmented["s_norm"] = np.sqrt(sx**2 + sy**2)
+        if {"lambda_value", "lr"} <= cols:
+            lambda_value = np.clip(
+                frame["lambda_value"].to_numpy(dtype=float), 1e-12, None
+            )
+            lr = np.clip(frame["lr"].to_numpy(dtype=float), 1e-12, None)
+            augmented["sqrt_lambda_over_lr"] = np.sqrt(lambda_value / lr)
+        return augmented
+
     for col in frame.columns:
         values = frame[col].to_numpy(dtype=float)
         augmented[f"sqrt_abs_{col}"] = np.sqrt(np.abs(values))
@@ -41,48 +68,53 @@ def albnn_augment_frame(frame: pd.DataFrame, feature_set: str = "default") -> pd
             augmented[f"log_{col}"] = np.log(np.clip(values, 1e-12, None))
 
     if feature_set == "aug_v2":
-        required = [
-            "ex",
-            "ey",
-            "vx",
-            "vy",
-            "sx",
-            "sy",
-            "lambda_value",
-            "lr",
-            "cq0",
-            "cq1",
-            "cq2",
-        ]
-        missing = [col for col in required if col not in frame.columns]
-        if missing:
-            raise ValueError(f"aug_v2 feature_set is missing columns: {missing}")
-
-        ex = frame["ex"].to_numpy(dtype=float)
-        ey = frame["ey"].to_numpy(dtype=float)
-        vx = frame["vx"].to_numpy(dtype=float)
-        vy = frame["vy"].to_numpy(dtype=float)
-        sx = frame["sx"].to_numpy(dtype=float)
-        sy = frame["sy"].to_numpy(dtype=float)
-        lambda_value = np.clip(frame["lambda_value"].to_numpy(dtype=float), 1e-12, None)
-        lr = np.clip(frame["lr"].to_numpy(dtype=float), 1e-12, None)
-        cq0 = frame["cq0"].to_numpy(dtype=float)
-        cq1 = frame["cq1"].to_numpy(dtype=float)
-        cq2 = frame["cq2"].to_numpy(dtype=float)
-
-        lambda_over_lr = lambda_value / lr
-        augmented["e_norm"] = np.sqrt(ex**2 + ey**2)
-        augmented["v_norm"] = np.sqrt(vx**2 + vy**2)
-        augmented["s_norm"] = np.sqrt(sx**2 + sy**2)
-        augmented["ev_dot"] = ex * vx + ey * vy
-        augmented["ev_cross"] = ex * vy - ey * vx
-        augmented["es_dot"] = ex * sx + ey * sy
-        augmented["vs_dot"] = vx * sx + vy * sy
-        augmented["lambda_over_lr"] = lambda_over_lr
-        augmented["log_lambda_over_lr"] = np.log(np.clip(lambda_over_lr, 1e-12, None))
-        augmented["cq0_over_lr"] = cq0 / lr
-        augmented["cq1_over_lr"] = cq1 / lr
-        augmented["cq2_over_lr"] = cq2 / lr
+        cols = set(frame.columns)
+        if {"ex", "ey"} <= cols:
+            ex = frame["ex"].to_numpy(dtype=float)
+            ey = frame["ey"].to_numpy(dtype=float)
+            augmented["e_norm"] = np.sqrt(ex**2 + ey**2)
+        if {"vx", "vy"} <= cols:
+            vx = frame["vx"].to_numpy(dtype=float)
+            vy = frame["vy"].to_numpy(dtype=float)
+            augmented["v_norm"] = np.sqrt(vx**2 + vy**2)
+        if {"sx", "sy"} <= cols:
+            sx = frame["sx"].to_numpy(dtype=float)
+            sy = frame["sy"].to_numpy(dtype=float)
+            augmented["s_norm"] = np.sqrt(sx**2 + sy**2)
+        if {"ex", "ey", "vx", "vy"} <= cols:
+            ex = frame["ex"].to_numpy(dtype=float)
+            ey = frame["ey"].to_numpy(dtype=float)
+            vx = frame["vx"].to_numpy(dtype=float)
+            vy = frame["vy"].to_numpy(dtype=float)
+            augmented["ev_dot"] = ex * vx + ey * vy
+            augmented["ev_cross"] = ex * vy - ey * vx
+        if {"ex", "ey", "sx", "sy"} <= cols:
+            ex = frame["ex"].to_numpy(dtype=float)
+            ey = frame["ey"].to_numpy(dtype=float)
+            sx = frame["sx"].to_numpy(dtype=float)
+            sy = frame["sy"].to_numpy(dtype=float)
+            augmented["es_dot"] = ex * sx + ey * sy
+        if {"vx", "vy", "sx", "sy"} <= cols:
+            vx = frame["vx"].to_numpy(dtype=float)
+            vy = frame["vy"].to_numpy(dtype=float)
+            sx = frame["sx"].to_numpy(dtype=float)
+            sy = frame["sy"].to_numpy(dtype=float)
+            augmented["vs_dot"] = vx * sx + vy * sy
+        if {"lambda_value", "lr"} <= cols:
+            lambda_value = np.clip(
+                frame["lambda_value"].to_numpy(dtype=float), 1e-12, None
+            )
+            lr = np.clip(frame["lr"].to_numpy(dtype=float), 1e-12, None)
+            lambda_over_lr = lambda_value / lr
+            augmented["lambda_over_lr"] = lambda_over_lr
+            augmented["log_lambda_over_lr"] = np.log(
+                np.clip(lambda_over_lr, 1e-12, None)
+            )
+        if "lr" in cols:
+            lr = np.clip(frame["lr"].to_numpy(dtype=float), 1e-12, None)
+            for col in ("cq0", "cq1", "cq2"):
+                if col in cols:
+                    augmented[f"{col}_over_lr"] = frame[col].to_numpy(dtype=float) / lr
     return augmented
 
 
@@ -103,23 +135,64 @@ class NetMlpOld(nn.Module):
 
 
 class Net(nn.Module):
-    def __init__(self, nbs_neurons):
+    def __init__(self, nbs_neurons, activation: str = "gelu", sine_omega0: float = 30.0):
         super(Net, self).__init__()
+        if activation not in {"gelu", "relu", "silu", "sin"}:
+            raise ValueError(f"Unsupported activation: {activation}")
+        if sine_omega0 <= 0.0:
+            raise ValueError("sine_omega0 must be > 0")
+        self.activation = activation
+        self.sine_omega0 = float(sine_omega0)
         self.layers = nn.ModuleList()
         self.dropouts = nn.ModuleList()
 
         for i in range(len(nbs_neurons) - 1):
             self.layers.append(nn.Linear(nbs_neurons[i], nbs_neurons[i + 1]))
+        if self.activation == "sin":
+            self._init_sine_weights()
 
     def forward(self, x):
         for i, layer in enumerate(self.layers[:-1]):
             # x = F.leaky_relu(layer(x), negative_slope=0.2)
             # x = F.tanh(layer(x))
             # x = self.dropouts[i](x)
-            x = F.gelu(layer(x))
+            x = self._activate(layer(x))
 
         x = self.layers[-1](x)
         return x
+
+    def _activate(self, x):
+        if self.activation == "gelu":
+            return F.gelu(x)
+        if self.activation == "relu":
+            return F.relu(x)
+        if self.activation == "silu":
+            return F.silu(x)
+        if self.activation == "sin":
+            return torch.sin(self.sine_omega0 * x)
+        raise RuntimeError(f"Unsupported activation: {self.activation}")
+
+    def _init_sine_weights(self):
+        """Initialize sine networks with SIREN-style scaled uniform weights."""
+        with torch.no_grad():
+            for idx, layer in enumerate(self.layers):
+                fan_in = max(1, layer.in_features)
+                if idx == 0:
+                    bound = 1.0 / fan_in
+                else:
+                    bound = np.sqrt(6.0 / fan_in) / self.sine_omega0
+                layer.weight.uniform_(-bound, bound)
+                if layer.bias is not None:
+                    layer.bias.uniform_(-bound, bound)
+
+
+def net_from_checkpoint(checkpoint):
+    """Build a Net with checkpoint activation metadata, defaulting to GELU."""
+    return Net(
+        checkpoint["architecture"],
+        activation=checkpoint.get("activation", "gelu"),
+        sine_omega0=float(checkpoint.get("sine_omega0", 30.0)),
+    )
 
 
 class NetApl:
@@ -259,8 +332,24 @@ class ALBNN:
             "cq1": float(cq1 if cq1 is not None else getattr(self.config, "cq1")),
             "cq2": float(cq2 if cq2 is not None else getattr(self.config, "cq2")),
         }
+        radius = float(np.hypot(row["ex"], row["ey"]))
+        if radius > 0.0:
+            row["cos"] = row["ex"] / radius
+            row["sin"] = row["ey"] / radius
+        else:
+            row["cos"] = 1.0
+            row["sin"] = 0.0
+        row["r"] = radius
         if extra:
             row.update({key: float(value) for key, value in extra.items()})
+        config_extra = getattr(self.config, "extra_inputs", None) if self.config else None
+        for col in self.input_cols:
+            if col in row:
+                continue
+            if isinstance(config_extra, dict) and col in config_extra:
+                row[col] = float(config_extra[col])
+            elif self.config is not None and hasattr(self.config, col):
+                row[col] = float(getattr(self.config, col))
         self._x = pd.DataFrame([row])
 
     def predict_nondim(self, x):
@@ -321,6 +410,114 @@ class AsinhTargetScaler:
         return np.sinh(np.asarray(transformed, dtype=float)) * self.scale
 
 
+class SignedLog1pTargetScaler:
+    """Sklearn-like target scaler with a reversible signed log1p transform."""
+
+    def __init__(self, base_scaler, scale: float = 5.0):
+        self.base_scaler = base_scaler
+        self.scale = float(scale)
+        self.feature_names_in_ = None
+
+    def fit(self, y):
+        frame = pd.DataFrame(y)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        self.base_scaler.fit(self._forward(frame))
+        return self
+
+    def transform(self, y):
+        frame = pd.DataFrame(y, columns=self.feature_names_in_)
+        return self.base_scaler.transform(self._forward(frame))
+
+    def fit_transform(self, y):
+        return self.fit(y).transform(y)
+
+    def inverse_transform(self, y_scaled):
+        transformed = self.base_scaler.inverse_transform(y_scaled)
+        return self._inverse(transformed)
+
+    def _forward(self, y):
+        values = np.asarray(y, dtype=float)
+        return np.sign(values) * np.log1p(np.abs(values) / self.scale)
+
+    def _inverse(self, transformed):
+        values = np.asarray(transformed, dtype=float)
+        return np.sign(values) * self.scale * np.expm1(np.abs(values))
+
+
+class Cq2SigLogMinMaxScaler:
+    """Scale ALBNN inputs with log-compressed ``cq2`` and minmax scaling.
+
+    The ALBNN base inputs contain strictly positive flow coefficients.  This
+    scaler keeps the feature count unchanged, applies a natural-log transform
+    only to ``cq2``, then minmax-scales every input column to ``feature_range``.
+    The default range remains ``[-1, 1]`` for compatibility with existing model
+    artifacts; pass ``feature_range=(0, 1)`` for the newer 0..1 input contract.
+    """
+
+    def __init__(
+        self,
+        feature_range: tuple[float, float] = (-1.0, 1.0),
+        log_column: str = "cq2",
+        epsilon: float = 1e-12,
+    ):
+        self.feature_range = tuple(float(value) for value in feature_range)
+        self.log_column = str(log_column)
+        self.epsilon = float(epsilon)
+        self.feature_names_in_ = None
+        self.data_min_ = None
+        self.data_max_ = None
+        self.data_range_ = None
+
+    def fit(self, x):
+        frame = pd.DataFrame(x)
+        if self.log_column not in frame.columns:
+            raise ValueError(f"Missing log-scaled column: {self.log_column}")
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        values = self._forward(frame)
+        self.data_min_ = values.min(axis=0)
+        self.data_max_ = values.max(axis=0)
+        self.data_range_ = self.data_max_ - self.data_min_
+        return self
+
+    def transform(self, x):
+        frame = pd.DataFrame(x, columns=self.feature_names_in_)
+        values = self._forward(frame)
+        lo, hi = self.feature_range
+        span = hi - lo
+        safe_range = np.where(self.data_range_ > 0.0, self.data_range_, 1.0)
+        scaled = (values - self.data_min_) / safe_range
+        scaled = scaled * span + lo
+        zero_range = self.data_range_ <= 0.0
+        if np.any(zero_range):
+            scaled[:, zero_range] = 0.5 * (lo + hi)
+        return scaled
+
+    def fit_transform(self, x):
+        return self.fit(x).transform(x)
+
+    def inverse_transform(self, x_scaled):
+        lo, hi = self.feature_range
+        span = hi - lo
+        values = (np.asarray(x_scaled, dtype=float) - lo) / span
+        safe_range = np.where(self.data_range_ > 0.0, self.data_range_, 1.0)
+        values = values * safe_range + self.data_min_
+        log_idx = list(self.feature_names_in_).index(self.log_column)
+        values[:, log_idx] = np.exp(values[:, log_idx])
+        return values
+
+    def _forward(self, x):
+        columns = (
+            list(self.feature_names_in_)
+            if self.feature_names_in_ is not None
+            else list(x.columns)
+        )
+        frame = pd.DataFrame(x, columns=columns)
+        values = frame.to_numpy(dtype=float, copy=True)
+        log_idx = list(frame.columns).index(self.log_column)
+        values[:, log_idx] = np.log(np.clip(values[:, log_idx], self.epsilon, None))
+        return values
+
+
 class ALBNet:
     def __init__(self, model: Net, scaled_X, scaled_y, albnet_config):
         """
@@ -378,8 +575,7 @@ def alb_agent_nn(albnet_config):
     model = torch.load(
         albnet_config.model, map_location=torch.device("cpu"), weights_only=True
     )
-    arch = model["architecture"]
-    net = Net(arch)
+    net = net_from_checkpoint(model)
     net.load_state_dict(model["model_state_dict"])
     alb_net = ALBNet(net, scaler_X_model, scaler_y_model, albnet_config=albnet_config)
     return alb_net
@@ -494,7 +690,13 @@ def mlp_train(
 
 def save_model(net, path, architecture):
     torch.save(
-        {"model_state_dict": net.state_dict(), "architecture": architecture}, path
+        {
+            "model_state_dict": net.state_dict(),
+            "architecture": architecture,
+            "activation": getattr(net, "activation", "gelu"),
+            "sine_omega0": float(getattr(net, "sine_omega0", 30.0)),
+        },
+        path,
     )
 
 
@@ -645,8 +847,7 @@ def thermal_albnet(config, use_augment: bool = True):
     model = torch.load(
         config.model, map_location=torch.device("cpu"), weights_only=True
     )
-    arch = model["architecture"]
-    net = Net(arch)
+    net = net_from_checkpoint(model)
     net.load_state_dict(model["model_state_dict"])
     return ThermalALBNet(
         net, scaler_X_model, scaler_y_model,
@@ -672,8 +873,7 @@ def albnn(config, use_augment: bool = None):
     checkpoint = torch.load(
         config.model, map_location=torch.device("cpu"), weights_only=True
     )
-    arch = checkpoint["architecture"]
-    net = Net(arch)
+    net = net_from_checkpoint(checkpoint)
     net.load_state_dict(checkpoint["model_state_dict"])
 
     metadata = {}
