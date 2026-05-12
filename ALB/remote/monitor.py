@@ -124,6 +124,26 @@ $needle = {process_match}
     return list(parsed)
 
 
+def query_pid_process(args: argparse.Namespace) -> dict[str, Any] | None:
+    """Return one remote process snapshot for ``args.pid`` if it is alive."""
+    pid = getattr(args, "pid", None)
+    if pid in (None, ""):
+        return None
+    script = (
+        ps_common()
+        + f"""
+$pidValue = {int(pid)}
+Get-CimInstance Win32_Process -Filter "ProcessId = $pidValue" |
+  Select-Object ProcessId, ParentProcessId, Name,
+    @{{Name='CreationDate';Expression={{ try {{ $_.CreationDate.ToString('o') }} catch {{ [string]$_.CreationDate }} }}}},
+    CommandLine |
+  ConvertTo-Json -Depth 4 -Compress
+"""
+    )
+    parsed = parse_json_output(remote_stdout(args, script))
+    return parsed if isinstance(parsed, dict) else None
+
+
 def query_file_info(args: argparse.Namespace, path: str) -> dict[str, Any]:
     remote_path = ps_quote(path)
     script = (
@@ -267,6 +287,7 @@ def solver_settings_from_metadata(metadata: dict[str, Any] | None) -> dict[str, 
 
 def state_from_snapshot(snapshot: dict[str, Any]) -> str:
     task = snapshot.get("task") or {}
+    pid_process = snapshot.get("pid_process")
     processes = snapshot.get("processes") or []
     progress = snapshot.get("progress") or {}
     target = progress.get("target")
@@ -274,6 +295,8 @@ def state_from_snapshot(snapshot: dict[str, Any]) -> str:
     if target is not None and valid is not None and float(valid) >= float(target):
         return "completed"
     if str(task.get("state", "")).lower() == "running":
+        return "running"
+    if pid_process:
         return "running"
     if processes:
         return "running"
@@ -299,6 +322,8 @@ def query_job(args: argparse.Namespace) -> dict[str, Any]:
     snapshot: dict[str, Any] = {
         "remote_time": query_remote_time(args),
         "task": query_task(args),
+        "pid": getattr(args, "pid", None),
+        "pid_process": query_pid_process(args),
         "process_match": args.process_match,
         "processes": query_processes(args),
         "metadata_path": args.metadata,
@@ -334,6 +359,11 @@ def summarize(snapshot: dict[str, Any]) -> str:
             f"enabled={task.get('enabled')} last_result={task.get('last_task_result')}"
         )
     processes = snapshot.get("processes") or []
+    pid_process = snapshot.get("pid_process")
+    if pid_process:
+        lines.append(f"pid: {pid_process.get('ProcessId')} alive")
+    elif snapshot.get("pid") is not None:
+        lines.append(f"pid: {snapshot.get('pid')} not found")
     if processes:
         pids = ", ".join(str(item.get("ProcessId")) for item in processes)
         lines.append(f"processes: {len(processes)} pid={pids}")
@@ -400,6 +430,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--connect-timeout", type=int, default=10)
     parser.add_argument("--ssh-timeout", type=int, default=30)
     parser.add_argument("--task-name", default=None)
+    parser.add_argument("--pid", type=int, default=None)
     parser.add_argument("--process-match", default=None)
     parser.add_argument("--metadata", default=None)
     parser.add_argument("--csv", default=None)

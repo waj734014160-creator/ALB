@@ -11,6 +11,7 @@ from pathlib import Path
 from ALB.remote import albnn_start
 from ALB.remote import albnn_queue
 from ALB.remote import albnn_status
+from ALB.remote import job as remote_job
 from ALB.remote import monitor
 from ALB.remote.transport import RemoteConnection
 from ALB.remote.transport import encode_powershell
@@ -101,6 +102,138 @@ def test_monitor_summary_matches_reference():
     assert progress["remaining"] == 37871.0
     assert progress["valid_rate"] == 2129 / 2560
     assert monitor.state_from_snapshot(ref["snapshot"]) == "running"
+
+
+def generic_job_config(tmp_path):
+    return {
+        remote_job.INTERNAL_CONFIG_DIR: str(tmp_path),
+        "profile": {
+            "host": "10.0.0.1",
+            "user": r"host\user",
+            "key": "C:/key",
+            "work": "F:/work",
+            "root": "F:/work/outputs",
+            "remote_python": "F:/env/python.exe",
+        },
+        "uploads": [
+            {
+                "local": "script.py",
+                "remote": "${work}/run/script.py",
+            }
+        ],
+        "job": {
+            "task_name": "ALB_GenericTest",
+            "runner": "${work}/run_generic_test.ps1",
+            "command": ["${remote_python}", "-u", "run/script.py", "--flag"],
+            "env": {"PYTHONUNBUFFERED": "1"},
+            "stdout": "${root}/reports/logs/generic.stdout.log",
+            "stderr": "${root}/reports/logs/generic.stderr.log",
+            "runner_log": "${root}/reports/logs/generic.runner.log",
+            "execution_time_limit": "PT2H",
+        },
+    }
+
+
+def test_generic_job_config_builds_stable_runner(tmp_path):
+    config = generic_job_config(tmp_path)
+    spec = remote_job.build_job_spec(config)
+    assert spec.task_name == "ALB_GenericTest"
+    assert spec.command == ["F:/env/python.exe", "-u", "run/script.py", "--flag"]
+    assert spec.runner == "F:/work/run_generic_test.ps1"
+
+    runner = remote_job.build_runner_content(spec)
+    assert "START_TIME=$(Get-Date -Format o)" in runner
+    assert '"TASK=$taskName"' in runner
+    assert '"COMMAND=$($cmd -join \' \')"' in runner
+    assert '"STDOUT=$stdout"' in runner
+    assert '"STDERR=$stderr"' in runner
+    assert '"EXIT_CODE=$exit"' in runner
+    assert ">> $stdout 2>> $stderr" in runner
+
+
+def test_generic_job_launch_uploads_before_scheduling(monkeypatch, tmp_path):
+    (tmp_path / "script.py").write_text("print('hello')\n", encoding="utf-8")
+    config = generic_job_config(tmp_path)
+    calls = []
+
+    def fake_remote(args, script, timeout=None):
+        calls.append(("remote", script))
+        return subprocess.CompletedProcess(["ssh"], 0, stdout="", stderr="")
+
+    def fake_scp(args, local_path, remote_path_value):
+        calls.append(("scp", str(local_path), remote_path_value))
+        return subprocess.CompletedProcess(["scp"], 0, stdout="", stderr="")
+
+    monkeypatch.setattr(remote_job, "run_remote_powershell", fake_remote)
+    monkeypatch.setattr(remote_job, "run_scp", fake_scp)
+
+    assert remote_job.launch_config(config) == 0
+    assert [call[0] for call in calls] == ["remote", "scp", "scp", "remote"]
+    assert calls[1][2] == "F:/work/run/script.py"
+    assert calls[2][2] == "F:/work/run_generic_test.ps1"
+    assert "New-Item -ItemType Directory" in calls[0][1]
+    assert "schtasks /Create" in calls[3][1]
+    assert "schtasks /Run" in calls[3][1]
+
+
+def test_generic_job_cli_launch_dry_run_and_monitor_json(monkeypatch, tmp_path, capsys):
+    (tmp_path / "script.py").write_text("print('hello')\n", encoding="utf-8")
+    config = generic_job_config(tmp_path)
+    config_path = tmp_path / "generic_job.json"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+
+    assert remote_job.main(["launch", "--config", str(config_path), "--dry-run"]) == 0
+    launch_out = capsys.readouterr().out
+    assert "REMOTE_JOB_DRY_RUN" in launch_out
+    assert "---REMOTE-RUNNER---" in launch_out
+
+    monkeypatch.setattr(
+        remote_job.monitor,
+        "query_job",
+        lambda args: {"remote_time": "2026-05-12T00:00:00+08:00", "state": "not_running"},
+    )
+    assert remote_job.main(["monitor", "--config", str(config_path), "--json"]) == 0
+    monitor_out = capsys.readouterr().out
+    assert '"state": "not_running"' in monitor_out
+
+
+def test_generic_queue_conditions(monkeypatch, tmp_path):
+    config = generic_job_config(tmp_path)
+
+    def fake_file_info(args, path):
+        return {"exists": True, "path": path, "length": 12}
+
+    def fake_pid_process(args):
+        return None
+
+    def fake_processes(args):
+        return []
+
+    def fake_tail(args, path, tail):
+        return ["START_TIME=2026-05-12T00:00:00+08:00", "EXIT_CODE=0"]
+
+    monkeypatch.setattr(remote_job.monitor, "query_file_info", fake_file_info)
+    monkeypatch.setattr(remote_job.monitor, "query_pid_process", fake_pid_process)
+    monkeypatch.setattr(remote_job.monitor, "query_processes", fake_processes)
+    monkeypatch.setattr(remote_job.monitor, "query_text_tail", fake_tail)
+
+    assert remote_job.evaluate_condition(
+        config, {"type": "file_exists", "path": "${root}/done.txt", "min_bytes": 1}
+    ).satisfied
+    assert remote_job.evaluate_condition(config, {"type": "pid_exit", "pid": 1234}).satisfied
+    assert remote_job.evaluate_condition(
+        config, {"type": "process_exit", "process_match": "run/script.py"}
+    ).satisfied
+    assert remote_job.evaluate_condition(config, {"type": "runner_success"}).satisfied
+
+    monkeypatch.setattr(
+        remote_job.monitor,
+        "query_text_tail",
+        lambda args, path, tail: ["EXIT_CODE=7"],
+    )
+    failed = remote_job.evaluate_condition(config, {"type": "runner_success"})
+    assert failed.failed
+    assert not failed.satisfied
 
 
 def test_status_query_uses_monitor_helpers(monkeypatch):
@@ -210,6 +343,7 @@ def test_compat_wrappers_help():
         "remote_query_albnn_status.py",
         "remote_queue_albnn_activation_sweep.py",
         "remote_monitor_job.py",
+        "remote_job.py",
     ]
     for wrapper in wrappers:
         result = subprocess.run(
