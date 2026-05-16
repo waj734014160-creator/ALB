@@ -16,9 +16,12 @@
 
 - Project root: `G:/ALB_PROJECTS`
 - Created at: `2026-05-16T23:56:52+08:00`
-- Request: maintain long-term ALBNN logs, stable experience docs, and current
-  status docs; remove outdated status/log/experience text; summarize candidates
-  for future skill/manual solidification without applying those skill changes.
+- Initial request: maintain long-term ALBNN logs, stable experience docs, and
+  current status docs; remove outdated status/log/experience text; summarize
+  candidates for future skill/manual solidification without applying those
+  skill changes.
+- Follow-up request on 2026-05-17: apply the confirmed skill/manual
+  solidification candidates.
 
 ## Role Checks
 
@@ -64,10 +67,10 @@
 - No source-code files, data files, model files, or skill files were modified by
   this documentation pass.
 
-## Skill And Manual Solidification Candidates
+## Skill And Manual Solidification
 
-These are candidates only. They were not applied to any skill or manual during
-this pass.
+These candidates were confirmed by the user on 2026-05-17 and applied to the
+listed skills/manual during the follow-up solidification pass.
 
 1. `maintain-project-docs`
    - Add a stronger compression rule: when a live-status document contains
@@ -101,9 +104,10 @@ this pass.
      `G:/GWJ/envs/ALB/python.exe`, `pooln=60`, Task Scheduler through
      `remote_job.py`, and set single-threaded BLAS/OpenMP environment variables.
 
-## Confirmation Needed Before Solidification
+## Solidification Targets Updated
 
-- Confirm whether the four candidate groups above should be applied to the
-  listed skills/manuals.
-- Confirm whether the FD workflow should also be added to a stable project
-  manual, or kept only in the skill layer and `albnn_training_brief.md`.
+- `C:/Users/73401/.codex/skills/maintain-project-docs/SKILL.md`
+- `C:/Users/73401/.codex/skills/alb-surrogate-remote-workflow/SKILL.md`
+- `C:/Users/73401/.codex/skills/train-alb-surrogate/SKILL.md`
+- `C:/Users/73401/.codex/skills/operate-remote-workstation/SKILL.md`
+- `ALB_MAIN/docs/remote_workstation_connection.md`

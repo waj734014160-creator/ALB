@@ -157,6 +157,23 @@ generic monitor wrapper instead of ad-hoc SSH status snippets. It queries Task
 Scheduler, PID or matching processes, metadata progress, CSV/log file
 timestamps, and ETA through short PowerShell commands.
 
+For AMD64 non-training solver jobs such as ALB sample generation or
+finite-difference label evaluation, use the ALB solver environment
+`G:/GWJ/envs/ALB/python.exe` through `remote_job.py` and Task Scheduler. Keep
+the job numeric libraries single-threaded while the Python process uses process
+parallelism, for example `pooln=60` with:
+
+```text
+OMP_NUM_THREADS=1
+MKL_NUM_THREADS=1
+OPENBLAS_NUM_THREADS=1
+NUMEXPR_NUM_THREADS=1
+```
+
+This pattern is for solver/sampling work. The AMD64 ALB environment has been
+verified for solver dependencies such as `scikit-fem`, but it should not be
+assumed to be a torch training environment without a separate package check.
+
 Generic one-shot monitor pattern for a remote generation task:
 
 ```powershell
