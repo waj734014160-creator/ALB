@@ -1,5 +1,18 @@
 # 每日总结记录
 
+## Document Role
+
+- Role: Project-level daily maintenance summary.
+- Purpose: Store concise daily documentation-maintenance summaries and stable
+  project organization decisions.
+- Allowed updates: daily maintenance summaries, cleanup confirmations, stable
+  documentation changes, and stable project-level decisions.
+- Forbidden updates: realtime job state, raw log dumps, detailed ALBNN metrics,
+  active PIDs, and transient ETAs.
+- Update cadence: daily maintenance pass or explicit project-summary request.
+- Source of truth / Related docs:
+  `docs/daily_maintenance/daily_doc_update_index.md`.
+
 本文档用于沉淀日常开发、验证和方案设计工作。后续建议按日期持续追加，不再分散到多个零散说明文件中。
 
 ## 每日记录模板
@@ -407,12 +420,41 @@
 - Stable docs changed: `SURROGATE_TRAIN/TODO.md` and
   `SURROGATE_TRAIN/docs/file_classification.md` now avoid describing the old
   force3 queue as the active workflow.
-- Local evidence checked: active 28-input `sqrt28` training PID `73756` was
-  still present and `loss_history.csv` had advanced; this live tick was not
-  copied into stable docs.
+- Local evidence was checked; realtime process and loss details remain in
+  `SURROGATE_TRAIN/docs/current_runtime_status.md` and the audit report.
 - Remote 100000-sample monitor evidence was ambiguous after the last running
   snapshot, so the uncertainty is kept in the audit report for human review.
 - Old-file candidates for next-day confirmation: same-day scheduler logs under
   `ALB_MAIN/docs/daily_maintenance/logs/codex_daily_doc_maintenance_20260511_*`.
+- No source code, remote SSH, training, sampling, commits, deletes, moves,
+  renames, or artifact archives were performed.
+
+### Interactive Documentation Maintenance Follow-Up
+- Refreshed the live-status buffer
+  `SURROGATE_TRAIN/docs/current_runtime_status.md` from local process/log
+  evidence.
+- Kept the unresolved remote monitor state in the live buffer and
+  `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260511.md`, not in
+  stable manuals or the ALBNN brief.
+- No source code, remote SSH, training, sampling, deletes, moves, renames, or
+  artifact archives were performed.
+
+## 2026-05-12
+
+### Scheduled Daily Documentation Maintenance
+- Scheduled pass for split workspace `G:/ALB_PROJECTS`.
+- Detailed report:
+  `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260512.md`.
+- Local evidence was folded into role-owned docs:
+  `SURROGATE_TRAIN/docs/current_runtime_status.md` now records queue PID
+  `67356` and current GELU 256 PID `82848`;
+  `SURROGATE_TRAIN/docs/albnn_training_log.md` records completed polar29 GELU
+  512 and polar15 sin 256 validation summaries.
+- Stable manuals and briefs were left unchanged; remote 100000-sample status
+  remains ambiguous until a one-shot monitor or SSH check confirms it.
+- Old-file candidates for next-day confirmation are generated daily-maintenance
+  logs under `ALB_MAIN/docs/daily_maintenance/logs/codex_daily_doc_maintenance_20260511_*`
+  and `codex_daily_doc_maintenance_20260512_090001.*`; no non-generated
+  source/doc cleanup candidates were found.
 - No source code, remote SSH, training, sampling, commits, deletes, moves,
   renames, or artifact archives were performed.

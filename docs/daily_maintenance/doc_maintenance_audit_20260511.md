@@ -1,5 +1,19 @@
 # Documentation Maintenance Audit 2026-05-11
 
+## Document Role
+
+- Role: Daily audit evidence.
+- Purpose: Store evidence and decisions from one scheduled
+  documentation-maintenance pass.
+- Allowed updates: files checked, decisions, no-change reasons, stale
+  candidates, and cleanup confirmation lists for this audit date.
+- Forbidden updates: source-code edits, runtime state ownership, stable manuals,
+  and long-term project summaries beyond audit evidence.
+- Update cadence: created or refreshed by the scheduled daily audit for this
+  date.
+- Source of truth / Related docs:
+  `ALB_MAIN/docs/daily_maintenance/daily_doc_update_index.md`.
+
 - Project root: `G:\ALB_PROJECTS`
 - Created at: `2026-05-11T23:05:28`
 - Old-file minimum age: `1` days
@@ -15,12 +29,14 @@
   `E:/Anaconda2023/envs/ALB/python.exe`.
 - No source code, remote SSH, training, sampling, commits, deletes, archives,
   moves, or renames were performed by this pass.
+- Interactive follow-up at `2026-05-11T23:49:02+08:00` refreshed live-status
+  evidence from local files and processes only; no remote SSH check was run.
 - Stable documentation changed only where stale active-status wording was clear:
   `SURROGATE_TRAIN/TODO.md` and
   `SURROGATE_TRAIN/docs/file_classification.md` no longer describe the old
   force3 queue as the active workflow.
-- Stale keyword hits such as `old`, `TODO`, `deprecated`, `旧`, and `过时` are
-  treated as review candidates only.
+- Stale keyword hits such as `old`, `TODO`, `deprecated`, and localized stale
+  terms are treated as review candidates only.
 
 ## Current Evidence Checked
 
@@ -30,13 +46,16 @@
   `SURROGATE_TRAIN/docs/albnn_training_brief.md`.
 - Local 28-input `sqrt28` training was checked locally only: Python PID `73756`
   still matched the active model command, `stderr.log` was empty, and
-  `loss_history.csv` had advanced to epoch `1450`.
+  `loss_history.csv` had advanced to epoch `4150` with train loss
+  `3.0839e-07` and test loss `6.3276e-05`.
 - Remote 100000-sample generation was not checked by SSH. Local monitor log
-  evidence showed running snapshots through remote time
-  `2026-05-11T22:51:02+08:00` at `7920/100000` valid samples, followed by a
-  later ambiguous local monitor snapshot with `remote_time: None`,
-  `state: not_running`, and `processes: 0`. This ambiguity is recorded for
-  review instead of changing stable remote docs.
+  evidence showed a running snapshot at remote time
+  `2026-05-11T22:51:02+08:00` with `7920/100000` valid samples and remote PID
+  `25960`, followed by an ambiguous latest local monitor tail with
+  `remote_time: None`, `state: not_running`, and `processes: 0`. The local
+  monitor process was not present at the `2026-05-11T23:49:02+08:00` check.
+  This ambiguity is recorded for review and in the live status buffer instead
+  of changing stable remote docs.
 - The helper found no non-generated old-file candidates under scanned
   source/docs paths. Daily-maintenance scheduler logs are listed separately
   below as next-day confirmation candidates.
@@ -64,29 +83,32 @@
 | `VALIDATION/docs/file_classification.md` | Read; no validation-policy update required. |
 | `SPLIT_INDEX.md` | Read; no split membership or dependency-convention update required. |
 
+## Interactive Follow-Up Decisions
+
+| File | Follow-up decision |
+| --- | --- |
+| `SURROGATE_TRAIN/docs/current_runtime_status.md` | Updated with local training progress and ambiguous remote-monitor evidence. |
+| `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260511.md` | Appended this follow-up evidence and no-change decisions. |
+| `ALB_MAIN/docs/daily_summary_log.md` | Updated with a concise follow-up maintenance note; realtime details remain out of the summary. |
+| `ALB_MAIN/docs/daily_maintenance/latest_codex_daily_doc_maintenance_status.txt` | Read; left unchanged because it points at the scheduled launcher logs rather than this interactive follow-up. |
+| `SURROGATE_TRAIN/docs/albnn_training_log.md` | Read; no new completed run, final metric, or durable incident was clear enough to append. |
+| `SURROGATE_TRAIN/docs/albnn_training_brief.md` | Read; no stable workflow-pointer or durable-lesson change required. |
+
 ## Git Status
+
+Snapshot refreshed during the interactive follow-up at
+`2026-05-11T23:49:02+08:00`.
 
 ### `ALB_MAIN`
 
 ```text
 M AGENTS.md
- M ALB/config.py
- M ALB/nn.py
- M README.md
- D docs/daily_maintenance/doc_maintenance_audit_20260509.md
+ M docs/alb_package_overview.md
+ M docs/daily_maintenance/daily_doc_update_index.md
+ M docs/daily_maintenance/doc_maintenance_audit_20260511.md
  M docs/daily_summary_log.md
  M docs/file_classification.md
  M docs/remote_workstation_connection.md
-?? ALB/remote/
-?? docs/alb_package_overview.md
-?? docs/daily_maintenance/daily_doc_update_index.md
-?? docs/daily_maintenance/doc_maintenance_audit_20260511.md
-?? refs/remote_albnn_queue_config_reference_v1.json
-?? refs/remote_albnn_start_dry_run_reference_v1.json
-?? refs/remote_albnn_status_summary_reference_v1.json
-?? refs/remote_monitor_snapshot_reference_v1.json
-?? test/remote/
-?? test/test_albnn_input_compat.py
 ```
 
 ### `ARTIFACTS_ARCHIVE`
@@ -111,49 +133,13 @@ M docs/file_classification.md
 
 ```text
 M AGENTS.md
- M README.md
- M TODO.md
- D docs/PLAN.md
+ M docs/albnn_training_brief.md
  M docs/albnn_training_info.md
+ M docs/albnn_training_log.md
+ M docs/current_runtime_status.md
  M docs/file_classification.md
- D run/build_boundary_curriculum.py
- D run/build_force20_total_dataset.py
- D run/evaluate_albnn_domains.py
- D run/evaluate_albnn_residual_domains.py
- D run/generate_targeted_boundary_samples.py
- M run/heat_albnn_pipeline.py
- D run/merge_targeted_boundary_shards.py
- M run/remote/remote_query_albnn_status.py
- M run/remote/remote_start_albnn_train.py
- D run/train_alb_agent.py
- D run/train_albnn.py
- D run/train_albnn_residual_expert.py
- D run/train_thermal_mlp.py
- M task/task_albnn_data.py
 ?? data/
-?? docs/albnn_training_brief.md
-?? docs/albnn_training_log.md
-?? docs/current_runtime_status.md
 ?? models/
-?? run/analysis/
-?? run/evaluate_albnn_input_samples.py
-?? run/prepare_albnn_110k_input_samples.py
-?? run/prepare_polar_ecc_filter_dataset.py
-?? run/ps1/run_generate_train_valid100000_current_auto_damp070_iter40_20260511.ps1
-?? run/ps1/run_generate_train_valid110000_current_ps7focus_auto_damp070_iter40_20260510.ps1
-?? run/ps1/run_generate_train_valid40000_expansion_auto_seed_damp070_iter40_20260510.ps1
-?? run/ps1/run_train_valid110000_base12_cq2siglog01_gelu_512_512_256_128_noise002x1_local_20260511.ps1
-?? run/ps1/run_train_valid110000_base12_cq2siglog01_gelu_noise002x1_local_20260511.ps1
-?? run/ps1/run_train_valid110000_base12_cq2siglog_gelu_noise002x1_local_20260511.ps1
-?? run/ps1/run_train_valid40000_polar_ecc030_080_standard_gelu_20260511.ps1
-?? run/ps1/watch_110k_generation_then_train_queue_20260510.ps1
-?? run/ps1/watch_trainvalid40000_two_trainings_then_generate_expansion_20260510.ps1
-?? run/remote/configs/
-?? run/remote/remote_monitor_job.py
-?? run/remote/remote_queue_albnn_activation_sweep.py
-?? run/repair_albnn_output_csv_columns.py
-?? run/split_albnn_train_validation.py
-?? run/train/
 ```
 
 ### `VALIDATION`
@@ -241,8 +227,10 @@ confirmed on the next daily pass before any cleanup:
 
 - Review the ambiguous local monitor tail for
   `ALB_GenerateTrainValid100000CurrentAuto_20260511`: the latest local log tail
-  says `state: not_running` with `remote_time: None`, but the preceding checked
-  snapshots were running. No remote check was run during this pass.
+  says `state: not_running`, `processes: 0`, and `remote_time: None`, but the
+  preceding checked snapshot was running at `7920/100000` valid samples. Run a
+  one-shot remote monitor or SSH check before restarting or marking the task
+  complete/stopped.
 - Confirm whether the preexisting git deletion
   `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260509.md` should
   remain deleted or be restored as historical evidence.

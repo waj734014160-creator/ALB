@@ -24,8 +24,109 @@ ALBNN_BASE_INPUT_COLS = [
     "cq2",
 ]
 ALBNN_OUTPUT_COLS = ["fx", "fy"]
+ALBNN_POLAR_FORCE_OUTPUT_COLS = ["sin_f_theta", "cos_f_theta", "force_norm"]
+ALBNN_POLAR_DOT_INPUT_COLS = ["e_dot_v", "e_dot_s", "s_dot_v"]
 ALBNN_LOG_INPUT_COLS = {"lambda_value", "lr", "cq0", "cq1", "cq2"}
-ALBNN_FEATURE_SETS = {"default", "aug_v2", "sqrt28"}
+ALBNN_FEATURE_SETS = {"default", "aug_v2", "sqrt34", "sqrt28", "sqrt_abs", "polar37"}
+
+
+def cartesian_force_to_polar_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    """Convert ``fx, fy`` columns to ``sin_f_theta, cos_f_theta, force_norm``."""
+    fx = frame["fx"].to_numpy(dtype=float)
+    fy = frame["fy"].to_numpy(dtype=float)
+    force_norm = np.sqrt(fx**2 + fy**2)
+    safe = force_norm > 1e-12
+    sin_f_theta = np.zeros_like(force_norm)
+    cos_f_theta = np.ones_like(force_norm)
+    sin_f_theta[safe] = fy[safe] / force_norm[safe]
+    cos_f_theta[safe] = fx[safe] / force_norm[safe]
+    return pd.DataFrame(
+        {
+            "sin_f_theta": sin_f_theta,
+            "cos_f_theta": cos_f_theta,
+            "force_norm": force_norm,
+        },
+        index=frame.index,
+    )
+
+
+def polar_force_to_cartesian(values) -> np.ndarray:
+    """Convert polar force targets back to ``fx, fy`` with unit angle cleanup."""
+    frame = pd.DataFrame(values, columns=ALBNN_POLAR_FORCE_OUTPUT_COLS)
+    sin_f_theta = frame["sin_f_theta"].to_numpy(dtype=float)
+    cos_f_theta = frame["cos_f_theta"].to_numpy(dtype=float)
+    force_norm = np.clip(frame["force_norm"].to_numpy(dtype=float), 0.0, None)
+    angle_norm = np.sqrt(sin_f_theta**2 + cos_f_theta**2)
+    safe = angle_norm > 1e-12
+    sin_unit = np.zeros_like(force_norm)
+    cos_unit = np.ones_like(force_norm)
+    sin_unit[safe] = sin_f_theta[safe] / angle_norm[safe]
+    cos_unit[safe] = cos_f_theta[safe] / angle_norm[safe]
+    return np.column_stack([force_norm * cos_unit, force_norm * sin_unit])
+
+
+def _materialize_polar_pair(
+    frame: pd.DataFrame,
+    needed: set[str],
+    *,
+    x_col: str,
+    y_col: str,
+    sin_col: str,
+    cos_col: str,
+    norm_col: str,
+) -> None:
+    """Derive sine, cosine, and magnitude columns for one planar vector."""
+    requested = {sin_col, cos_col, norm_col} & needed
+    if not requested:
+        return
+    if not {x_col, y_col} <= set(frame.columns):
+        return
+    x = frame[x_col].to_numpy(dtype=float)
+    y = frame[y_col].to_numpy(dtype=float)
+    norm = np.sqrt(x**2 + y**2)
+    safe = norm > 1e-12
+    if sin_col in requested and sin_col not in frame.columns:
+        values = np.zeros_like(norm)
+        values[safe] = y[safe] / norm[safe]
+        frame[sin_col] = values
+    if cos_col in requested and cos_col not in frame.columns:
+        values = np.ones_like(norm)
+        values[safe] = x[safe] / norm[safe]
+        frame[cos_col] = values
+    if norm_col in requested and norm_col not in frame.columns:
+        frame[norm_col] = norm
+
+
+def _materialize_polar_dot_inputs(frame: pd.DataFrame, needed: set[str]) -> None:
+    """Derive planar dot-product features used by polar expert models."""
+    specs = (
+        ("e_dot_v", "ex", "ey", "vx", "vy", ("ev_dot",)),
+        ("e_dot_s", "ex", "ey", "sx", "sy", ("es_dot",)),
+        ("s_dot_v", "sx", "sy", "vx", "vy", ("sv_dot", "v_dot_s")),
+    )
+    columns = set(frame.columns)
+    for canonical, ax, ay, bx, by, aliases in specs:
+        requested_names = {canonical, *aliases} & needed
+        if not requested_names or not {ax, ay, bx, by} <= columns:
+            continue
+        values = (
+            frame[ax].to_numpy(dtype=float) * frame[bx].to_numpy(dtype=float)
+            + frame[ay].to_numpy(dtype=float) * frame[by].to_numpy(dtype=float)
+        )
+        for name in requested_names:
+            if name not in frame.columns:
+                frame[name] = values
+
+
+def _materialize_ratio_inputs(frame: pd.DataFrame, needed: set[str]) -> None:
+    """Derive scalar ratio features shared by training and packaged inference."""
+    if "lambda_over_lr" not in needed or "lambda_over_lr" in frame.columns:
+        return
+    if not {"lambda_value", "lr"} <= set(frame.columns):
+        return
+    lambda_value = frame["lambda_value"].to_numpy(dtype=float)
+    lr = np.clip(frame["lr"].to_numpy(dtype=float), 1e-12, None)
+    frame["lambda_over_lr"] = lambda_value / lr
 
 
 def albnn_augment_frame(frame: pd.DataFrame, feature_set: str = "default") -> pd.DataFrame:
@@ -34,6 +135,46 @@ def albnn_augment_frame(frame: pd.DataFrame, feature_set: str = "default") -> pd
         raise ValueError(f"Unknown ALBNN feature_set: {feature_set}")
 
     augmented = frame.copy()
+    if feature_set == "sqrt_abs":
+        for col in frame.columns:
+            values = frame[col].to_numpy(dtype=float)
+            augmented[f"sqrt_abs_{col}"] = np.sqrt(np.abs(values))
+        return augmented
+
+    if feature_set == "polar37":
+        # Full-polar contract: 15 base columns + sqrt_abs(base) + 7 targeted
+        # physical interaction features from sample analysis.
+        for col in frame.columns:
+            values = frame[col].to_numpy(dtype=float)
+            augmented[f"sqrt_abs_{col}"] = np.sqrt(np.abs(values))
+        cols = set(frame.columns)
+        if {"lambda_value", "lr"} <= cols:
+            lambda_value = np.clip(
+                frame["lambda_value"].to_numpy(dtype=float), 1e-12, None
+            )
+            lr = np.clip(frame["lr"].to_numpy(dtype=float), 1e-12, None)
+            lambda_over_lr = lambda_value / lr
+            augmented["lambda_over_lr"] = lambda_over_lr
+            augmented["sqrt_lambda_over_lr"] = np.sqrt(lambda_over_lr)
+            augmented["log_lr"] = np.log(lr)
+        if {"sin_theta", "cos_theta", "v_norm", "sin_v_theta", "cos_v_theta"} <= cols:
+            sin_e = frame["sin_theta"].to_numpy(dtype=float)
+            cos_e = frame["cos_theta"].to_numpy(dtype=float)
+            v_norm = frame["v_norm"].to_numpy(dtype=float)
+            sin_v = frame["sin_v_theta"].to_numpy(dtype=float)
+            cos_v = frame["cos_v_theta"].to_numpy(dtype=float)
+            augmented["v_radial"] = v_norm * (cos_v * cos_e + sin_v * sin_e)
+            augmented["v_tangential"] = v_norm * (-cos_v * sin_e + sin_v * cos_e)
+        if {"sin_theta", "cos_theta", "s_norm", "sin_s_theta", "cos_s_theta"} <= cols:
+            sin_e = frame["sin_theta"].to_numpy(dtype=float)
+            cos_e = frame["cos_theta"].to_numpy(dtype=float)
+            s_norm = frame["s_norm"].to_numpy(dtype=float)
+            sin_s = frame["sin_s_theta"].to_numpy(dtype=float)
+            cos_s = frame["cos_s_theta"].to_numpy(dtype=float)
+            augmented["s_radial"] = s_norm * (cos_s * cos_e + sin_s * sin_e)
+            augmented["s_tangential"] = s_norm * (-cos_s * sin_e + sin_s * cos_e)
+        return augmented
+
     if feature_set == "sqrt28":
         # Strict 28-column contract for the 12-input thermal ALBNN workflow:
         # base 12 + sqrt_abs(base 12) + 4 sqrt-style aggregate features.
@@ -59,6 +200,47 @@ def albnn_augment_frame(frame: pd.DataFrame, feature_set: str = "default") -> pd
             )
             lr = np.clip(frame["lr"].to_numpy(dtype=float), 1e-12, None)
             augmented["sqrt_lambda_over_lr"] = np.sqrt(lambda_value / lr)
+        return augmented
+
+    if feature_set == "sqrt34":
+        # 34-column contract for the 12-input thermal ALBNN workflow:
+        # base 12 + sqrt_abs(base 12) + norm/ratio aggregates and their
+        # stable sqrt/log companions. All terms are deterministic functions of
+        # the base inputs, so packaged inference can reproduce them.
+        for col in frame.columns:
+            values = frame[col].to_numpy(dtype=float)
+            augmented[f"sqrt_abs_{col}"] = np.sqrt(np.abs(values))
+        cols = set(frame.columns)
+        if {"ex", "ey"} <= cols:
+            ex = frame["ex"].to_numpy(dtype=float)
+            ey = frame["ey"].to_numpy(dtype=float)
+            e_norm = np.sqrt(ex**2 + ey**2)
+            augmented["e_norm"] = e_norm
+            augmented["sqrt_e_norm"] = np.sqrt(e_norm)
+        if {"vx", "vy"} <= cols:
+            vx = frame["vx"].to_numpy(dtype=float)
+            vy = frame["vy"].to_numpy(dtype=float)
+            v_norm = np.sqrt(vx**2 + vy**2)
+            augmented["v_norm"] = v_norm
+            augmented["sqrt_v_norm"] = np.sqrt(v_norm)
+        if {"sx", "sy"} <= cols:
+            sx = frame["sx"].to_numpy(dtype=float)
+            sy = frame["sy"].to_numpy(dtype=float)
+            s_norm = np.sqrt(sx**2 + sy**2)
+            augmented["s_norm"] = s_norm
+            augmented["sqrt_s_norm"] = np.sqrt(s_norm)
+        if {"lambda_value", "lr"} <= cols:
+            lambda_value = np.clip(
+                frame["lambda_value"].to_numpy(dtype=float), 1e-12, None
+            )
+            lr = np.clip(frame["lr"].to_numpy(dtype=float), 1e-12, None)
+            lambda_over_lr = lambda_value / lr
+            augmented["lambda_over_lr"] = lambda_over_lr
+            augmented["sqrt_lambda_over_lr"] = np.sqrt(lambda_over_lr)
+            augmented["log_lr"] = np.log(lr)
+            augmented["log_lambda_over_lr"] = np.log(
+                np.clip(lambda_over_lr, 1e-12, None)
+            )
         return augmented
 
     for col in frame.columns:
@@ -135,7 +317,13 @@ class NetMlpOld(nn.Module):
 
 
 class Net(nn.Module):
-    def __init__(self, nbs_neurons, activation: str = "gelu", sine_omega0: float = 30.0):
+    def __init__(
+        self,
+        nbs_neurons,
+        activation: str = "gelu",
+        sine_omega0: float = 30.0,
+        use_layer_norm: bool = False,
+    ):
         super(Net, self).__init__()
         if activation not in {"gelu", "relu", "silu", "sin"}:
             raise ValueError(f"Unsupported activation: {activation}")
@@ -143,11 +331,15 @@ class Net(nn.Module):
             raise ValueError("sine_omega0 must be > 0")
         self.activation = activation
         self.sine_omega0 = float(sine_omega0)
+        self.use_layer_norm = bool(use_layer_norm)
         self.layers = nn.ModuleList()
+        self.layer_norms = nn.ModuleList()
         self.dropouts = nn.ModuleList()
 
         for i in range(len(nbs_neurons) - 1):
             self.layers.append(nn.Linear(nbs_neurons[i], nbs_neurons[i + 1]))
+            if self.use_layer_norm and i < len(nbs_neurons) - 2:
+                self.layer_norms.append(nn.LayerNorm(nbs_neurons[i + 1]))
         if self.activation == "sin":
             self._init_sine_weights()
 
@@ -156,7 +348,10 @@ class Net(nn.Module):
             # x = F.leaky_relu(layer(x), negative_slope=0.2)
             # x = F.tanh(layer(x))
             # x = self.dropouts[i](x)
-            x = self._activate(layer(x))
+            x = layer(x)
+            if self.use_layer_norm:
+                x = self.layer_norms[i](x)
+            x = self._activate(x)
 
         x = self.layers[-1](x)
         return x
@@ -192,6 +387,7 @@ def net_from_checkpoint(checkpoint):
         checkpoint["architecture"],
         activation=checkpoint.get("activation", "gelu"),
         sine_omega0=float(checkpoint.get("sine_omega0", 30.0)),
+        use_layer_norm=bool(checkpoint.get("use_layer_norm", False)),
     )
 
 
@@ -237,6 +433,7 @@ class ALBNN:
         output_cols=None,
         use_augment: bool = True,
         feature_set: str = "default",
+        target_output: str = "cartesian",
     ):
         self.model = model
         self.scaler_X = scaler_X
@@ -246,6 +443,7 @@ class ALBNN:
         self.output_cols = list(output_cols or ALBNN_OUTPUT_COLS)
         self.use_augment = bool(use_augment)
         self.feature_set = feature_set or "default"
+        self.target_output = target_output or "cartesian"
         self._x = None
 
     @property
@@ -266,6 +464,36 @@ class ALBNN:
             if arr.ndim == 1:
                 arr = arr.reshape(1, -1)
             frame = pd.DataFrame(arr, columns=self.input_cols[: arr.shape[1]])
+        needed = set(self.input_cols)
+        _materialize_polar_pair(
+            frame,
+            needed,
+            x_col="ex",
+            y_col="ey",
+            sin_col="sin_theta",
+            cos_col="cos_theta",
+            norm_col="r",
+        )
+        _materialize_polar_pair(
+            frame,
+            needed,
+            x_col="vx",
+            y_col="vy",
+            sin_col="sin_v_theta",
+            cos_col="cos_v_theta",
+            norm_col="v_norm",
+        )
+        _materialize_polar_pair(
+            frame,
+            needed,
+            x_col="sx",
+            y_col="sy",
+            sin_col="sin_s_theta",
+            cos_col="cos_s_theta",
+            norm_col="s_norm",
+        )
+        _materialize_polar_dot_inputs(frame, needed)
+        _materialize_ratio_inputs(frame, needed)
         missing = [col for col in self.input_cols if col not in frame.columns]
         if missing:
             raise ValueError(f"ALBNN input is missing columns: {missing}")
@@ -336,10 +564,33 @@ class ALBNN:
         if radius > 0.0:
             row["cos"] = row["ex"] / radius
             row["sin"] = row["ey"] / radius
+            row["cos_theta"] = row["ex"] / radius
+            row["sin_theta"] = row["ey"] / radius
         else:
             row["cos"] = 1.0
             row["sin"] = 0.0
+            row["cos_theta"] = 1.0
+            row["sin_theta"] = 0.0
         row["r"] = radius
+        for prefix, x_col, y_col in (
+            ("v", "vx", "vy"),
+            ("s", "sx", "sy"),
+        ):
+            norm = float(np.hypot(row[x_col], row[y_col]))
+            if norm > 0.0:
+                row[f"cos_{prefix}_theta"] = row[x_col] / norm
+                row[f"sin_{prefix}_theta"] = row[y_col] / norm
+            else:
+                row[f"cos_{prefix}_theta"] = 1.0
+                row[f"sin_{prefix}_theta"] = 0.0
+            row[f"{prefix}_norm"] = norm
+        row["e_dot_v"] = row["ex"] * row["vx"] + row["ey"] * row["vy"]
+        row["e_dot_s"] = row["ex"] * row["sx"] + row["ey"] * row["sy"]
+        row["s_dot_v"] = row["sx"] * row["vx"] + row["sy"] * row["vy"]
+        row["lambda_over_lr"] = row["lambda_value"] / max(row["lr"], 1e-12)
+        row["ev_dot"] = row["e_dot_v"]
+        row["es_dot"] = row["e_dot_s"]
+        row["sv_dot"] = row["s_dot_v"]
         if extra:
             row.update({key: float(value) for key, value in extra.items()})
         config_extra = getattr(self.config, "extra_inputs", None) if self.config else None
@@ -364,7 +615,10 @@ class ALBNN:
             y_scaled,
             columns=list(getattr(self.scaler_y, "feature_names_in_", self.output_cols)),
         )
-        return self.scaler_y.inverse_transform(y_frame)
+        y_target = self.scaler_y.inverse_transform(y_frame)
+        if self.target_output == "force_polar" or self.output_cols == ALBNN_POLAR_FORCE_OUTPUT_COLS:
+            return polar_force_to_cartesian(y_target)
+        return y_target
 
     def predict(self, x, nodim: bool = True):
         force = self.predict_nondim(x)
@@ -376,6 +630,662 @@ class ALBNN:
         if self._x is None:
             raise ValueError("Call input(...) before output(...)")
         return self.predict(self._x, nodim=nodim)
+
+
+def _softmax_numpy(values: np.ndarray) -> np.ndarray:
+    """Return row-wise softmax values for stable expert router probabilities."""
+    values = np.asarray(values, dtype=float)
+    shifted = values - np.max(values, axis=1, keepdims=True)
+    exp_values = np.exp(shifted)
+    return exp_values / np.sum(exp_values, axis=1, keepdims=True)
+
+
+def _adjacent_expert_weights(
+    probs: np.ndarray,
+    confidence_threshold: float = 0.8,
+) -> np.ndarray:
+    """Return hard-or-adjacent weights from router probabilities.
+
+    High-confidence rows use exactly one expert. Low-confidence rows blend only
+    the top expert and one adjacent expert, so non-adjacent experts cannot
+    contaminate the force prediction.
+    """
+    probs = np.asarray(probs, dtype=float)
+    if probs.ndim != 2:
+        raise ValueError("Expert probabilities must be a 2-D array")
+    n_rows, expert_count = probs.shape
+    if expert_count < 2:
+        raise ValueError("Adjacent expert blending requires at least two experts")
+    confidence_threshold = float(confidence_threshold)
+    if not 0.0 <= confidence_threshold <= 1.0:
+        raise ValueError("confidence_threshold must be in [0, 1]")
+    top = np.argmax(probs, axis=1)
+    weights = np.zeros_like(probs)
+    for row_idx in range(n_rows):
+        expert_idx = int(top[row_idx])
+        if probs[row_idx, expert_idx] >= confidence_threshold:
+            weights[row_idx, expert_idx] = 1.0
+            continue
+        if expert_idx == 0:
+            neighbor_idx = 1
+        elif expert_idx == expert_count - 1:
+            neighbor_idx = expert_count - 2
+        else:
+            left_idx = expert_idx - 1
+            right_idx = expert_idx + 1
+            neighbor_idx = (
+                left_idx
+                if probs[row_idx, left_idx] >= probs[row_idx, right_idx]
+                else right_idx
+            )
+        selected = probs[row_idx, [expert_idx, neighbor_idx]]
+        denom = float(np.sum(selected))
+        if denom <= 1e-12:
+            weights[row_idx, expert_idx] = 1.0
+        else:
+            weights[row_idx, expert_idx] = selected[0] / denom
+            weights[row_idx, neighbor_idx] = selected[1] / denom
+    return weights
+
+
+class ALBNNForceExpert(ALBNN):
+    """Packaged ALBNN force expert with router-based hard or adjacent blending.
+
+    Expert artifacts may use a cartesian ``3 * expert_count`` contract or a
+    polar-force ``4 * expert_count`` contract.  Router logits are raw model
+    outputs and are never passed through the target scaler.
+    """
+
+    def __init__(
+        self,
+        model: Net,
+        scaler_X,
+        scaler_y,
+        config=None,
+        input_cols=None,
+        output_cols=None,
+        use_augment: bool = True,
+        feature_set: str = "default",
+        expert_bins=None,
+        expert_output_contract: str = "fx_z,fy_z,router_logit",
+        expert_inference_mode: str = "adjacent_blend",
+        expert_blend_confidence_threshold: float = 0.8,
+        target_transform_scale: float = 2.0,
+    ):
+        super().__init__(
+            model,
+            scaler_X,
+            scaler_y,
+            config=config,
+            input_cols=input_cols,
+            output_cols=output_cols or ALBNN_OUTPUT_COLS,
+            use_augment=use_augment,
+            feature_set=feature_set,
+            target_output="cartesian",
+        )
+        self.expert_bins = [float(value) for value in (expert_bins or [])]
+        self.expert_count = len(self.expert_bins) - 1
+        if self.expert_count < 2:
+            raise ValueError("ALBNNForceExpert requires at least two expert bins")
+        if expert_inference_mode not in {"hard", "adjacent_blend"}:
+            raise ValueError(
+                "expert_inference_mode must be 'hard' or 'adjacent_blend'"
+            )
+        self.expert_output_contract = (
+            expert_output_contract or "fx_z,fy_z,router_logit"
+        )
+        self.expert_inference_mode = expert_inference_mode
+        self.expert_blend_confidence_threshold = float(
+            expert_blend_confidence_threshold
+        )
+        self.target_transform_scale = float(target_transform_scale)
+
+    def _force_from_expert_code(self, values: np.ndarray) -> np.ndarray:
+        """Decode expert force channels while leaving router logits untouched."""
+        if self.expert_output_contract == "fx_z,fy_z,router_logit":
+            return self.target_transform_scale * np.sinh(np.asarray(values, dtype=float))
+        if (
+            self.expert_output_contract
+            == "sin_f_theta,cos_f_theta,force_norm,router_logit"
+        ):
+            shape = np.asarray(values).shape
+            flat = np.asarray(values, dtype=float).reshape(-1, 3)
+            columns = list(
+                getattr(
+                    self.scaler_y,
+                    "feature_names_in_",
+                    ALBNN_POLAR_FORCE_OUTPUT_COLS,
+                )
+            )
+            frame = pd.DataFrame(flat, columns=columns)
+            decoded = self.scaler_y.inverse_transform(frame)
+            return polar_force_to_cartesian(decoded).reshape(*shape[:-1], 2)
+        flat = np.asarray(values, dtype=float).reshape(-1, 2)
+        columns = list(getattr(self.scaler_y, "feature_names_in_", self.output_cols))
+        frame = pd.DataFrame(flat, columns=columns)
+        decoded = self.scaler_y.inverse_transform(frame)
+        return np.asarray(decoded, dtype=float).reshape(np.asarray(values).shape)
+
+    def _decode_expert_output(self, raw_output: np.ndarray) -> dict[str, np.ndarray]:
+        raw_output = np.asarray(raw_output, dtype=float)
+        if raw_output.ndim != 2:
+            raise ValueError("Expert model output must be a 2-D array")
+        target_dim = (
+            3
+            if self.expert_output_contract
+            == "sin_f_theta,cos_f_theta,force_norm,router_logit"
+            else 2
+        )
+        channels_per_expert = target_dim + 1
+        expected_cols = channels_per_expert * self.expert_count
+        if raw_output.shape[1] != expected_cols:
+            raise ValueError(
+                f"Expert model output has {raw_output.shape[1]} columns; "
+                f"expected {expected_cols}"
+            )
+        expert_values = raw_output.reshape(
+            raw_output.shape[0], self.expert_count, channels_per_expert
+        )
+        expert_code = expert_values[:, :, :target_dim]
+        router_logits = expert_values[:, :, target_dim]
+        router_probs = _softmax_numpy(router_logits)
+        if self.expert_inference_mode == "hard":
+            weights = np.zeros_like(router_probs)
+            weights[np.arange(len(router_probs)), np.argmax(router_probs, axis=1)] = 1.0
+        else:
+            weights = _adjacent_expert_weights(
+                router_probs,
+                confidence_threshold=self.expert_blend_confidence_threshold,
+            )
+        final_code = np.sum(expert_code * weights[:, :, None], axis=1)
+        expert_force = self._force_from_expert_code(expert_code)
+        final_force = self._force_from_expert_code(final_code)
+        return {
+            "pred_force": final_force,
+            "expert_force": expert_force,
+            "expert_z": expert_code,
+            "router_logits": router_logits,
+            "router_probs": router_probs,
+            "router_weights": weights,
+            "assigned_expert_router": np.argmax(router_probs, axis=1),
+            "router_confidence": np.max(router_probs, axis=1),
+            "used_blend": np.count_nonzero(weights > 1e-12, axis=1) > 1,
+        }
+
+    def predict_expert_details(self, x) -> dict[str, np.ndarray]:
+        """Return final force plus per-expert predictions and router weights."""
+        frame = self._model_frame(x)
+        x_scaled = torch.tensor(
+            self.scaler_X.transform(frame), dtype=torch.float32
+        )
+        self.model.eval()
+        with torch.no_grad():
+            raw_output = self.model(x_scaled).detach().cpu().numpy()
+        return self._decode_expert_output(raw_output)
+
+    def predict_nondim(self, x):
+        return self.predict_expert_details(x)["pred_force"]
+
+
+class IdentityTargetScaler:
+    """Sklearn-like scaler that preserves target values exactly.
+
+    Training workflows can wrap this scaler with reversible target transforms
+    such as :class:`AsinhTargetScaler` when the transformed target is already in
+    a suitable numerical range and should not be minmax- or standard-scaled.
+    The class stores ``feature_names_in_`` so packaged ALBNN inference keeps the
+    same column contract as other sklearn-style scalers.
+    """
+
+    def __init__(self):
+        self.feature_names_in_ = None
+
+    def fit(self, y):
+        frame = pd.DataFrame(y)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        return self
+
+    def transform(self, y):
+        frame = pd.DataFrame(y, columns=self.feature_names_in_)
+        return frame.to_numpy(dtype=float, copy=True)
+
+    def fit_transform(self, y):
+        return self.fit(y).transform(y)
+
+    def inverse_transform(self, y_scaled):
+        return np.asarray(y_scaled, dtype=float).copy()
+
+
+class StandardTargetScaler:
+    """Sklearn-like standard scaler with a differentiable torch inverse."""
+
+    def __init__(self):
+        self.feature_names_in_ = None
+        self.mean_ = None
+        self.scale_ = None
+
+    def fit(self, y):
+        frame = pd.DataFrame(y)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        values = frame.to_numpy(dtype=float)
+        self.mean_ = values.mean(axis=0)
+        std = values.std(axis=0)
+        self.scale_ = np.where(std > 0.0, std, 1.0)
+        return self
+
+    def transform(self, y):
+        frame = pd.DataFrame(y, columns=self.feature_names_in_)
+        values = frame.to_numpy(dtype=float)
+        return (values - self.mean_) / self.scale_
+
+    def fit_transform(self, y):
+        return self.fit(y).transform(y)
+
+    def inverse_transform(self, y_scaled):
+        return np.asarray(y_scaled, dtype=float) * self.scale_ + self.mean_
+
+    def inverse_transform_torch(self, y_scaled):
+        device = y_scaled.device
+        dtype = y_scaled.dtype
+        mean = torch.as_tensor(self.mean_, dtype=dtype, device=device)
+        scale = torch.as_tensor(self.scale_, dtype=dtype, device=device)
+        return y_scaled * scale + mean
+
+
+class StandardThenMinMaxScaler:
+    """Apply per-column standardization followed by minmax scaling.
+
+    The transform is fully affine and sklearn-like, so it can be pickled with
+    trained ALBNN artifacts and used by packaged inference.  It is useful when
+    preserving the old force-scaling style while keeping a bounded network
+    target range.
+    """
+
+    def __init__(self, feature_range: tuple[float, float] = (0.0, 1.0)):
+        self.feature_range = tuple(float(value) for value in feature_range)
+        self.feature_names_in_ = None
+        self.mean_ = None
+        self.std_ = None
+        self.std_min_ = None
+        self.std_max_ = None
+        self.std_range_ = None
+
+    def fit(self, x):
+        frame = pd.DataFrame(x)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        values = frame.to_numpy(dtype=float)
+        self.mean_ = values.mean(axis=0)
+        std = values.std(axis=0)
+        self.std_ = np.where(std > 0.0, std, 1.0)
+        standardized = (values - self.mean_) / self.std_
+        self.std_min_ = standardized.min(axis=0)
+        self.std_max_ = standardized.max(axis=0)
+        self.std_range_ = self.std_max_ - self.std_min_
+        return self
+
+    def transform(self, x):
+        frame = pd.DataFrame(x, columns=self.feature_names_in_)
+        values = frame.to_numpy(dtype=float)
+        standardized = (values - self.mean_) / self.std_
+        return self._minmax_forward(standardized)
+
+    def fit_transform(self, x):
+        return self.fit(x).transform(x)
+
+    def inverse_transform(self, x_scaled):
+        standardized = self._minmax_inverse(np.asarray(x_scaled, dtype=float))
+        return standardized * self.std_ + self.mean_
+
+    def _minmax_forward(self, values: np.ndarray) -> np.ndarray:
+        lo, hi = self.feature_range
+        span = hi - lo
+        safe_range = np.where(self.std_range_ > 0.0, self.std_range_, 1.0)
+        scaled = (values - self.std_min_) / safe_range
+        scaled = scaled * span + lo
+        zero_range = self.std_range_ <= 0.0
+        if np.any(zero_range):
+            scaled[:, zero_range] = 0.5 * (lo + hi)
+        return scaled
+
+    def _minmax_inverse(self, values: np.ndarray) -> np.ndarray:
+        lo, hi = self.feature_range
+        span = hi - lo
+        unscaled = (values - lo) / span
+        safe_range = np.where(self.std_range_ > 0.0, self.std_range_, 1.0)
+        return unscaled * safe_range + self.std_min_
+
+    def inverse_transform_torch(self, x_scaled):
+        device = x_scaled.device
+        dtype = x_scaled.dtype
+        lo, hi = self.feature_range
+        span = hi - lo
+        mean = torch.as_tensor(self.mean_, dtype=dtype, device=device)
+        std = torch.as_tensor(self.std_, dtype=dtype, device=device)
+        std_min = torch.as_tensor(self.std_min_, dtype=dtype, device=device)
+        std_range = torch.as_tensor(self.std_range_, dtype=dtype, device=device)
+        safe_range = torch.where(std_range > 0.0, std_range, torch.ones_like(std_range))
+        standardized = (x_scaled - float(lo)) / float(span)
+        standardized = standardized * safe_range + std_min
+        return standardized * std + mean
+
+
+class MotionStandardParamMinMaxScaler:
+    """Standardize motion states and standardize+minmax remaining inputs.
+
+    By default, ``ex, ey, vx, vy, sx, sy`` are left in standardized space.
+    Every other column is first standardized and then mapped to ``feature_range``.
+    This matches the ALBNN contract where motion/servo vectors may benefit from
+    signed standardized coordinates while structural parameters stay bounded.
+    """
+
+    def __init__(
+        self,
+        standard_only_columns: tuple[str, ...] | list[str] | set[str] = (
+            "ex",
+            "ey",
+            "vx",
+            "vy",
+            "sx",
+            "sy",
+        ),
+        feature_range: tuple[float, float] = (0.0, 1.0),
+    ):
+        self.standard_only_columns = tuple(standard_only_columns)
+        self.feature_range = tuple(float(value) for value in feature_range)
+        self.feature_names_in_ = None
+        self.standard_only_columns_ = None
+        self.minmax_columns_ = None
+        self.mean_ = None
+        self.std_ = None
+        self.mm_min_ = None
+        self.mm_max_ = None
+        self.mm_range_ = None
+
+    def fit(self, x):
+        frame = pd.DataFrame(x)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        columns = list(frame.columns)
+        standard_only = set(self.standard_only_columns)
+        self.standard_only_columns_ = [
+            col for col in columns if col in standard_only
+        ]
+        self.minmax_columns_ = [col for col in columns if col not in standard_only]
+        values = frame.to_numpy(dtype=float)
+        self.mean_ = values.mean(axis=0)
+        std = values.std(axis=0)
+        self.std_ = np.where(std > 0.0, std, 1.0)
+        standardized = (values - self.mean_) / self.std_
+        if self.minmax_columns_:
+            indices = [columns.index(col) for col in self.minmax_columns_]
+            mm_values = standardized[:, indices]
+            self.mm_min_ = mm_values.min(axis=0)
+            self.mm_max_ = mm_values.max(axis=0)
+            self.mm_range_ = self.mm_max_ - self.mm_min_
+        else:
+            self.mm_min_ = np.asarray([], dtype=float)
+            self.mm_max_ = np.asarray([], dtype=float)
+            self.mm_range_ = np.asarray([], dtype=float)
+        return self
+
+    def transform(self, x):
+        frame = pd.DataFrame(x, columns=self.feature_names_in_)
+        columns = list(self.feature_names_in_)
+        values = frame.to_numpy(dtype=float)
+        result = (values - self.mean_) / self.std_
+        if self.minmax_columns_:
+            indices = [columns.index(col) for col in self.minmax_columns_]
+            lo, hi = self.feature_range
+            span = hi - lo
+            safe_range = np.where(self.mm_range_ > 0.0, self.mm_range_, 1.0)
+            scaled = (result[:, indices] - self.mm_min_) / safe_range
+            scaled = scaled * span + lo
+            zero_range = self.mm_range_ <= 0.0
+            if np.any(zero_range):
+                scaled[:, zero_range] = 0.5 * (lo + hi)
+            result[:, indices] = scaled
+        return result
+
+    def fit_transform(self, x):
+        return self.fit(x).transform(x)
+
+    def inverse_transform(self, x_scaled):
+        columns = list(self.feature_names_in_)
+        result = np.asarray(x_scaled, dtype=float).copy()
+        if self.minmax_columns_:
+            indices = [columns.index(col) for col in self.minmax_columns_]
+            lo, hi = self.feature_range
+            span = hi - lo
+            safe_range = np.where(self.mm_range_ > 0.0, self.mm_range_, 1.0)
+            values = (result[:, indices] - lo) / span
+            result[:, indices] = values * safe_range + self.mm_min_
+        return result * self.std_ + self.mean_
+
+
+class MotionStandardParamDirectMinMaxScaler:
+    """Standardize motion states and minmax-scale remaining inputs directly.
+
+    ``ex, ey, vx, vy, sx, sy`` stay in standardized coordinates.  All other
+    columns are mapped to ``feature_range`` from their raw training-set min/max,
+    without the redundant standardization step used by
+    :class:`MotionStandardParamMinMaxScaler`.
+    """
+
+    def __init__(
+        self,
+        standard_only_columns: tuple[str, ...] | list[str] | set[str] = (
+            "ex",
+            "ey",
+            "vx",
+            "vy",
+            "sx",
+            "sy",
+        ),
+        feature_range: tuple[float, float] = (0.0, 1.0),
+    ):
+        self.standard_only_columns = tuple(standard_only_columns)
+        self.feature_range = tuple(float(value) for value in feature_range)
+        self.feature_names_in_ = None
+        self.standard_only_columns_ = None
+        self.minmax_columns_ = None
+        self.mean_ = None
+        self.std_ = None
+        self.mm_min_ = None
+        self.mm_max_ = None
+        self.mm_range_ = None
+
+    def fit(self, x):
+        frame = pd.DataFrame(x)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        columns = list(frame.columns)
+        standard_only = set(self.standard_only_columns)
+        self.standard_only_columns_ = [
+            col for col in columns if col in standard_only
+        ]
+        self.minmax_columns_ = [col for col in columns if col not in standard_only]
+        values = frame.to_numpy(dtype=float)
+        self.mean_ = values.mean(axis=0)
+        std = values.std(axis=0)
+        self.std_ = np.where(std > 0.0, std, 1.0)
+        if self.minmax_columns_:
+            indices = [columns.index(col) for col in self.minmax_columns_]
+            mm_values = values[:, indices]
+            self.mm_min_ = mm_values.min(axis=0)
+            self.mm_max_ = mm_values.max(axis=0)
+            self.mm_range_ = self.mm_max_ - self.mm_min_
+        else:
+            self.mm_min_ = np.asarray([], dtype=float)
+            self.mm_max_ = np.asarray([], dtype=float)
+            self.mm_range_ = np.asarray([], dtype=float)
+        return self
+
+    def transform(self, x):
+        frame = pd.DataFrame(x, columns=self.feature_names_in_)
+        columns = list(self.feature_names_in_)
+        values = frame.to_numpy(dtype=float)
+        result = values.copy()
+        if self.standard_only_columns_:
+            indices = [columns.index(col) for col in self.standard_only_columns_]
+            result[:, indices] = (values[:, indices] - self.mean_[indices]) / self.std_[
+                indices
+            ]
+        if self.minmax_columns_:
+            indices = [columns.index(col) for col in self.minmax_columns_]
+            lo, hi = self.feature_range
+            span = hi - lo
+            safe_range = np.where(self.mm_range_ > 0.0, self.mm_range_, 1.0)
+            scaled = (values[:, indices] - self.mm_min_) / safe_range
+            scaled = scaled * span + lo
+            zero_range = self.mm_range_ <= 0.0
+            if np.any(zero_range):
+                scaled[:, zero_range] = 0.5 * (lo + hi)
+            result[:, indices] = scaled
+        return result
+
+    def fit_transform(self, x):
+        return self.fit(x).transform(x)
+
+    def inverse_transform(self, x_scaled):
+        columns = list(self.feature_names_in_)
+        result = np.asarray(x_scaled, dtype=float).copy()
+        if self.standard_only_columns_:
+            indices = [columns.index(col) for col in self.standard_only_columns_]
+            result[:, indices] = result[:, indices] * self.std_[indices] + self.mean_[
+                indices
+            ]
+        if self.minmax_columns_:
+            indices = [columns.index(col) for col in self.minmax_columns_]
+            lo, hi = self.feature_range
+            span = hi - lo
+            safe_range = np.where(self.mm_range_ > 0.0, self.mm_range_, 1.0)
+            values = (result[:, indices] - lo) / span
+            result[:, indices] = values * safe_range + self.mm_min_
+        return result
+
+
+class PolarMotionStandardParamMinMaxScaler:
+    """Scale polar ALBNN inputs with angle pass-through and selected standards.
+
+    Angular sine/cosine columns already live in a bounded physical range and are
+    passed through unchanged.  Norms and explicit dot products are standardized
+    only.  Remaining scalar parameters are standardized and then minmax-scaled.
+    """
+
+    def __init__(
+        self,
+        pass_through_columns: tuple[str, ...] | list[str] | set[str] = (
+            "sin_theta",
+            "cos_theta",
+            "sin_v_theta",
+            "cos_v_theta",
+            "sin_s_theta",
+            "cos_s_theta",
+        ),
+        standard_only_columns: tuple[str, ...] | list[str] | set[str] = (
+            "r",
+            "v_norm",
+            "s_norm",
+            "e_dot_v",
+            "e_dot_s",
+            "s_dot_v",
+            "ev_dot",
+            "es_dot",
+            "sv_dot",
+            "v_dot_s",
+        ),
+        feature_range: tuple[float, float] = (0.0, 1.0),
+    ):
+        self.pass_through_columns = tuple(pass_through_columns)
+        self.standard_only_columns = tuple(standard_only_columns)
+        self.feature_range = tuple(float(value) for value in feature_range)
+        self.feature_names_in_ = None
+        self.pass_through_columns_ = None
+        self.standard_only_columns_ = None
+        self.minmax_columns_ = None
+        self.mean_ = None
+        self.std_ = None
+        self.mm_min_ = None
+        self.mm_max_ = None
+        self.mm_range_ = None
+
+    def fit(self, x):
+        frame = pd.DataFrame(x)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        columns = list(frame.columns)
+        pass_through = set(self.pass_through_columns)
+        standard_only = set(self.standard_only_columns)
+        self.pass_through_columns_ = [
+            col for col in columns if col in pass_through
+        ]
+        self.standard_only_columns_ = [
+            col for col in columns if col in standard_only and col not in pass_through
+        ]
+        scaled_or_standard = [
+            col for col in columns if col not in set(self.pass_through_columns_)
+        ]
+        self.minmax_columns_ = [
+            col for col in scaled_or_standard if col not in set(self.standard_only_columns_)
+        ]
+        values = frame.to_numpy(dtype=float)
+        self.mean_ = values.mean(axis=0)
+        std = values.std(axis=0)
+        self.std_ = np.where(std > 0.0, std, 1.0)
+        standardized = (values - self.mean_) / self.std_
+        if self.minmax_columns_:
+            indices = [columns.index(col) for col in self.minmax_columns_]
+            mm_values = standardized[:, indices]
+            self.mm_min_ = mm_values.min(axis=0)
+            self.mm_max_ = mm_values.max(axis=0)
+            self.mm_range_ = self.mm_max_ - self.mm_min_
+        else:
+            self.mm_min_ = np.asarray([], dtype=float)
+            self.mm_max_ = np.asarray([], dtype=float)
+            self.mm_range_ = np.asarray([], dtype=float)
+        return self
+
+    def transform(self, x):
+        frame = pd.DataFrame(x, columns=self.feature_names_in_)
+        columns = list(self.feature_names_in_)
+        values = frame.to_numpy(dtype=float)
+        result = values.copy()
+        scaled_or_standard = [
+            col for col in columns if col not in set(self.pass_through_columns_)
+        ]
+        if scaled_or_standard:
+            indices = [columns.index(col) for col in scaled_or_standard]
+            result[:, indices] = (values[:, indices] - self.mean_[indices]) / self.std_[indices]
+        if self.minmax_columns_:
+            indices = [columns.index(col) for col in self.minmax_columns_]
+            lo, hi = self.feature_range
+            span = hi - lo
+            safe_range = np.where(self.mm_range_ > 0.0, self.mm_range_, 1.0)
+            scaled = (result[:, indices] - self.mm_min_) / safe_range
+            scaled = scaled * span + lo
+            zero_range = self.mm_range_ <= 0.0
+            if np.any(zero_range):
+                scaled[:, zero_range] = 0.5 * (lo + hi)
+            result[:, indices] = scaled
+        return result
+
+    def fit_transform(self, x):
+        return self.fit(x).transform(x)
+
+    def inverse_transform(self, x_scaled):
+        columns = list(self.feature_names_in_)
+        result = np.asarray(x_scaled, dtype=float).copy()
+        if self.minmax_columns_:
+            indices = [columns.index(col) for col in self.minmax_columns_]
+            lo, hi = self.feature_range
+            span = hi - lo
+            safe_range = np.where(self.mm_range_ > 0.0, self.mm_range_, 1.0)
+            values = (result[:, indices] - lo) / span
+            result[:, indices] = values * safe_range + self.mm_min_
+        scaled_or_standard = [
+            col for col in columns if col not in set(self.pass_through_columns_)
+        ]
+        if scaled_or_standard:
+            indices = [columns.index(col) for col in scaled_or_standard]
+            result[:, indices] = result[:, indices] * self.std_[indices] + self.mean_[indices]
+        return result
 
 
 class AsinhTargetScaler:
@@ -444,6 +1354,257 @@ class SignedLog1pTargetScaler:
         return np.sign(values) * self.scale * np.expm1(np.abs(values))
 
 
+class MinMaxCubeRootTargetScaler:
+    """Scale force targets with minmax, then apply a reversible cube root."""
+
+    def __init__(self, base_scaler):
+        self.base_scaler = base_scaler
+        self.feature_names_in_ = None
+
+    def fit(self, y):
+        frame = pd.DataFrame(y)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        self.base_scaler.fit(frame)
+        return self
+
+    def transform(self, y):
+        frame = pd.DataFrame(y, columns=self.feature_names_in_)
+        scaled = self.base_scaler.transform(frame)
+        return np.cbrt(scaled)
+
+    def fit_transform(self, y):
+        return self.fit(y).transform(y)
+
+    def inverse_transform(self, y_scaled):
+        scaled = np.asarray(y_scaled, dtype=float) ** 3
+        return self.base_scaler.inverse_transform(scaled)
+
+
+class ColumnSignedLog1pTargetScaler:
+    """Apply signed ``log1p`` to selected target columns before base scaling.
+
+    This wrapper preserves the sklearn-style scaler interface used by packaged
+    ALBNN artifacts. It is intended for mixed target contracts where angular
+    sine/cosine columns should remain unchanged while non-negative magnitude
+    columns such as ``force_norm`` are compressed before minmax scaling.
+    """
+
+    def __init__(
+        self,
+        base_scaler,
+        columns: tuple[str, ...] | list[str] | set[str],
+        scale: float = 5.0,
+    ):
+        self.base_scaler = base_scaler
+        self.columns = tuple(columns)
+        self.scale = float(scale)
+        self.feature_names_in_ = None
+
+    def fit(self, y):
+        frame = pd.DataFrame(y)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        self._validate_columns()
+        self.base_scaler.fit(self._forward(frame))
+        return self
+
+    def transform(self, y):
+        frame = pd.DataFrame(y, columns=self.feature_names_in_)
+        return self.base_scaler.transform(self._forward(frame))
+
+    def fit_transform(self, y):
+        return self.fit(y).transform(y)
+
+    def inverse_transform(self, y_scaled):
+        transformed = self.base_scaler.inverse_transform(y_scaled)
+        return self._inverse(transformed)
+
+    def _validate_columns(self):
+        missing = [col for col in self.columns if col not in set(self.feature_names_in_)]
+        if missing:
+            raise ValueError(f"Missing signed-log target column(s): {missing}")
+
+    def _forward(self, y):
+        frame = pd.DataFrame(y, columns=self.feature_names_in_)
+        values = frame.to_numpy(dtype=float, copy=True)
+        for col in self.columns:
+            idx = list(frame.columns).index(col)
+            col_values = values[:, idx]
+            values[:, idx] = np.sign(col_values) * np.log1p(
+                np.abs(col_values) / self.scale
+            )
+        return pd.DataFrame(values, columns=frame.columns, index=frame.index)
+
+    def _inverse(self, transformed):
+        values = np.asarray(transformed, dtype=float).copy()
+        for col in self.columns:
+            idx = list(self.feature_names_in_).index(col)
+            col_values = values[:, idx]
+            values[:, idx] = np.sign(col_values) * self.scale * np.expm1(
+                np.abs(col_values)
+            )
+        return values
+
+
+class SelectiveMinMaxScaler:
+    """Minmax-scale selected columns while leaving pass-through columns unchanged."""
+
+    def __init__(
+        self,
+        feature_range: tuple[float, float] = (0.0, 1.0),
+        pass_through_columns: tuple[str, ...] | list[str] | set[str] = (),
+    ):
+        self.feature_range = tuple(float(value) for value in feature_range)
+        self.pass_through_columns = tuple(pass_through_columns)
+        self.feature_names_in_ = None
+        self.scale_columns_ = None
+        self.data_min_ = None
+        self.data_max_ = None
+        self.data_range_ = None
+
+    def fit(self, x):
+        frame = pd.DataFrame(x)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        self.scale_columns_ = [
+            col for col in frame.columns if col not in set(self.pass_through_columns)
+        ]
+        values = frame[self.scale_columns_].to_numpy(dtype=float)
+        if values.shape[1] == 0:
+            self.data_min_ = np.asarray([], dtype=float)
+            self.data_max_ = np.asarray([], dtype=float)
+            self.data_range_ = np.asarray([], dtype=float)
+        else:
+            self.data_min_ = values.min(axis=0)
+            self.data_max_ = values.max(axis=0)
+            self.data_range_ = self.data_max_ - self.data_min_
+        return self
+
+    def transform(self, x):
+        frame = pd.DataFrame(x, columns=self.feature_names_in_)
+        result = frame.to_numpy(dtype=float, copy=True)
+        if self.scale_columns_:
+            indices = [list(self.feature_names_in_).index(col) for col in self.scale_columns_]
+            values = result[:, indices]
+            lo, hi = self.feature_range
+            span = hi - lo
+            safe_range = np.where(self.data_range_ > 0.0, self.data_range_, 1.0)
+            scaled = (values - self.data_min_) / safe_range
+            scaled = scaled * span + lo
+            zero_range = self.data_range_ <= 0.0
+            if np.any(zero_range):
+                scaled[:, zero_range] = 0.5 * (lo + hi)
+            result[:, indices] = scaled
+        return result
+
+    def fit_transform(self, x):
+        return self.fit(x).transform(x)
+
+    def inverse_transform(self, x_scaled):
+        result = np.asarray(x_scaled, dtype=float).copy()
+        if self.scale_columns_:
+            indices = [list(self.feature_names_in_).index(col) for col in self.scale_columns_]
+            lo, hi = self.feature_range
+            span = hi - lo
+            values = (result[:, indices] - lo) / span
+            safe_range = np.where(self.data_range_ > 0.0, self.data_range_, 1.0)
+            result[:, indices] = values * safe_range + self.data_min_
+        return result
+
+    def inverse_transform_torch(self, x_scaled):
+        device = x_scaled.device
+        dtype = x_scaled.dtype
+        result = x_scaled.clone()
+        if self.scale_columns_:
+            indices = [list(self.feature_names_in_).index(col) for col in self.scale_columns_]
+            index_tensor = torch.as_tensor(indices, dtype=torch.long, device=device)
+            lo, hi = self.feature_range
+            span = hi - lo
+            data_min = torch.as_tensor(self.data_min_, dtype=dtype, device=device)
+            data_range = torch.as_tensor(self.data_range_, dtype=dtype, device=device)
+            safe_range = torch.where(
+                data_range > 0.0, data_range, torch.ones_like(data_range)
+            )
+            values = (result.index_select(-1, index_tensor) - float(lo)) / float(span)
+            values = values * safe_range + data_min
+            result = result.clone()
+            result[..., index_tensor] = values
+        return result
+
+
+class MinMaxWithScaledEvsFeaturesScaler:
+    """Minmax-scale base inputs, then append E/V/S interaction features.
+
+    This scaler implements a 12-base-input ALBNN contract where
+    ``ex, ey, vx, vy, sx, sy`` and the scalar parameters are first mapped to the
+    configured minmax range.  The appended features are then computed from that
+    scaled coordinate system and are not scaled a second time.  This keeps the
+    training-time and packaged-inference feature contract identical when the
+    user wants interaction terms to describe the normalized model input space.
+
+    Appended feature order:
+    ``evs_geom, edotv, edots, sdotv``.
+    """
+
+    appended_feature_names = ("evs_geom", "edotv", "edots", "sdotv")
+
+    def __init__(self, feature_range: tuple[float, float] = (0.0, 1.0)):
+        self.feature_range = tuple(float(value) for value in feature_range)
+        self.base_scaler = SelectiveMinMaxScaler(feature_range=self.feature_range)
+        self.feature_names_in_ = None
+        self.feature_names_out_ = None
+
+    def fit(self, x):
+        frame = pd.DataFrame(x)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        missing = [
+            col
+            for col in ("ex", "ey", "vx", "vy", "sx", "sy")
+            if col not in frame.columns
+        ]
+        if missing:
+            raise ValueError(
+                "MinMaxWithScaledEvsFeaturesScaler requires motion columns: "
+                f"{missing}"
+            )
+        self.base_scaler.fit(frame)
+        self.feature_names_out_ = np.asarray(
+            list(self.feature_names_in_) + list(self.appended_feature_names),
+            dtype=object,
+        )
+        return self
+
+    def transform(self, x):
+        frame = pd.DataFrame(x, columns=self.feature_names_in_)
+        scaled = self.base_scaler.transform(frame)
+        scaled_frame = pd.DataFrame(scaled, columns=self.feature_names_in_)
+        appended = self._scaled_evs_features(scaled_frame)
+        return np.column_stack([scaled, appended])
+
+    def fit_transform(self, x):
+        return self.fit(x).transform(x)
+
+    def inverse_transform(self, x_scaled):
+        values = np.asarray(x_scaled, dtype=float)
+        base_width = len(self.feature_names_in_)
+        return self.base_scaler.inverse_transform(values[:, :base_width])
+
+    def _scaled_evs_features(self, frame: pd.DataFrame) -> np.ndarray:
+        ex = frame["ex"].to_numpy(dtype=float)
+        ey = frame["ey"].to_numpy(dtype=float)
+        vx = frame["vx"].to_numpy(dtype=float)
+        vy = frame["vy"].to_numpy(dtype=float)
+        sx = frame["sx"].to_numpy(dtype=float)
+        sy = frame["sy"].to_numpy(dtype=float)
+
+        e_norm = np.sqrt(ex**2 + ey**2)
+        v_norm = np.sqrt(vx**2 + vy**2)
+        s_norm = np.sqrt(sx**2 + sy**2)
+        evs_geom = np.cbrt(np.clip(e_norm * v_norm * s_norm, 0.0, None))
+        edotv = ex * vx + ey * vy
+        edots = ex * sx + ey * sy
+        sdotv = sx * vx + sy * vy
+        return np.column_stack([evs_geom, edotv, edots, sdotv])
+
+
 class Cq2SigLogMinMaxScaler:
     """Scale ALBNN inputs with log-compressed ``cq2`` and minmax scaling.
 
@@ -459,10 +1620,12 @@ class Cq2SigLogMinMaxScaler:
         feature_range: tuple[float, float] = (-1.0, 1.0),
         log_column: str = "cq2",
         epsilon: float = 1e-12,
+        pass_through_columns: tuple[str, ...] | list[str] | set[str] = (),
     ):
         self.feature_range = tuple(float(value) for value in feature_range)
         self.log_column = str(log_column)
         self.epsilon = float(epsilon)
+        self.pass_through_columns = tuple(pass_through_columns)
         self.feature_names_in_ = None
         self.data_min_ = None
         self.data_max_ = None
@@ -490,6 +1653,10 @@ class Cq2SigLogMinMaxScaler:
         zero_range = self.data_range_ <= 0.0
         if np.any(zero_range):
             scaled[:, zero_range] = 0.5 * (lo + hi)
+        for col in getattr(self, "pass_through_columns", ()):
+            if col in frame.columns:
+                idx = list(frame.columns).index(col)
+                scaled[:, idx] = values[:, idx]
         return scaled
 
     def fit_transform(self, x):
@@ -498,11 +1665,17 @@ class Cq2SigLogMinMaxScaler:
     def inverse_transform(self, x_scaled):
         lo, hi = self.feature_range
         span = hi - lo
-        values = (np.asarray(x_scaled, dtype=float) - lo) / span
+        x_scaled = np.asarray(x_scaled, dtype=float)
+        values = (x_scaled - lo) / span
         safe_range = np.where(self.data_range_ > 0.0, self.data_range_, 1.0)
         values = values * safe_range + self.data_min_
+        for col in getattr(self, "pass_through_columns", ()):
+            if col in list(self.feature_names_in_):
+                idx = list(self.feature_names_in_).index(col)
+                values[:, idx] = x_scaled[:, idx]
         log_idx = list(self.feature_names_in_).index(self.log_column)
-        values[:, log_idx] = np.exp(values[:, log_idx])
+        if self.log_column not in getattr(self, "pass_through_columns", ()):
+            values[:, log_idx] = np.exp(values[:, log_idx])
         return values
 
     def _forward(self, x):
@@ -695,6 +1868,7 @@ def save_model(net, path, architecture):
             "architecture": architecture,
             "activation": getattr(net, "activation", "gelu"),
             "sine_omega0": float(getattr(net, "sine_omega0", 30.0)),
+            "use_layer_norm": bool(getattr(net, "use_layer_norm", False)),
         },
         path,
     )
@@ -889,6 +2063,30 @@ def albnn(config, use_augment: bool = None):
     if use_augment is None:
         use_augment = bool(metadata.get("use_augment", True))
 
+    if metadata.get("model_type") == "albnn_force_expert":
+        target_transform = metadata.get("target_transform", {})
+        return ALBNNForceExpert(
+            net,
+            scaler_X_model,
+            scaler_y_model,
+            config=config,
+            input_cols=metadata.get("input_cols", ALBNN_BASE_INPUT_COLS),
+            output_cols=metadata.get("output_cols", ALBNN_OUTPUT_COLS),
+            use_augment=use_augment,
+            feature_set=metadata.get("feature_set", "default"),
+            expert_bins=metadata.get("expert_bins"),
+            expert_output_contract=metadata.get(
+                "expert_output_contract", "fx_z,fy_z,router_logit"
+            ),
+            expert_inference_mode=metadata.get(
+                "expert_inference_mode", "adjacent_blend"
+            ),
+            expert_blend_confidence_threshold=float(
+                metadata.get("expert_blend_confidence_threshold", 0.8)
+            ),
+            target_transform_scale=float(target_transform.get("scale", 2.0)),
+        )
+
     return ALBNN(
         net,
         scaler_X_model,
@@ -898,4 +2096,5 @@ def albnn(config, use_augment: bool = None):
         output_cols=metadata.get("output_cols", ALBNN_OUTPUT_COLS),
         use_augment=use_augment,
         feature_set=metadata.get("feature_set", "default"),
+        target_output=metadata.get("target_output", "cartesian"),
     )

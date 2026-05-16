@@ -40,6 +40,19 @@ package overview. Keep reusable numerical code in `ALB_MAIN/ALB`; sibling
 projects such as `SURROGATE_TRAIN` should import it instead of duplicating ALB
 package code.
 
+## Documentation Role Boundary
+
+Before maintaining project documents, read
+`docs/daily_maintenance/daily_doc_update_index.md` first. It is the centralized
+document-role index. Then read the target document's local `Document Role`
+block and edit only content allowed by that role.
+
+If the centralized index and the target document disagree, stop and report the
+conflict before editing. Live runtime state belongs in
+`../SURROGATE_TRAIN/docs/current_runtime_status.md`; daily durable ALBNN history
+belongs in `../SURROGATE_TRAIN/docs/albnn_training_log.md`; stable remote
+mechanics belong in `docs/remote_workstation_connection.md`.
+
 ## ALBNN / Thermal Sampling
 
 Thermal ALBNN sampling and remote training details live in

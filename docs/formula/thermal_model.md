@@ -1,5 +1,20 @@
 # 热效应计算原理
 
+## Document Role
+
+- Role: Stable formula and implementation reference.
+- Purpose: Explain the thermal-pressure model, finite-element discretization,
+  nondimensional forms, and code-to-formula mapping for `ALB/thermal.py`.
+- Allowed updates: governing equations, discretization steps, boundary
+  conditions, coupling workflow, and implementation mapping.
+- Forbidden updates: realtime runtime state, active task progress, PIDs,
+  ETAs, per-run metrics, and raw log dumps.
+- Update cadence: when thermal-pressure equations, discretization, boundary
+  handling, or implementation mapping changes.
+- Source of truth / Related docs:
+  `docs/daily_maintenance/daily_doc_update_index.md`,
+  `ALB/thermal.py`, `ALB/nondim.py`, and `ALB/config.py`.
+
 ## 1 概述
 
 `ThermalHydroBearing` 模块在油膜润滑计算的基础上，引入温度场与粘度场的双向耦合：
@@ -8,6 +23,546 @@
 - **反向**：温度场 → 粘度更新 → Reynolds 方程
 
 通过迭代求解实现热-流-粘度三场的自洽平衡。
+
+## 离散计算流程（当前实现）
+
+本节按当前代码执行顺序说明温度场如何离散计算。压力场先由带局部粘度比的 Reynolds 方程求得；温度场再用压力梯度、膜厚和粘度场组装对流-扩散-热源方程；最后通过温度-粘度关系把二者耦合迭代。
+
+当前实现有两条求解路径：
+
+- `ThermalHydroBearing`：有量纲输入，温度方程由 `SkfemThermalModel` 组装，支持稳态和隐式 Euler 非稳态项。
+- `NodimThermalHydroBearing`：无量纲输入，温度方程由 `SkfemThermalModelNondim` 组装，当前只支持稳态热场。
+
+### 1. 压力场计算步骤
+
+压力场使用与温度相关的局部粘度比
+
+$$
+\bar{\mu}_i = \frac{\mu_i}{\mu_0}
+$$
+
+修正 Reynolds 方程左端的 Poiseuille 扩散项。对当前迭代步给定膜厚 $\bar h$、参考轴承数 $\Lambda_0$、长径比
+
+$$
+l_r = \frac{L}{2R}
+$$
+
+以及局部粘度比 $\bar\mu$，无量纲压力方程采用：
+
+$$
+l_r^2\frac{\partial}{\partial x}
+\left(
+\frac{\bar h^3}{\bar\mu}
+\frac{\partial p}{\partial x}
+\right)
++
+\frac{\partial}{\partial z}
+\left(
+\frac{\bar h^3}{\bar\mu}
+\frac{\partial p}{\partial z}
+\right)
+=
+\Lambda_0\frac{\partial \bar h}{\partial x}
++2\Lambda_0 v_f\frac{\partial \bar h}{\partial t}.
+$$
+
+取测试函数 $v$，并对左端分部积分，得到当前实现装配的弱式：
+
+$$
+\int_{\Omega_h}
+\frac{\bar h^3}{\bar\mu}
+\left(
+l_r^2\frac{\partial p}{\partial x}\frac{\partial v}{\partial x}
++\frac{\partial p}{\partial z}\frac{\partial v}{\partial z}
+\right)d\Omega
+=
+\int_{\Omega_h}
+\left(
+-\Lambda_0\frac{\partial \bar h}{\partial x}
+-2\Lambda_0 v_f\frac{\partial \bar h}{\partial t}
+\right)v\,d\Omega.
+$$
+
+离散时在膜网格上取线性有限元形函数 $N_i$，令
+
+$$
+p_h(x,z)=\sum_j p_j N_j(x,z),
+$$
+
+得到线性系统
+
+$$
+K^{p}_{ij}p_j=f^p_i,
+$$
+
+其中
+
+$$
+K^{p}_{ij}
+=
+\int_{\Omega_h}
+\frac{\bar h^3}{\bar\mu}
+\left(
+l_r^2\frac{\partial N_j}{\partial x}\frac{\partial N_i}{\partial x}
++\frac{\partial N_j}{\partial z}\frac{\partial N_i}{\partial z}
+\right)d\Omega,
+$$
+
+$$
+f^p_i
+=
+\int_{\Omega_h}
+\left(
+-\Lambda_0\frac{\partial \bar h}{\partial x}
+-2\Lambda_0 v_f\frac{\partial \bar h}{\partial t}
+\right)N_i\,d\Omega.
+$$
+
+实现步骤为：
+
+1. `ThermalHydroBearing` 将当前粘度场写入膜节点的 `miu_ratio`。
+2. `ViscositySkfemNewtonFilm.calc_matrixs_rights()` 在积分点插值 $\bar h$ 和 $\bar\mu$，形成
+   $\bar h^3/\bar\mu$。
+3. `_reynolds_lhs_miu` 装配 $K^p$，`_reynolds_rhs_miu0` 装配 $f^p$。右端仍使用参考粘度对应的 $\Lambda_0$，局部粘度只进入左端扩散项。
+4. 膜模型的边界处理器施加压力边界条件，然后求解 $K^p p=f^p$。
+5. 温度网格复用结构化膜网格的节点序，`MeshTri.init_tensor(x_axis, z_axis)` 构造三角形 P1 网格；求得压力后，用差分更新温度方程需要的压力梯度：
+
+$$
+\left(\frac{\partial p}{\partial x}\right)_i
+\approx
+\operatorname{gradient}_x(p)_i,\qquad
+\left(\frac{\partial p}{\partial z}\right)_i
+\approx
+\operatorname{gradient}_z(p)_i.
+$$
+
+### 2. 温度场计算步骤
+
+#### 2.1 有量纲温度方程
+
+有量纲路径在油膜中面 $\Omega_h$ 上求解二维对流-扩散能量方程。给定当前压力梯度和粘度场后，先计算面内体积通量：
+
+$$
+q_x
+=
+\frac{Uh}{2}
+-\frac{h^3}{12\mu}\frac{\partial p}{\partial x},
+\qquad
+q_z
+=
+-\frac{h^3}{12\mu}\frac{\partial p}{\partial z}.
+$$
+
+热源由 Couette 剪切和 Poiseuille 压力梯度耗散组成：
+
+$$
+\Phi
+=
+\alpha_h
+\left[
+\frac{\mu U^2}{h}
++
+\frac{h^3}{12\mu}
+\left(
+\left(\frac{\partial p}{\partial x}\right)^2
++
+\left(\frac{\partial p}{\partial z}\right)^2
+\right)
+\right].
+$$
+
+稳态温度控制方程写为
+
+$$
+\rho c_p
+\left(
+q_x\frac{\partial T}{\partial x}
++q_z\frac{\partial T}{\partial z}
+\right)
+=
+k\nabla^2T+\Phi.
+$$
+
+把扩散项移到左端，并用线性有限元近似
+
+$$
+T_h(x,z)=\sum_j T_jN_j(x,z),
+$$
+
+标准 Galerkin 离散得到
+
+$$
+K^T_{ij}T_j=f^T_i,
+$$
+
+其中
+
+$$
+K^T_{ij}
+=
+\int_{\Omega_h}
+k\nabla N_j\cdot\nabla N_i\,d\Omega
++
+\int_{\Omega_h}
+\rho c_p
+\left(
+q_x\frac{\partial N_j}{\partial x}
++q_z\frac{\partial N_j}{\partial z}
+\right)N_i\,d\Omega,
+$$
+
+$$
+f^T_i
+=
+\int_{\Omega_h}\Phi N_i\,d\Omega.
+$$
+
+如果启用非稳态项，则控制方程为
+
+$$
+\rho c_p h\frac{\partial T}{\partial t}
++
+\rho c_p
+\left(
+q_x\frac{\partial T}{\partial x}
++q_z\frac{\partial T}{\partial z}
+\right)
+=
+k\nabla^2T+\Phi.
+$$
+
+当前有量纲实现使用隐式 Euler：
+
+$$
+\frac{\partial T}{\partial t}
+\approx
+\frac{T^{n+1}-T^n}{\Delta t}.
+$$
+
+离散线性系统变为
+
+$$
+\left(K^T+M_t\right)T^{n+1}
+=
+f^T+M_tT^n,
+$$
+
+其中
+
+$$
+(M_t)_{ij}
+=
+\int_{\Omega_h}
+\frac{\rho c_p h}{\Delta t}N_jN_i\,d\Omega.
+$$
+
+#### 2.2 无量纲温度方程
+
+无量纲路径在 $\hat\Omega=\{(\bar x,\bar z)\}$ 上组装。给定
+
+$$
+\bar h=\frac{h}{c},\qquad
+\bar\mu=\frac{\mu}{\mu_0},\qquad
+\bar T=\frac{T-T_{\mathrm{supply}}}{\Delta T},
+$$
+
+当前实现计算无量纲通量：
+
+$$
+\bar q_x
+=
+\Lambda_0\bar h
+-l_r^2\frac{\bar h^3}{\bar\mu}
+\frac{\partial \bar p}{\partial\bar x},
+\qquad
+\bar q_z
+=
+-l_r\frac{\bar h^3}{\bar\mu}
+\frac{\partial \bar p}{\partial\bar z}.
+$$
+
+由于 $\bar z=2z/L$ 的坐标缩放，温度方程中的轴向对流速度使用
+
+$$
+\bar q_{z,\mathrm{conv}}=\frac{\bar q_z}{l_r}.
+$$
+
+无量纲热源为
+
+$$
+\bar\Phi_E
+=
+\Theta_E
+\left[
+\frac{\Lambda_0^2}{3l_r^2}\frac{\bar\mu}{\bar h}
++
+\frac{\bar h^3}{\bar\mu}
+\left(
+l_r^2
+\left(
+\frac{\partial\bar p}{\partial\bar x}
+\right)^2
++
+\left(
+\frac{\partial\bar p}{\partial\bar z}
+\right)^2
+\right)
+\right],
+$$
+
+其中
+
+$$
+\Theta_E
+=
+\frac{\alpha_h p_s}{\rho c_p\Delta T}.
+$$
+
+代码中的温度尺度为
+
+$$
+\Delta T
+=
+\begin{cases}
+\texttt{delta\_t\_scale}, & \text{if explicitly configured},\\
+\alpha_h p_s/(\rho c_p), & \text{otherwise}.
+\end{cases}
+$$
+
+因此默认情况下 $\Theta_E=1$。
+
+无量纲温度离散系统为
+
+$$
+\bar K^T_{ij}\bar T_j=\bar f^T_i,
+$$
+
+$$
+\bar K^T_{ij}
+=
+\int_{\hat\Omega}
+D_x
+\frac{\partial N_j}{\partial\bar x}
+\frac{\partial N_i}{\partial\bar x}
++
+D_z
+\frac{\partial N_j}{\partial\bar z}
+\frac{\partial N_i}{\partial\bar z}
+\,d\hat\Omega
++
+\int_{\hat\Omega}
+\left(
+\bar q_x\frac{\partial N_j}{\partial\bar x}
++
+\frac{\bar q_z}{l_r}
+\frac{\partial N_j}{\partial\bar z}
+\right)N_i\,d\hat\Omega,
+$$
+
+$$
+\bar f^T_i
+=
+\int_{\hat\Omega}
+\bar\Phi_E N_i\,d\hat\Omega.
+$$
+
+其中
+
+$$
+D_x=\frac{k_{\mathrm{lub}}}{\rho c_p Q_w R},
+\qquad
+D_z=\frac{D_x}{l_r^2},
+\qquad
+Q_w=\frac{p_sc^3}{12\mu_0l_r^2R}.
+$$
+
+#### 2.3 SUPG 稳定化、边界与点源
+
+温度方程通常是对流占优问题，因此默认启用 SUPG。对有量纲路径，局部单元 Péclet 数和稳定参数为
+
+$$
+\mathrm{Pe}_h
+=
+\frac{|\mathbf q|h_e}{2\alpha_{\mathrm{stab}}},
+\qquad
+\alpha_{\mathrm{stab}}
+=
+\frac{k_{\mathrm{lub}}}{\rho c_p},
+$$
+
+$$
+\tau
+=
+\left(
+\coth(\mathrm{Pe}_h)-\frac{1}{\mathrm{Pe}_h}
+\right)
+\frac{h_e}{2|\mathbf q|}.
+$$
+
+附加矩阵和载荷为
+
+$$
+K^{\mathrm{SUPG}}_{ij}
+=
+\int_{\Omega_h}
+\tau\,\rho c_p
+\left(\mathbf q\cdot\nabla N_i\right)
+\left(\mathbf q\cdot\nabla N_j\right)d\Omega,
+$$
+
+$$
+f^{\mathrm{SUPG}}_i
+=
+\int_{\Omega_h}
+\tau
+\left(\mathbf q\cdot\nabla N_i\right)\Phi\,d\Omega.
+$$
+
+无量纲路径使用相同结构，但不再乘 $\rho c_p$，并以无量纲对流向量
+
+$$
+\bar{\mathbf q}_{\mathrm{conv}}
+=
+\left(\bar q_x,\frac{\bar q_z}{l_r}\right)
+$$
+
+计算 $\tau$。
+
+温度边界条件在当前实现中为：
+
+- 入口边界 $x=x_{\min}$：Dirichlet，$T=T_{\mathrm{supply}}$；
+- 轴向侧边界：由 `axial_side_bc` 控制，可为固定温度、绝热自然边界，或只在流入侧固定温度；
+- 出口边界：自然边界，扩散通量项不额外指定，热量主要由对流带出。
+
+供油孔注入作为节点点源加入。对每个正向注入流量 $Q_i$，找到最近温度节点 $j$，有量纲路径修改线性系统：
+
+$$
+K_{jj}\mathrel{+}= \rho c_p Q_i,
+\qquad
+f_j\mathrel{+}= \rho c_p Q_i T_{\mathrm{supply}}.
+$$
+
+无量纲路径对应为
+
+$$
+\bar K_{jj}\mathrel{+}= \bar Q_i,
+\qquad
+\bar f_j\mathrel{+}= \bar Q_i\bar T_{\mathrm{supply}},
+$$
+
+其中当前温度标度下 $\bar T_{\mathrm{supply}}=0$。
+
+最终施加 Dirichlet 条件后，用稀疏线性求解器求解温度节点值：
+
+$$
+K_{\mathrm{bc}}T=f_{\mathrm{bc}}.
+$$
+
+有量纲结果再裁剪到
+
+$$
+T_{\mathrm{supply}}-5
+\le T_i \le
+T_{\mathrm{supply}}+\texttt{max\_delta\_t},
+$$
+
+无量纲结果按相同物理上下限换算后裁剪。
+
+### 3. 压力-温度耦合计算流程
+
+热-流耦合迭代的未知量是节点粘度场 $\mu_i$。第 $k$ 次迭代中的计算流程为：
+
+1. 初始化
+
+$$
+\mu_i^{(0)}=\mu_0.
+$$
+
+2. 把当前粘度比写入压力节点：
+
+$$
+\bar\mu_i^{(k)}=\frac{\mu_i^{(k)}}{\mu_0}.
+$$
+
+3. 固定参考尺度。压力方程右端的 $\Lambda_0$ 由参考粘度 $\mu_0$ 定义，迭代中不随局部粘度漂移：
+
+$$
+\Lambda_0
+=
+\frac{3\mu_0\omega L^2}{2p_sc^2}.
+$$
+
+4. 求解 Reynolds 方程，得到压力场 $p^{(k)}$，并更新温度方程使用的梯度
+   $\nabla p^{(k)}$。
+
+5. 根据耦合模式选择温度方程粘度输入：
+
+$$
+\mu_T^{(k)}(x,z)
+=
+\begin{cases}
+\mu_i^{(k)} \text{ mapped to thermal nodes}, & \texttt{coupling="full"},\\
+\overline{\mu}^{(k)}, & \texttt{coupling="half"}.
+\end{cases}
+$$
+
+6. 用 $h^{(k)}$、$p^{(k)}$、$\nabla p^{(k)}$ 和 $\mu_T^{(k)}$ 组装并求解温度方程，得到
+   $T^{(k)}$。
+
+7. 将温度场映射回膜节点，并由指数粘温关系计算目标粘度：
+
+有量纲形式：
+
+$$
+\mu_{\mathrm{target},i}^{(k)}
+=
+\mu_0
+\exp\left[-\beta\left(T_i^{(k)}-T_{\mathrm{ref}}\right)\right].
+$$
+
+无量纲形式：
+
+$$
+\frac{\mu_{\mathrm{target},i}^{(k)}}{\mu_0}
+=
+\exp\left[
+-\beta_{\mathrm{nd}}
+\left(
+\bar T_i^{(k)}-\bar T_{\mathrm{ref}}
+\right)
+\right].
+$$
+
+8. 用松弛因子 $\alpha$ 更新粘度场：
+
+$$
+\mu_i^{(k+1)}
+=
+(1-\alpha)\mu_i^{(k)}
++\alpha\mu_{\mathrm{target},i}^{(k)}.
+$$
+
+9. 计算收敛误差：
+
+$$
+\varepsilon_\mu^{(k)}
+=
+\frac{
+\max_i|\mu_i^{(k+1)}-\mu_i^{(k)}|
+}{
+\max_i|\mu_i^{(k)}|
+}.
+$$
+
+当
+
+$$
+\varepsilon_\mu^{(k)} < \texttt{tol}
+$$
+
+时认为热-流-粘度耦合收敛；否则进入下一次迭代。若启用自适应松弛，`AdaptiveDampController` 会根据误差变化调整 $\alpha$。
+
+收敛后，代码再用最终粘度场执行一次压力求解和一次温度求解，输出最终压力、温度、粘度、供油孔流量以及结构化后处理场。若启用有量纲非稳态热项，第一次调用会先求稳态温度作为 $T^0$；之后每次 `output()` 使用上一时刻缓存的 $T^n$，求得 $T^{n+1}$ 后回写缓存。
 
 ---
 
@@ -72,7 +627,7 @@ $$
 
 | 符号 | 含义 | 配置参数 |
 |------|------|----------|
-| $k$ | 润滑油导热系数 | `k_lub = 0.13` W/(m·K) |
+| $k$ | 润滑油导热/稳定化扩散系数 | `k_lub = 0.00` 默认值 |
 | $\rho c_v$ | 体积热容 | `rho` × `cp_lub = 2000` J/(kg·K) |
 | $h$ | 油膜厚度（有量纲） | 从 film 模型获取 |
 | $\nabla p$ | 压力梯度 | 由 Reynolds 求解结果差分得到 |
@@ -250,10 +805,10 @@ U = \omega R,
 \frac{\partial p}{\partial z} = \frac{p_s}{l_r R}\frac{\partial \bar{p}}{\partial \bar{z}}
 $$
 
-并使用图中的流量标度
+并使用当前代码 `ThermalNondimScales.flow_scale` 中的流量标度
 
 $$
-Q_w = \frac{p_s c^3}{3\mu_0 L^2} = \frac{p_s c^3}{12\mu_0 l_r^2 R^2}
+Q_w = \frac{p_s c^3}{12\mu_0 l_r^2 R}
 $$
 
 可得
@@ -275,7 +830,7 @@ $$
 其中把所有纯参数系数合并为
 
 $$
-\Theta_E = \frac{\alpha_h p_s R}{\rho c_v\Delta T}
+\Theta_E = \frac{\alpha_h p_s}{\rho c_v\Delta T}
 $$
 
 而
@@ -295,7 +850,7 @@ $$
 如果目标是做代理训练，通常希望进一步压缩参数维数。此时最自然的做法是把温升尺度直接选为
 
 $$
-\Delta T_E = \frac{\alpha_h p_s R}{\rho c_v}
+\Delta T_E = \frac{\alpha_h p_s}{\rho c_v}
 $$
 
 则有 $\Theta_E = 1$，热源项进一步化简为
@@ -525,13 +1080,13 @@ $$
 $$
 \bar q_x = \Lambda_0\bar h - l_r^2\frac{\bar h^3}{\bar\mu}\frac{\partial \bar p}{\partial \bar x},
 \qquad
-\bar q_z = -\frac{\bar h^3}{\bar\mu}\frac{\partial \bar p}{\partial \bar z}
+\bar q_z = -l_r\frac{\bar h^3}{\bar\mu}\frac{\partial \bar p}{\partial \bar z}
 $$
 
 若采用前述推荐温升尺度
 
 $$
-\Delta T_E = \frac{\alpha_h p_s R}{\rho c_v}
+\Delta T_E = \frac{\alpha_h p_s}{\rho c_v}
 $$
 
 则热源项也不必再保留独立系数 $\Theta_E$，可直接写成
@@ -991,7 +1546,7 @@ $\varepsilon$ = `tol`（默认 $10^{-3}$）。
 | `t_ref` | `None`→`t_in` | 参考温度 |
 | `miu_ref` | `None`→初始粘度 | 参考粘度 |
 | `beta` | 0.03 1/°C | 粘温系数 |
-| `k_lub` | 0.13 W/(m·K) | 导热系数 |
+| `k_lub` | 0.00 | 导热/稳定化扩散系数 |
 | `cp_lub` | 2000 J/(kg·K) | 比热容 |
 | `flow_rate_factor` | 1.0 | Couette 流量修正 |
 | `max_delta_t` | 80 °C | 温升上限 |

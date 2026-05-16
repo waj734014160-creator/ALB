@@ -1,5 +1,7 @@
 /logs
 /outputs/
+/data/
+/models/
 /__pycache__
 **/__pycache__/
 /test/logs

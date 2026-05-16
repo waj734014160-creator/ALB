@@ -1,5 +1,19 @@
 # ALB_MAIN File Classification
 
+## Document Role
+
+- Role: ALB_MAIN file ownership and cleanup policy.
+- Purpose: Classify ALB_MAIN file groups, ownership boundaries, artifact
+  categories, and cleanup policy.
+- Allowed updates: file categories, representative paths, retention/archive
+  rules, cleanup risk notes, and ownership boundaries.
+- Forbidden updates: live runtime state, model progress, latest metrics, and
+  detailed run history.
+- Update cadence: when major file groups, archive categories, or cleanup
+  policies change.
+- Source of truth / Related docs:
+  `docs/daily_maintenance/daily_doc_update_index.md`.
+
 本文档记录当前项目文件面向的主要需求、代表目录/文件、建议处理方式和风险点。
 本阶段只建立分类清单和后续整理建议，不移动文件、不修改 import、不清理训练产物。
 

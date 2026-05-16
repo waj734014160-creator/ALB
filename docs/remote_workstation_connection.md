@@ -1,9 +1,28 @@
 # Remote Workstation Connection
 
+## Document Role
+
+- Role: Stable remote-operation manual.
+- Purpose: Store reusable remote connection, Task Scheduler, SSH, runner, and
+  monitor mechanics.
+- Allowed updates: connection facts, stable command patterns, wrapper
+  ownership, credential-handling guidance, and reusable remote-operation
+  lessons.
+- Forbidden updates: current task progress, PIDs, latest loss, active ETAs, and
+  per-run metrics.
+- Update cadence: when remote mechanics, paths, wrappers, or credential-handling
+  guidance changes.
+- Source of truth / Related docs:
+  `docs/daily_maintenance/daily_doc_update_index.md`,
+  `../SURROGATE_TRAIN/docs/current_runtime_status.md`, and
+  `../SURROGATE_TRAIN/docs/albnn_training_brief.md`.
+
 This document stores stable, non-secret connection facts and the verified
 workflow for the remote workstation.
 
 ## Endpoint
+
+Primary completed remote workstation:
 
 - Hostname: `desktop-1pvi7rp`
 - LAN IP: `192.168.3.90`
@@ -14,6 +33,25 @@ workflow for the remote workstation.
 - Remote output directory: `F:/GWJ/20260507-train/outputs`
 - Verified ports over ZeroTier: `SSH 22`, `SMB 445`, `RPC 135`
 - Not open over ZeroTier at last check: `WinRM 5985`, `RDP 3389`
+
+Additional 64-core workstation:
+
+- Hostname: `AMD64`
+- ZeroTier IP: `10.182.216.30`
+- Username: `amd64\amd64-0`
+- Local SSH key:
+  `C:/Users/73401/.ssh/alb_64core_zt_10_182_216_30_ed25519`
+- Candidate remote work directory: `G:/GWJ/20260512-train-thermal`
+- ALB Python environment: `G:/GWJ/envs/ALB/python.exe`
+- System Python also available: `E:/Program Files/Python312/python.exe`
+- Hardware check: AMD Ryzen Threadripper 7980X, 64 cores / 128 logical
+  processors, about 256GB RAM.
+- Verified over ZeroTier on 2026-05-12: `SSH 22`.
+- Verified ALB environment packages on 2026-05-12:
+  Python 3.10.13, `numpy`, `pandas`, `scipy`, `tqdm`, `matplotlib`, and
+  `skfem` are present. `sklearn` and `torch` are not present in this ALB
+  environment, so use it for ALB sample generation first; training needs
+  package installation or a separate training environment.
 
 ## Connection Checks
 
@@ -70,6 +108,9 @@ Persistent training workflow:
 The preferred local wrappers are:
 
 ```powershell
+E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_job.py launch --config ../SURROGATE_TRAIN/run/remote/configs/<job>.json
+E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_job.py monitor --config ../SURROGATE_TRAIN/run/remote/configs/<job>.json
+E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_job.py queue --config ../SURROGATE_TRAIN/run/remote/configs/<job>.json
 E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_queue_albnn_activation_sweep.py --config ../SURROGATE_TRAIN/run/remote/configs/<queue>.json
 E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_start_albnn_train.py
 E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_query_albnn_status.py
@@ -77,9 +118,18 @@ E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_monitor
 ```
 
 The stable implementation is maintained in `ALB.remote`:
-`albnn_queue`, `albnn_start`, `albnn_status`, `monitor`, and `transport`. The
-`SURROGATE_TRAIN/run/remote` scripts are compatibility entry points so existing
-commands and JSON queue configs continue to work.
+`job`, `albnn_queue`, `albnn_start`, `albnn_status`, `monitor`, and
+`transport`. The `SURROGATE_TRAIN/run/remote` scripts are compatibility entry
+points so existing commands and JSON queue configs continue to work.
+
+For new non-training remote jobs, prefer the config-driven generic wrapper:
+`remote_job.py launch|monitor|queue --config <json>`. Its JSON schema keeps
+connection settings in `profile`, file copies in `uploads`, the scheduled
+runner command and logs in `job`, status inputs in `monitor`, and sequential
+wait conditions in `queue.jobs[*].wait_for`. The generated runner uses the
+shared log template with `START_TIME`, `TASK`, `WORK`, `COMMAND`, `STDOUT`,
+`STDERR`, `END_TIME`, and `EXIT_CODE`, so the same monitor API can inspect
+Task Scheduler state, PID/process state, metadata, CSV outputs, and log tails.
 
 The start wrapper generates a temporary local PowerShell runner, uploads it with
 `scp`, starts a Task Scheduler job, and disables the one-shot schedule after the
@@ -102,10 +152,10 @@ train/validation CSV presence, split summary presence, nonzero row counts, and
 zero train/validation input overlap. Do not start a training queue only because
 generation metadata reached the requested attempted row count.
 
-For non-training long jobs such as sample generation, use the generic monitor
-wrapper instead of ad-hoc SSH status snippets. It queries Task Scheduler,
-matching processes, metadata progress, CSV/log file timestamps, and ETA through
-short PowerShell commands.
+For non-training long jobs such as sample generation, use `remote_job.py` or the
+generic monitor wrapper instead of ad-hoc SSH status snippets. It queries Task
+Scheduler, PID or matching processes, metadata progress, CSV/log file
+timestamps, and ETA through short PowerShell commands.
 
 Generic one-shot monitor pattern for a remote generation task:
 
