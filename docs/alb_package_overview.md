@@ -129,5 +129,9 @@ importing it from its module path.
 - `ALB/remote` is library code. Use `ALB.remote.job` for new generic remote
   launch, monitor, and conditional queue workflows. Keep user-facing queue
   configs and compatibility command wrappers in `../SURROGATE_TRAIN/run/remote`.
+- Run registration is repository workflow tooling, not ALB numerical package
+  code. Keep the reusable registration script in `scripts/run_registry.py`, the
+  human-facing run-number and placement rules in `docs/run_index.md`, and
+  per-project registration facts in each owning project's `docs/run_registry.jsonl`.
 - Do not rename `ALB/matrix/dynmaic.py` without a compatibility plan; the
   misspelling is part of existing imports.
