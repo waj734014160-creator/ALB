@@ -141,9 +141,9 @@ limits.
 
 Default future launch behavior: remote ALBNN training should also start local
 monitoring. Prefer the JSON queue wrapper for launches because it resumes active
-jobs, polls status, and syncs `status.json`, `status.jsonl`, and log tails under
-`../SURROGATE_TRAIN/outputs/queue_logs`. If a job is launched directly with the
-start wrapper, start the matching queue monitor immediately.
+jobs, polls status, and syncs `status.json`, `status.jsonl`, and log tails to
+the configured queue output path. If a job is launched directly with the start
+wrapper, start the matching queue monitor immediately.
 
 Training launch preflight: the remote start wrapper checks that both configured
 training CSVs exist and are non-empty before it creates a Task Scheduler run.

@@ -70,10 +70,11 @@ belong in sibling `SURROGATE_TRAIN` unless they are formal `ALB` package
 regression fixtures. The workspace-global run rules live in
 `ALB_MAIN/docs/run_index.md`, while active run locator state lives in the
 owning project's current-status document. Future runs should use the
-project-prefixed run ID and log-placement policy: configs under the owning
-subproject, result artifacts under that subproject's `outputs`, runtime logs
-under that subproject's `logs`, and short-term inactive archives under that
-subproject's `outputs/archive`.
+project-prefixed run ID and placement policy: configs under the owning
+subproject, result artifacts under that subproject's `outputs`, log paths left
+where the responsible tool writes them, and short-term inactive archives under
+that subproject's `outputs/archive`. Logs are raw evidence, not a separately
+unified managed tree.
 
 `outputs/` should be considered an archive candidate, not a cleanup target. Suggested labels:
 

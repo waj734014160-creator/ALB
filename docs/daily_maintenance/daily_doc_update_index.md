@@ -31,6 +31,16 @@ document's own `Document Role` block before editing it.
 - This index does not grant permission to delete, move, archive, launch jobs,
   edit source code, or rewrite raw evidence.
 
+## 文档语言规则
+
+- 面向人类用户阅读的规定类、概览类、维护类、审计类和操作手册类文档应使用中文。
+- 适用文件包括但不限于 `docs/alb_package_overview.md`,
+  `docs/daily_summary_log.md`, `docs/file_classification.md`,
+  `docs/project_overview.md`, `docs/remote_workstation_connection.md`,
+  `docs/run_index.md`，以及 sibling 项目中同类的维护文档。
+- 源码中的代码注释、docstring、实现内说明、嵌入代码的 CLI help、生成脚本注释必须继续使用英文，以兼容不同编码方式和开发工具链。
+- 若既有维护文档仍有英文内容，后续维护时应优先把被触及的段落改为中文，避免继续扩展英文规则正文。
+
 ## Core Document Roles
 
 | File | Role | Brief description | Allowed updates | Forbidden updates | Cadence / trigger |
@@ -40,7 +50,7 @@ document's own `Document Role` block before editing it.
 | `SURROGATE_TRAIN/docs/albnn_training_log.md` | Long-term memory / chronological log | Daily durable ALBNN history after the "sleep" pass. | At most one dated daily entry with completed events, key metrics, incident root causes, reproducible commands, final conclusions. | Realtime ticks, latest loss polling, live PIDs, active ETAs, repeated monitor snapshots. | Daily maintenance only by default, or explicit user request for immediate durable logging. |
 | `SURROGATE_TRAIN/docs/albnn_training_brief.md` | Stable current understanding | First-read stable ALBNN workflow state. | Current recommended workflow, canonical data/model pointers, input/output contracts, sampling settings, durable lessons. | Live PIDs, latest loss, ETAs, log tails, transient monitor output, daily audit minutiae. | Only when workflow structure, canonical paths, sampling settings, or durable lessons change. |
 | `SURROGATE_TRAIN/docs/albnn_training_info.md` | Reading index | Short entry point for ALBNN docs. | Read order, role-index pointer, source-of-truth pointer. | Runtime status, metrics, history, operational details. | Rare; update when entry-point docs or read order changes. |
-| `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS global run rules and placement index | Human-readable policy for project-prefixed run numbers, run ID format, current-status ownership, and canonical config/output/log pointers. | Run-number policy, project prefix mappings, current-status pointers, canonical path pointers, and archive pointer policy. | Raw logs, detailed progress tails, model metrics better owned by run outputs, active runtime ticks, and cleanup actions. | When run-number policy, project prefixes, current-status ownership, path families, or archive pointer policy changes. |
+| `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS global run rules and placement index | Human-readable policy for project-prefixed run numbers, run ID format, current-status ownership, and canonical config/output path pointers. | Run-number policy, project prefix mappings, current-status pointers, canonical path pointers, and archive pointer policy. | Raw logs, detailed progress tails, model metrics better owned by run outputs, active runtime ticks, and cleanup actions. | When run-number policy, project prefixes, current-status ownership, path families, or archive pointer policy changes. |
 | `ALB_MAIN/docs/remote_workstation_connection.md` | Stable remote-operation manual | Reusable remote connection, Task Scheduler, SSH, runner, and monitor mechanics. | Connection facts, stable command patterns, wrapper ownership, reusable remote-operation lessons. | Current task progress, PIDs, latest loss, active ETAs, per-run metrics. | When remote mechanics, paths, wrappers, or credential-handling guidance changes. |
 | `ALB_MAIN/docs/file_classification.md` | ALB_MAIN file ownership and cleanup policy | File groups, ownership boundaries, archive/delete policy. | File categories, representative paths, retention/archive rules, cleanup risk notes. | Live runtime state, model progress, detailed run history. | When major file groups, archive categories, or cleanup policies change. |
 | `SURROGATE_TRAIN/docs/file_classification.md` | SURROGATE_TRAIN file ownership and cleanup policy | Training repo file groups, evidence categories, and cleanup policy. | Training data/model/log/script categories, ownership boundaries, archive/delete rules. | Live progress, latest metrics, detailed chronological history. | When training outputs, scripts, models, monitor logs, or cleanup policy changes. |
@@ -89,7 +99,6 @@ audit may summarize them into the correct role-owned document.
 | `SURROGATE_TRAIN/outputs/local_train_logs/` | Local training stdout/stderr and launch metadata. |
 | `SURROGATE_TRAIN/outputs/remote_monitor_logs/` | Remote sampling monitor status. |
 | `SURROGATE_TRAIN/outputs/queue_logs/` | Remote training queue status and synced tails. |
-| `SURROGATE_TRAIN/logs/` | Preferred future location for run logs, local monitors, remote stdout/stderr mirrors, and queue log streams. |
 | `ALB_MAIN/docs/run_index.md` | Human-readable workspace-global run-number and run-path policy. |
 | `SURROGATE_TRAIN/docs/current_runtime_status.md` | Current active run locator, progress, and next-action state. |
 | `ALB_MAIN/docs/daily_maintenance/latest_codex_daily_doc_maintenance_status.txt` | Machine-readable pointer to the latest scheduled maintenance pass; generated by the audit workflow and not a maintained narrative document. |

@@ -27,6 +27,21 @@ this repository.
 - Test files must wrap `plt.show()` in `if __name__ == '__main__':`.
 - Prefer `rg` for searching files and text.
 
+## Documentation Language
+
+- Human-facing policy, overview, maintenance, audit, and operation documents
+  should be written in Chinese. This includes files such as
+  `docs/alb_package_overview.md`, `docs/daily_summary_log.md`,
+  `docs/file_classification.md`, `docs/project_overview.md`,
+  `docs/remote_workstation_connection.md`, `docs/run_index.md`, and similar
+  maintained documents in sibling projects.
+- Code comments, docstrings, inline implementation notes, CLI help text that is
+  embedded in source code, and generated script comments must remain in English
+  for encoding and tooling compatibility.
+- When a maintained human-facing document is already partly English, future
+  edits should move touched sections toward Chinese rather than adding more
+  English policy text.
+
 ## ALB Package Orientation
 
 Read `docs/alb_package_overview.md` before changing package modules or public
@@ -60,10 +75,11 @@ owning project's current-status document as the first agent-facing locator for
 active work before broad project searches. For SURROGATE_TRAIN, that file is
 `../SURROGATE_TRAIN/docs/current_runtime_status.md`.
 
-Keep active run blocks structured enough to locate config, outputs, logs,
-remote task names, latest progress, current issue, and next action. Detailed
-raw evidence remains in artifacts and durable completed-run history belongs in
-the appropriate chronological log.
+Keep active run blocks structured enough to locate config, outputs, relevant
+log pointers, remote task names, latest progress, current issue, and next
+action. Logs are not managed through a single global layout; detailed raw
+evidence remains in artifacts and durable completed-run history belongs in the
+appropriate chronological log.
 
 ## ALBNN / Thermal Sampling
 
@@ -81,8 +97,8 @@ detailed connection checks, paths, and long-job launch notes in
 
 When launching remote ALBNN training, start monitoring by default. Prefer the
 JSON queue wrapper because it supervises active jobs and syncs status/log tails
-under `../SURROGATE_TRAIN/outputs/queue_logs`; if a job is launched directly
-with the start wrapper, start the corresponding queue monitor immediately.
+to its configured output paths; if a job is launched directly with the start
+wrapper, start the corresponding queue monitor immediately.
 
 Do not store passwords, private keys, recovery codes, or API keys in this file.
 Store those in the OS credential manager, SSH agent, or another local secret
