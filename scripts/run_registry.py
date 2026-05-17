@@ -1,10 +1,9 @@
 # coding: utf-8
 """Project-local JSONL run registry helpers.
 
-The registry keeps allocation facts in each project's ``docs/run_registry.jsonl``
-file while human-facing rules stay in ``ALB_MAIN/docs/run_index.md``.  Entries
-are append-only events so registration, state changes, and archive notes remain
-auditable without rewriting old rows.
+The registry keeps the current path locator for each registered run in each
+project's ``docs/run_registry.jsonl`` file while human-facing rules stay in
+``ALB_MAIN/docs/run_index.md``. It is intentionally not a history log.
 """
 
 from __future__ import annotations
@@ -40,7 +39,7 @@ class RunRegistryError(RuntimeError):
 
 @dataclass(frozen=True)
 class RegistryEntry:
-    """One append-only run registry event."""
+    """One current run registry locator record."""
 
     event: str
     timestamp: str
@@ -98,10 +97,10 @@ class RegistryEntry:
     def to_mapping(self) -> dict[str, Any]:
         """Return a stable JSON-serializable mapping."""
         return {
-            "event": self.event,
-            "timestamp": self.timestamp,
             "run_no": self.run_no,
             "run_id": self.run_id,
+            "event": self.event,
+            "timestamp": self.timestamp,
             "owner": self.owner,
             "domain": self.domain,
             "state": self.state,
@@ -172,13 +171,25 @@ def read_entries(path: str | Path) -> list[RegistryEntry]:
     return entries
 
 
-def append_entry(path: str | Path, entry: RegistryEntry) -> None:
-    """Append one registry event to ``path``."""
+def write_entries(path: str | Path, entries: list[RegistryEntry]) -> None:
+    """Replace ``path`` with the supplied current registry entries."""
     registry = Path(path)
     registry.parent.mkdir(parents=True, exist_ok=True)
-    with registry.open("a", encoding="utf-8", newline="\n") as f:
-        f.write(json.dumps(entry.to_mapping(), ensure_ascii=False, sort_keys=True))
-        f.write("\n")
+    with registry.open("w", encoding="utf-8", newline="\n") as f:
+        for entry in entries:
+            f.write(json.dumps(entry.to_mapping(), ensure_ascii=False))
+            f.write("\n")
+
+
+def current_entries(entries: list[RegistryEntry]) -> list[RegistryEntry]:
+    """Return one latest locator entry per run ID, preserving first-seen order."""
+    order: list[str] = []
+    latest: dict[str, RegistryEntry] = {}
+    for entry in entries:
+        if entry.run_id not in latest:
+            order.append(entry.run_id)
+        latest[entry.run_id] = entry
+    return [latest[run_id] for run_id in order]
 
 
 def latest_by_run_id(entries: list[RegistryEntry]) -> dict[str, RegistryEntry]:
@@ -186,6 +197,14 @@ def latest_by_run_id(entries: list[RegistryEntry]) -> dict[str, RegistryEntry]:
     latest: dict[str, RegistryEntry] = {}
     for entry in entries:
         latest[entry.run_id] = entry
+    return latest
+
+
+def latest_by_run_no(entries: list[RegistryEntry]) -> dict[str, RegistryEntry]:
+    """Return the latest event for every project-local run number."""
+    latest: dict[str, RegistryEntry] = {}
+    for entry in entries:
+        latest[entry.run_no] = entry
     return latest
 
 
@@ -215,8 +234,8 @@ def validate_run_no_for_owner(run_no: str, owner: str) -> None:
 
 
 def build_run_id(domain: str, purpose: str, size_or_key: str, date: str, run_no: str) -> str:
-    """Build a semantic run ID using the project-local run number."""
-    parts = [domain, purpose, size_or_key, date, run_no]
+    """Build a semantic run ID prefixed by the project-local run number."""
+    parts = [run_no, domain, purpose, size_or_key, date]
     cleaned = [re.sub(r"[^A-Za-z0-9_.-]+", "_", part.strip()).strip("_") for part in parts]
     if any(not part for part in cleaned):
         raise RunRegistryError("domain, purpose, size_or_key, date, and run_no are required")
@@ -224,16 +243,12 @@ def build_run_id(domain: str, purpose: str, size_or_key: str, date: str, run_no:
 
 
 def default_paths(domain: str, run_id: str) -> dict[str, Any]:
-    """Return the default relative config, output, log, and archive paths."""
+    """Return default relative config and output paths for a run."""
     return {
         "config": f"run/remote/configs/{run_id}.json",
         "outputs": f"outputs/{domain}/{run_id}",
-        "logs": {
-            "remote": f"logs/remote/{run_id}",
-            "local_train": f"logs/local_train/{run_id}",
-            "queue": f"logs/queue/{run_id}",
-        },
-        "archive": f"outputs/archive/{run_id}",
+        "logs": None,
+        "archive": None,
     }
 
 
@@ -272,7 +287,7 @@ def register_run(
     timestamp: str | None = None,
     allow_archive_owner: bool = False,
 ) -> RegistryEntry:
-    """Allocate and append a new run registration event."""
+    """Allocate and write a new run registration locator."""
     project_root = Path(project_root).resolve()
     owner = normalize_owner(owner or owner_from_project_root(project_root))
     if owner == "ARTIFACTS_ARCHIVE" and not allow_archive_owner:
@@ -301,7 +316,7 @@ def register_run(
         archive=archive if archive is not None else defaults["archive"],
         notes=notes,
     )
-    append_entry(path, entry)
+    write_entries(path, current_entries(entries) + [entry])
     return entry
 
 
@@ -314,14 +329,21 @@ def update_run(
     config: str | None = None,
     outputs: str | None = None,
     logs: Any = None,
+    clear_logs: bool = False,
     archive: str | None = None,
+    clear_archive: bool = False,
     notes: str = "",
     timestamp: str | None = None,
 ) -> RegistryEntry:
     """Append a state update event for an existing registered run."""
+    if clear_logs and logs is not None:
+        raise RunRegistryError("--clear-logs cannot be combined with --log")
+    if clear_archive and archive is not None:
+        raise RunRegistryError("--clear-archive cannot be combined with --archive")
     project_root = Path(project_root).resolve()
     path = registry_path(project_root)
-    latest = latest_by_run_id(read_entries(path)).get(run_id)
+    entries = read_entries(path)
+    latest = latest_by_run_id(entries).get(run_id)
     if latest is None:
         raise RunRegistryError(f"run_id is not registered in {path}: {run_id}")
     entry = RegistryEntry(
@@ -334,12 +356,62 @@ def update_run(
         state=state,
         config=latest.config if config is None else config,
         outputs=latest.outputs if outputs is None else outputs,
-        logs=latest.logs if logs is None else logs,
-        archive=latest.archive if archive is None else archive,
+        logs=None if clear_logs else (latest.logs if logs is None else logs),
+        archive=None if clear_archive else (latest.archive if archive is None else archive),
         notes=notes,
     )
-    append_entry(path, entry)
+    compacted = [existing for existing in current_entries(entries) if existing.run_id != run_id]
+    write_entries(path, compacted + [entry])
     return entry
+
+
+def _is_relative_project_path(value: str) -> bool:
+    """Return whether ``value`` looks like a project-relative path."""
+    path = Path(value)
+    if path.is_absolute():
+        return False
+    if re.match(r"^[A-Za-z]:[\\/]", value):
+        return False
+    if value.startswith(("/", "\\")):
+        return False
+    return True
+
+
+def _resolve_project_paths(project_root: Path, value: Any) -> Any:
+    """Resolve project-relative string paths while preserving remote paths."""
+    if isinstance(value, str):
+        item = {"path": value}
+        if _is_relative_project_path(value):
+            item["abs_path"] = str((project_root / value).resolve())
+        return item
+    if isinstance(value, dict):
+        return {key: _resolve_project_paths(project_root, path) for key, path in value.items()}
+    return value
+
+
+def run_paths_by_run_no(*, project_root: str | Path, run_no: str) -> dict[str, Any]:
+    """Return the latest path locator view for ``run_no``."""
+    project_root = Path(project_root).resolve()
+    latest = latest_by_run_no(read_entries(registry_path(project_root))).get(run_no)
+    if latest is None:
+        raise RunRegistryError(f"run_no is not registered in {registry_path(project_root)}: {run_no}")
+    return {
+        "project_root": str(project_root),
+        "run_no": latest.run_no,
+        "run_id": latest.run_id,
+        "owner": latest.owner,
+        "domain": latest.domain,
+        "state": latest.state,
+        "paths": {
+            "config": _resolve_project_paths(project_root, latest.config),
+            "outputs": _resolve_project_paths(project_root, latest.outputs),
+            "logs": _resolve_project_paths(project_root, latest.logs),
+            "archive": _resolve_project_paths(project_root, latest.archive),
+        },
+        "latest_event": latest.event,
+        "timestamp": latest.timestamp,
+        "notes": latest.notes,
+    }
 
 
 def validate_registered_run(
@@ -362,9 +434,9 @@ def validate_registered_run(
             f"run_id {run_id!r} is owned by {latest.owner}, not {expected_owner}"
         )
     validate_run_no_for_owner(latest.run_no, latest.owner)
-    if not latest.run_id.endswith(latest.run_no):
+    if not latest.run_id.startswith(f"{latest.run_no}_"):
         raise RunRegistryError(
-            f"run_id {latest.run_id!r} must end with its run_no {latest.run_no}"
+            f"run_id {latest.run_id!r} must start with run_no {latest.run_no}"
         )
     return latest
 
@@ -418,7 +490,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="ALB_PROJECTS run registry")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    register = subparsers.add_parser("register", help="Allocate and append a new run")
+    register = subparsers.add_parser("register", help="Allocate and write a new run locator")
     _add_common_project_args(register)
     register.add_argument("--owner")
     register.add_argument("--domain", required=True)
@@ -442,12 +514,18 @@ def build_parser() -> argparse.ArgumentParser:
     update.add_argument("--config")
     update.add_argument("--outputs")
     update.add_argument("--log", action="append", default=[])
+    update.add_argument("--clear-logs", action="store_true")
     update.add_argument("--archive")
+    update.add_argument("--clear-archive", action="store_true")
     update.add_argument("--notes", default="")
 
     list_parser = subparsers.add_parser("list", help="List latest run registry state")
     _add_common_project_args(list_parser)
     list_parser.add_argument("--all-events", action="store_true")
+
+    paths = subparsers.add_parser("paths", help="Show project file paths for one run_no")
+    _add_common_project_args(paths)
+    paths.add_argument("--run-no", required=True)
 
     validate = subparsers.add_parser("validate", help="Validate one registered run")
     _add_common_project_args(validate)
@@ -491,7 +569,9 @@ def main(argv: list[str] | None = None) -> int:
                 config=args.config,
                 outputs=args.outputs,
                 logs=logs,
+                clear_logs=args.clear_logs,
                 archive=args.archive,
+                clear_archive=args.clear_archive,
                 notes=args.notes,
             )
             _print_entry(entry)
@@ -501,7 +581,19 @@ def main(argv: list[str] | None = None) -> int:
             if not args.all_events:
                 entries = list(latest_by_run_id(entries).values())
             for entry in entries:
-                print(json.dumps(entry.to_mapping(), ensure_ascii=False, sort_keys=True))
+                print(json.dumps(entry.to_mapping(), ensure_ascii=False))
+            return 0
+        if args.command == "paths":
+            print(
+                json.dumps(
+                    run_paths_by_run_no(
+                        project_root=args.project_root,
+                        run_no=args.run_no,
+                    ),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
             return 0
         if args.command == "validate":
             _print_entry(

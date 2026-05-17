@@ -33,7 +33,7 @@
 | Task and batch entrypoints | `task/`, `ALB/task.py` | Keep current entrypoints; later split reusable workflows from one-off scripts. | Some scripts use local absolute paths and copy task files to outputs. |
 | Run scripts and experiments | `run/`, `run/validation/`, `run/JKW/` | Keep repeatable scripts; classify generated subdirectories as artifacts. | Some scripts are paper/demo specific and may write into `run/_*` directories. |
 | Remote ALBNN tooling | `ALB/remote/`, `test/remote/`, `refs/remote_albnn_*_reference_v1.json` | Keep as the stable implementation and regression baseline for remote helpers. | Compatibility wrappers live in sibling `SURROGATE_TRAIN/run/remote/`; avoid restoring duplicate implementations there. |
-| Run registration tooling | `scripts/run_registry.py`, `test/test_run_registry.py`, `docs/run_index.md`, `*/docs/run_registry.jsonl` | Keep reusable registry code as an `ALB_MAIN` repository script; keep append-only registration facts in each owning project's docs directory. | Do not parse Markdown as the registry source; do not backfill historical runs unless they are reviewed, reused, or archived. |
+| Run registration tooling | `scripts/run_registry.py`, `test/test_run_registry.py`, `docs/run_index.md`, `*/docs/run_registry.jsonl` | Keep reusable registry code as an `ALB_MAIN` repository script; keep current locator records in each owning project's docs directory. | Do not parse Markdown as the registry source; do not backfill historical runs unless they are reviewed, reused, or archived. |
 | Pytest and engineering validation | `test/*.py`, `test/bearing/`, `test/config/`, `test/thermal/` | Separate regression/unit/integration/validation/diagnostic purposes in documentation first. | `test/` also contains notebooks, GUI, logs, and figures, so pytest semantics are mixed. |
 | Historical data processing and notebooks | `data_process/`, `learning_note/`, `test/**/*.ipynb` | Preserve as research history; later migrate to `notebooks/` or `experiments/notebooks/`. | Many notebooks may contain embedded output and hard-coded local paths. |
 | Documentation and conventions | `docs/`, `AGENTS.md`, `README.md` | Keep and improve; use docs as the first layer of project organization. | Existing docs may have encoding issues and should be reviewed before reuse. |
@@ -68,8 +68,8 @@ Notes:
 Experiment run outputs, run logs, queue status snapshots, and training configs
 belong in sibling `SURROGATE_TRAIN` unless they are formal `ALB` package
 regression fixtures. The workspace-global run rules live in
-`ALB_MAIN/docs/run_index.md`, while append-only run facts live in each owning
-project's `docs/run_registry.jsonl`. Future runs should use the
+`ALB_MAIN/docs/run_index.md`, while current run locator records live in each
+owning project's `docs/run_registry.jsonl`. Future runs should use the
 project-prefixed run ID and log-placement policy: configs under the owning
 subproject, result artifacts under that subproject's `outputs`, runtime logs
 under that subproject's `logs`, and short-term inactive archives under that

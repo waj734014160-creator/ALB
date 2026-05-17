@@ -106,7 +106,7 @@ def test_monitor_summary_matches_reference():
 
 
 def generic_job_config(tmp_path):
-    run_id = "remote_generic_test_1_20260517_S0001"
+    run_id = "S0001_remote_generic_test_1_20260517"
     return {
         remote_job.INTERNAL_CONFIG_DIR: str(tmp_path),
         "run_id": run_id,

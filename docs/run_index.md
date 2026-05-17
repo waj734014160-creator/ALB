@@ -19,10 +19,14 @@
   `../SURROGATE_TRAIN/docs/current_runtime_status.md`.
 
 This file is the workspace-global human-readable rule index for future runs. It
-is not the append-only registry of run events, not a live monitor log, and should
+is not the registry content itself, not a live monitor log, and should
 not duplicate raw evidence. Registration facts live in each owning project's
-`docs/run_registry.jsonl`. Existing historical runs are not required to be
-backfilled unless they are reviewed, reused, or archived.
+`docs/run_registry.jsonl`. That JSONL registry is an agent-facing run locator
+index: it is optimized for quickly finding a run's config, outputs, logs,
+archive pointer, and coarse state without scanning the whole project. It should
+not store detailed metrics, old event history, or replace raw evidence. Existing
+historical runs are not required to be backfilled unless they are reviewed,
+reused, or archived.
 
 ## Run Number Policy
 
@@ -31,8 +35,8 @@ backfilled unless they are reviewed, reused, or archived.
   `A0001`.
 - Do not use bare numeric directory names such as `0001`; they are too easy to
   confuse with dates, sample counts, or seeds.
-- New run IDs should use:
-  `<domain>_<purpose>_<size-or-key>_<date>_<project_run_no>`.
+- New run IDs should put the project-local run number first:
+  `<project_run_no>_<domain>_<purpose>_<size-or-key>_<date>`.
 - A new launch config must record top-level `run_id`, and the task name, output
   directory, and log directory should include or clearly derive from the same
   `run_id`.
@@ -43,9 +47,9 @@ backfilled unless they are reviewed, reused, or archived.
 Examples:
 
 ```text
-fd_full_jacobian_20000_h1em03_20260517_S0001
-queue_force3_gelu_minmax_p500_20260509_S0002
-remote_helper_reference_v1_20260517_A0001
+S0001_fd_full_jacobian_20000_h1em03_20260517
+S0002_queue_force3_gelu_minmax_p500_20260509
+A0001_remote_helper_reference_v1_20260517
 ```
 
 ## Project Prefixes
@@ -65,6 +69,7 @@ The registry file is created on first registration:
 
 ```powershell
 python scripts/run_registry.py register --project-root ../SURROGATE_TRAIN --domain fd_jacobian --purpose full_jacobian --size-or-key 20000_h1em03 --date 20260517
+python scripts/run_registry.py paths --project-root ../SURROGATE_TRAIN --run-no S0001
 ```
 
 ## Path Policy
@@ -77,33 +82,48 @@ outputs/<domain>/<run_id>/
 logs/remote/<run_id>/
 logs/local_train/<run_id>/
 logs/queue/<run_id>/
-outputs/archive/<run_id>/
+outputs/archive/<run_id>/   # only after confirmed archive
 ```
 
 Use `logs/remote/<run_id>/` for remote runner/stdout/stderr logs and local
 remote monitor logs. Use `outputs/<domain>/<run_id>/` for CSV, JSON metadata,
 plots, summaries, and other result artifacts. Use `outputs/archive/<run_id>/`
 only after the task is complete and the user confirms it is inactive or
-obsolete.
+obsolete. For active, running, stopped, or failed-but-not-archived runs, keep
+the registry event's `archive` value as `null`.
+
+The registry is a path locator, not a log manager. Registration should record
+only the smallest useful locator set: `run_no`, `run_id`, `owner`, `domain`,
+`state`, `config`, `outputs`, nullable `logs`, nullable `archive`, timestamp,
+and short notes. Keep `logs` as `null` unless a coarse log-root pointer is
+needed to locate the run. Detailed log tails, PIDs, progress, and ETA belong in
+`../SURROGATE_TRAIN/docs/current_runtime_status.md` or raw log artifacts, not in
+registry events.
 
 ## Registry Event Policy
 
-Each owning project stores append-only events in:
+Each owning project stores the current locator records in:
 
 ```text
 docs/run_registry.jsonl
 ```
 
-Each event must include at least:
+Each record must include at least:
 
 ```text
-event, timestamp, run_no, run_id, owner, domain, state, config, outputs, logs, archive, notes
+run_no, run_id, event, timestamp, owner, domain, state, config, outputs, logs, archive, notes
 ```
 
-`register` allocates a new project-local run number and appends the first event.
-`update` appends state changes such as `running`, `completed`, `failed`, or
-`archived` without rewriting previous events. `list` and `validate` read the
-JSONL source directly; this Markdown file is not parsed as a registry table.
+`register` allocates a new project-local run number and writes the first locator
+record. `update` replaces the current record for that run with state changes
+such as `running`, `completed`, `failed`, or `archived`; detailed change history
+belongs in runtime/status docs or raw evidence, not in this registry. `list` and
+`validate` read the JSONL source directly; this Markdown file is not parsed as a
+registry table.
+The `archive` field is a nullable archive pointer: use `null` until an archive
+actually exists or has been confirmed as the intended staging location.
+Use `scripts/run_registry.py paths --project-root <project> --run-no <run_no>`
+to retrieve the current project file paths for a registered run number.
 
 New launch paths that use `remote_job.py launch` or `remote_job.py queue` must
 validate that the config's top-level `run_id` exists in the owning project's
