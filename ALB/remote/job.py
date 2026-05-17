@@ -21,9 +21,6 @@ import tempfile
 import time
 from typing import Any
 
-from scripts.run_registry import RunRegistryError
-from scripts.run_registry import validate_config_registration
-
 from . import monitor
 from .defaults import DEFAULT_HOST
 from .defaults import DEFAULT_KEY
@@ -215,14 +212,6 @@ def build_job_spec(config: dict[str, Any]) -> JobSpec:
         execution_time_limit=job.get("execution_time_limit"),
         verbose_remote_output=bool(job.get("verbose_remote_output", False)),
     )
-
-
-def validate_launch_registration(config: dict[str, Any]) -> None:
-    """Require launch configs to reference a registered project run."""
-    try:
-        validate_config_registration(config)
-    except RunRegistryError as exc:
-        raise RemoteJobError(str(exc)) from exc
 
 
 def powershell_array(items: list[str]) -> str:
@@ -417,7 +406,6 @@ def _print_result(result: subprocess.CompletedProcess) -> None:
 
 def launch_config(config: dict[str, Any], *, dry_run: bool = False) -> int:
     """Upload configured files, upload the generated runner, and start a task."""
-    validate_launch_registration(config)
     spec = build_job_spec(config)
     uploads = expand_uploads(config)
     prepare_script = build_prepare_script(spec, uploads)
@@ -705,7 +693,7 @@ def queue_item_config(base_config: dict[str, Any], item: dict[str, Any]) -> dict
         "profile": base_config.get("profile", {}),
         "uploads": base_config.get("uploads", []),
     }
-    for key in ("run_id", "owner", "run_registry", "job", "monitor"):
+    for key in ("run_id", "owner", "job", "monitor"):
         if key in base_config:
             config[key] = base_config[key]
     merged = deep_merge(config, item)
@@ -728,7 +716,6 @@ def queue_config(config: dict[str, Any], *, dry_run: bool = False) -> int:
         if not isinstance(item, dict):
             raise RemoteJobError(f"queue.jobs[{index}] must be an object")
         job_config = queue_item_config(config, item)
-        validate_launch_registration(job_config)
         spec = build_job_spec(job_config)
         label = str(item.get("label") or spec.task_name)
         conditions = item.get("wait_for")

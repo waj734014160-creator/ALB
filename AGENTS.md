@@ -53,6 +53,18 @@ conflict before editing. Live runtime state belongs in
 belongs in `../SURROGATE_TRAIN/docs/albnn_training_log.md`; stable remote
 mechanics belong in `docs/remote_workstation_connection.md`.
 
+## Run And Current Status Orientation
+
+Use `docs/run_index.md` for workspace-wide run-number and path rules. Use the
+owning project's current-status document as the first agent-facing locator for
+active work before broad project searches. For SURROGATE_TRAIN, that file is
+`../SURROGATE_TRAIN/docs/current_runtime_status.md`.
+
+Keep active run blocks structured enough to locate config, outputs, logs,
+remote task names, latest progress, current issue, and next action. Detailed
+raw evidence remains in artifacts and durable completed-run history belongs in
+the appropriate chronological log.
+
 ## ALBNN / Thermal Sampling
 
 Thermal ALBNN sampling and remote training details live in

@@ -4,14 +4,14 @@
 
 - Role: ALB_PROJECTS global run rules and placement index.
 - Purpose: Define project-prefixed run number policy, run ID format, canonical
-  path families, and the per-project JSONL registry source locations.
+  path families, and current-status ownership.
 - Allowed updates: run-number policy, project prefix mappings, run ID format,
-  registry source pointers, canonical path pointers, archive pointers, and short
-  notes needed to find registered runs.
+  canonical path pointers, archive pointers, and short notes needed to find the
+  current status document.
 - Forbidden updates: raw logs, detailed progress tails, full metric reports,
   cleanup actions, and destructive archive decisions.
-- Update cadence: when run-registration policy, project prefixes, registry
-  source locations, path families, or archive pointer policy changes.
+- Update cadence: when run-number policy, project prefixes, current-status
+  ownership, path families, or archive pointer policy changes.
 - Source of truth / Related docs:
   `docs/daily_maintenance/daily_doc_update_index.md`,
   `docs/file_classification.md`,
@@ -19,14 +19,10 @@
   `../SURROGATE_TRAIN/docs/current_runtime_status.md`.
 
 This file is the workspace-global human-readable rule index for future runs. It
-is not the registry content itself, not a live monitor log, and should
-not duplicate raw evidence. Registration facts live in each owning project's
-`docs/run_registry.jsonl`. That JSONL registry is an agent-facing run locator
-index: it is optimized for quickly finding a run's config, outputs, logs,
-archive pointer, and coarse state without scanning the whole project. It should
-not store detailed metrics, old event history, or replace raw evidence. Existing
-historical runs are not required to be backfilled unless they are reviewed,
-reused, or archived.
+is not a live monitor log and should not duplicate raw evidence. Current active
+run state, paths, progress, and next action belong in the owning project's
+structured current-status document, currently
+`../SURROGATE_TRAIN/docs/current_runtime_status.md` for SURROGATE_TRAIN work.
 
 ## Run Number Policy
 
@@ -37,12 +33,12 @@ reused, or archived.
   confuse with dates, sample counts, or seeds.
 - New run IDs should put the project-local run number first:
   `<project_run_no>_<domain>_<purpose>_<size-or-key>_<date>`.
-- A new launch config must record top-level `run_id`, and the task name, output
+- A new launch config should record top-level `run_id`, and the task name, output
   directory, and log directory should include or clearly derive from the same
   `run_id`.
 - The target policy is to also write `run_id` into generated metadata. Until the
-  code supports that, the config plus the owning project's
-  `docs/run_registry.jsonl` are the authoritative mapping.
+  code supports that everywhere, the config plus the structured current-status
+  entry are the active mapping.
 
 Examples:
 
@@ -63,14 +59,29 @@ A0001_remote_helper_reference_v1_20260517
 | `V` | `VALIDATION` | Formal validation runs and selected validation outputs. |
 | `X` | `ARTIFACTS_ARCHIVE` | Archive-owned bundles only; do not allocate new experiment runs here by default. |
 
-Use `scripts/run_registry.py` to allocate the next number inside the owning
-project.
-The registry file is created on first registration:
+Allocate the next number from the owning project's current-status document and
+recent config/output names. Keep allocation notes in current status while the
+run is active.
 
-```powershell
-python scripts/run_registry.py register --project-root ../SURROGATE_TRAIN --domain fd_jacobian --purpose full_jacobian --size-or-key 20000_h1em03 --date 20260517
-python scripts/run_registry.py paths --project-root ../SURROGATE_TRAIN --run-no S0001
+## Current Status Policy
+
+The current-status document is the first place an agent should inspect before
+launching, resuming, monitoring, or archiving active work:
+
+```text
+../SURROGATE_TRAIN/docs/current_runtime_status.md
 ```
+
+For each active run, keep a stable structured block with:
+
+```text
+run_no, run_id, state, config, output root, remote root, task name, monitor command,
+latest check, progress, evidence paths, current issue, next action
+```
+
+This current-status block replaces the former separate JSONL locator file. It may be
+rewritten as facts change; detailed raw logs and completed-run history still
+belong in raw artifacts or the appropriate chronological log.
 
 ## Path Policy
 
@@ -90,46 +101,8 @@ remote monitor logs. Use `outputs/<domain>/<run_id>/` for CSV, JSON metadata,
 plots, summaries, and other result artifacts. Use `outputs/archive/<run_id>/`
 only after the task is complete and the user confirms it is inactive or
 obsolete. For active, running, stopped, or failed-but-not-archived runs, keep
-the registry event's `archive` value as `null`.
-
-The registry is a path locator, not a log manager. Registration should record
-only the smallest useful locator set: `run_no`, `run_id`, `owner`, `domain`,
-`state`, `config`, `outputs`, nullable `logs`, nullable `archive`, timestamp,
-and short notes. Keep `logs` as `null` unless a coarse log-root pointer is
-needed to locate the run. Detailed log tails, PIDs, progress, and ETA belong in
-`../SURROGATE_TRAIN/docs/current_runtime_status.md` or raw log artifacts, not in
-registry events.
-
-## Registry Event Policy
-
-Each owning project stores the current locator records in:
-
-```text
-docs/run_registry.jsonl
-```
-
-Each record must include at least:
-
-```text
-run_no, run_id, event, timestamp, owner, domain, state, config, outputs, logs, archive, notes
-```
-
-`register` allocates a new project-local run number and writes the first locator
-record. `update` replaces the current record for that run with state changes
-such as `running`, `completed`, `failed`, or `archived`; detailed change history
-belongs in runtime/status docs or raw evidence, not in this registry. `list` and
-`validate` read the JSONL source directly; this Markdown file is not parsed as a
-registry table.
-The `archive` field is a nullable archive pointer: use `null` until an archive
-actually exists or has been confirmed as the intended staging location.
-Use `scripts/run_registry.py paths --project-root <project> --run-no <run_no>`
-to retrieve the current project file paths for a registered run number.
-
-New launch paths that use `remote_job.py launch` or `remote_job.py queue` must
-validate that the config's top-level `run_id` exists in the owning project's
-registry before starting work. Registration failure should block the launch.
-Monitoring existing jobs may still use historical configs that were created
-before this policy.
+archive pointers out of the active locator block unless an archive actually
+exists.
 
 ## Project Ownership
 

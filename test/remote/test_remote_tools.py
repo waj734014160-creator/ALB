@@ -17,7 +17,6 @@ from ALB.remote.transport import RemoteConnection
 from ALB.remote.transport import encode_powershell
 from ALB.remote.transport import ps_quote
 from ALB.remote.transport import remote_path
-from scripts import run_registry
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -111,9 +110,6 @@ def generic_job_config(tmp_path):
         remote_job.INTERNAL_CONFIG_DIR: str(tmp_path),
         "run_id": run_id,
         "owner": "SURROGATE_TRAIN",
-        "run_registry": {
-            "project_root": str(tmp_path),
-        },
         "profile": {
             "host": "10.0.0.1",
             "user": r"host\user",
@@ -141,19 +137,6 @@ def generic_job_config(tmp_path):
     }
 
 
-def register_generic_job_config(tmp_path):
-    return run_registry.register_run(
-        project_root=tmp_path,
-        owner="SURROGATE_TRAIN",
-        domain="remote",
-        purpose="generic_test",
-        size_or_key="1",
-        date="20260517",
-        notes="test registry entry",
-        timestamp="2026-05-17T00:00:00+00:00",
-    )
-
-
 def test_generic_job_config_builds_stable_runner(tmp_path):
     config = generic_job_config(tmp_path)
     spec = remote_job.build_job_spec(config)
@@ -173,7 +156,6 @@ def test_generic_job_config_builds_stable_runner(tmp_path):
 
 def test_generic_job_launch_uploads_before_scheduling(monkeypatch, tmp_path):
     (tmp_path / "script.py").write_text("print('hello')\n", encoding="utf-8")
-    register_generic_job_config(tmp_path)
     config = generic_job_config(tmp_path)
     calls = []
 
@@ -199,7 +181,6 @@ def test_generic_job_launch_uploads_before_scheduling(monkeypatch, tmp_path):
 
 def test_generic_job_cli_launch_dry_run_and_monitor_json(monkeypatch, tmp_path, capsys):
     (tmp_path / "script.py").write_text("print('hello')\n", encoding="utf-8")
-    register_generic_job_config(tmp_path)
     config = generic_job_config(tmp_path)
     config_path = tmp_path / "generic_job.json"
     config_path.write_text(json.dumps(config), encoding="utf-8")
@@ -219,20 +200,18 @@ def test_generic_job_cli_launch_dry_run_and_monitor_json(monkeypatch, tmp_path, 
     assert '"state": "not_running"' in monitor_out
 
 
-def test_generic_job_cli_launch_requires_registered_run(tmp_path, capsys):
+def test_generic_job_cli_launch_dry_run_uses_config_only(tmp_path, capsys):
     (tmp_path / "script.py").write_text("print('hello')\n", encoding="utf-8")
     config = generic_job_config(tmp_path)
     config_path = tmp_path / "generic_job.json"
     config_path.write_text(json.dumps(config), encoding="utf-8")
 
-    assert remote_job.main(["launch", "--config", str(config_path), "--dry-run"]) == 2
+    assert remote_job.main(["launch", "--config", str(config_path), "--dry-run"]) == 0
     output = capsys.readouterr().out
-    assert "REMOTE_JOB_ERROR" in output
-    assert "is not registered" in output
+    assert "REMOTE_JOB_DRY_RUN" in output
 
 
-def test_generic_queue_dry_run_inherits_run_registration(tmp_path, capsys):
-    register_generic_job_config(tmp_path)
+def test_generic_queue_dry_run_inherits_run_id(tmp_path, capsys):
     config = generic_job_config(tmp_path)
     config["queue"] = {"jobs": [{"label": "registered_generic"}]}
 
