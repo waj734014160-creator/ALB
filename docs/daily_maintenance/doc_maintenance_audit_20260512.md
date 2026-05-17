@@ -1,24 +1,20 @@
-# Documentation Maintenance Audit 2026-05-12
+# 文档维护审计 2026-05-12
 
-## Document Role
+## 文档角色
 
-- Role: Daily audit evidence.
-- Purpose: Store evidence and decisions from one scheduled
-  documentation-maintenance pass.
-- Allowed updates: files checked, decisions, no-change reasons, stale
-  candidates, and cleanup confirmation lists for this audit date.
-- Forbidden updates: source-code edits, runtime state ownership, stable manuals,
-  and long-term project summaries beyond audit evidence.
-- Update cadence: created or refreshed by the scheduled daily audit for this
-  date.
-- Source of truth / Related docs:
+- 角色：单次日常审计证据。
+- 目的：保存一次计划文档维护 pass 的证据和决策。
+- 允许更新：本审计日期检查过的文件、决策、无变更原因、陈旧候选和清理确认清单。
+- 禁止更新：源码编辑、运行状态归属、稳定手册内容，以及超出审计证据范围的长期项目摘要。
+- 更新节奏：本日期的计划日常审计创建或刷新时更新。
+- 事实来源 / 相关文档：
   `ALB_MAIN/docs/daily_maintenance/daily_doc_update_index.md`.
 
 - Project root: `G:/ALB_PROJECTS`
 - Created at: `2026-05-12T09:03:10+08:00`
 - Old-file minimum age: `1` days
 
-## Scheduled Pass Notes
+## 计划维护说明
 
 - This report is the scheduled daily documentation-maintenance pass for
   `G:/ALB_PROJECTS`; it is not an immediate update after every code/model
@@ -33,7 +29,7 @@
 - Stale keyword hits such as `old`, `TODO`, `deprecated`, `obsolete`, `旧`, and
   `过时` are treated as review candidates only.
 
-## Current Evidence Checked
+## 已检查当前证据
 
 - Role index read first:
   `ALB_MAIN/docs/daily_maintenance/daily_doc_update_index.md`.
@@ -71,7 +67,7 @@
   unchanged because this manually invoked scheduled pass did not produce
   scheduler final-log metadata.
 
-## Indexed Document Decisions
+## 已索引文档决策
 
 | File | Daily decision |
 | --- | --- |
@@ -95,7 +91,7 @@
 | `VALIDATION/docs/file_classification.md` | Read; no validation-policy update required. |
 | `SPLIT_INDEX.md` | Read; no split membership or dependency-convention update required. |
 
-## Git Status Snapshot
+## Git 状态快照
 
 `G:/ALB_PROJECTS` itself is not a Git repository. Child repositories were dirty
 before this pass; source-code modifications were left untouched.
@@ -129,7 +125,7 @@ before this pass; source-code modifications were left untouched.
 ?? models/
 ```
 
-### Other Split Repositories
+### 其他 Split Repositories
 
 ```text
 ARTIFACTS_ARCHIVE:  M docs/file_classification.md
@@ -138,7 +134,7 @@ PARAM_SCAN:         M docs/file_classification.md
 VALIDATION:         M docs/file_classification.md
 ```
 
-## Stale-Term Review Candidates
+## 陈旧术语复查候选
 
 The keyword scan found review candidates, not automatic stale guidance:
 
@@ -156,7 +152,7 @@ The keyword scan found review candidates, not automatic stale guidance:
   historical Chinese entries and compatibility notes with `旧`/`过时` wording;
   they should be reviewed in context before compression or migration.
 
-## Old File Candidates For Tomorrow
+## 明日旧文件候选
 
 The manual name-pattern scan found no non-generated source/doc candidates under
 the scanned roots when excluding generated output directories. The following
@@ -174,7 +170,7 @@ any cleanup:
 | `ALB_MAIN/docs/daily_maintenance/logs/codex_daily_doc_maintenance_20260512_090001.err.log` | Empty generated scheduled-maintenance stderr log. | Confirm whether it belongs to a scheduled run before cleanup. |
 | `ALB_MAIN/docs/daily_maintenance/logs/codex_daily_doc_maintenance_20260512_090001.out.log` | Empty generated scheduled-maintenance stdout log. | Confirm whether it belongs to a scheduled run before cleanup. |
 
-## Human Confirmation Items
+## 需要人工确认的项目
 
 - Run a one-shot remote monitor or SSH status check before restarting
   `ALB_GenerateTrainValid100000CurrentAuto_20260511` or marking it
@@ -187,7 +183,7 @@ any cleanup:
 - Review stale-term hits in context before changing historical notes,
   compatibility warnings, or legacy classifications.
 
-## Review Checklist
+## 复查清单
 
 - Confirm whether stable project docs need updates.
 - Confirm each old-file candidate before deleting or archiving.

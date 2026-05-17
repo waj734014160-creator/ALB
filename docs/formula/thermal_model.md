@@ -1,19 +1,15 @@
 # 热效应计算原理
 
-## Document Role
+## 文档角色
 
-- Role: Stable formula and implementation reference.
-- Purpose: Explain the thermal-pressure model, finite-element discretization,
-  nondimensional forms, and code-to-formula mapping for `ALB/thermal.py`.
-- Allowed updates: governing equations, discretization steps, boundary
-  conditions, coupling workflow, and implementation mapping.
-- Forbidden updates: realtime runtime state, active task progress, PIDs,
-  ETAs, per-run metrics, and raw log dumps.
-- Update cadence: when thermal-pressure equations, discretization, boundary
-  handling, or implementation mapping changes.
-- Source of truth / Related docs:
+- 角色：稳定公式和实现参考。
+- 目的：说明 `ALB/thermal.py` 的热压力模型、有限元离散、无量纲形式，以及代码到公式的映射。
+- 允许更新：控制方程、离散步骤、边界条件、耦合流程和实现映射。
+- 禁止更新：实时运行状态、活跃任务进度、PID、ETA、单次 run 指标和原始日志堆叠。
+- 更新节奏：热压力方程、离散方式、边界处理或实现映射变化时更新。
+- 事实来源 / 相关文档：
   `docs/daily_maintenance/daily_doc_update_index.md`,
-  `ALB/thermal.py`, `ALB/nondim.py`, and `ALB/config.py`.
+  `ALB/thermal.py`, `ALB/nondim.py` 和 `ALB/config.py`。
 
 ## 1 概述
 

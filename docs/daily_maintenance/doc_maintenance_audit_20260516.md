@@ -1,17 +1,13 @@
-# Documentation Maintenance Audit 2026-05-16
+# 文档维护审计 2026-05-16
 
-## Document Role
+## 文档角色
 
-- Role: Daily audit evidence.
-- Purpose: Store evidence and decisions from one documentation-maintenance
-  pass.
-- Allowed updates: files checked, decisions, no-change reasons, stale
-  candidates, and cleanup confirmation lists for this audit date.
-- Forbidden updates: source-code edits, runtime state ownership, stable manuals,
-  and long-term project summaries beyond audit evidence.
-- Update cadence: created or refreshed by the documentation-maintenance pass for
-  this date.
-- Source of truth / Related docs:
+- 角色：单次日常审计证据。
+- 目的：保存一次文档维护 pass 的证据和决策。
+- 允许更新：本审计日期检查过的文件、决策、无变更原因、陈旧候选和清理确认清单。
+- 禁止更新：源码编辑、运行状态归属、稳定手册内容，以及超出审计证据范围的长期项目摘要。
+- 更新节奏：本日期的文档维护 pass 创建或刷新时更新。
+- 事实来源 / 相关文档：
   `ALB_MAIN/docs/daily_maintenance/daily_doc_update_index.md`.
 
 - Project root: `G:/ALB_PROJECTS`
@@ -23,7 +19,7 @@
 - Follow-up request on 2026-05-17: apply the confirmed skill/manual
   solidification candidates.
 
-## Role Checks
+## 角色检查
 
 - Read first: `ALB_MAIN/docs/daily_maintenance/daily_doc_update_index.md`.
 - Target role blocks checked:
@@ -33,7 +29,7 @@
   `SURROGATE_TRAIN/docs/albnn_training_info.md`.
 - No role conflicts found.
 
-## Evidence Checked
+## 已检查证据
 
 - Git status was clean in both `ALB_MAIN` and `SURROGATE_TRAIN` before edits.
 - FD h-review remote monitor evidence:
@@ -47,7 +43,7 @@
 - Prepared full FD candidate manifests were read from
   `SURROGATE_TRAIN/outputs/fd_jacobian/fd10000_candidates_20260516/`.
 
-## Document Decisions
+## 文档决策
 
 | File | Decision |
 | --- | --- |
@@ -57,7 +53,7 @@
 | `SURROGATE_TRAIN/docs/albnn_training_info.md` | Read; no update required because read order and source-of-truth pointers remain valid. |
 | `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260516.md` | Created to record this pass and the candidate skill/manual updates. |
 
-## Cleanup Scope
+## 清理范围
 
 - Deleted from maintained docs: stale live-state sections, repeated monitor
   ticks, old active PID blocks, obsolete preferred next steps, and long command
@@ -67,7 +63,7 @@
 - No source-code files, data files, model files, or skill files were modified by
   this documentation pass.
 
-## Skill And Manual Solidification
+## 技能和手册固化
 
 These candidates were confirmed by the user on 2026-05-17 and applied to the
 listed skills/manual during the follow-up solidification pass.
@@ -104,7 +100,7 @@ listed skills/manual during the follow-up solidification pass.
      `G:/GWJ/envs/ALB/python.exe`, `pooln=60`, Task Scheduler through
      `remote_job.py`, and set single-threaded BLAS/OpenMP environment variables.
 
-## Solidification Targets Updated
+## 已更新固化目标
 
 - `C:/Users/73401/.codex/skills/maintain-project-docs/SKILL.md`
 - `C:/Users/73401/.codex/skills/alb-surrogate-remote-workflow/SKILL.md`

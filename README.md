@@ -1,19 +1,21 @@
-﻿# ALB_MAIN
+# ALB_MAIN
 
-Main project copy for the stable ALB package, source-code tests, and project documentation.
+`ALB_MAIN` 是 `G:/ALB_PROJECTS` split workspace 中的稳定 ALB 包项目，保存核心包代码、源码测试和项目维护文档。
 
-Contains:
-- `ALB/`: core package code.
-- `test/`: Python test/debug files and lightweight configs only.
-- `docs/`: project documentation and file classification.
-- Packaging metadata: `pyproject.toml`, `README.md`, `AGENTS.md`.
+主要内容：
 
-Key docs:
-- `docs/alb_package_overview.md`: first-read map of `ALB/` modules and public
-  interface groups.
-- `docs/remote_workstation_connection.md`: stable remote workstation connection
-  and long-job operation notes.
-- `docs/file_classification.md`: repository file ownership and cleanup
-  guardrails.
+- `ALB/`：核心包代码。
+- `test/`：Python 测试、调试文件和轻量配置。
+- `docs/`：项目文档、包概览、文件分类、run 规则和远程操作手册。
+- `refs/`：行为参考和回归基线。
+- `pyproject.toml`、`README.md`、`AGENTS.md`：包元数据和项目入口规则。
 
-Excluded intentionally: `.env`, `.git`, IDE folders, caches, notebooks, model outputs, and generated artifacts.
+首读文档：
+
+- `docs/project_overview.md`：项目边界、目录职责和首读顺序。
+- `docs/alb_package_overview.md`：`ALB/` 模块图和公共接口组。
+- `docs/remote_workstation_connection.md`：稳定远程工作站连接和长任务操作说明。
+- `docs/file_classification.md`：仓库文件归属和清理约束。
+- `docs/run_index.md`：工作区全局 run 编号、路径和 current-status 边界规则。
+
+刻意排除的内容：`.env`、`.git`、IDE 目录、缓存、notebook、模型输出和生成产物。

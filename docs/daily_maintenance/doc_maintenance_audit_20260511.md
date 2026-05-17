@@ -1,24 +1,20 @@
-# Documentation Maintenance Audit 2026-05-11
+# 文档维护审计 2026-05-11
 
-## Document Role
+## 文档角色
 
-- Role: Daily audit evidence.
-- Purpose: Store evidence and decisions from one scheduled
-  documentation-maintenance pass.
-- Allowed updates: files checked, decisions, no-change reasons, stale
-  candidates, and cleanup confirmation lists for this audit date.
-- Forbidden updates: source-code edits, runtime state ownership, stable manuals,
-  and long-term project summaries beyond audit evidence.
-- Update cadence: created or refreshed by the scheduled daily audit for this
-  date.
-- Source of truth / Related docs:
+- 角色：单次日常审计证据。
+- 目的：保存一次计划文档维护 pass 的证据和决策。
+- 允许更新：本审计日期检查过的文件、决策、无变更原因、陈旧候选和清理确认清单。
+- 禁止更新：源码编辑、运行状态归属、稳定手册内容，以及超出审计证据范围的长期项目摘要。
+- 更新节奏：本日期的计划日常审计创建或刷新时更新。
+- 事实来源 / 相关文档：
   `ALB_MAIN/docs/daily_maintenance/daily_doc_update_index.md`.
 
 - Project root: `G:\ALB_PROJECTS`
 - Created at: `2026-05-11T23:05:28`
 - Old-file minimum age: `1` days
 
-## Scheduled Pass Notes
+## 计划维护说明
 
 - This report is the scheduled daily documentation-maintenance pass for
   `G:/ALB_PROJECTS`; it is not an immediate update after every code/model
@@ -38,7 +34,7 @@
 - Stale keyword hits such as `old`, `TODO`, `deprecated`, and localized stale
   terms are treated as review candidates only.
 
-## Current Evidence Checked
+## 已检查当前证据
 
 - Active workflow source of truth:
   `SURROGATE_TRAIN/docs/current_runtime_status.md`.
@@ -60,7 +56,7 @@
   source/docs paths. Daily-maintenance scheduler logs are listed separately
   below as next-day confirmation candidates.
 
-## Indexed Document Decisions
+## 已索引文档决策
 
 | File | Daily decision |
 | --- | --- |
@@ -83,7 +79,7 @@
 | `VALIDATION/docs/file_classification.md` | Read; no validation-policy update required. |
 | `SPLIT_INDEX.md` | Read; no split membership or dependency-convention update required. |
 
-## Interactive Follow-Up Decisions
+## 交互式跟进决策
 
 | File | Follow-up decision |
 | --- | --- |
@@ -94,7 +90,7 @@
 | `SURROGATE_TRAIN/docs/albnn_training_log.md` | Read; no new completed run, final metric, or durable incident was clear enough to append. |
 | `SURROGATE_TRAIN/docs/albnn_training_brief.md` | Read; no stable workflow-pointer or durable-lesson change required. |
 
-## Git Status
+## Git 状态
 
 Snapshot refreshed during the interactive follow-up at
 `2026-05-11T23:49:02+08:00`.
@@ -148,7 +144,7 @@ M AGENTS.md
 M docs/file_classification.md
 ```
 
-## Documentation Entry Points
+## 文档入口
 
 - `ALB_MAIN/AGENTS.md`
 - `ALB_MAIN/docs/alb_package_overview.md`
@@ -183,7 +179,7 @@ M docs/file_classification.md
 - `VALIDATION/docs/file_classification.md`
 - `VALIDATION/README.md`
 
-## Stale-Term Hits
+## 陈旧术语命中
 
 - `ALB_MAIN/docs/daily_summary_log.md:48`: - 约束热模型配置中 pressure_backend 仅允许 skfem 路线，旧 h_eff 分支保留为参考实现但不再作为用户可选项。
 - `ALB_MAIN/docs/daily_summary_log.md:108`: - `delta_t_scale` 替代 `delta_t_mode` / `delta_t_char` 旧对，移除 `unit_system`。
@@ -209,7 +205,7 @@ M docs/file_classification.md
 - `SURROGATE_TRAIN/docs/file_classification.md:41`: | JSON queue/generated tests | `outputs/queue_logs/generated_test_20260509.json` and related queue logs | Keep as launch/config evidence unless a later cleanup review marks them obsolete. |
 - `SURROGATE_TRAIN/TODO.md:1`: # SURROGATE_TRAIN TODO
 
-## Old File Candidates For Tomorrow
+## 明日旧文件候选
 
 The audit helper found no non-generated old-file candidates under scanned
 source/docs paths. The following generated maintenance evidence should be
@@ -223,7 +219,7 @@ confirmed on the next daily pass before any cleanup:
 | `ALB_MAIN/docs/daily_maintenance/logs/codex_daily_doc_maintenance_20260511_230401.err.log` | Current-pass generated stderr/tool-output evidence. | Confirm retention before cleanup. |
 | `ALB_MAIN/docs/daily_maintenance/logs/codex_daily_doc_maintenance_20260511_230401.out.log` | Current-pass generated stdout log, currently empty. | Confirm retention before cleanup. |
 
-## Human Confirmation Items
+## 需要人工确认的项目
 
 - Review the ambiguous local monitor tail for
   `ALB_GenerateTrainValid100000CurrentAuto_20260511`: the latest local log tail
@@ -237,7 +233,7 @@ confirmed on the next daily pass before any cleanup:
 - Review keyword hits in context. Several hits are intentional historical notes
   or compatibility warnings, not automatic stale-doc judgments.
 
-## Review Checklist
+## 复查清单
 
 - Confirm whether stable project docs need updates.
 - Confirm each old-file candidate before deleting or archiving.

@@ -1,105 +1,58 @@
-# ALB_MAIN Agent Instructions
+# ALB_MAIN 代理指令
 
-This file stores stable project-level instructions for coding agents working in
-this repository.
+本文件保存 coding agent 在本仓库工作时需要遵守的稳定项目级指令。
 
-## Environment
+## 环境
 
-- Python: `E:/Anaconda2023/envs/ALB/python.exe`
-- Shell: PowerShell 5.1
-- In PowerShell commands, use `;` instead of `&&`.
-- Repository root: this directory, `ALB_MAIN` inside `G:/ALB_PROJECTS`
+- Python：`E:/Anaconda2023/envs/ALB/python.exe`
+- Shell：PowerShell 5.1
+- PowerShell 命令中使用 `;`，不要使用 `&&`。
+- 仓库根目录：当前目录，即 `G:/ALB_PROJECTS` 下的 `ALB_MAIN`。
 
-## Code Conventions
+## 代码约定
 
-- Do not modify source code unless one of these is true: the user explicitly
-  asks for a code change, or the user's request cannot be fulfilled without a
-  code change.
-- For small or lightweight requests, prefer reusing existing scripts, CLIs,
-  configs, and documented commands before adding new code.
-- All code comments must be in English.
-- New scripts must include at least brief comments for the main workflow,
-  assumptions, and non-obvious steps.
-- Package/module code must include complete, maintainable docstrings and
-  comments for public APIs, important data contracts, and non-trivial logic.
-- Use `miu`, not `u`, for viscosity.
-- Use `lambda_value`, not bare `lambda`.
-- Test files must wrap `plt.show()` in `if __name__ == '__main__':`.
-- Prefer `rg` for searching files and text.
+- 不要修改源码，除非满足以下任一条件：用户明确要求代码变更，或用户请求不修改代码就无法完成。
+- 对小型或轻量请求，优先复用现有脚本、CLI、配置和已记录命令，再考虑新增代码。
+- 所有代码注释必须使用英文。
+- 新脚本至少要包含简短英文注释，说明主流程、假设和不明显步骤。
+- package/module 代码必须为 public API、重要数据契约和非平凡逻辑提供完整、可维护的 docstring 和注释。
+- 黏度变量使用 `miu`，不要使用 `u`。
+- 使用 `lambda_value`，不要使用裸 `lambda`。
+- 测试文件中的 `plt.show()` 必须包在 `if __name__ == '__main__':` 下。
+- 搜索文件和文本时优先使用 `rg`。
 
-## Documentation Language
+## 文档语言
 
-- Human-facing policy, overview, maintenance, audit, and operation documents
-  should be written in Chinese. This includes files such as
-  `docs/alb_package_overview.md`, `docs/daily_summary_log.md`,
-  `docs/file_classification.md`, `docs/project_overview.md`,
-  `docs/remote_workstation_connection.md`, `docs/run_index.md`, and similar
-  maintained documents in sibling projects.
-- Code comments, docstrings, inline implementation notes, CLI help text that is
-  embedded in source code, and generated script comments must remain in English
-  for encoding and tooling compatibility.
-- When a maintained human-facing document is already partly English, future
-  edits should move touched sections toward Chinese rather than adding more
-  English policy text.
+- 面向人类用户阅读的规定类、概览类、维护类、审计类和操作手册类文档应使用中文。包括但不限于 `docs/alb_package_overview.md`、`docs/daily_summary_log.md`、`docs/file_classification.md`、`docs/project_overview.md`、`docs/remote_workstation_connection.md`、`docs/run_index.md`，以及兄弟项目中的同类维护文档。
+- 源码中的代码注释、docstring、实现说明、嵌入源码的 CLI help 文本和生成脚本注释必须保持英文，以兼容编码和工具链。
+- 当维护类人类可读文档已经部分使用英文时，后续编辑应把被触及段落转向中文，而不是继续增加英文规则正文。
 
-## ALB Package Orientation
+## ALB 包定位
 
-Read `docs/alb_package_overview.md` before changing package modules or public
-interfaces. The document summarizes the `ALB/` module map, top-level lazy
-exports in `ALB/__init__.py`, and the main interface groups for system builders,
-config dataclasses, bearing/film models, thermal/nondimensional helpers, ALBNN
-surrogates, remote helpers, and task/result utilities.
+修改 package module 或 public interface 前，先阅读 `docs/alb_package_overview.md`。该文档总结 `ALB/` 模块图、`ALB/__init__.py` 中的顶层 lazy exports，以及系统构建器、配置 dataclass、轴承/油膜模型、热/无量纲 helper、ALBNN surrogate、远程 helper、task/result 工具等主要接口组。
 
-When adding a public API, update both the module docstring/comments and the
-package overview. Keep reusable numerical code in `ALB_MAIN/ALB`; sibling
-projects such as `SURROGATE_TRAIN` should import it instead of duplicating ALB
-package code.
+新增 public API 时，同时更新模块 docstring/comment 和包概览。可复用数值代码应保留在 `ALB_MAIN/ALB`；`SURROGATE_TRAIN` 等兄弟项目应 import 这里的 ALB 包代码，不要复制。
 
-## Documentation Role Boundary
+## 文档角色边界
 
-Before maintaining project documents, read
-`docs/daily_maintenance/daily_doc_update_index.md` first. It is the centralized
-document-role index. Then read the target document's local `Document Role`
-block and edit only content allowed by that role.
+维护项目文档前，先阅读 `docs/daily_maintenance/daily_doc_update_index.md`。它是集中式文档角色索引。然后阅读目标文档本地的 `文档角色` 区块，只编辑该角色允许的内容。
 
-If the centralized index and the target document disagree, stop and report the
-conflict before editing. Live runtime state belongs in
-`../SURROGATE_TRAIN/docs/current_runtime_status.md`; daily durable ALBNN history
-belongs in `../SURROGATE_TRAIN/docs/albnn_training_log.md`; stable remote
-mechanics belong in `docs/remote_workstation_connection.md`.
+如果集中索引和目标文档冲突，停止并报告冲突。实时运行状态属于 `../SURROGATE_TRAIN/docs/current_runtime_status.md`；每日耐久 ALBNN 历史属于 `../SURROGATE_TRAIN/docs/albnn_training_log.md`；稳定远程机制属于 `docs/remote_workstation_connection.md`。
 
-## Run And Current Status Orientation
+## Run 与当前状态定位
 
-Use `docs/run_index.md` for workspace-wide run-number and path rules. Use the
-owning project's current-status document as the first agent-facing locator for
-active work before broad project searches. For SURROGATE_TRAIN, that file is
-`../SURROGATE_TRAIN/docs/current_runtime_status.md`.
+使用 `docs/run_index.md` 获取工作区级 run 编号和路径规则。广泛搜索项目文件前，先使用拥有项目的 current-status 文档作为 agent 面向活跃工作的首要定位入口。对 SURROGATE_TRAIN 来说，该文件是 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。
 
-Keep active run blocks structured enough to locate config, outputs, relevant
-log pointers, remote task names, latest progress, current issue, and next
-action. Logs are not managed through a single global layout; detailed raw
-evidence remains in artifacts and durable completed-run history belongs in the
-appropriate chronological log.
+活跃 run 区块应保持足够结构化，能够定位 config、outputs、相关日志指针、远程任务名、最新进度、当前问题和下一步。日志不通过单一全局布局统一管理；详细原始证据保留在 artifacts 中，已完成 run 的耐久历史属于对应的时间顺序 log。
 
-## ALBNN / Thermal Sampling
+## ALBNN / 热采样
 
-Thermal ALBNN sampling and remote training details live in
-`../SURROGATE_TRAIN/docs/albnn_training_brief.md`; detailed dated history lives
-in `../SURROGATE_TRAIN/docs/albnn_training_log.md`. The current model uses 12
-base inputs and outputs `fx, fy`; re-read the brief and the live
-`SURROGATE_TRAIN/task/task_albnn_data.py` before making training claims.
+热 ALBNN 采样和远程训练细节位于 `../SURROGATE_TRAIN/docs/albnn_training_brief.md`；详细日期历史位于 `../SURROGATE_TRAIN/docs/albnn_training_log.md`。当前模型使用 12 个 base inputs，输出 `fx, fy`；做训练相关判断前，重新阅读 brief 和 live 的 `SURROGATE_TRAIN/task/task_albnn_data.py`。
 
-## Remote Computer Connection
+## 远程计算机连接
 
-Remote workstation access is available by SSH over LAN or ZeroTier. Keep
-detailed connection checks, paths, and long-job launch notes in
-`docs/remote_workstation_connection.md`.
+远程工作站可通过 LAN 或 ZeroTier 上的 SSH 访问。详细连接检查、路径和长任务启动说明维护在 `docs/remote_workstation_connection.md`。
 
-When launching remote ALBNN training, start monitoring by default. Prefer the
-JSON queue wrapper because it supervises active jobs and syncs status/log tails
-to its configured output paths; if a job is launched directly with the start
-wrapper, start the corresponding queue monitor immediately.
+启动远程 ALBNN training 时，默认启动 monitoring。优先使用 JSON queue wrapper，因为它会监督活跃任务，并把 status/log tails 同步到配置的输出路径；如果直接用 start wrapper 启动任务，应立即启动对应 queue monitor。
 
-Do not store passwords, private keys, recovery codes, or API keys in this file.
-Store those in the OS credential manager, SSH agent, or another local secret
-store instead.
+不要把密码、私钥、恢复码或 API key 写入本文件。它们应存放在 OS credential manager、SSH agent 或其他本地 secret store 中。

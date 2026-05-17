@@ -1,105 +1,86 @@
-# Documentation Role And Daily Update Index
+# 文档角色与日常更新索引
 
-## Document Role
+## 文档角色
 
-- Role: Centralized document role index and daily audit index.
-- Purpose: Define maintained-document roles, allowed updates, forbidden updates,
-  update cadence, and daily audit triggers.
-- Allowed updates: document-role entries, daily audit rules, evidence-source
-  pointers, and role-boundary corrections.
-- Forbidden updates: realtime runtime state, detailed run history, source-code
-  changes, raw evidence dumps, and cleanup actions.
-- Update cadence: when maintained document roles, entry points, or audit rules
-  change.
-- Source of truth / Related docs: each indexed document's local
-  `Document Role` block.
+- 角色：集中式文档角色索引和日常审计索引。
+- 目的：定义维护类文档的角色、允许更新内容、禁止更新内容、更新节奏和日常审计触发条件。
+- 允许更新：文档角色条目、日常审计规则、证据来源指针和角色边界修正。
+- 禁止更新：实时运行状态、详细 run 历史、源码修改、原始证据堆叠和清理动作。
+- 更新节奏：维护文档角色、入口文档或审计规则变化时更新。
+- 事实来源 / 相关文档：各被索引文档自己的 `文档角色` 区块。
 
-This is the centralized role index for maintained project documents. Every
-documentation-maintenance pass must read this file first, then read the target
-document's own `Document Role` block before editing it.
+本文是项目维护文档的集中角色索引。任何文档维护都必须先读本文，再读目标文档自己的 `文档角色` 区块，然后只在该角色允许的范围内编辑。
 
-## Role Index Rule
+## 角色索引规则
 
-- A maintained document may be edited only for the role listed here and in its
-  own `Document Role` block.
-- If this index and the target document disagree, stop and report the conflict
-  before editing.
-- If a requested update belongs to a different role, write it to the correct
-  document or produce a migration recommendation.
-- Documents not listed here are not routine maintenance targets. Add an index
-  entry and a local `Document Role` block before maintaining them.
-- This index does not grant permission to delete, move, archive, launch jobs,
-  edit source code, or rewrite raw evidence.
+- 维护类文档只能按本文和自身 `文档角色` 区块列出的角色编辑。
+- 如果本文和目标文档的角色说明冲突，停止编辑并报告冲突。
+- 如果请求内容属于另一种文档角色，应写入正确文档，或提出迁移建议。
+- 未列入本文的文档不是例行维护目标；若要纳入维护，应先补充索引条目和本地 `文档角色` 区块。
+- 本文不授权删除、移动、归档、启动任务、编辑源码或重写原始证据。
 
 ## 文档语言规则
 
-- 面向人类用户阅读的规定类、概览类、维护类、审计类和操作手册类文档应使用中文。
-- 适用文件包括但不限于 `docs/alb_package_overview.md`,
-  `docs/daily_summary_log.md`, `docs/file_classification.md`,
-  `docs/project_overview.md`, `docs/remote_workstation_connection.md`,
-  `docs/run_index.md`，以及 sibling 项目中同类的维护文档。
-- 源码中的代码注释、docstring、实现内说明、嵌入代码的 CLI help、生成脚本注释必须继续使用英文，以兼容不同编码方式和开发工具链。
-- 若既有维护文档仍有英文内容，后续维护时应优先把被触及的段落改为中文，避免继续扩展英文规则正文。
+- 面向人类用户阅读的规定类、概览类、维护类、审计类和操作手册类文档使用中文。
+- 适用文件包括但不限于 `docs/alb_package_overview.md`、`docs/daily_summary_log.md`、`docs/file_classification.md`、`docs/project_overview.md`、`docs/remote_workstation_connection.md`、`docs/run_index.md`，以及兄弟项目中的同类维护文档。
+- 源码中的代码注释、docstring、实现说明、嵌入代码的 CLI help 和生成脚本注释必须继续使用英文，以兼容不同编码方式和开发工具链。
+- 文档内的路径、命令、API 名称、参数名、错误文本和日志字段可以保留英文原文。
+- 若旧维护文档仍有英文正文，后续维护时应优先把被触及的段落改为中文，避免继续扩展英文规则正文。
 
-## Core Document Roles
+## 核心文档角色
 
-| File | Role | Brief description | Allowed updates | Forbidden updates | Cadence / trigger |
+| 文件 | 角色 | 简要说明 | 允许更新 | 禁止更新 | 节奏 / 触发条件 |
 | --- | --- | --- | --- | --- | --- |
-| `ALB_MAIN/docs/daily_maintenance/daily_doc_update_index.md` | Centralized document role index and daily audit index | The source of truth for maintained-document roles and audit triggers. | Document-role entries, daily audit rules, evidence-source pointers, role-boundary corrections. | Realtime runtime state, detailed run history, source-code changes, raw evidence dumps, cleanup actions. | When maintained document roles, entry points, or audit rules change. |
-| `SURROGATE_TRAIN/docs/current_runtime_status.md` | Short-term memory / live status buffer | The only realtime state for active training, sampling, queue, and monitor work. | Active task names, PIDs, latest loss/progress/ETA, active log paths, check commands, next action. | Durable lessons, full incident writeups, historical narrative, stable manuals. | Update after status checks, launches, syncs, stops, or monitor runs. |
-| `SURROGATE_TRAIN/docs/albnn_training_log.md` | Long-term memory / chronological log | Daily durable ALBNN history after the "sleep" pass. | At most one dated daily entry with completed events, key metrics, incident root causes, reproducible commands, final conclusions. | Realtime ticks, latest loss polling, live PIDs, active ETAs, repeated monitor snapshots. | Daily maintenance only by default, or explicit user request for immediate durable logging. |
-| `SURROGATE_TRAIN/docs/albnn_training_brief.md` | Stable current understanding | First-read stable ALBNN workflow state. | Current recommended workflow, canonical data/model pointers, input/output contracts, sampling settings, durable lessons. | Live PIDs, latest loss, ETAs, log tails, transient monitor output, daily audit minutiae. | Only when workflow structure, canonical paths, sampling settings, or durable lessons change. |
-| `SURROGATE_TRAIN/docs/albnn_training_info.md` | Reading index | Short entry point for ALBNN docs. | Read order, role-index pointer, source-of-truth pointer. | Runtime status, metrics, history, operational details. | Rare; update when entry-point docs or read order changes. |
-| `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS global run rules and placement index | Human-readable policy for project-prefixed run numbers, run ID format, current-status ownership, and canonical config/output path pointers. | Run-number policy, project prefix mappings, current-status pointers, canonical path pointers, and archive pointer policy. | Raw logs, detailed progress tails, model metrics better owned by run outputs, active runtime ticks, and cleanup actions. | When run-number policy, project prefixes, current-status ownership, path families, or archive pointer policy changes. |
-| `ALB_MAIN/docs/remote_workstation_connection.md` | Stable remote-operation manual | Reusable remote connection, Task Scheduler, SSH, runner, and monitor mechanics. | Connection facts, stable command patterns, wrapper ownership, reusable remote-operation lessons. | Current task progress, PIDs, latest loss, active ETAs, per-run metrics. | When remote mechanics, paths, wrappers, or credential-handling guidance changes. |
-| `ALB_MAIN/docs/file_classification.md` | ALB_MAIN file ownership and cleanup policy | File groups, ownership boundaries, archive/delete policy. | File categories, representative paths, retention/archive rules, cleanup risk notes. | Live runtime state, model progress, detailed run history. | When major file groups, archive categories, or cleanup policies change. |
-| `SURROGATE_TRAIN/docs/file_classification.md` | SURROGATE_TRAIN file ownership and cleanup policy | Training repo file groups, evidence categories, and cleanup policy. | Training data/model/log/script categories, ownership boundaries, archive/delete rules. | Live progress, latest metrics, detailed chronological history. | When training outputs, scripts, models, monitor logs, or cleanup policy changes. |
-| `ALB_MAIN/docs/daily_summary_log.md` | Project-level daily maintenance summary | Concise daily record of documentation maintenance and stable project changes. | Daily maintenance summaries, cleanup confirmations, stable doc/code organization decisions. | Realtime job state, raw log dumps, detailed ALBNN metrics better owned by `albnn_training_log.md`. | Daily maintenance pass or explicit project-summary request. |
-| `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_YYYYMMDD.md` | Daily audit evidence | Evidence from one scheduled documentation-maintenance pass. | Files checked, decisions, no-change reasons, stale candidates, cleanup confirmation lists. | Source edits, runtime state ownership, long-term project manuals. | Created/refreshed by each scheduled daily audit. |
-| `ALB_MAIN/docs/alb_package_overview.md` | Stable package orientation | ALB package module map and public interface groups. | Public API/module ownership changes and package-boundary notes. | Experiment runtime state, daily maintenance history. | When public APIs, module ownership, or package boundaries change. |
-| `ALB_MAIN/docs/formula/thermal_model.md` | Stable formula and implementation reference | Formula-level explanation of the thermal-pressure model, discretization, and implementation mapping. | Governing equations, nondimensional forms, FEM discretization, boundary-condition explanations, and code-to-formula mapping. | Realtime runtime state, per-run metrics, task PIDs, and raw logs. | When thermal-pressure equations, discretization, or implementation mapping changes. |
+| `ALB_MAIN/docs/daily_maintenance/daily_doc_update_index.md` | 集中式文档角色索引和日常审计索引 | 维护文档角色和审计触发条件的事实来源。 | 文档角色条目、日常审计规则、证据来源指针、角色边界修正。 | 实时运行状态、详细 run 历史、源码修改、原始证据堆叠、清理动作。 | 维护文档角色、入口文档或审计规则变化时。 |
+| `ALB_MAIN/docs/project_overview.md` | ALB_MAIN 项目入口概览 | 项目边界、主要目录、首读文档和稳定验证入口。 | 项目职责、目录职责、首读文档、稳定验证入口、跨项目边界说明。 | 实时运行状态、详细实验日志、模型指标流水、原始日志正文。 | 项目拆分、目录职责、首读文档或稳定工作流入口变化时。 |
+| `ALB_MAIN/docs/alb_package_overview.md` | 稳定包概览 | ALB 包模块图和公共接口组。 | 公共 API、模块归属和包边界说明。 | 实验运行状态、日常维护历史。 | 公共 API、模块归属或包边界变化时。 |
+| `ALB_MAIN/docs/file_classification.md` | ALB_MAIN 文件归属和清理策略 | 文件组、归属边界、归档/删除策略。 | 文件类别、代表路径、保留/归档规则、清理风险说明。 | 实时运行状态、模型进度、详细 run 历史。 | 主要文件组、归档类别或清理策略变化时。 |
+| `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS 全局 run 规则和路径索引 | 项目前缀 run 编号、run ID、current-status 归属和规范路径指针。 | run 编号规则、项目前缀映射、current-status 指针、规范路径和归档指针规则。 | 原始日志、详细进度尾部、模型指标、实时 tick、清理动作。 | run 编号、项目前缀、current-status 归属、路径族或归档指针规则变化时。 |
+| `ALB_MAIN/docs/remote_workstation_connection.md` | 稳定远程操作手册 | 远程连接、Task Scheduler、SSH、runner 和 monitor 机制。 | 连接事实、稳定命令模式、wrapper 归属、凭据处理规则、可复用操作经验。 | 当前任务进度、PID、最新 loss、活跃 ETA、单次 run 指标。 | 远程机制、路径、wrapper 或凭据处理规则变化时。 |
+| `ALB_MAIN/docs/daily_summary_log.md` | 项目级日常维护摘要 | 文档维护和稳定项目组织决策的简洁日记录。 | 日常维护摘要、清理确认、稳定文档/代码组织决策。 | 实时任务状态、原始日志堆叠、应归入 `albnn_training_log.md` 的详细 ALBNN 指标。 | 日常维护 pass 或显式项目摘要请求。 |
+| `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_YYYYMMDD.md` | 单次日常审计证据 | 一次计划文档维护的检查证据。 | 已检查文件、决策、无变更原因、陈旧候选、清理确认清单。 | 源码编辑、运行状态归属、长期项目手册内容。 | 每次计划审计创建或刷新。 |
+| `ALB_MAIN/docs/formula/thermal_model.md` | 稳定公式和实现参考 | 热压力模型、离散化和实现映射的公式级说明。 | 控制方程、无量纲形式、FEM 离散、边界条件解释、代码到公式映射。 | 实时运行状态、单次 run 指标、任务 PID、原始日志。 | 热压力方程、离散方式或实现映射变化时。 |
+| `SURROGATE_TRAIN/docs/current_runtime_status.md` | 短期记忆 / 实时状态缓冲区 | 活跃训练、采样、队列和 monitor 工作的唯一实时状态。 | 活跃任务名、PID、最新 loss/进度/ETA、活跃日志路径、检查命令、下一步。 | 耐久经验、完整事故复盘、历史叙事、稳定手册。 | 状态检查、启动、同步、停止或 monitor 运行后。 |
+| `SURROGATE_TRAIN/docs/albnn_training_log.md` | 长期记忆 / 时间顺序日志 | “睡前”维护后沉淀的每日 ALBNN 耐久历史。 | 每日最多一条日期记录：完成事件、关键指标、事故根因、可复现命令、最终结论。 | 实时 tick、最新 loss polling、活跃 PID、活跃 ETA、重复 monitor 快照。 | 默认日常维护时更新，或用户显式要求立即沉淀。 |
+| `SURROGATE_TRAIN/docs/albnn_training_brief.md` | 稳定当前理解 | ALBNN 工作流首读稳定说明。 | 当前推荐工作流、规范数据/模型指针、输入输出契约、采样设置、耐久经验。 | 活跃 PID、最新 loss、ETA、日志尾部、瞬态 monitor 输出、日常审计细节。 | 工作流结构、规范路径、采样设置或耐久经验变化时。 |
+| `SURROGATE_TRAIN/docs/albnn_training_info.md` | 阅读索引 | ALBNN 文档的简短入口。 | 阅读顺序、角色索引指针、事实来源指针。 | 运行状态、指标、历史、操作细节。 | 入口文档或阅读顺序变化时。 |
+| `SURROGATE_TRAIN/docs/file_classification.md` | SURROGATE_TRAIN 文件归属和清理策略 | 训练项目文件组、证据类别和清理策略。 | 训练数据/模型/日志/脚本类别、归属边界、归档/删除规则。 | 实时进度、最新指标、详细时间顺序历史。 | 训练输出、脚本、模型、monitor 日志或清理策略变化时。 |
 
-## Conditional Workspace Role Checks
+## 条件性工作区角色检查
 
-| File | Role | Check trigger |
+| 文件 | 角色 | 检查触发条件 |
 | --- | --- | --- |
-| `ALB_MAIN/AGENTS.md` | Stable agent policy | Agent policy, source-change boundary, package orientation, or remote-operation rule changes. |
-| `SURROGATE_TRAIN/AGENTS.md` | Stable training-project agent policy | Local/remote launch boundary, documentation frequency, training-source ownership, or document-role policy changes. |
-| `ARTIFACTS_ARCHIVE/docs/file_classification.md` | Archive file ownership policy | Archive structure or retention policy changes. |
-| `DATA_POSTPROCESS/docs/file_classification.md` | Postprocess file ownership policy | Postprocess/notebook categories change. |
-| `PARAM_SCAN/docs/file_classification.md` | Parameter-scan file ownership policy | Parameter-scan task or artifact categories change. |
-| `VALIDATION/docs/file_classification.md` | Validation file ownership policy | Validation/test artifact categories change. |
-| `SPLIT_INDEX.md` | Split workspace index | Project membership or dependency convention changes. |
-| `SURROGATE_TRAIN/docs/run_index.md` | Pointer to global run rules and current status | Only when the canonical global run-index location or current-status path changes. |
+| `ALB_MAIN/AGENTS.md` | 稳定代理策略 | 代理策略、源码修改边界、包概览或远程操作规则变化。 |
+| `SURROGATE_TRAIN/AGENTS.md` | 稳定训练项目代理策略 | 本地/远程启动边界、文档频率、训练源码归属或文档角色策略变化。 |
+| `ARTIFACTS_ARCHIVE/docs/file_classification.md` | 归档文件归属策略 | 归档结构或保留策略变化。 |
+| `DATA_POSTPROCESS/docs/file_classification.md` | 后处理文件归属策略 | 后处理/notebook 类别变化。 |
+| `PARAM_SCAN/docs/file_classification.md` | 参数扫描文件归属策略 | 参数扫描任务或产物类别变化。 |
+| `VALIDATION/docs/file_classification.md` | 验证文件归属策略 | 验证/测试产物类别变化。 |
+| `SPLIT_INDEX.md` | split workspace 索引 | 项目成员或依赖约定变化。 |
+| `SURROGATE_TRAIN/docs/run_index.md` | 指向全局 run 规则和 current-status 的指针 | 只有规范全局 run-index 位置或 current-status 路径变化时更新。 |
 
-## Daily Audit Rule
+## 日常审计规则
 
-- The daily audit must read every required file in the core role table that
-  exists.
-- If a listed file needs a content change, update it only within its role.
-- If a listed file does not need a content change, record that no-change
-  decision in the day's `doc_maintenance_audit_YYYYMMDD.md`.
-- Check indexed narrative documents for compression triggers: outdated
-  experience, outdated logs, or excessive length.
-- Compress experience by summarizing durable lessons. Remove outdated narrative
-  logs from maintained docs after useful lessons are preserved.
-- Preserve incident cases, root-cause notes, final metrics, and reference
-  workflows that remain useful for future diagnosis or reproduction.
+- 日常审计必须读取核心角色表中存在的每个 required 文件。
+- 如果列出的文件需要内容变更，只在该文件角色允许的范围内更新。
+- 如果列出的文件无需内容变更，在当天的 `doc_maintenance_audit_YYYYMMDD.md` 记录 no-change 决策。
+- 检查被索引叙事文档是否触发压缩：过时经验、过时日志或长度过大。
+- 压缩经验时，将其总结为耐久原则、注意事项、可复用检查或日期结论；有用经验被保存后，可以删除维护文档中的陈旧叙事。
+- 保留仍有诊断或复现价值的事故案例、根因分析、最终指标和参考工作流。
 
-## Evidence Sources To Inspect
+## 应检查的证据来源
 
-These are raw evidence sources, not maintained narrative documents. The daily
-audit may summarize them into the correct role-owned document.
+以下是原始证据来源，不是维护叙事文档。日常审计可以把它们总结到正确角色的文档中。
 
-| Evidence source | Use |
+| 证据来源 | 用途 |
 | --- | --- |
-| `SURROGATE_TRAIN/models/*/metadata.json` | Completed model configuration and metrics. |
-| `SURROGATE_TRAIN/models/*/validation_summary.json` | Independent validation metrics. |
-| `SURROGATE_TRAIN/models/*/manual_termination.json` | Manual-stop evidence. |
-| `SURROGATE_TRAIN/outputs/local_train_logs/` | Local training stdout/stderr and launch metadata. |
-| `SURROGATE_TRAIN/outputs/remote_monitor_logs/` | Remote sampling monitor status. |
-| `SURROGATE_TRAIN/outputs/queue_logs/` | Remote training queue status and synced tails. |
-| `ALB_MAIN/docs/run_index.md` | Human-readable workspace-global run-number and run-path policy. |
-| `SURROGATE_TRAIN/docs/current_runtime_status.md` | Current active run locator, progress, and next-action state. |
-| `ALB_MAIN/docs/daily_maintenance/latest_codex_daily_doc_maintenance_status.txt` | Machine-readable pointer to the latest scheduled maintenance pass; generated by the audit workflow and not a maintained narrative document. |
-| `ALB_MAIN/docs/daily_maintenance/logs/` | Scheduled maintenance stdout/stderr/final-message evidence. |
+| `SURROGATE_TRAIN/models/*/metadata.json` | 已完成模型配置和指标。 |
+| `SURROGATE_TRAIN/models/*/validation_summary.json` | 独立验证指标。 |
+| `SURROGATE_TRAIN/models/*/manual_termination.json` | 手动停止证据。 |
+| `SURROGATE_TRAIN/outputs/local_train_logs/` | 本地训练 stdout/stderr 和启动 metadata。 |
+| `SURROGATE_TRAIN/outputs/remote_monitor_logs/` | 远程采样 monitor 状态。 |
+| `SURROGATE_TRAIN/outputs/queue_logs/` | 远程训练队列状态和同步日志尾部。 |
+| `ALB_MAIN/docs/run_index.md` | 人类可读的工作区全局 run 编号和路径策略。 |
+| `SURROGATE_TRAIN/docs/current_runtime_status.md` | 当前活跃 run 定位、进度和下一步状态。 |
+| `ALB_MAIN/docs/daily_maintenance/latest_codex_daily_doc_maintenance_status.txt` | 指向最近一次计划维护的机器可读状态；由审计流程生成，不是维护叙事文档。 |
+| `ALB_MAIN/docs/daily_maintenance/logs/` | 计划维护 stdout/stderr/final-message 证据。 |

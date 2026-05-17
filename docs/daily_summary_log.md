@@ -1,19 +1,16 @@
 # 每日总结记录
 
-## Document Role
+## 文档角色
 
-- Role: Project-level daily maintenance summary.
-- Purpose: Store concise daily documentation-maintenance summaries and stable
-  project organization decisions.
-- Allowed updates: daily maintenance summaries, cleanup confirmations, stable
-  documentation changes, and stable project-level decisions.
-- Forbidden updates: realtime job state, raw log dumps, detailed ALBNN metrics,
-  active PIDs, and transient ETAs.
-- Update cadence: daily maintenance pass or explicit project-summary request.
-- Source of truth / Related docs:
+- 角色：项目级日常维护摘要。
+- 目的：保存简洁的文档维护摘要和稳定项目组织决策。
+- 允许更新：日常维护摘要、清理确认、稳定文档变更和稳定项目级决策。
+- 禁止更新：实时任务状态、原始日志堆叠、详细 ALBNN 指标、活跃 PID 和瞬态 ETA。
+- 更新节奏：日常维护 pass 或显式项目摘要请求。
+- 事实来源 / 相关文档：
   `docs/daily_maintenance/daily_doc_update_index.md`.
 
-本文档用于沉淀日常开发、验证和方案设计工作。后续建议按日期持续追加，不再分散到多个零散说明文件中。
+本文档用于沉淀日常开发、验证和方案设计工作。后续记录按日期持续追加，不再分散到多个零散说明文件中。旧历史条目保留原样；若后续维护触及历史条目，应只做必要的事实性修正或压缩，避免重写证据链。
 
 ## 每日记录模板
 
@@ -383,7 +380,7 @@
 
 ## 2026-05-10
 
-### Daily Documentation Maintenance
+### 日常文档维护
 - Scheduled maintenance pass for split workspace `G:/ALB_PROJECTS`.
 - Detailed report: `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260510.md`.
 - Stable docs updated: added current split ownership notes to `ARTIFACTS_ARCHIVE/docs/file_classification.md`, `DATA_POSTPROCESS/docs/file_classification.md`, `PARAM_SCAN/docs/file_classification.md`, and `VALIDATION/docs/file_classification.md`.
@@ -393,7 +390,7 @@
 
 ## 2026-05-11
 
-### Documentation Maintenance
+### 文档维护
 - Manual maintenance pass for split workspace `G:/ALB_PROJECTS`.
 - Detailed report: `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260511.md`.
 - New stable ALB package orientation: `ALB_MAIN/docs/alb_package_overview.md`.
@@ -414,7 +411,7 @@
 - No code behavior, training, sampling, remote launch, commit, or artifact
   archive was performed during this documentation maintenance pass.
 
-### Scheduled Daily Documentation Maintenance
+### 计划日常文档维护
 - Scheduled pass refreshed
   `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260511.md`.
 - Stable docs changed: `SURROGATE_TRAIN/TODO.md` and
@@ -429,7 +426,7 @@
 - No source code, remote SSH, training, sampling, commits, deletes, moves,
   renames, or artifact archives were performed.
 
-### Interactive Documentation Maintenance Follow-Up
+### 交互式文档维护跟进
 - Refreshed the live-status buffer
   `SURROGATE_TRAIN/docs/current_runtime_status.md` from local process/log
   evidence.
@@ -441,7 +438,7 @@
 
 ## 2026-05-12
 
-### Scheduled Daily Documentation Maintenance
+### 计划日常文档维护
 - Scheduled pass for split workspace `G:/ALB_PROJECTS`.
 - Detailed report:
   `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260512.md`.
