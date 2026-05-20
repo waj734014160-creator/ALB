@@ -5,10 +5,18 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import subprocess
 import sys
 from typing import Any
+
+
+DEFAULT_POWERSHELL_EXE = os.environ.get("ALB_POWERSHELL_EXE", "pwsh")
+DEFAULT_POWERSHELL_TASK_EXE = os.environ.get(
+    "ALB_POWERSHELL_TASK_EXE",
+    r"C:\Program Files\PowerShell\7\pwsh.exe",
+)
 
 
 @dataclass(frozen=True)
@@ -55,6 +63,38 @@ def encode_powershell(script: str) -> str:
     return base64.b64encode(script.encode("utf-16le")).decode("ascii")
 
 
+def quote_executable(executable: str) -> str:
+    """Quote a command executable when Windows command parsing requires it."""
+    if not executable:
+        return executable
+    if executable[0] in ("'", '"'):
+        return executable
+    if any(char.isspace() for char in executable):
+        return f'"{executable}"'
+    return executable
+
+
+def powershell_encoded_command(
+    encoded_script: str,
+    *,
+    executable: str = DEFAULT_POWERSHELL_EXE,
+) -> str:
+    """Return the remote command line for an encoded PowerShell script."""
+    return f"{quote_executable(executable)} -NoLogo -NoProfile -EncodedCommand {encoded_script}"
+
+
+def powershell_file_command(
+    script_path: str,
+    *,
+    executable: str = DEFAULT_POWERSHELL_TASK_EXE,
+) -> str:
+    """Return the Task Scheduler command line for a PowerShell runner file."""
+    return (
+        f'{quote_executable(executable)} -NoLogo -NoProfile -ExecutionPolicy Bypass '
+        f'-File "{script_path}"'
+    )
+
+
 def run_remote_powershell(
     connection: RemoteConnection | Any,
     script: str,
@@ -72,7 +112,7 @@ def run_remote_powershell(
         "-i",
         remote.key,
         remote.target,
-        f"powershell -NoProfile -EncodedCommand {encoded}",
+        powershell_encoded_command(encoded),
     ]
     try:
         return subprocess.run(
@@ -118,4 +158,3 @@ def run_scp(
         check=False,
         capture_output=True,
     )
-

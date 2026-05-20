@@ -1,6 +1,43 @@
+import importlib.util
+from pathlib import Path
+import sys
+
 import numpy as np
 
-from run import nondim_thermal_field_case as case
+
+def _load_split_imports():
+    for parent in Path(__file__).resolve().parents:
+        helper_path = parent / "_split_imports.py"
+        if helper_path.exists():
+            spec = importlib.util.spec_from_file_location(
+                "_split_imports_for_nondim_thermal_field_case",
+                helper_path,
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module
+    raise ImportError("Could not locate test/_split_imports.py")
+
+
+split_imports = _load_split_imports()
+case = split_imports.import_validation_run_module("nondim_thermal_field_case")
+
+
+def test_validation_import_ignores_param_scan_run_first_on_sys_path():
+    workspace_root = split_imports.find_split_workspace_root(Path(__file__))
+    param_scan_root = str(workspace_root / "PARAM_SCAN")
+    original_path = list(sys.path)
+    try:
+        sys.path.insert(0, param_scan_root)
+        imported = split_imports.import_validation_run_module(
+            "nondim_thermal_field_case"
+        )
+    finally:
+        sys.path[:] = original_path
+
+    assert Path(imported.__file__).resolve().is_relative_to(
+        (workspace_root / "VALIDATION" / "run").resolve()
+    )
 
 
 def test_nondim_thermal_field_case_uses_thermal_config_input():

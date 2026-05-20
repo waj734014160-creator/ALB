@@ -25,6 +25,7 @@
 - Local SSH key: `C:/Users/73401/.ssh/re_alb_desktop_1pvi7rp_ed25519`
 - Remote work directory: `F:/GWJ/20260507-train`
 - Remote output directory: `F:/GWJ/20260507-train/outputs`
+- PowerShell 7: `C:/Program Files/PowerShell/7/pwsh.exe`，2026-05-21 已通过 SSH 与 Task Scheduler smoke test 验证，版本 `7.6.1`。
 - 已验证 ZeroTier 端口：`SSH 22`, `SMB 445`, `RPC 135`
 - 最近一次检查未开放：`WinRM 5985`, `RDP 3389`
 
@@ -37,6 +38,7 @@
 - Candidate remote work directory: `G:/GWJ/20260512-train-thermal`
 - ALB Python environment: `G:/GWJ/envs/ALB/python.exe`
 - System Python also available: `E:/Program Files/Python312/python.exe`
+- PowerShell 7: `C:/Program Files/PowerShell/7/pwsh.exe`，2026-05-21 已通过 SSH 与 Task Scheduler smoke test 验证，版本 `7.6.1`。
 - 硬件：AMD Ryzen Threadripper 7980X，64 cores / 128 logical processors，约 256GB RAM。
 - 2026-05-12 已验证：ZeroTier `SSH 22`。
 - 2026-05-12 已验证 ALB 环境依赖：
@@ -68,6 +70,8 @@ desktop-1pvi7rp\workstationg
 
 ## 远程 PowerShell
 
+两台远程计算工作站默认使用 PowerShell 7，且 `C:/Program Files/PowerShell/7` 已加入 Machine/User PATH。SSH 中的短命令可以显式调用 `pwsh`；Task Scheduler runner 默认优先使用标准绝对路径 `C:/Program Files/PowerShell/7/pwsh.exe`，以避免服务环境或 WindowsApps alias 差异。
+
 远程 SSH 默认 shell 表现更接近 `cmd`，直接发送 PowerShell pipeline 可能被拆分。多步骤 PowerShell 检查应在本地编码后发送：
 
 ```powershell
@@ -75,7 +79,7 @@ $remoteScript = @'
 Get-ChildItem F:/GWJ/20260507-train/outputs
 '@
 $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($remoteScript))
-ssh -i C:/Users/73401/.ssh/re_alb_desktop_1pvi7rp_ed25519 desktop-1pvi7rp\workstationg@10.182.216.22 "powershell -NoProfile -EncodedCommand $encoded"
+ssh -i C:/Users/73401/.ssh/re_alb_desktop_1pvi7rp_ed25519 desktop-1pvi7rp\workstationg@10.182.216.22 "pwsh -NoLogo -NoProfile -EncodedCommand $encoded"
 ```
 
 ## 长任务规则
@@ -163,7 +167,7 @@ E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_monitor
 
 ## PowerShell runner 注意事项
 
-PowerShell 5.1 在 `$ErrorActionPreference = 'Stop'` 与 `2>&1 | Tee-Object` 组合时，可能把 native program 的 `stderr` 转成 terminating error。这会导致 Task Scheduler 报告 `LAST_RESULT=1`，即使 Python 进程只是打印了 solver warning。长 ALB sampling/training runner 应避免该模式。
+当前默认使用 PowerShell 7。SSH encoded command 使用 `pwsh`；Task Scheduler runner 默认优先使用标准绝对路径 `C:/Program Files/PowerShell/7/pwsh.exe`。旧 PowerShell 5.1 在 `$ErrorActionPreference = 'Stop'` 与 `2>&1 | Tee-Object` 组合时，可能把 native program 的 `stderr` 转成 terminating error。这会导致 Task Scheduler 报告 `LAST_RESULT=1`，即使 Python 进程只是打印了 solver warning。长 ALB sampling/training runner 应避免该模式。
 
 推荐规则：
 

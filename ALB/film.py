@@ -1647,7 +1647,7 @@ class FilmInput(dict):
         c=80e-6,
         rho=872.0,
         r=0.04,
-        l=0.08,
+        l=0.06,
         ps=1e6,
         reynold=True,
     ):

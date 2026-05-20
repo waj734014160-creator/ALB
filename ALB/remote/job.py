@@ -26,6 +26,7 @@ from .defaults import DEFAULT_HOST
 from .defaults import DEFAULT_KEY
 from .defaults import DEFAULT_USER
 from .transport import configure_stdio
+from .transport import powershell_file_command
 from .transport import ps_quote
 from .transport import remote_path
 from .transport import run_remote_powershell
@@ -268,13 +269,29 @@ if ($cmd.Count -gt 1) {{
 "START_TIME=$(Get-Date -Format o)" | Set-Content -Path $stdout -Encoding UTF8
 "START_TIME=$(Get-Date -Format o)" | Set-Content -Path $stderr -Encoding UTF8
 
-$previousErrorActionPreference = $ErrorActionPreference
-$ErrorActionPreference = 'Continue'
-try {{
-    & $program @arguments >> $stdout 2>> $stderr
-    $exit = $LASTEXITCODE
-}} finally {{
-    $ErrorActionPreference = $previousErrorActionPreference
+$commandInfo = $null
+if (-not (Test-Path -LiteralPath $program -PathType Leaf)) {{
+    $commandInfo = Get-Command $program -ErrorAction SilentlyContinue
+}}
+$programAvailable = (Test-Path -LiteralPath $program -PathType Leaf) -or ($null -ne $commandInfo)
+$exit = 0
+if (-not $programAvailable) {{
+    $exit = 127
+    "RUNNER_ERROR=Program not found: $program" | Add-Content -Path $runnerLog -Encoding UTF8
+    "RUNNER_ERROR=Program not found: $program" | Add-Content -Path $stderr -Encoding UTF8
+}} else {{
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {{
+        & $program @arguments >> $stdout 2>> $stderr
+        if ($null -eq $LASTEXITCODE) {{
+            $exit = 0
+        }} else {{
+            $exit = [int]$LASTEXITCODE
+        }}
+    }} finally {{
+        $ErrorActionPreference = $previousErrorActionPreference
+    }}
 }}
 
 "END_TIME=$(Get-Date -Format o)" | Add-Content -Path $runnerLog -Encoding UTF8
@@ -335,10 +352,7 @@ def build_launch_script(spec: JobSpec) -> str:
     """Build the remote Task Scheduler create/run script for ``spec``."""
     disable_after_run = "$true" if spec.disable_after_run else "$false"
     verbose_remote_output = "$true" if spec.verbose_remote_output else "$false"
-    task_run = (
-        "powershell.exe -NoProfile -ExecutionPolicy Bypass -File "
-        f'"{spec.runner}"'
-    )
+    task_run = powershell_file_command(spec.runner)
     limit_block = ""
     if spec.execution_time_limit:
         limit_block = f"""

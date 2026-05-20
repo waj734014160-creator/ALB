@@ -632,6 +632,111 @@ class ALBNN:
         return self.predict(self._x, nodim=nodim)
 
 
+class ALBNNResidualCorrector:
+    """Residual sidecar that corrects a frozen packaged ALBNN prediction.
+
+    The sidecar uses the frozen main model's input scaler and feature contract.
+    The residual network predicts cartesian ``fx, fy`` residuals in nondim
+    force units, then inference returns ``main + alpha * residual``.
+    """
+
+    def __init__(
+        self,
+        main_model: ALBNN,
+        residual_model: Net,
+        residual_scaler_y,
+        *,
+        alpha: float = 1.0,
+        config=None,
+        metadata=None,
+    ):
+        self.main_model = main_model
+        self.model = residual_model
+        self.residual_model = residual_model
+        self.scaler_X = main_model.scaler_X
+        self.scaler_y = residual_scaler_y
+        self.residual_scaler_y = residual_scaler_y
+        self.config = config if config is not None else main_model.config
+        self.metadata = metadata or {}
+        self.alpha = float(alpha)
+        self.input_cols = list(main_model.input_cols)
+        self.output_cols = list(ALBNN_OUTPUT_COLS)
+        self.use_augment = bool(main_model.use_augment)
+        self.feature_set = main_model.feature_set
+        self.target_output = "cartesian"
+        self._x = None
+
+    @property
+    def force_scale(self) -> float:
+        """Dimensional force scale delegated to the frozen main model."""
+        return self.main_model.force_scale
+
+    def _model_frame(self, x) -> pd.DataFrame:
+        """Return the frozen main model's scaled-input feature frame."""
+        return self.main_model._model_frame(x)
+
+    def input(
+        self,
+        uxy,
+        uxyt,
+        sxy,
+        lambda_value=None,
+        beta_nondim=None,
+        lr=None,
+        cq0=None,
+        cq1=None,
+        cq2=None,
+        extra=None,
+        nodim: bool = True,
+    ):
+        """Set one inference point using the frozen main model input contract."""
+        self.main_model.input(
+            uxy,
+            uxyt,
+            sxy,
+            lambda_value=lambda_value,
+            beta_nondim=beta_nondim,
+            lr=lr,
+            cq0=cq0,
+            cq1=cq1,
+            cq2=cq2,
+            extra=extra,
+            nodim=nodim,
+        )
+        self._x = self.main_model._x
+
+    def _predict_residual_nondim(self, x) -> np.ndarray:
+        """Predict residual ``fx, fy`` in nondim force units."""
+        frame = self.main_model._model_frame(x)
+        x_scaled = torch.tensor(
+            self.main_model.scaler_X.transform(frame), dtype=torch.float32
+        )
+        self.residual_model.eval()
+        with torch.no_grad():
+            y_scaled = self.residual_model(x_scaled).detach().cpu().numpy()
+        columns = list(
+            getattr(self.residual_scaler_y, "feature_names_in_", ALBNN_OUTPUT_COLS)
+        )
+        y_frame = pd.DataFrame(y_scaled, columns=columns)
+        return np.asarray(self.residual_scaler_y.inverse_transform(y_frame), dtype=float)
+
+    def predict_nondim(self, x):
+        main_force = np.asarray(self.main_model.predict_nondim(x), dtype=float)
+        residual_force = self._predict_residual_nondim(x)
+        return main_force + self.alpha * residual_force
+
+    def predict(self, x, nodim: bool = True):
+        force = self.predict_nondim(x)
+        if nodim:
+            return force
+        return force * self.force_scale
+
+    def output(self, nodim: bool = True):
+        if self._x is None:
+            raise ValueError("Call input(...) before output(...)")
+        return self.predict(self._x, nodim=nodim)
+
+
 def _softmax_numpy(values: np.ndarray) -> np.ndarray:
     """Return row-wise softmax values for stable expert router probabilities."""
     values = np.asarray(values, dtype=float)
@@ -890,6 +995,68 @@ class StandardTargetScaler:
         mean = torch.as_tensor(self.mean_, dtype=dtype, device=device)
         scale = torch.as_tensor(self.scale_, dtype=dtype, device=device)
         return y_scaled * scale + mean
+
+
+class SelectiveStandardScaler:
+    """Standardize selected columns while leaving pass-through columns unchanged."""
+
+    def __init__(
+        self,
+        pass_through_columns: tuple[str, ...] | list[str] | set[str] = (),
+    ):
+        self.pass_through_columns = tuple(pass_through_columns)
+        self.feature_names_in_ = None
+        self.scale_columns_ = None
+        self.mean_ = None
+        self.scale_ = None
+
+    def fit(self, x):
+        frame = pd.DataFrame(x)
+        self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
+        self.scale_columns_ = [
+            col for col in frame.columns if col not in set(self.pass_through_columns)
+        ]
+        values = frame[self.scale_columns_].to_numpy(dtype=float)
+        if values.shape[1] == 0:
+            self.mean_ = np.asarray([], dtype=float)
+            self.scale_ = np.asarray([], dtype=float)
+        else:
+            self.mean_ = values.mean(axis=0)
+            std = values.std(axis=0)
+            self.scale_ = np.where(std > 0.0, std, 1.0)
+        return self
+
+    def transform(self, x):
+        frame = pd.DataFrame(x, columns=self.feature_names_in_)
+        result = frame.to_numpy(dtype=float, copy=True)
+        if self.scale_columns_:
+            indices = [list(self.feature_names_in_).index(col) for col in self.scale_columns_]
+            result[:, indices] = (result[:, indices] - self.mean_) / self.scale_
+        return result
+
+    def fit_transform(self, x):
+        return self.fit(x).transform(x)
+
+    def inverse_transform(self, x_scaled):
+        result = np.asarray(x_scaled, dtype=float).copy()
+        if self.scale_columns_:
+            indices = [list(self.feature_names_in_).index(col) for col in self.scale_columns_]
+            result[:, indices] = result[:, indices] * self.scale_ + self.mean_
+        return result
+
+    def inverse_transform_torch(self, x_scaled):
+        device = x_scaled.device
+        dtype = x_scaled.dtype
+        result = x_scaled.clone()
+        if self.scale_columns_:
+            indices = [list(self.feature_names_in_).index(col) for col in self.scale_columns_]
+            index_tensor = torch.as_tensor(indices, dtype=torch.long, device=device)
+            mean = torch.as_tensor(self.mean_, dtype=dtype, device=device)
+            scale = torch.as_tensor(self.scale_, dtype=dtype, device=device)
+            values = result.index_select(-1, index_tensor) * scale + mean
+            result = result.clone()
+            result[..., index_tensor] = values
+        return result
 
 
 class StandardThenMinMaxScaler:
@@ -1506,7 +1673,11 @@ class SelectiveMinMaxScaler:
             span = hi - lo
             values = (result[:, indices] - lo) / span
             safe_range = np.where(self.data_range_ > 0.0, self.data_range_, 1.0)
-            result[:, indices] = values * safe_range + self.data_min_
+            restored = values * safe_range + self.data_min_
+            zero_range = self.data_range_ <= 0.0
+            if np.any(zero_range):
+                restored[:, zero_range] = self.data_min_[zero_range]
+            result[:, indices] = restored
         return result
 
     def inverse_transform_torch(self, x_scaled):
@@ -1525,6 +1696,8 @@ class SelectiveMinMaxScaler:
             )
             values = (result.index_select(-1, index_tensor) - float(lo)) / float(span)
             values = values * safe_range + data_min
+            zero_range = data_range <= 0.0
+            values = torch.where(zero_range, data_min, values)
             result = result.clone()
             result[..., index_tensor] = values
         return result
@@ -2039,17 +2212,6 @@ def albnn(config, use_augment: bool = None):
     import json
     from pathlib import Path
 
-    with open(config.scaler_X, "rb") as f:
-        scaler_X_model = pd.read_pickle(f)
-    with open(config.scaler_y, "rb") as f:
-        scaler_y_model = pd.read_pickle(f)
-
-    checkpoint = torch.load(
-        config.model, map_location=torch.device("cpu"), weights_only=True
-    )
-    net = net_from_checkpoint(checkpoint)
-    net.load_state_dict(checkpoint["model_state_dict"])
-
     metadata = {}
     metadata_path = getattr(config, "metadata", None)
     if metadata_path is None:
@@ -2059,6 +2221,86 @@ def albnn(config, use_augment: bool = None):
     if metadata_path is not None and Path(metadata_path).exists():
         with open(metadata_path, "r", encoding="utf-8") as f:
             metadata = json.load(f)
+    metadata_dir = (
+        Path(metadata_path).resolve().parent
+        if metadata_path is not None
+        else Path(config.model).resolve().parent
+    )
+
+    def _load_checkpoint(path):
+        try:
+            return torch.load(path, map_location=torch.device("cpu"), weights_only=True)
+        except TypeError:
+            return torch.load(path, map_location=torch.device("cpu"))
+
+    def _resolve_artifact(value, default_name=None):
+        if value is None:
+            if default_name is None:
+                return None
+            path = metadata_dir / default_name
+        else:
+            path = Path(value)
+            if not path.is_absolute():
+                path = metadata_dir / path
+        return path
+
+    if metadata.get("model_type") == "albnn_residual_corrector":
+        main_model_dir = Path(metadata["main_model_dir"])
+        if not main_model_dir.is_absolute():
+            main_model_dir = metadata_dir / main_model_dir
+
+        class _ConfigProxy:
+            pass
+
+        main_config = _ConfigProxy()
+        for name in dir(config):
+            if name.startswith("_"):
+                continue
+            try:
+                value = getattr(config, name)
+            except Exception:
+                continue
+            if callable(value):
+                continue
+            setattr(main_config, name, value)
+        main_config.model = str(main_model_dir / "best_albnn.pth")
+        main_config.scaler_X = str(main_model_dir / "scaler_X.pkl")
+        main_config.scaler_y = str(main_model_dir / "scaler_y.pkl")
+        main_metadata_path = main_model_dir / "metadata.json"
+        if main_metadata_path.exists():
+            main_config.metadata = str(main_metadata_path)
+
+        main_model = albnn(main_config, use_augment=None)
+        residual_checkpoint_path = Path(getattr(config, "model", ""))
+        if not residual_checkpoint_path.exists():
+            residual_checkpoint_path = _resolve_artifact(
+                metadata.get("model_file"), "best_residual_expert.pth"
+            )
+        residual_checkpoint = _load_checkpoint(residual_checkpoint_path)
+        residual_net = net_from_checkpoint(residual_checkpoint)
+        residual_net.load_state_dict(residual_checkpoint["model_state_dict"])
+
+        residual_scaler_path = _resolve_artifact(
+            metadata.get("residual_scaler_y"), getattr(config, "scaler_y", None)
+        )
+        residual_scaler_y = pd.read_pickle(residual_scaler_path)
+        return ALBNNResidualCorrector(
+            main_model,
+            residual_net,
+            residual_scaler_y,
+            alpha=float(metadata.get("selected_alpha", 1.0)),
+            config=config,
+            metadata=metadata,
+        )
+
+    with open(config.scaler_X, "rb") as f:
+        scaler_X_model = pd.read_pickle(f)
+    with open(config.scaler_y, "rb") as f:
+        scaler_y_model = pd.read_pickle(f)
+
+    checkpoint = _load_checkpoint(config.model)
+    net = net_from_checkpoint(checkpoint)
+    net.load_state_dict(checkpoint["model_state_dict"])
 
     if use_augment is None:
         use_augment = bool(metadata.get("use_augment", True))

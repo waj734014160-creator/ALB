@@ -42,7 +42,8 @@
 | 控制器与阀 | `PID`, `FuzzyPID`, `ALB.orifice.CSOrifice`, `NodimCSOrifice`, `ALB.servovalve.moog_servovalve`, `ALB.servovalve.static_sv` | ALB 装配中使用的控制器、伺服阀和节流孔组件。 |
 | 转子耦合 | `ALB.rotor.RossRotor`, `ALB.couple.RotorBearingCouple`, `ALB.couple.RsRotorBearingCouple`, `ALB.orbit.EllipseTrack`, `ALB.orbit.BearingForceTrack` | 转子-轴承耦合、轨道生成和时域响应 workflow。 |
 | ALBNN surrogate 支持 | `ALBNN`, `ALB.nn.ALBNNForceExpert`, `ALB.nn.ALBNet`, `albnn`, `ALB.nn.thermal_albnet`, `ALB.alb.ALBNNAgent`, `ALB.alb.FakeOf` | 打包神经网络力模型，以及用于本地验证和下游仿真的 ALB shell 替换组件。 |
-| 远程操作 helper | `ALB.remote.job`, `ALB.remote.albnn_start`, `ALB.remote.albnn_status`, `ALB.remote.albnn_queue`, `ALB.remote.monitor`, `ALB.remote.transport` | 稳定的 SSH、PowerShell、Task Scheduler、launch、queue 和 monitor helper，供 `SURROGATE_TRAIN/run/remote` wrapper 使用。 |
+| 训练核心 | `ALB.train.TrainingConfig`, `ALB.train.ColumnTransformPipeline`, `ALB.train.AlbnnMlpTrainer` | 配置驱动的 surrogate 训练核心。项目 CLI 保留在 `SURROGATE_TRAIN/run/train`，稳定数据变换、scaler、loss、report 和 trainer 生命周期放在 package 中复用。 |
+| 远程操作 helper | `ALB.remote.job`, `ALB.remote.albnn_start`, `ALB.remote.albnn_status`, `ALB.remote.albnn_queue`, `ALB.remote.monitor`, `ALB.remote.transport` | 稳定的 SSH、PowerShell 7、Task Scheduler、launch、queue 和 monitor helper，供 `SURROGATE_TRAIN/run/remote` wrapper 使用；`ALB.remote.transport` 集中提供 encoded command 和 runner-file 命令构造。 |
 | 任务与结果 | `ALB.task.*`, `DataFrameResult`, `SaveTreeNode`, `read_json5`, `recognize_kc` | 可复用批处理入口、结果存储 helper、配置读取和信号分析工具。 |
 
 ## 模块地图
@@ -57,6 +58,7 @@
 | 热模型与无量纲代码 | `thermal.py`, `nondim.py` | 热网格、粘温耦合油膜、热求解器和尺度对象。 |
 | 控制与动力学 | `controller.py`, `servovalve.py`, `lti.py`, `rotor.py`, `orbit.py`, `couple.py` | 控制器、伺服阀、状态空间工具、转子模型、轨道定义和耦合系统。 |
 | Surrogate 模型 | `nn.py` | ALBNN 架构、特征增强、目标变换、训练 helper 和打包推理 loader。 |
+| 训练核心 | `train/` | JSON 配置、声明式列变换/scaler、loss、报告和 trainer 类。它不拥有实验路径、远程 queue config 或具体 run 历史。 |
 | 远程 helper | `remote/` | 共享远程操作实现。wrapper 兼容脚本保留在 `SURROGATE_TRAIN/run/remote`。 |
 | 输出与工具 | `results.py`, `postprocess.py`, `plot.py`, `logger.py`, `tool.py`, `task.py` | 结果、绘图、日志、通用工具和历史可复用 task 入口。 |
 
@@ -75,6 +77,7 @@
 - Hybrid ALBNN scaler 实验可以 standardize `ex, ey, vx, vy, sx, sy`，同时对其余输入列先 standardize 再 minmax；匹配的 force-target 实验可以对 `fx, fy` 先 standardize 再 minmax，同时保持 expert router logits 不缩放。
 - Direct-parameter hybrid scaler 实验可以 standardize `ex, ey, vx, vy, sx, sy`，直接 minmax 标量参数和 ratio 列，例如 `lambda_over_lr`，并 standardize cartesian `fx, fy` target。
 - Scaled-EVS MLP 实验可以先把 12 个基础输入 minmax 到 `[0, 1]`，再从该 scaled input space 计算并追加 `evs_geom`, `edotv`, `edots`, `sdotv`。这些追加 interaction features 不再进行第二次缩放。
+- 新训练入口应优先使用 `ALB.train` 的 JSON 配置契约：CLI 负责读取配置和运行层 override，`ColumnTransformPipeline` 负责按列名或列序号执行 scaler/派生特征步骤，并把原始配置与 resolved 配置写入模型输出目录。新增输入/输出 scaler 组合时，优先扩展 transform registry，而不是继续新增命名策略函数。
 - ALBNN MLP checkpoint 可以启用 hidden-layer LayerNorm。checkpoint 字段 `use_layer_norm` 控制 packaged inference 时 `ALB.nn.Net` 是否在每个 hidden `Linear` 层和 activation 之间插入 `LayerNorm`。
 - Polar force-expert 实验可以把 `ex/ey`, `vx/vy`, `sx/sy` 替换为各向量的 sine、cosine 和 norm，再追加 `e_dot_v`, `e_dot_s`, `s_dot_v` interaction features。在这个契约中，角度列直通 scaling，norm 和 dot product 做 standardization，标量参数先 standardize 再 minmax，每个 expert 可在 packaged inference 解码最终 blended output 为 `fx, fy` 之前输出 `sin_f_theta, cos_f_theta, force_norm, router_logit`。
 - `ALB.nn.albnn_augment_frame(..., feature_set="sqrt_abs")` 保持选定基础输入契约，只追加 `sqrt_abs_<column>` 特征，不追加 norm、ratio、dot、cross 或 log-combination 特征。
@@ -84,6 +87,6 @@
 - `ALB.nn.albnn_augment_frame(..., feature_set="sqrt28")` 保持 12 个基础输入，并为当前 28 输入 thermal ALBNN 实验追加 12 个 `sqrt_abs_*` 特征和 4 个 norm / ratio 特征。
 - `ALB.nn.albnn_augment_frame(..., feature_set="sqrt34")` 保持 12 个基础输入，并追加 12 个 `sqrt_abs_*` 特征、`e_norm`, `v_norm`, `s_norm`、它们的 square-root companion，以及 4 个 `lambda_value / lr` 或 `lr` ratio / log companion。
 - `ALBNNAgent` 和 `FakeOf` 位于 `ALB.alb`，因为它们只替换 ALB shell 内的 pad force core；加载打包模型时使用 `ALB.nn.albnn`。
-- `ALB/remote` 是 library code。新的通用远程 launch、monitor 和 conditional queue workflow 使用 `ALB.remote.job`。面向用户的 queue config 和兼容 wrapper 保留在 `../SURROGATE_TRAIN/run/remote`。
+- `ALB/remote` 是 library code。新的通用远程 launch、monitor 和 conditional queue workflow 使用 `ALB.remote.job`；PowerShell 调用默认使用 PowerShell 7，SSH encoded command 使用 `pwsh`，Task Scheduler runner 默认优先使用 `C:/Program Files/PowerShell/7/pwsh.exe` 绝对路径，并通过 `ALB_POWERSHELL_EXE`、`ALB_POWERSHELL_TASK_EXE` 保留覆盖入口。面向用户的 queue config 和兼容 wrapper 保留在 `../SURROGATE_TRAIN/run/remote`。
 - 运行编号和路径放置规则属于 repository workflow 文档，不是 ALB 数值 package 代码。人类可读规则保留在 `docs/run_index.md`，活跃运行 locator state 保留在所属项目的 current-status 文档。
 - 不要在没有兼容计划的情况下重命名 `ALB/matrix/dynmaic.py`；这个拼写错误已经是现有 import 的一部分。

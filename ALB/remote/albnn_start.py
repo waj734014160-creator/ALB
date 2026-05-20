@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path, PureWindowsPath
 
 from .transport import configure_stdio
+from .transport import powershell_file_command
 from .transport import ps_quote
 from .transport import remote_path
 from .transport import run_remote_powershell
@@ -221,7 +222,7 @@ if ((Test-Path $modelDir) -and (-not $allowExisting)) {{
 def build_launch_script(args: argparse.Namespace) -> str:
     disable_after_run = "$true" if args.disable_after_run else "$false"
     verbose_remote_output = "$true" if args.verbose_remote_output else "$false"
-    task_run = f"powershell.exe -NoProfile -ExecutionPolicy Bypass -File {args.runner}"
+    task_run = powershell_file_command(args.runner)
     script = f"""
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'

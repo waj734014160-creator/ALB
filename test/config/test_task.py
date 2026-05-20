@@ -1,4 +1,6 @@
 # -- coding: utf-8 --
+import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -16,11 +18,39 @@ from ALB.thermal import (
 from ALB.tool import read_json5_with_share
 
 
+PAPER_CONFIG_REQUIRED_FILES = (
+    "alb12.json5",
+    "albfuzzy12.json5",
+    "hb34.json5",
+    "rotor.json5",
+    "share.json5",
+)
+
+
+def _load_split_imports():
+    for parent in Path(__file__).resolve().parents:
+        helper_path = parent / "_split_imports.py"
+        if helper_path.exists():
+            spec = importlib.util.spec_from_file_location(
+                "_split_imports_for_config_task",
+                helper_path,
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module
+    raise ImportError("Could not locate test/_split_imports.py")
+
+
+split_imports = _load_split_imports()
+
+
 class TestPaperTaskConfigBuild(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config_dir = (
-            Path(__file__).resolve().parents[2] / "task" / "PAPER" / "config"
+        repo_root = Path(__file__).resolve().parents[2]
+        cls.config_dir = split_imports.select_paper_config_dir(
+            repo_root,
+            PAPER_CONFIG_REQUIRED_FILES,
         )
 
     def _read_config(self, name):
@@ -46,6 +76,26 @@ class TestPaperTaskConfigBuild(unittest.TestCase):
         self.assertAlmostEqual(
             pad.thickness._thickness_args["angle"], np.deg2rad(data["angle"])
         )
+
+    def test_empty_local_config_dir_does_not_shadow_param_scan(self):
+        with tempfile.TemporaryDirectory() as workspace:
+            workspace_root = Path(workspace)
+            repo_root = workspace_root / "ALB_MAIN"
+            local_config_dir = repo_root / "task" / "PAPER" / "config"
+            sibling_config_dir = (
+                workspace_root / "PARAM_SCAN" / "task" / "PAPER" / "config"
+            )
+            local_config_dir.mkdir(parents=True)
+            sibling_config_dir.mkdir(parents=True)
+            for file_name in PAPER_CONFIG_REQUIRED_FILES:
+                (sibling_config_dir / file_name).write_text("{}", encoding="utf-8")
+
+            selected = split_imports.select_paper_config_dir(
+                repo_root,
+                PAPER_CONFIG_REQUIRED_FILES,
+            )
+
+        self.assertEqual(selected, sibling_config_dir)
 
     def test_paper_alb12_builds_pid_alb_instance(self):
         data = self._read_config("alb12.json5")

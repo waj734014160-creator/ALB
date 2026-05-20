@@ -1530,7 +1530,7 @@ $$
 \frac{\max_i |\mu_i^{(k+1)} - \mu_i^{(k)}|}{\max_i |\mu_i^{(k)}|} < \varepsilon
 $$
 
-$\varepsilon$ = `tol`（默认 $10^{-3}$）。
+$\varepsilon$ = `tol`（默认 $10^{-6}$）。
 
 ---
 
@@ -1548,7 +1548,7 @@ $\varepsilon$ = `tol`（默认 $10^{-3}$）。
 | `max_delta_t` | 80 °C | 温升上限 |
 | `heat_partition` | 0.9 | 热分配系数 |
 | `relax` | 0.5 | 松弛因子 |
-| `tol` | 1e-3 | 收敛容差 |
+| `tol` | 1e-6 | 收敛容差 |
 | `max_iter` | 8 | 最大迭代次数 |
 | `miu_min` | 1e-4 Pa·s | 粘度下限 |
 | `miu_max` | 1.0 Pa·s | 粘度上限 |

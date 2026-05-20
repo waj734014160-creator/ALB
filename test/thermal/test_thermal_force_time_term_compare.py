@@ -1,10 +1,29 @@
+import importlib.util
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
 import numpy as np
 from scipy.sparse.linalg import spsolve
 
-from run import thermal_force_time_term_compare as compare
+
+def _load_split_imports():
+    for parent in Path(__file__).resolve().parents:
+        helper_path = parent / "_split_imports.py"
+        if helper_path.exists():
+            spec = importlib.util.spec_from_file_location(
+                "_split_imports_for_thermal_force_time_term_compare",
+                helper_path,
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module
+    raise ImportError("Could not locate test/_split_imports.py")
+
+
+compare = _load_split_imports().import_validation_run_module(
+    "thermal_force_time_term_compare"
+)
 
 
 def small_pad_config():

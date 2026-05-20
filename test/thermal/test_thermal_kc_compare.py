@@ -1,9 +1,31 @@
+import importlib.util
+from pathlib import Path
+import sys
 import unittest
 from unittest.mock import patch
 
 import numpy as np
 
-from run import thermal_kc_compare as compare
+
+def _load_split_imports():
+    for parent in Path(__file__).resolve().parents:
+        helper_path = parent / "_split_imports.py"
+        if helper_path.exists():
+            spec = importlib.util.spec_from_file_location(
+                "_split_imports_for_thermal_kc_compare",
+                helper_path,
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module
+    raise ImportError("Could not locate test/_split_imports.py")
+
+
+split_imports = _load_split_imports()
+compare = split_imports.import_validation_run_module(
+    "thermal_kc_compare",
+    dependencies=("thermal_force_time_term_compare",),
+)
 
 
 def small_pad_config():
@@ -24,6 +46,29 @@ def small_pad_config():
 
 
 class TestThermalKcCompare(unittest.TestCase):
+    def test_validation_dependency_ignores_param_scan_run_first_on_sys_path(self):
+        workspace_root = split_imports.find_split_workspace_root(Path(__file__))
+        param_scan_root = str(workspace_root / "PARAM_SCAN")
+        original_path = list(sys.path)
+        try:
+            sys.path.insert(0, param_scan_root)
+            imported = split_imports.import_validation_run_module(
+                "thermal_kc_compare",
+                dependencies=("thermal_force_time_term_compare",),
+            )
+        finally:
+            sys.path[:] = original_path
+
+        validation_run = (workspace_root / "VALIDATION" / "run").resolve()
+        self.assertTrue(
+            Path(imported.__file__).resolve().is_relative_to(validation_run)
+        )
+        self.assertTrue(
+            Path(imported.force_compare.__file__).resolve().is_relative_to(
+                validation_run
+            )
+        )
+
     def test_requested_orbit_matches_user_spec_and_is_valid(self):
         orbit_spec = compare.validate_requested_orbit(compare.create_pad_config().c)
 

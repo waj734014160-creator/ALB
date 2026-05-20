@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "source": "current SURROGATE_TRAIN/run/train/train_albnn.py before ALB.train refactor",
+  "input_cols": [
+    "ex",
+    "ey",
+    "vx",
+    "vy",
+    "sx",
+    "sy",
+    "lambda_value",
+    "beta_nondim",
+    "lr",
+    "cq0",
+    "cq1",
+    "cq2"
+  ],
+  "output_cols": [
+    "fx",
+    "fy"
+  ],
+  "valid_mask": [
+    true,
+    true,
+    true,
+    false
+  ],
+  "valid_rows": 3,
+  "x_base_columns": [
+    "ex",
+    "ey",
+    "vx",
+    "vy",
+    "sx",
+    "sy",
+    "lambda_value",
+    "beta_nondim",
+    "lr",
+    "cq0",
+    "cq1",
+    "cq2"
+  ],
+  "x_frame_columns": [
+    "ex",
+    "ey",
+    "vx",
+    "vy",
+    "sx",
+    "sy",
+    "lambda_value",
+    "beta_nondim",
+    "lr",
+    "cq0",
+    "cq1",
+    "cq2"
+  ],
+  "x_scaled_shape": [
+    3,
+    16
+  ],
+  "y_scaled_shape": [
+    3,
+    2
+  ],
+  "force_bin_labels": [
+    "[0.0, 0.2)",
+    "[0.2, 0.5)",
+    "[0.5, 1.0)",
+    "[1.0, 1.5)"
+  ],
+  "force_bin_ids": [
+    1,
+    2,
+    2
+  ],
+  "weights_mean": 1.8333333730697632,
+  "sample_loss_sum": 0.00174999819137156,
+  "huber_loss_sum": 0.0008499992545694113,
+  "metrics": {
+    "r2_mean": 0.996905366866383,
+    "mean_error_norm": 0.030721069831489492,
+    "median_error_norm": 0.03606934336716368,
+    "max_error_norm": 0.0380591650602034,
+    "mean_relative_norm_error": 0.056315152764386,
+    "median_relative_norm_error": 0.06185851367886297,
+    "max_relative_norm_error": 0.06676019337883088,
+    "r2_fx": 0.9972014935716129,
+    "bias_fx": 0.008333346961687008,
+    "mae_fx": 0.024999997733781736,
+    "rmse_fx": 0.027003081256766207,
+    "r2_fy": 0.9966092401611532,
+    "bias_fy": 0.006499994639211655,
+    "mae_fy": 0.015166661191636085,
+    "rmse_fy": 0.017197372149249185
+  }
+}

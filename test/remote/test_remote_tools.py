@@ -15,7 +15,10 @@ from ALB.remote import job as remote_job
 from ALB.remote import monitor
 from ALB.remote.transport import RemoteConnection
 from ALB.remote.transport import encode_powershell
+from ALB.remote.transport import powershell_encoded_command
+from ALB.remote.transport import powershell_file_command
 from ALB.remote.transport import ps_quote
+from ALB.remote.transport import quote_executable
 from ALB.remote.transport import remote_path
 
 
@@ -33,6 +36,19 @@ def test_transport_helpers():
     assert ps_quote("a'b") == "'a''b'"
     assert remote_path("F:/root/", "/child/", r"leaf\\") == "F:/root/child/leaf"
     assert encode_powershell("Get-Date") == "RwBlAHQALQBEAGEAdABlAA=="
+    assert powershell_encoded_command("abc", executable="pwsh") == (
+        "pwsh -NoLogo -NoProfile -EncodedCommand abc"
+    )
+    assert powershell_file_command("F:/root/run.ps1", executable="pwsh.exe") == (
+        'pwsh.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "F:/root/run.ps1"'
+    )
+    assert quote_executable(r"C:\Program Files\PowerShell\7\pwsh.exe") == (
+        r'"C:\Program Files\PowerShell\7\pwsh.exe"'
+    )
+    assert powershell_file_command("F:/root/run.ps1") == (
+        r'"C:\Program Files\PowerShell\7\pwsh.exe" '
+        '-NoLogo -NoProfile -ExecutionPolicy Bypass -File "F:/root/run.ps1"'
+    )
 
     class Args:
         host = "10.0.0.1"
@@ -103,6 +119,21 @@ def test_monitor_summary_matches_reference():
     assert progress["valid_rate"] == 2129 / 2560
     assert monitor.state_from_snapshot(ref["snapshot"]) == "running"
 
+    prepared_progress = monitor.progress_from_metadata(
+        {
+            "mode": "evaluate_prepared_inputs",
+            "input_rows": 200000,
+            "attempted_rows": 200000,
+            "valid_samples": 198000,
+            "invalid_samples": 2000,
+            "elapsed_s": 1000.0,
+        }
+    )
+    assert prepared_progress["completion_basis"] == "attempted"
+    assert prepared_progress["target"] == 200000
+    assert prepared_progress["remaining"] == 0.0
+    assert monitor.state_from_snapshot({"progress": prepared_progress}) == "completed"
+
 
 def generic_job_config(tmp_path):
     run_id = "S0001_remote_generic_test_1_20260517"
@@ -151,6 +182,8 @@ def test_generic_job_config_builds_stable_runner(tmp_path):
     assert '"STDOUT=$stdout"' in runner
     assert '"STDERR=$stderr"' in runner
     assert '"EXIT_CODE=$exit"' in runner
+    assert "Program not found: $program" in runner
+    assert "$exit = 127" in runner
     assert ">> $stdout 2>> $stderr" in runner
 
 

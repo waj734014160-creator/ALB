@@ -72,7 +72,7 @@ class HydConfig(ConfigData):
     miu: float = 0.0195  # dynamic viscosity of the liquid
     c: float = 80e-6  # c, nominal clearance of the bearing
     r: float = 0.04  # r, radius of the bearing
-    l: float = 0.08  # l, length of the bearing
+    l: float = 0.06  # l, length of the bearing
     ps: float = 7e6  # ps, supply pressure
     rho: float = 872  # rho, density of the liquid
     reynold: Union[bool, str] = (
@@ -484,7 +484,7 @@ class ThermalConfig(ConfigData):
     max_delta_t: float = 80.0
     heat_partition: float = 0.9
     relax: float = 0.5
-    tol: float = 1e-3
+    tol: float = 1e-6
     max_iter: int = 60
     adaptive_damp: Optional[AdaptiveDampConfig] = None
     miu_min: float = 1e-4

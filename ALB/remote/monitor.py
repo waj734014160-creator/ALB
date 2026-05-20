@@ -244,11 +244,26 @@ def progress_from_metadata(metadata: dict[str, Any] | None) -> dict[str, Any] | 
     if not metadata:
         return None
 
+    prepared_input_mode = (
+        metadata.get("mode") == "evaluate_prepared_inputs"
+        or (
+            metadata.get("input_rows") is not None
+            and metadata.get("target_valid_samples") is None
+        )
+    )
     target = metadata.get("target_valid_samples", metadata.get("n_samples"))
+    completion_basis = "valid"
+    if prepared_input_mode:
+        target = metadata.get("input_rows")
+        completion_basis = "attempted"
     valid = metadata.get("valid_samples", metadata.get("valid_count"))
-    attempted = metadata.get("attempted_samples", metadata.get("attempted_count"))
+    attempted = metadata.get(
+        "attempted_samples",
+        metadata.get("attempted_count", metadata.get("attempted_rows")),
+    )
     invalid = metadata.get("invalid_samples")
     elapsed = metadata.get("elapsed_s", metadata.get("elapsed_seconds"))
+    progress_value = attempted if completion_basis == "attempted" else valid
 
     progress: dict[str, Any] = {
         "target": target,
@@ -257,15 +272,18 @@ def progress_from_metadata(metadata: dict[str, Any] | None) -> dict[str, Any] | 
         "invalid": invalid,
         "elapsed_s": elapsed,
         "valid_rate": metadata.get("valid_rate"),
+        "completion_basis": completion_basis,
     }
     if progress["valid_rate"] is None and valid is not None and attempted:
         progress["valid_rate"] = float(valid) / float(attempted)
-    if target is not None and valid is not None:
-        progress["remaining"] = max(float(target) - float(valid), 0.0)
+    if target is not None and progress_value is not None:
+        progress["remaining"] = max(float(target) - float(progress_value), 0.0)
+    if progress_value is not None and elapsed:
+        progress["progress_per_s"] = float(progress_value) / float(elapsed)
     if valid is not None and elapsed:
         progress["valid_per_s"] = float(valid) / float(elapsed)
-    if progress.get("remaining") is not None and progress.get("valid_per_s"):
-        progress["eta_s"] = progress["remaining"] / progress["valid_per_s"]
+    if progress.get("remaining") is not None and progress.get("progress_per_s"):
+        progress["eta_s"] = progress["remaining"] / progress["progress_per_s"]
     return progress
 
 
@@ -292,6 +310,15 @@ def state_from_snapshot(snapshot: dict[str, Any]) -> str:
     progress = snapshot.get("progress") or {}
     target = progress.get("target")
     valid = progress.get("valid")
+    attempted = progress.get("attempted")
+    basis = progress.get("completion_basis", "valid")
+    if (
+        basis == "attempted"
+        and target is not None
+        and attempted is not None
+        and float(attempted) >= float(target)
+    ):
+        return "completed"
     if target is not None and valid is not None and float(valid) >= float(target):
         return "completed"
     if str(task.get("state", "")).lower() == "running":
