@@ -890,7 +890,9 @@ class NodimPadConfig(ConfigData):
 class NodimOrificeConfig(ConfigData):
     """Configuration for nondimensional capillary-slot orifices."""
 
-    position: np.ndarray = field(default_factory=lambda: np.array([[0.5, 0.5]]))
+    position: np.ndarray = field(
+        default_factory=lambda: np.array([[0.5, 0.25], [0.5, 0.5], [0.5, 0.75]])
+    )
     cq0: float = 1.0
     cq1: float = 1.0
     cq2: float = 0.0

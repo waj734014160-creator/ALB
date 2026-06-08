@@ -34,6 +34,7 @@
 | `ALB_MAIN/docs/daily_maintenance/daily_doc_update_index.md` | 集中式文档角色索引和日常审计索引 | 维护文档角色和审计触发条件的事实来源。 | 文档角色条目、日常审计规则、证据来源指针、角色边界修正。 | 实时运行状态、详细 run 历史、源码修改、原始证据堆叠、清理动作。 | 维护文档角色、入口文档或审计规则变化时。 |
 | `ALB_MAIN/docs/project_overview.md` | ALB_MAIN 项目入口概览 | 项目边界、主要目录、首读文档和稳定验证入口。 | 项目职责、目录职责、首读文档、稳定验证入口、跨项目边界说明。 | 实时运行状态、详细实验日志、模型指标流水、原始日志正文。 | 项目拆分、目录职责、首读文档或稳定工作流入口变化时。 |
 | `ALB_MAIN/docs/alb_package_overview.md` | 稳定包概览 | ALB 包模块图和公共接口组。 | 公共 API、模块归属和包边界说明。 | 实验运行状态、日常维护历史。 | 公共 API、模块归属或包边界变化时。 |
+| `ALB_MAIN/docs/alb_albnn_quickstart.md` | 稳定用户操作手册 | 快速构建 ALB 模型、加载 ALBNN packaged model，并说明常见输入输出契约。 | 稳定 API 用法、最小示例、推荐导入路径、常见输入输出契约和排错提示。 | 活跃训练进度、单次 run 指标、远程任务 PID、原始日志正文和临时实验结论。 | ALB / ALBNN 构建 API、配置契约或推荐 quickstart 流程变化时。 |
 | `ALB_MAIN/docs/file_classification.md` | ALB_MAIN 文件归属和清理策略 | 文件组、归属边界、归档/删除策略。 | 文件类别、代表路径、保留/归档规则、清理风险说明。 | 实时运行状态、模型进度、详细 run 历史。 | 主要文件组、归档类别或清理策略变化时。 |
 | `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS 全局 run 规则和路径索引 | 项目前缀 run 编号、run ID、current-status 归属和规范路径指针。 | run 编号规则、项目前缀映射、current-status 指针、规范路径和归档指针规则。 | 原始日志、详细进度尾部、模型指标、实时 tick、清理动作。 | run 编号、项目前缀、current-status 归属、路径族或归档指针规则变化时。 |
 | `ALB_MAIN/docs/remote_workstation_connection.md` | 稳定远程操作手册 | 远程连接、Task Scheduler、SSH、runner 和 monitor 机制。 | 连接事实、稳定命令模式、wrapper 归属、凭据处理规则、可复用操作经验。 | 当前任务进度、PID、最新 loss、活跃 ETA、单次 run 指标。 | 远程机制、路径、wrapper 或凭据处理规则变化时。 |

@@ -1,4 +1,24 @@
 ﻿# coding: utf-8
+"""Neural-network surrogates and scaler contracts for ALB force models.
+
+This module intentionally sits inside the stable ``ALB`` package because
+packaged model inference must be reusable from training scripts, validation
+scripts, and downstream ALB simulations. The training workflows may live in
+``SURROGATE_TRAIN``, but the objects below define the deployed inference
+contracts:
+
+* ``Net`` is the plain MLP architecture stored in checkpoints.
+* ``ALBNN`` loads a trained nondimensional force surrogate and presents the
+  same ``input``/``output`` style as the bearing models.
+* ``ALBNNForceExpert`` and ``ALBNNResidualCorrector`` are metadata-dispatched
+  deployment wrappers for specialized model artifacts.
+* The scaler classes are sklearn-like, pickle-friendly contracts that keep
+  training-time transforms and packaged inference aligned.
+
+All comments and docstrings in this source file are kept in English so they
+remain robust across Windows terminals, IDEs, and packaging tools.
+"""
+
 import numpy as np
 import pandas as pd
 import torch
@@ -9,6 +29,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from ALB.controller import limit_signal
 
 
+# Canonical 12-column input contract for the current thermal ALBNN workflow.
+# Columns are ordered because trained scalers and checkpoints are order-sensitive.
 ALBNN_BASE_INPUT_COLS = [
     "ex",
     "ey",
@@ -23,15 +45,33 @@ ALBNN_BASE_INPUT_COLS = [
     "cq1",
     "cq2",
 ]
+
+# Canonical cartesian output contract. Values are nondimensional force unless
+# the caller asks a wrapper to apply ``force_scale``.
 ALBNN_OUTPUT_COLS = ["fx", "fy"]
+
+# Optional polar target contract. Inference always decodes it back to fx/fy so
+# callers do not need to know which target representation was used in training.
 ALBNN_POLAR_FORCE_OUTPUT_COLS = ["sin_f_theta", "cos_f_theta", "force_norm"]
+
+# Dot-product features used by polar and expert-style input contracts.
 ALBNN_POLAR_DOT_INPUT_COLS = ["e_dot_v", "e_dot_s", "s_dot_v"]
+
+# Positive scalar columns that can safely receive log companions in legacy
+# augmentation modes.
 ALBNN_LOG_INPUT_COLS = {"lambda_value", "lr", "cq0", "cq1", "cq2"}
+
+# Feature-set names are serialized in metadata.json. Treat these strings as a
+# persisted compatibility surface, not as private implementation details.
 ALBNN_FEATURE_SETS = {"default", "aug_v2", "sqrt34", "sqrt28", "sqrt_abs", "polar37"}
 
 
 def cartesian_force_to_polar_frame(frame: pd.DataFrame) -> pd.DataFrame:
-    """Convert ``fx, fy`` columns to ``sin_f_theta, cos_f_theta, force_norm``."""
+    """Convert cartesian force columns to a polar target DataFrame.
+
+    Zero-force rows are assigned the stable unit direction ``(cos=1, sin=0)``.
+    This avoids NaN angles while preserving the exact zero force magnitude.
+    """
     fx = frame["fx"].to_numpy(dtype=float)
     fy = frame["fy"].to_numpy(dtype=float)
     force_norm = np.sqrt(fx**2 + fy**2)
@@ -51,7 +91,12 @@ def cartesian_force_to_polar_frame(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def polar_force_to_cartesian(values) -> np.ndarray:
-    """Convert polar force targets back to ``fx, fy`` with unit angle cleanup."""
+    """Convert polar force targets back to cartesian ``fx, fy``.
+
+    Neural networks do not guarantee that predicted sine/cosine channels remain
+    exactly unit length. The angle cleanup normalizes nonzero direction vectors
+    before multiplying by the clipped force magnitude.
+    """
     frame = pd.DataFrame(values, columns=ALBNN_POLAR_FORCE_OUTPUT_COLS)
     sin_f_theta = frame["sin_f_theta"].to_numpy(dtype=float)
     cos_f_theta = frame["cos_f_theta"].to_numpy(dtype=float)
@@ -75,7 +120,13 @@ def _materialize_polar_pair(
     cos_col: str,
     norm_col: str,
 ) -> None:
-    """Derive sine, cosine, and magnitude columns for one planar vector."""
+    """Derive sine, cosine, and magnitude columns for one planar vector.
+
+    The function mutates ``frame`` in place only when the requested derived
+    columns are needed by the active model contract. Missing base columns are
+    ignored here so final contract validation can report all missing inputs at
+    once.
+    """
     requested = {sin_col, cos_col, norm_col} & needed
     if not requested:
         return
@@ -98,7 +149,12 @@ def _materialize_polar_pair(
 
 
 def _materialize_polar_dot_inputs(frame: pd.DataFrame, needed: set[str]) -> None:
-    """Derive planar dot-product features used by polar expert models."""
+    """Derive planar dot-product features used by polar expert models.
+
+    Some historical artifacts used alias names such as ``ev_dot``. The helper
+    fills both canonical and alias names when the artifact asks for them, which
+    keeps old metadata loadable without branching in the main inference path.
+    """
     specs = (
         ("e_dot_v", "ex", "ey", "vx", "vy", ("ev_dot",)),
         ("e_dot_s", "ex", "ey", "sx", "sy", ("es_dot",)),
@@ -130,7 +186,13 @@ def _materialize_ratio_inputs(frame: pd.DataFrame, needed: set[str]) -> None:
 
 
 def albnn_augment_frame(frame: pd.DataFrame, feature_set: str = "default") -> pd.DataFrame:
-    """Append deterministic nonlinear features with stable column names."""
+    """Append deterministic nonlinear features with stable column names.
+
+    The returned DataFrame always starts with the original columns, then appends
+    features in a deterministic order. This matters because sklearn scalers
+    persist ``feature_names_in_`` and packaged inference replays the same
+    augmentation before calling ``scaler_X.transform``.
+    """
     if feature_set not in ALBNN_FEATURE_SETS:
         raise ValueError(f"Unknown ALBNN feature_set: {feature_set}")
 
@@ -301,6 +363,8 @@ def albnn_augment_frame(frame: pd.DataFrame, feature_set: str = "default") -> pd
 
 
 class NetMlpOld(nn.Module):
+    """Legacy fixed-depth MLP kept for loading or comparing old experiments."""
+
     def __init__(self, nbs_neurons):
         super(NetMlpOld, self).__init__()
         self.input_layer = nn.Linear(nbs_neurons[0], nbs_neurons[1])
@@ -317,6 +381,14 @@ class NetMlpOld(nn.Module):
 
 
 class Net(nn.Module):
+    """Configurable MLP used by packaged ALBNN checkpoints.
+
+    ``nbs_neurons`` is the full layer-width list, for example
+    ``[12, 128, 128, 64, 2]``. Checkpoints store this list together with the
+    activation metadata so ``net_from_checkpoint`` can reconstruct an identical
+    inference network before loading ``model_state_dict``.
+    """
+
     def __init__(
         self,
         nbs_neurons,
@@ -336,6 +408,9 @@ class Net(nn.Module):
         self.layer_norms = nn.ModuleList()
         self.dropouts = nn.ModuleList()
 
+        # Hidden layers are all layers except the last one. Optional LayerNorm
+        # is inserted only after hidden Linear layers so output coordinates stay
+        # in the trained target space.
         for i in range(len(nbs_neurons) - 1):
             self.layers.append(nn.Linear(nbs_neurons[i], nbs_neurons[i + 1]))
             if self.use_layer_norm and i < len(nbs_neurons) - 2:
@@ -344,10 +419,8 @@ class Net(nn.Module):
             self._init_sine_weights()
 
     def forward(self, x):
+        """Run the MLP on already-scaled tensor inputs."""
         for i, layer in enumerate(self.layers[:-1]):
-            # x = F.leaky_relu(layer(x), negative_slope=0.2)
-            # x = F.tanh(layer(x))
-            # x = self.dropouts[i](x)
             x = layer(x)
             if self.use_layer_norm:
                 x = self.layer_norms[i](x)
@@ -392,12 +465,20 @@ def net_from_checkpoint(checkpoint):
 
 
 class NetApl:
+    """Small adapter that applies fitted input and output scalers around ``Net``.
+
+    This class predates the richer ``ALBNN`` wrapper and is still used by
+    ``ALBNet``/``ThermalALBNet``. It expects feature arrays that already match
+    ``scaler_X.feature_names_in_``.
+    """
+
     def __init__(self, model: Net, scaled_X, scaled_y):
         self.model = model
         self.scaler_X = scaled_X
         self.scaler_y = scaled_y
 
     def predict(self, x):
+        """Scale inputs, run the torch model on CPU, and inverse-scale outputs."""
         x = pd.DataFrame(x, columns=self.scaler_X.feature_names_in_)
         x_normalized = torch.tensor(self.scaler_X.transform(x), dtype=torch.float32)
         with torch.no_grad():
@@ -435,6 +516,13 @@ class ALBNN:
         feature_set: str = "default",
         target_output: str = "cartesian",
     ):
+        """Create a packaged inference wrapper around a trained MLP.
+
+        ``input_cols`` and ``output_cols`` normally come from ``metadata.json``.
+        They are stored here instead of inferred from the scalers alone because
+        some contracts can derive additional columns such as polar angles or
+        ``lambda_over_lr`` from the 12 base inputs before scaling.
+        """
         self.model = model
         self.scaler_X = scaler_X
         self.scaler_y = scaler_y
@@ -457,6 +545,13 @@ class ALBNN:
         return ps * l * r / 2.0
 
     def _base_frame(self, x) -> pd.DataFrame:
+        """Normalize raw user input to the model's declared input columns.
+
+        DataFrame inputs may already contain all required columns. Array inputs
+        are interpreted in ``self.input_cols`` order. Derived polar, dot, and
+        ratio columns are materialized only when the loaded artifact declares
+        them in its input contract.
+        """
         if isinstance(x, pd.DataFrame):
             frame = x.copy()
         else:
@@ -500,6 +595,7 @@ class ALBNN:
         return frame[self.input_cols]
 
     def _model_frame(self, x) -> pd.DataFrame:
+        """Return the exact feature frame expected by ``scaler_X``."""
         frame = self._base_frame(x)
         if self.use_augment:
             frame = albnn_augment_frame(frame, feature_set=self.feature_set)
@@ -528,6 +624,9 @@ class ALBNN:
         ``nodim=True`` means ``uxy`` and ``uxyt`` are already [ex, ey] and
         [vx, vy].  If ``nodim=False``, ``config.c`` and ``config.freq``/``vf``
         are used to convert displacement and velocity to nondimensional form.
+        Scalar ALBNN parameters can be passed explicitly, read from ``config``,
+        or supplied through ``extra``/``config.extra_inputs`` for experimental
+        contracts.
         """
         if not nodim:
             if self.config is None:
@@ -538,6 +637,9 @@ class ALBNN:
             omega = 2.0 * np.pi * freq
             uxy = np.asarray(uxy, dtype=float) / c
             uxyt = np.asarray(uxyt, dtype=float) / (c * vf * omega)
+        # Store the row in the canonical physical naming scheme first. The
+        # later loops add any derived or metadata-specific aliases needed by the
+        # loaded model artifact.
         row = {
             "ex": float(np.asarray(uxy, dtype=float)[0]),
             "ey": float(np.asarray(uxy, dtype=float)[1]),
@@ -561,6 +663,8 @@ class ALBNN:
             "cq2": float(cq2 if cq2 is not None else getattr(self.config, "cq2")),
         }
         radius = float(np.hypot(row["ex"], row["ey"]))
+        # Angle features use the stable zero-vector convention also used by the
+        # vector materializers: cos=1 and sin=0 when the norm is zero.
         if radius > 0.0:
             row["cos"] = row["ex"] / radius
             row["sin"] = row["ey"] / radius
@@ -594,6 +698,9 @@ class ALBNN:
         if extra:
             row.update({key: float(value) for key, value in extra.items()})
         config_extra = getattr(self.config, "extra_inputs", None) if self.config else None
+        # Fill any declared input column not covered above from config-backed
+        # values. This lets metadata-driven artifacts keep custom scalar inputs
+        # without requiring a new method signature for every experiment.
         for col in self.input_cols:
             if col in row:
                 continue
@@ -604,6 +711,7 @@ class ALBNN:
         self._x = pd.DataFrame([row])
 
     def predict_nondim(self, x):
+        """Predict nondimensional cartesian force for one or more input rows."""
         frame = self._model_frame(x)
         x_scaled = torch.tensor(
             self.scaler_X.transform(frame), dtype=torch.float32
@@ -621,12 +729,14 @@ class ALBNN:
         return y_target
 
     def predict(self, x, nodim: bool = True):
+        """Predict force and optionally convert it to dimensional units."""
         force = self.predict_nondim(x)
         if nodim:
             return force
         return force * self.force_scale
 
     def output(self, nodim: bool = True):
+        """Return prediction for the last row set by ``input``."""
         if self._x is None:
             raise ValueError("Call input(...) before output(...)")
         return self.predict(self._x, nodim=nodim)
@@ -783,6 +893,9 @@ def _adjacent_expert_weights(
                 if probs[row_idx, left_idx] >= probs[row_idx, right_idx]
                 else right_idx
             )
+        # Only the winning expert and the nearest plausible neighbor are
+        # blended. This preserves the monotonic expert-bin interpretation and
+        # avoids averaging across far-apart force regimes.
         selected = probs[row_idx, [expert_idx, neighbor_idx]]
         denom = float(np.sum(selected))
         if denom <= 1e-12:
@@ -872,6 +985,7 @@ class ALBNNForceExpert(ALBNN):
         return np.asarray(decoded, dtype=float).reshape(np.asarray(values).shape)
 
     def _decode_expert_output(self, raw_output: np.ndarray) -> dict[str, np.ndarray]:
+        """Split raw expert channels into forces, router probabilities, and weights."""
         raw_output = np.asarray(raw_output, dtype=float)
         if raw_output.ndim != 2:
             raise ValueError("Expert model output must be a 2-D array")
@@ -888,6 +1002,8 @@ class ALBNNForceExpert(ALBNN):
                 f"Expert model output has {raw_output.shape[1]} columns; "
                 f"expected {expected_cols}"
             )
+        # The network emits a flat vector. Reshape to
+        # [row, expert, target_channels + router_logit] before decoding.
         expert_values = raw_output.reshape(
             raw_output.shape[0], self.expert_count, channels_per_expert
         )
@@ -946,6 +1062,7 @@ class IdentityTargetScaler:
         self.feature_names_in_ = None
 
     def fit(self, y):
+        """Remember target column order without changing values."""
         frame = pd.DataFrame(y)
         self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
         return self
@@ -970,6 +1087,7 @@ class StandardTargetScaler:
         self.scale_ = None
 
     def fit(self, y):
+        """Fit per-target mean/std with zero-variance protection."""
         frame = pd.DataFrame(y)
         self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
         values = frame.to_numpy(dtype=float)
@@ -1011,6 +1129,7 @@ class SelectiveStandardScaler:
         self.scale_ = None
 
     def fit(self, x):
+        """Fit statistics for columns not marked as pass-through."""
         frame = pd.DataFrame(x)
         self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
         self.scale_columns_ = [
@@ -1078,6 +1197,7 @@ class StandardThenMinMaxScaler:
         self.std_range_ = None
 
     def fit(self, x):
+        """Fit standardization statistics and minmax bounds in standardized space."""
         frame = pd.DataFrame(x)
         self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
         values = frame.to_numpy(dtype=float)
@@ -1169,6 +1289,7 @@ class MotionStandardParamMinMaxScaler:
         self.mm_range_ = None
 
     def fit(self, x):
+        """Fit one affine standardization for all columns plus parameter minmax."""
         frame = pd.DataFrame(x)
         self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
         columns = list(frame.columns)
@@ -1261,6 +1382,7 @@ class MotionStandardParamDirectMinMaxScaler:
         self.mm_range_ = None
 
     def fit(self, x):
+        """Fit motion standardization and raw-space minmax for parameter columns."""
         frame = pd.DataFrame(x)
         self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
         columns = list(frame.columns)
@@ -1375,6 +1497,7 @@ class PolarMotionStandardParamMinMaxScaler:
         self.mm_range_ = None
 
     def fit(self, x):
+        """Fit pass-through, standard-only, and minmax column groups."""
         frame = pd.DataFrame(x)
         self.feature_names_in_ = np.asarray(frame.columns, dtype=object)
         columns = list(frame.columns)
@@ -1865,6 +1988,13 @@ class Cq2SigLogMinMaxScaler:
 
 
 class ALBNet:
+    """Legacy dimensional ALB neural force wrapper.
+
+    ``ALB.alb.nn_agent`` uses this wrapper through ``alb_agent_nn`` when a
+    complete ALB shell should keep its servo/controller wiring but replace the
+    pad force core with an older ALBNet-style neural model.
+    """
+
     def __init__(self, model: Net, scaled_X, scaled_y, albnet_config):
         """
         :param model: the neural network model
@@ -1884,6 +2014,7 @@ class ALBNet:
         self._r = albnet_config.r
 
     def input(self, uxy, uxyt, sxy, nodim=False):
+        """Cache one dimensional or nondimensional state for ``output``."""
         if nodim:
             self._uxy = uxy
             self._uxyt = uxyt
@@ -1894,6 +2025,7 @@ class ALBNet:
         self._sxy = sxy
 
     def output(self, nodim=False):
+        """Return force for the cached state, optionally in nondimensional units."""
         x = np.concatenate(
             [[self._freq], self._uxy, self._uxyt, self._sxy], axis=0
         ).reshape(1, -1)
@@ -1912,6 +2044,7 @@ class ALBNet:
 
 
 def alb_agent_nn(albnet_config):
+    """Load the legacy ALBNet wrapper from paths stored in ``ALBNetConfig``."""
     scaler_X = albnet_config.scaler_X
     scaler_y = albnet_config.scaler_y
     with open(scaler_X, "rb") as f:
@@ -1928,6 +2061,7 @@ def alb_agent_nn(albnet_config):
 
 
 def train_loop(dataloader, model, loss_fn, optimizer, batch_size):
+    """Minimal educational training loop kept for simple local experiments."""
     size = len(dataloader.dataset)
     # Set the model to training mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
@@ -1948,6 +2082,7 @@ def train_loop(dataloader, model, loss_fn, optimizer, batch_size):
 
 
 def test_loop(dataloader, model, loss_fn):
+    """Minimal educational evaluation loop kept for simple local experiments."""
     # Set the model to evaluation mode - important for batch normalization and dropout layers
     # Unnecessary in this situation but added for best practices
     model.eval()
@@ -1983,6 +2118,12 @@ def mlp_train(
     batch_size=64,
     device="cpu",
 ):
+    """Train a small MLP with early stopping and save the best checkpoint.
+
+    New ALBNN training workflows should prefer ``ALB.train`` or the
+    ``SURROGATE_TRAIN`` CLIs. This helper remains for lightweight scripts that
+    already prepare tensors and optimizer objects themselves.
+    """
     best_loss = float("inf")
     patience = 3000
     patience_counter = 0
@@ -2035,6 +2176,7 @@ def mlp_train(
 
 
 def save_model(net, path, architecture):
+    """Save the MLP state dict and architecture metadata used by inference."""
     torch.save(
         {
             "model_state_dict": net.state_dict(),
@@ -2212,6 +2354,9 @@ def albnn(config, use_augment: bool = None):
     import json
     from pathlib import Path
 
+    # Metadata is optional for very old artifacts, but preferred. It records the
+    # input/output columns, augmentation mode, target representation, and model
+    # subtype so this loader can dispatch without hard-coded directory names.
     metadata = {}
     metadata_path = getattr(config, "metadata", None)
     if metadata_path is None:
@@ -2228,12 +2373,14 @@ def albnn(config, use_augment: bool = None):
     )
 
     def _load_checkpoint(path):
+        """Load checkpoint with compatibility for older torch versions."""
         try:
             return torch.load(path, map_location=torch.device("cpu"), weights_only=True)
         except TypeError:
             return torch.load(path, map_location=torch.device("cpu"))
 
     def _resolve_artifact(value, default_name=None):
+        """Resolve metadata-relative artifact paths."""
         if value is None:
             if default_name is None:
                 return None
@@ -2245,6 +2392,9 @@ def albnn(config, use_augment: bool = None):
         return path
 
     if metadata.get("model_type") == "albnn_residual_corrector":
+        # Residual packages carry a frozen main model plus a sidecar residual
+        # network. Reconstruct the main config from the caller config, then
+        # replace only the model/scaler paths that belong to the main model.
         main_model_dir = Path(metadata["main_model_dir"])
         if not main_model_dir.is_absolute():
             main_model_dir = metadata_dir / main_model_dir
@@ -2306,6 +2456,8 @@ def albnn(config, use_augment: bool = None):
         use_augment = bool(metadata.get("use_augment", True))
 
     if metadata.get("model_type") == "albnn_force_expert":
+        # Expert packages share the ALBNN input path but need a custom output
+        # decoder because each expert emits force channels plus router logits.
         target_transform = metadata.get("target_transform", {})
         return ALBNNForceExpert(
             net,

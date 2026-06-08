@@ -631,7 +631,9 @@ class MultiPad(BaseCSystem):
 
 
 class StaticPosition:
-    def __init__(self, bearing, kx=5, ky=5, iter_num=30, error_set=1e-4, damp=0.05):
+    def __init__(
+        self, bearing, kx=5, ky=5, iter_num=30, error_set=1e-4, damp=0.05, delta=1e-2
+    ):
         """
         Calculates the static equilibrium position of a bearing.
         :param bearing: The bearing object.
@@ -663,6 +665,7 @@ class StaticPosition:
         self.error_set = error_set
         self.child_nodes = []
         self.damp = damp
+        self.delta = delta
 
     def run(self, wx, wy, ex=0, ey=0, nodim=True):
         """
@@ -676,7 +679,7 @@ class StaticPosition:
         dim_force = np.zeros(2)
         total_force = 0
         error = 1
-        delta = 1e-2
+        delta = self.delta
         finished = False
         i = 0
         if hasattr(self.bearing, "init"):
