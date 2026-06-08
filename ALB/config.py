@@ -8,6 +8,19 @@ import numpy as np
 from ALB.damping import AdaptiveDampConfig, normalize_adaptive_damp_config
 
 
+_THERMAL_ITER_METHODS = {"direct", "newton", "direct_then_newton"}
+
+
+def _normalize_thermal_iter_method(value: str) -> str:
+    """Return the canonical thermal nonlinear iteration method name."""
+    method = str(value).lower()
+    if method not in _THERMAL_ITER_METHODS:
+        raise ValueError(
+            "iter_method must be one of: 'direct', 'newton', 'direct_then_newton'"
+        )
+    return method
+
+
 @dataclass
 class ConfigData:
     """Base class for configuration data, providing dictionary-like access."""
@@ -478,7 +491,7 @@ class ThermalConfig(ConfigData):
     t_ref: Optional[float] = None
     miu0: Optional[float] = None
     beta: float = 0.03
-    k_lub: float = 0.00
+    k_lub: float = 0.13
     cp_lub: float = 2000.0
     flow_rate_factor: float = 1.0
     max_delta_t: float = 80.0
@@ -497,7 +510,7 @@ class ThermalConfig(ConfigData):
     """Axial-side BC: ``fixed`` (both fixed-T) | ``adiabatic`` | ``inflow_fixed``."""
     axial_side_t: Optional[float] = None
     """Axial-side fixed temperature; defaults to ``t_supply``."""
-    supg: bool = True
+    supg: bool = False
     """Enable SUPG stabilization for advection-dominated regime."""
     pressure_backend: str = "skfem"
     """Retained for backward compatibility; only ``skfem`` is supported."""
@@ -513,9 +526,34 @@ class ThermalConfig(ConfigData):
     """Enable rho*cp*h*dT/dt transient term."""
     dt: Optional[float] = None
     """Transient time step, seconds."""
+    iter_method: str = "direct"
+    """Thermal nonlinear iteration method: direct, newton, or direct_then_newton."""
+    thermal_newton_max_iter: int = 30
+    """Maximum Newton iterations for one segregated thermal subsolve."""
+    thermal_newton_tol: Optional[float] = None
+    """Newton residual tolerance; defaults to ``tol`` when omitted."""
+    thermal_newton_damp: float = 1.0
+    """Initial damping factor for thermal Newton updates."""
+    thermal_newton_min_damp: float = 1e-3
+    """Smallest damping factor allowed by the Newton line search."""
+    thermal_newton_line_search: bool = False
+    """Enable residual-decreasing line search for thermal Newton updates."""
 
     def __post_init__(self):
         self.adaptive_damp = normalize_adaptive_damp_config(self.adaptive_damp)
+        self.iter_method = _normalize_thermal_iter_method(self.iter_method)
+        if self.thermal_newton_max_iter <= 0:
+            raise ValueError("thermal_newton_max_iter must be > 0")
+        if self.thermal_newton_tol is not None and self.thermal_newton_tol <= 0:
+            raise ValueError("thermal_newton_tol must be > 0 when provided")
+        if self.thermal_newton_damp <= 0:
+            raise ValueError("thermal_newton_damp must be > 0")
+        if self.thermal_newton_min_damp <= 0:
+            raise ValueError("thermal_newton_min_damp must be > 0")
+        if self.thermal_newton_min_damp > self.thermal_newton_damp:
+            raise ValueError(
+                "thermal_newton_min_damp must be <= thermal_newton_damp"
+            )
         if self.beta_nondim is None and self.t_ref_nondim is None:
             return
         if self.delta_t_scale is None or float(self.delta_t_scale) <= 0.0:
@@ -556,6 +594,19 @@ class ThermalConfig(ConfigData):
             }:
                 config_dict["delta_t_scale"] = config_dict["delta_t_char"]
         valid_fields = {item.name for item in fields(cls)}
+        allowed_legacy_fields = {
+            "thermal_solver",
+            "nodim",
+            "delta_t_mode",
+            "delta_t_char",
+        }
+        unknown_fields = sorted(
+            set(config_dict).difference(valid_fields, allowed_legacy_fields)
+        )
+        if unknown_fields:
+            raise ValueError(
+                "Unknown ThermalConfig field(s): " + ", ".join(unknown_fields)
+            )
         args = {key: config_dict[key] for key in valid_fields if key in config_dict}
         return cls(**args)
 

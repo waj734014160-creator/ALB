@@ -66,6 +66,7 @@
 
 - 构建 ALB 系统时，优先使用配置对象，不要使用随意拼接的字典。
 - 新代码和文档中，粘度使用 `miu`，无量纲轴承参数使用 `lambda_value`。
+- `ThermalConfig.iter_method` 控制热非线性迭代方式：默认 `direct` 保持旧直接迭代行为；`newton` 在每个压力步固定压力场后对 `miu(T)` 代入的热方程做分离式 Newton 子迭代；`direct_then_newton` 仅在旧直接迭代未收敛时用末态触发 Newton fallback。Newton 默认关闭 line search 以避免重复装配 Jacobian 的高成本；默认和论文热计算使用 `k_lub=0.13` 作为物理扩散稳定项，并关闭 SUPG。热 wrapper 输出 `thermal_solver_used`、`thermal_newton_iterations`、`thermal_newton_residual` 和 `thermal_newton_line_search_steps` 作为诊断字段。
 - 当前 thermal surrogate workflow 中，`ALB.nn` 期望 12 个基础 ALBNN 输入：
   `ex, ey, vx, vy, sx, sy, lambda_value, beta_nondim, lr, cq0, cq1, cq2`，
   输出为 `fx, fy`。

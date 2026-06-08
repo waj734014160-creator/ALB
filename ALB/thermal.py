@@ -375,6 +375,24 @@ def _transient_rhs_form(v, w):
     return w.rho_cv_h_over_dt * w.t_prev * v
 
 
+@BilinearForm
+def _temperature_flux_source_jacobian_form(u, v, w):
+    t_grad = grad(w.t_current)
+    flux_term = w.rho_cv * (
+        w.dqx_dt * u * t_grad[0] + w.dqz_dt * u * t_grad[1]
+    ) * v
+    source_term = w.dphi_dt * u * v
+    return flux_term - source_term
+
+
+@BilinearForm
+def _nondim_temperature_flux_source_jacobian_form(u, v, w):
+    t_grad = grad(w.t_current)
+    flux_term = (w.dqx_dt * u * t_grad[0] + w.dqz_dt * u * t_grad[1]) * v
+    source_term = w.dphi_dt * u * v
+    return flux_term - source_term
+
+
 class SkfemThermalModel:
     """Steady thermal model in the x-z plane solved by scikit-fem.
 
@@ -625,6 +643,381 @@ class SkfemThermalModel:
         t_bc[inlet_nodes] = t_supply
         return t_bc
 
+    def _calc_flux_source_derivatives(
+        self,
+        mesh_data: dict,
+        viscosity_nodal: np.ndarray,
+        dviscosity_dt: np.ndarray,
+    ):
+        h_nodal = mesh_data["h_nodal"]
+        surface_speed = mesh_data["surface_speed"]
+        dp_dx = mesh_data["dp_dx_nodal"]
+        dp_dz = mesh_data["dp_dz_nodal"]
+
+        h3_over_12mu = h_nodal**3 / (12.0 * viscosity_nodal)
+        dh3_over_12mu_dt = (
+            -(h_nodal**3) / (12.0 * viscosity_nodal**2) * dviscosity_dt
+        )
+        qx_nodal = surface_speed * h_nodal / 2.0 - h3_over_12mu * dp_dx
+        qz_nodal = -h3_over_12mu * dp_dz
+        dqx_dt = -dh3_over_12mu_dt * dp_dx
+        dqz_dt = -dh3_over_12mu_dt * dp_dz
+
+        pressure_grad_sq = dp_dx**2 + dp_dz**2
+        phi_couette = viscosity_nodal * surface_speed**2 / h_nodal
+        phi_poiseuille = h3_over_12mu * pressure_grad_sq
+        dphi_dt = self.config.heat_partition * (
+            dviscosity_dt * surface_speed**2 / h_nodal
+            + dh3_over_12mu_dt * pressure_grad_sq
+        )
+        phi_nodal = self.config.heat_partition * (phi_couette + phi_poiseuille)
+        return qx_nodal, qz_nodal, phi_nodal, dqx_dt, dqz_dt, dphi_dt
+
+    def _viscosity_from_temperature_with_derivative(
+        self,
+        temperature: np.ndarray,
+        *,
+        miu0: float,
+        t_ref: float,
+    ):
+        raw = float(miu0) * np.exp(-self.config.beta * (temperature - float(t_ref)))
+        viscosity = np.clip(raw, self.config.miu_min, self.config.miu_max)
+        active = (raw > self.config.miu_min) & (raw < self.config.miu_max)
+        dviscosity_dt = np.where(active, -self.config.beta * viscosity, 0.0)
+        return viscosity, dviscosity_dt
+
+    def _calc_supg_tau_nodal(self, mesh, rho_cv, qx_nodal, qz_nodal):
+        tx_arr = mesh.p[0]
+        tz_arr = mesh.p[1]
+        q_mag = np.sqrt(qx_nodal**2 + qz_nodal**2)
+        dx_mesh = (
+            float(np.min(np.diff(np.unique(tx_arr))))
+            if len(np.unique(tx_arr)) > 1
+            else 1.0
+        )
+        dz_mesh = (
+            float(np.min(np.diff(np.unique(tz_arr))))
+            if len(np.unique(tz_arr)) > 1
+            else 1.0
+        )
+        h_elem = np.sqrt(dx_mesh**2 + dz_mesh**2)
+        alpha_diff = self.config.k_lub / (rho_cv + 1e-30)
+        pe_h = q_mag * h_elem / (2.0 * alpha_diff + 1e-30)
+        pe_safe = np.clip(pe_h, 1e-10, 500.0)
+        xi = 1.0 / np.tanh(pe_safe) - 1.0 / pe_safe
+        return xi * h_elem / (2.0 * q_mag + 1e-12)
+
+    @staticmethod
+    def _apply_dirichlet_to_residual_jacobian(K, f, J_extra, temperature, nodes, t_bc):
+        J = (K + J_extra).tolil()
+        residual = np.asarray(K @ temperature - f, dtype=float)
+        if nodes.size > 0:
+            residual[nodes] = temperature[nodes] - t_bc[nodes]
+            for node in nodes:
+                J.rows[int(node)] = [int(node)]
+                J.data[int(node)] = [1.0]
+        return residual, J.tocsr()
+
+    @staticmethod
+    def _apply_dirichlet_to_residual(K, f, temperature, nodes, t_bc):
+        """Apply Dirichlet rows to a residual without building a Jacobian."""
+        residual = np.asarray(K @ temperature - f, dtype=float)
+        if nodes.size > 0:
+            residual[nodes] = temperature[nodes] - t_bc[nodes]
+        return residual
+
+    @staticmethod
+    def _relative_residual_norm(residual, K, temperature, f, free_nodes):
+        if free_nodes.size == 0:
+            selected = residual
+        else:
+            selected = residual[free_nodes]
+        numerator = float(np.max(np.abs(selected))) if selected.size else 0.0
+        scale_vec = np.asarray(K @ temperature, dtype=float)
+        denominator = max(
+            float(np.max(np.abs(scale_vec))) if scale_vec.size else 0.0,
+            float(np.max(np.abs(f))) if f.size else 0.0,
+            1.0,
+        )
+        return numerator / denominator
+
+    def _initial_temperature_guess(
+        self,
+        basis,
+        t_supply: float,
+        temperature_initial: Optional[np.ndarray],
+        lower: float,
+        upper: float,
+    ):
+        if temperature_initial is None:
+            return np.full(basis.N, t_supply, dtype=float)
+        guess = np.asarray(temperature_initial, dtype=float).reshape(-1)
+        if guess.size != basis.N:
+            return np.full(basis.N, t_supply, dtype=float)
+        return np.clip(guess.copy(), lower, upper)
+
+    def _assemble_supg_with_frozen_tau(
+        self,
+        K,
+        f,
+        basis,
+        qx_nodal,
+        qz_nodal,
+        phi_nodal,
+        *,
+        rho_cv: Optional[float] = None,
+        tau_nodal: Optional[np.ndarray] = None,
+        nondim: bool = False,
+    ):
+        if not self.config.supg:
+            return K, f
+        if tau_nodal is None:
+            raise ValueError("tau_nodal is required for frozen SUPG assembly")
+        form_k = _nondim_supg_stiffness_form if nondim else _supg_stiffness_form
+        kwargs = {
+            "qx": basis.interpolate(qx_nodal),
+            "qz": basis.interpolate(qz_nodal),
+            "tau": basis.interpolate(tau_nodal),
+        }
+        if not nondim:
+            kwargs["rho_cv"] = rho_cv
+        K += asm(form_k, basis, **kwargs)
+        form_f = _nondim_supg_load_form if nondim else _supg_load_form
+        f += asm(
+            form_f,
+            basis,
+            qx=basis.interpolate(qx_nodal),
+            qz=basis.interpolate(qz_nodal),
+            tau=basis.interpolate(tau_nodal),
+            q=basis.interpolate(phi_nodal),
+        )
+        return K, f
+
+    def solve_segregated_newton(
+        self,
+        model,
+        viscosity: Union[float, np.ndarray],
+        mesh_data: Optional[dict] = None,
+        orifice_data: Optional[list] = None,
+        temperature_prev: Optional[np.ndarray] = None,
+        transient: bool = False,
+        *,
+        temperature_initial: Optional[np.ndarray] = None,
+        miu0: Optional[float] = None,
+        t_ref: Optional[float] = None,
+    ) -> Dict[str, np.ndarray]:
+        """Solve the fixed-pressure nonlinear thermal equation by Newton iteration."""
+        if mesh_data is None:
+            mesh_data = self.build_mesh(model)
+
+        mesh = mesh_data["mesh"]
+        basis = mesh_data["basis"]
+        grid = mesh_data["grid"]
+        t_supply = (
+            self.config.t_supply
+            if self.config.t_supply is not None
+            else self.config.t_in
+        )
+        q_orifice_total, q_orifice_net = self._orifice_flow_totals(orifice_data)
+        rho_cv = mesh_data["rho"] * self.config.cp_lub
+        miu0_value = float(
+            miu0
+            if miu0 is not None
+            else self.config.miu0
+            if self.config.miu0 is not None
+            else np.mean(np.asarray(viscosity, dtype=float))
+        )
+        t_ref_value = float(
+            t_ref
+            if t_ref is not None
+            else self.config.t_ref
+            if self.config.t_ref is not None
+            else self.config.t_in
+        )
+        lower = t_supply - 5.0
+        upper = t_supply + self.config.max_delta_t
+        temperature = self._initial_temperature_guess(
+            basis, t_supply, temperature_initial, lower, upper
+        )
+
+        initial_miu, initial_dmiu = self._viscosity_from_temperature_with_derivative(
+            temperature, miu0=miu0_value, t_ref=t_ref_value
+        )
+        initial_qx, initial_qz, _, _, _, _ = self._calc_flux_source_derivatives(
+            mesh_data, initial_miu, initial_dmiu
+        )
+        tau_nodal = (
+            self._calc_supg_tau_nodal(mesh, rho_cv, initial_qx, initial_qz)
+            if self.config.supg
+            else None
+        )
+        inlet_nodes, dirichlet_nodes = self._boundary_nodes(mesh, initial_qz)
+        t_bc = self._temperature_boundary_values(basis.N, inlet_nodes, t_supply)
+        if dirichlet_nodes.size > 0:
+            temperature[dirichlet_nodes] = t_bc[dirichlet_nodes]
+        all_nodes = np.arange(basis.N, dtype=int)
+        free_nodes = np.setdiff1d(all_nodes, dirichlet_nodes, assume_unique=False)
+
+        def residual_system(current, *, include_jacobian: bool):
+            viscosity_nodal, dviscosity_dt = (
+                self._viscosity_from_temperature_with_derivative(
+                    current, miu0=miu0_value, t_ref=t_ref_value
+                )
+            )
+            qx_nodal, qz_nodal, phi_nodal, dqx_dt, dqz_dt, dphi_dt = (
+                self._calc_flux_source_derivatives(
+                    mesh_data, viscosity_nodal, dviscosity_dt
+                )
+            )
+            K, f = self._assemble_energy_system(
+                basis, rho_cv, qx_nodal, qz_nodal, phi_nodal
+            )
+            if transient:
+                K, f = self._apply_transient_term(
+                    K, f, basis, mesh_data["h_nodal"], rho_cv, temperature_prev
+                )
+            K, f = self._assemble_supg_with_frozen_tau(
+                K,
+                f,
+                basis,
+                qx_nodal,
+                qz_nodal,
+                phi_nodal,
+                rho_cv=rho_cv,
+                tau_nodal=tau_nodal,
+                nondim=False,
+            )
+            K, f = self._apply_orifice_sources(
+                K, f, mesh, rho_cv, t_supply, orifice_data
+            )
+            if include_jacobian:
+                J_extra = asm(
+                    _temperature_flux_source_jacobian_form,
+                    basis,
+                    rho_cv=rho_cv,
+                    dqx_dt=basis.interpolate(dqx_dt),
+                    dqz_dt=basis.interpolate(dqz_dt),
+                    dphi_dt=basis.interpolate(dphi_dt),
+                    t_current=basis.interpolate(current),
+                )
+                residual, J = self._apply_dirichlet_to_residual_jacobian(
+                    K, f, J_extra, current, dirichlet_nodes, t_bc
+                )
+            else:
+                residual = self._apply_dirichlet_to_residual(
+                    K, f, current, dirichlet_nodes, t_bc
+                )
+                J = None
+            norm = self._relative_residual_norm(
+                residual, K, current, f, free_nodes
+            )
+            return residual, J, norm, K, f, viscosity_nodal, qx_nodal, qz_nodal, phi_nodal
+
+        tol = (
+            self.config.thermal_newton_tol
+            if self.config.thermal_newton_tol is not None
+            else self.config.tol
+        )
+        converged = False
+        iterations = 0
+        line_search_steps = 0
+        residual_norm = np.inf
+        final_fields = None
+        for i in range(self.config.thermal_newton_max_iter):
+            iterations = i + 1
+            (
+                residual,
+                J,
+                residual_norm,
+                K,
+                f,
+                viscosity_nodal,
+                qx_nodal,
+                qz_nodal,
+                phi_nodal,
+            ) = residual_system(temperature, include_jacobian=True)
+            final_fields = (viscosity_nodal, qx_nodal, qz_nodal, phi_nodal)
+            if residual_norm < tol:
+                converged = True
+                break
+            delta = spsolve(J, -residual)
+            if not np.all(np.isfinite(delta)):
+                break
+            alpha = float(self.config.thermal_newton_damp)
+            accepted = False
+            trial = temperature
+            trial_norm = residual_norm
+            if self.config.thermal_newton_line_search:
+                while alpha >= self.config.thermal_newton_min_damp:
+                    candidate = np.clip(temperature + alpha * delta, lower, upper)
+                    if dirichlet_nodes.size > 0:
+                        candidate[dirichlet_nodes] = t_bc[dirichlet_nodes]
+                    _, _, candidate_norm, *_ = residual_system(
+                        candidate, include_jacobian=False
+                    )
+                    if np.isfinite(candidate_norm) and candidate_norm < residual_norm:
+                        trial = candidate
+                        trial_norm = candidate_norm
+                        accepted = True
+                        break
+                    alpha *= 0.5
+                    line_search_steps += 1
+                if not accepted:
+                    break
+            else:
+                alpha = max(alpha, self.config.thermal_newton_min_damp)
+                trial = np.clip(temperature + alpha * delta, lower, upper)
+                if dirichlet_nodes.size > 0:
+                    trial[dirichlet_nodes] = t_bc[dirichlet_nodes]
+                _, _, trial_norm, *_ = residual_system(
+                    trial, include_jacobian=False
+                )
+                if not np.isfinite(trial_norm):
+                    break
+            temperature = trial
+            residual_norm = trial_norm
+        else:
+            (
+                _,
+                _,
+                residual_norm,
+                _,
+                _,
+                viscosity_nodal,
+                qx_nodal,
+                qz_nodal,
+                phi_nodal,
+            ) = residual_system(temperature, include_jacobian=False)
+            final_fields = (viscosity_nodal, qx_nodal, qz_nodal, phi_nodal)
+
+        if final_fields is None:
+            viscosity_nodal, _ = self._viscosity_from_temperature_with_derivative(
+                temperature, miu0=miu0_value, t_ref=t_ref_value
+            )
+            qx_nodal, qz_nodal, phi_nodal = self._calc_flux_and_source(
+                mesh_data, viscosity_nodal
+            )
+        else:
+            viscosity_nodal, qx_nodal, qz_nodal, phi_nodal = final_fields
+
+        return {
+            "temperature": temperature,
+            "t_eff": float(np.mean(temperature)),
+            "mesh": mesh,
+            "n_film_nodes": grid["n_film_nodes"],
+            "grid": grid,
+            "q_orifice_total": q_orifice_total,
+            "q_orifice_net": q_orifice_net,
+            "newton_converged": bool(converged),
+            "newton_iterations": int(iterations),
+            "newton_residual": float(residual_norm),
+            "newton_line_search_steps": int(line_search_steps),
+            "viscosity_nodal": viscosity_nodal,
+            "qx": qx_nodal,
+            "qz": qz_nodal,
+            "heat_source": phi_nodal,
+        }
+
     def solve(
         self,
         model,
@@ -742,6 +1135,71 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         mesh_data["ps"] = scales.ps
         return mesh_data
 
+    def _nondim_viscosity_from_temperature_with_derivative(
+        self, temperature_bar: np.ndarray, scales: ThermalNondimScales
+    ):
+        raw_dim = scales.viscosity_from_temperature_nondim(temperature_bar)
+        clipped_dim = np.clip(raw_dim, self.config.miu_min, self.config.miu_max)
+        active = (raw_dim > self.config.miu_min) & (raw_dim < self.config.miu_max)
+        miu_bar = np.clip(scales.viscosity_to_nondim(clipped_dim), 1e-12, None)
+        dmiu_bar_dt = np.where(active, -scales.beta_nondim * miu_bar, 0.0)
+        return clipped_dim, miu_bar, dmiu_bar_dt
+
+    @staticmethod
+    def _calc_nondim_flux_source_derivatives(
+        mesh_data: dict,
+        miu_bar: np.ndarray,
+        dmiu_bar_dt: np.ndarray,
+    ):
+        h_bar = mesh_data["h_nodal"]
+        scales: ThermalNondimScales = mesh_data["scales"]
+        dp_dx_bar = mesh_data["dp_dx_nodal"]
+        dp_dz_bar = mesh_data["dp_dz_nodal"]
+
+        ax_coeff = scales.lr**2 * h_bar**3 / miu_bar
+        az_coeff = scales.lr * h_bar**3 / miu_bar
+        dax_dt = -(scales.lr**2 * h_bar**3) / (miu_bar**2) * dmiu_bar_dt
+        daz_dt = -(scales.lr * h_bar**3) / (miu_bar**2) * dmiu_bar_dt
+
+        qx_bar = scales.lambda0 * h_bar - ax_coeff * dp_dx_bar
+        qz_bar = -az_coeff * dp_dz_bar
+        conv_x = qx_bar
+        conv_z = qz_bar / scales.lr
+        dconv_x_dt = -dax_dt * dp_dx_bar
+        dconv_z_dt = (-daz_dt * dp_dz_bar) / scales.lr
+
+        shear_coeff = scales.lambda0**2 / (3.0 * scales.lr**2)
+        grad_sq = scales.lr**2 * dp_dx_bar**2 + dp_dz_bar**2
+        phi_bar = scales.theta_e * (
+            shear_coeff * miu_bar / h_bar + h_bar**3 / miu_bar * grad_sq
+        )
+        dphi_dt = scales.theta_e * (
+            shear_coeff * dmiu_bar_dt / h_bar
+            - h_bar**3 / (miu_bar**2) * grad_sq * dmiu_bar_dt
+        )
+        return conv_x, conv_z, phi_bar, dconv_x_dt, dconv_z_dt, dphi_dt
+
+    def _calc_nondim_supg_tau_nodal(self, mesh, diff_x, diff_z, conv_x, conv_z):
+        tx_arr = mesh.p[0]
+        tz_arr = mesh.p[1]
+        q_mag = np.sqrt(conv_x**2 + conv_z**2)
+        dx_mesh = (
+            float(np.min(np.diff(np.unique(tx_arr))))
+            if len(np.unique(tx_arr)) > 1
+            else 1.0
+        )
+        dz_mesh = (
+            float(np.min(np.diff(np.unique(tz_arr))))
+            if len(np.unique(tz_arr)) > 1
+            else 1.0
+        )
+        h_elem = np.sqrt(dx_mesh**2 + dz_mesh**2)
+        alpha_nd = max(diff_x, diff_z, 1e-30)
+        pe_h = q_mag * h_elem / (2.0 * alpha_nd + 1e-30)
+        pe_safe = np.clip(pe_h, 1e-10, 500.0)
+        xi = 1.0 / np.tanh(pe_safe) - 1.0 / pe_safe
+        return xi * h_elem / (2.0 * q_mag + 1e-12)
+
     def update_pressure_gradients(self, model, mesh_data: dict):
         grid = mesh_data["grid"]
         x_axis = grid["x_axis"]
@@ -759,6 +1217,298 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         node_iz = mesh_data["node_iz"]
         mesh_data["dp_dx_nodal"] = dp_dx_grid[node_ix, node_iz]
         mesh_data["dp_dz_nodal"] = dp_dz_grid[node_ix, node_iz]
+
+    def solve_segregated_newton(
+        self,
+        model,
+        viscosity: Union[float, np.ndarray],
+        mesh_data: Optional[dict] = None,
+        orifice_data: Optional[list] = None,
+        temperature_prev: Optional[np.ndarray] = None,
+        transient: bool = False,
+        *,
+        temperature_initial: Optional[np.ndarray] = None,
+        miu0: Optional[float] = None,
+        t_ref: Optional[float] = None,
+    ) -> Dict[str, np.ndarray]:
+        """Solve the fixed-pressure nondimensional thermal equation by Newton iteration."""
+        if transient:
+            raise NotImplementedError(
+                "The nondimensional thermal solver currently supports steady solves only."
+            )
+        if mesh_data is None:
+            mesh_data = self.build_mesh(model)
+
+        mesh = mesh_data["mesh"]
+        basis = mesh_data["basis"]
+        scales: ThermalNondimScales = mesh_data["scales"]
+        t_supply = (
+            self.config.t_supply
+            if self.config.t_supply is not None
+            else self.config.t_in
+        )
+        lower = -5.0 / scales.delta_t
+        upper = self.config.max_delta_t / scales.delta_t
+        if temperature_initial is None:
+            temperature_bar = np.zeros(basis.N, dtype=float)
+        else:
+            initial = np.asarray(temperature_initial, dtype=float).reshape(-1)
+            if initial.size == basis.N:
+                temperature_bar = scales.temperature_to_nondim(initial, t_supply)
+            else:
+                temperature_bar = np.zeros(basis.N, dtype=float)
+        temperature_bar = np.clip(temperature_bar, lower, upper)
+
+        q_orifice_total = 0.0
+        q_orifice_net = 0.0
+        if orifice_data:
+            q_orifice_total = sum(abs(item[2]) for item in orifice_data)
+            q_orifice_net = sum(item[2] for item in orifice_data)
+
+        rho_cv = scales.rho * scales.cp
+        diff_x = self.config.k_lub / (rho_cv * scales.flow_scale * scales.r + 1e-30)
+        diff_z = diff_x / (scales.lr**2)
+
+        _, initial_miu_bar, initial_dmiu = (
+            self._nondim_viscosity_from_temperature_with_derivative(
+                temperature_bar, scales
+            )
+        )
+        initial_qx, initial_qz, _, _, _, _ = (
+            self._calc_nondim_flux_source_derivatives(
+                mesh_data, initial_miu_bar, initial_dmiu
+            )
+        )
+        tau_nodal = (
+            self._calc_nondim_supg_tau_nodal(
+                mesh, diff_x, diff_z, initial_qx, initial_qz
+            )
+            if self.config.supg
+            else None
+        )
+
+        t_supply_dim = (
+            self.config.t_supply
+            if self.config.t_supply is not None
+            else self.config.t_in
+        )
+        side_temp = (
+            self.config.axial_side_t
+            if self.config.axial_side_t is not None
+            else t_supply_dim
+        )
+        side_temp_bar = scales.temperature_to_nondim(side_temp, t_supply_dim)
+        tx = mesh.p[0]
+        tz = mesh.p[1]
+        x_min, x_max = float(tx.min()), float(tx.max())
+        z_min, z_max = float(tz.min()), float(tz.max())
+        tol_x = (x_max - x_min) * 1e-8
+        tol_z = (z_max - z_min) * 1e-8
+        inlet_nodes = np.where(np.abs(tx - x_min) < tol_x)[0]
+        side_z_min = np.where(np.abs(tz - z_min) < tol_z)[0]
+        side_z_max = np.where(np.abs(tz - z_max) < tol_z)[0]
+        side_mode = str(self.config.axial_side_bc).lower()
+        dirichlet_parts = [inlet_nodes]
+        if side_mode == "fixed":
+            dirichlet_parts.extend([side_z_min, side_z_max])
+        elif side_mode == "adiabatic":
+            pass
+        elif side_mode == "inflow_fixed":
+            if side_z_min.size > 0 and float(np.mean(initial_qz[side_z_min])) > 0.0:
+                dirichlet_parts.append(side_z_min)
+            if side_z_max.size > 0 and float(np.mean(initial_qz[side_z_max])) < 0.0:
+                dirichlet_parts.append(side_z_max)
+        else:
+            raise ValueError(
+                "axial_side_bc must be one of: 'fixed', 'adiabatic', 'inflow_fixed'"
+            )
+        dirichlet_nodes = np.unique(np.concatenate(dirichlet_parts)).astype(int)
+        t_bc = np.full(basis.N, side_temp_bar, dtype=float)
+        t_bc[inlet_nodes] = 0.0
+        if dirichlet_nodes.size > 0:
+            temperature_bar[dirichlet_nodes] = t_bc[dirichlet_nodes]
+        all_nodes = np.arange(basis.N, dtype=int)
+        free_nodes = np.setdiff1d(all_nodes, dirichlet_nodes, assume_unique=False)
+
+        def apply_orifice(K, f):
+            if not orifice_data:
+                return K, f
+            K = K.tolil()
+            for ox, oz, q_bar in orifice_data:
+                if q_bar <= 0:
+                    continue
+                dist2 = (tx - ox) ** 2 + (tz - oz) ** 2
+                j = int(np.argmin(dist2))
+                K[j, j] += float(q_bar)
+                f[j] += 0.0
+            return K.tocsr(), f
+
+        def residual_system(current_bar, *, include_jacobian: bool):
+            miu_nodal, miu_bar, dmiu_bar_dt = (
+                self._nondim_viscosity_from_temperature_with_derivative(
+                    current_bar, scales
+                )
+            )
+            conv_x, conv_z, phi_bar, dconv_x_dt, dconv_z_dt, dphi_dt = (
+                self._calc_nondim_flux_source_derivatives(
+                    mesh_data, miu_bar, dmiu_bar_dt
+                )
+            )
+            K = asm(
+                _nondim_advection_diffusion_form,
+                basis,
+                diff_x=diff_x,
+                diff_z=diff_z,
+                qx=basis.interpolate(conv_x),
+                qz=basis.interpolate(conv_z),
+            )
+            f = asm(_source_form, basis, q=basis.interpolate(phi_bar))
+            K, f = self._assemble_supg_with_frozen_tau(
+                K,
+                f,
+                basis,
+                conv_x,
+                conv_z,
+                phi_bar,
+                tau_nodal=tau_nodal,
+                nondim=True,
+            )
+            K, f = apply_orifice(K, f)
+            if include_jacobian:
+                J_extra = asm(
+                    _nondim_temperature_flux_source_jacobian_form,
+                    basis,
+                    dqx_dt=basis.interpolate(dconv_x_dt),
+                    dqz_dt=basis.interpolate(dconv_z_dt),
+                    dphi_dt=basis.interpolate(dphi_dt),
+                    t_current=basis.interpolate(current_bar),
+                )
+                residual, J = self._apply_dirichlet_to_residual_jacobian(
+                    K, f, J_extra, current_bar, dirichlet_nodes, t_bc
+                )
+            else:
+                residual = self._apply_dirichlet_to_residual(
+                    K, f, current_bar, dirichlet_nodes, t_bc
+                )
+                J = None
+            norm = self._relative_residual_norm(
+                residual, K, current_bar, f, free_nodes
+            )
+            return residual, J, norm, K, f, miu_nodal, conv_x, conv_z, phi_bar
+
+        tol = (
+            self.config.thermal_newton_tol
+            if self.config.thermal_newton_tol is not None
+            else self.config.tol
+        )
+        converged = False
+        iterations = 0
+        line_search_steps = 0
+        residual_norm = np.inf
+        final_fields = None
+        for i in range(self.config.thermal_newton_max_iter):
+            iterations = i + 1
+            (
+                residual,
+                J,
+                residual_norm,
+                K,
+                f,
+                miu_nodal,
+                conv_x,
+                conv_z,
+                phi_bar,
+            ) = residual_system(temperature_bar, include_jacobian=True)
+            final_fields = (miu_nodal, conv_x, conv_z, phi_bar)
+            if residual_norm < tol:
+                converged = True
+                break
+            delta = spsolve(J, -residual)
+            if not np.all(np.isfinite(delta)):
+                break
+            alpha = float(self.config.thermal_newton_damp)
+            accepted = False
+            trial = temperature_bar
+            trial_norm = residual_norm
+            if self.config.thermal_newton_line_search:
+                while alpha >= self.config.thermal_newton_min_damp:
+                    candidate = np.clip(temperature_bar + alpha * delta, lower, upper)
+                    if dirichlet_nodes.size > 0:
+                        candidate[dirichlet_nodes] = t_bc[dirichlet_nodes]
+                    _, _, candidate_norm, *_ = residual_system(
+                        candidate, include_jacobian=False
+                    )
+                    if np.isfinite(candidate_norm) and candidate_norm < residual_norm:
+                        trial = candidate
+                        trial_norm = candidate_norm
+                        accepted = True
+                        break
+                    alpha *= 0.5
+                    line_search_steps += 1
+                if not accepted:
+                    break
+            else:
+                alpha = max(alpha, self.config.thermal_newton_min_damp)
+                trial = np.clip(temperature_bar + alpha * delta, lower, upper)
+                if dirichlet_nodes.size > 0:
+                    trial[dirichlet_nodes] = t_bc[dirichlet_nodes]
+                _, _, trial_norm, *_ = residual_system(
+                    trial, include_jacobian=False
+                )
+                if not np.isfinite(trial_norm):
+                    break
+            temperature_bar = trial
+            residual_norm = trial_norm
+        else:
+            (
+                _,
+                _,
+                residual_norm,
+                _,
+                _,
+                miu_nodal,
+                conv_x,
+                conv_z,
+                phi_bar,
+            ) = residual_system(temperature_bar, include_jacobian=False)
+            final_fields = (miu_nodal, conv_x, conv_z, phi_bar)
+
+        if final_fields is None:
+            miu_nodal, miu_bar, _ = (
+                self._nondim_viscosity_from_temperature_with_derivative(
+                    temperature_bar, scales
+                )
+            )
+            conv_x, conv_z, phi_bar, _, _, _ = (
+                self._calc_nondim_flux_source_derivatives(
+                    mesh_data, miu_bar, np.zeros_like(miu_bar)
+                )
+            )
+        else:
+            miu_nodal, conv_x, conv_z, phi_bar = final_fields
+        t_nodal = scales.temperature_from_nondim(temperature_bar, t_supply)
+        qz_bar = conv_z * scales.lr
+
+        return {
+            "temperature": t_nodal,
+            "temperature_nondim": temperature_bar,
+            "t_eff": float(np.mean(t_nodal)),
+            "t_eff_nondim": float(np.mean(temperature_bar)),
+            "mesh": mesh,
+            "n_film_nodes": mesh_data["grid"]["n_film_nodes"],
+            "grid": mesh_data["grid"],
+            "q_orifice_total": q_orifice_total,
+            "q_orifice_net": q_orifice_net,
+            "qx_nondim": conv_x,
+            "qz_nondim": qz_bar,
+            "heat_source_nondim": phi_bar,
+            "scales": scales,
+            "newton_converged": bool(converged),
+            "newton_iterations": int(iterations),
+            "newton_residual": float(residual_norm),
+            "newton_line_search_steps": int(line_search_steps),
+            "viscosity_nodal": miu_nodal,
+        }
 
     def solve(
         self,
@@ -1624,6 +2374,167 @@ class NodimThermalHydroBearing(BaseCSystem):
         return self.bearing.calc_is_finished(*args, **kwargs)
 
     def _solve_coupled(self, *args, transient=False, temperature_prev=None, **kwargs):
+        iter_method = self.config.iter_method
+        if iter_method == "newton":
+            return self._solve_coupled_newton(
+                *args,
+                transient=transient,
+                temperature_prev=temperature_prev,
+                solver_used="newton",
+                **kwargs,
+            )
+        if iter_method == "direct_then_newton":
+            fixed_result = self._solve_coupled_fixed_point(
+                *args,
+                transient=transient,
+                temperature_prev=temperature_prev,
+                solver_used="direct",
+                **kwargs,
+            )
+            if fixed_result.get("thermal_converged", False):
+                return fixed_result
+            return self._solve_coupled_newton(
+                *args,
+                transient=transient,
+                temperature_prev=temperature_prev,
+                solver_used="direct_then_newton",
+                initial_miu_field=np.asarray(
+                    fixed_result["viscosity_field"], dtype=float
+                ),
+                initial_temperature=np.asarray(
+                    fixed_result["temperature"], dtype=float
+                ),
+                **kwargs,
+            )
+        return self._solve_coupled_fixed_point(
+            *args,
+            transient=transient,
+            temperature_prev=temperature_prev,
+            solver_used="direct",
+            **kwargs,
+        )
+
+    def _thermal_target_from_solution(self, thermal: dict, mesh_data: dict):
+        t_film = self._map_thermal_to_film(
+            thermal["mesh"], thermal["temperature"], mesh_data
+        )
+        t_film_nondim = None
+        if "temperature_nondim" in thermal and "scales" in thermal:
+            t_film_nondim = self._map_thermal_to_film(
+                thermal["mesh"], thermal["temperature_nondim"], mesh_data
+            )
+            miu_target = self._viscosity_from_temperature_nondim(
+                t_film_nondim, thermal["scales"]
+            )
+        else:
+            miu_target = self._viscosity_from_temperature(t_film)
+        return t_film, t_film_nondim, miu_target
+
+    def _build_coupled_result(
+        self,
+        hydro: dict,
+        thermal: dict,
+        mesh_data: dict,
+        t_film: np.ndarray,
+        t_film_nondim: Optional[np.ndarray],
+        miu_field: np.ndarray,
+        miu_mean: float,
+        relax_controller: AdaptiveDampController,
+        *,
+        converged: bool,
+        n_iter: int,
+        transient: bool,
+        solver_used: str,
+        newton_iterations: int = 0,
+        newton_residual: float = np.nan,
+        newton_line_search_steps: int = 0,
+    ):
+        model = self.bearing.main_model
+        scales = thermal.get("scales")
+        self._last_thermal = {
+            "t_eff": float(thermal["t_eff"]),
+            "viscosity": float(miu_mean),
+            "converged": bool(converged),
+            "iterations": int(n_iter),
+            "viscosity_field": miu_field.copy(),
+            "relax": float(relax_controller.value),
+            "relax_history": list(relax_controller.history),
+            "adaptive_damp_enabled": bool(relax_controller.enabled),
+            "solver_used": str(solver_used),
+            "newton_iterations": int(newton_iterations),
+            "newton_residual": float(newton_residual),
+            "newton_line_search_steps": int(newton_line_search_steps),
+        }
+
+        result = dict(hydro)
+        result.update(
+            {
+                "t_eff": self._last_thermal["t_eff"],
+                "viscosity": self._last_thermal["viscosity"],
+                "thermal_converged": self._last_thermal["converged"],
+                "thermal_iterations": self._last_thermal["iterations"],
+                "thermal_relax": self._last_thermal["relax"],
+                "thermal_relax_history": self._last_thermal["relax_history"],
+                "thermal_adaptive_damp_enabled": self._last_thermal[
+                    "adaptive_damp_enabled"
+                ],
+                "thermal_solver_used": self._last_thermal["solver_used"],
+                "thermal_newton_iterations": self._last_thermal[
+                    "newton_iterations"
+                ],
+                "thermal_newton_residual": self._last_thermal["newton_residual"],
+                "thermal_newton_line_search_steps": self._last_thermal[
+                    "newton_line_search_steps"
+                ],
+                "temperature": thermal["temperature"],
+                "temperature_film": t_film,
+                "temperature_x": thermal["mesh"].p[0].copy(),
+                "temperature_z": thermal["mesh"].p[1].copy(),
+                "viscosity_field": miu_field.copy(),
+                "q_orifice_total": thermal.get("q_orifice_total", 0.0),
+                "thermal_transient": bool(transient),
+            }
+        )
+        if "temperature_nondim" in thermal:
+            result.update(
+                {
+                    "temperature_nondim": thermal["temperature_nondim"],
+                    "temperature_film_nondim": t_film_nondim,
+                    "t_eff_nondim": thermal["t_eff_nondim"],
+                    "qx_nondim": thermal["qx_nondim"],
+                    "qz_nondim": thermal["qz_nondim"],
+                    "heat_source_nondim": thermal["heat_source_nondim"],
+                    "beta_nondim": thermal["scales"].beta_nondim,
+                    "t_ref_nondim": thermal["scales"].t_ref_nondim,
+                    "delta_t": thermal["scales"].delta_t,
+                    "miu0": self._miu0,
+                    "thermal_config_readonly": self._build_thermal_config_readonly(
+                        thermal["scales"]
+                    ),
+                    "thermal_scales": thermal["scales"],
+                }
+            )
+        result.update(
+            self._build_structured_result_fields(
+                model,
+                t_film,
+                miu_field,
+                mesh_data,
+                t_film_nondim=t_film_nondim,
+                scales=scales,
+            )
+        )
+        self.post_process.update(result)
+        return result
+
+    def _solve_coupled_fixed_point(
+        self,
+        *args,
+        transient=False,
+        temperature_prev=None,
+        solver_used="direct",
+        **kwargs,
+    ):
         model = self.bearing.main_model
         n_nodes = len(model.nodes)
 
@@ -1668,18 +2579,7 @@ class NodimThermalHydroBearing(BaseCSystem):
             )
 
             # Map temperature back to film nodes
-            if "temperature_nondim" in thermal and "scales" in thermal:
-                t_film_nondim = self._map_thermal_to_film(
-                    thermal["mesh"], thermal["temperature_nondim"], mesh_data
-                )
-                miu_target = self._viscosity_from_temperature_nondim(
-                    t_film_nondim, thermal["scales"]
-                )
-            else:
-                t_film = self._map_thermal_to_film(
-                    thermal["mesh"], thermal["temperature"], mesh_data
-                )
-                miu_target = self._viscosity_from_temperature(t_film)
+            _, _, miu_target = self._thermal_target_from_solution(thermal, mesh_data)
 
             # Relax
             relax = relax_controller.value
@@ -1712,79 +2612,173 @@ class NodimThermalHydroBearing(BaseCSystem):
             temperature_prev=temperature_prev,
             transient=transient,
         )
-        t_film = self._map_thermal_to_film(
-            thermal["mesh"], thermal["temperature"], mesh_data
+        t_film, t_film_nondim, _ = self._thermal_target_from_solution(
+            thermal, mesh_data
         )
-        scales = thermal.get("scales")
-        t_film_nondim = None
-        if "temperature_nondim" in thermal:
-            t_film_nondim = self._map_thermal_to_film(
-                thermal["mesh"], thermal["temperature_nondim"], mesh_data
-            )
-
-        self._last_thermal = {
-            "t_eff": float(thermal["t_eff"]),
-            "viscosity": miu_mean,
-            "converged": bool(converged),
-            "iterations": n_iter,
-            "viscosity_field": miu_field.copy(),
-            "relax": float(relax_controller.value),
-            "relax_history": list(relax_controller.history),
-            "adaptive_damp_enabled": bool(relax_controller.enabled),
-        }
-
-        result = dict(hydro)
-        result.update(
-            {
-                "t_eff": self._last_thermal["t_eff"],
-                "viscosity": self._last_thermal["viscosity"],
-                "thermal_converged": self._last_thermal["converged"],
-                "thermal_iterations": self._last_thermal["iterations"],
-                "thermal_relax": self._last_thermal["relax"],
-                "thermal_relax_history": self._last_thermal["relax_history"],
-                "thermal_adaptive_damp_enabled": self._last_thermal[
-                    "adaptive_damp_enabled"
-                ],
-                "temperature": thermal["temperature"],
-                "temperature_film": t_film,
-                "temperature_x": thermal["mesh"].p[0].copy(),
-                "temperature_z": thermal["mesh"].p[1].copy(),
-                "viscosity_field": miu_field.copy(),
-                "q_orifice_total": thermal.get("q_orifice_total", 0.0),
-                "thermal_transient": bool(transient),
-            }
+        return self._build_coupled_result(
+            hydro,
+            thermal,
+            mesh_data,
+            t_film,
+            t_film_nondim,
+            miu_field,
+            miu_mean,
+            relax_controller,
+            converged=converged,
+            n_iter=n_iter,
+            transient=transient,
+            solver_used=solver_used,
         )
-        if "temperature_nondim" in thermal:
-            result.update(
-                {
-                    "temperature_nondim": thermal["temperature_nondim"],
-                    "temperature_film_nondim": t_film_nondim,
-                    "t_eff_nondim": thermal["t_eff_nondim"],
-                    "qx_nondim": thermal["qx_nondim"],
-                    "qz_nondim": thermal["qz_nondim"],
-                    "heat_source_nondim": thermal["heat_source_nondim"],
-                    "beta_nondim": thermal["scales"].beta_nondim,
-                    "t_ref_nondim": thermal["scales"].t_ref_nondim,
-                    "delta_t": thermal["scales"].delta_t,
-                    "miu0": self._miu0,
-                    "thermal_config_readonly": self._build_thermal_config_readonly(
-                        thermal["scales"]
-                    ),
-                    "thermal_scales": thermal["scales"],
-                }
-            )
-        result.update(
-            self._build_structured_result_fields(
+
+    def _solve_coupled_newton(
+        self,
+        *args,
+        transient=False,
+        temperature_prev=None,
+        solver_used="newton",
+        initial_miu_field: Optional[np.ndarray] = None,
+        initial_temperature: Optional[np.ndarray] = None,
+        **kwargs,
+    ):
+        model = self.bearing.main_model
+        n_nodes = len(model.nodes)
+        if initial_miu_field is None or np.asarray(initial_miu_field).size != n_nodes:
+            miu_field = np.full(n_nodes, self._miu0, dtype=float)
+        else:
+            miu_field = np.asarray(initial_miu_field, dtype=float).reshape(-1).copy()
+        relax_controller = AdaptiveDampController(
+            self.config.relax, self.config.adaptive_damp
+        )
+        converged = False
+        n_iter = 0
+        temperature_guess = (
+            None
+            if initial_temperature is None
+            else np.asarray(initial_temperature, dtype=float).reshape(-1).copy()
+        )
+        newton_iterations_total = 0
+        newton_line_search_steps_total = 0
+        newton_residual = np.nan
+
+        self._thermal_grid = _build_film_grid(model)
+        mesh_data = self.thermal_model.build_mesh(model, self._thermal_grid)
+
+        for i in range(self.config.max_iter):
+            n_iter = i + 1
+            self._apply_miu_ratio_to_nodes(miu_field)
+            miu_mean = float(np.mean(miu_field))
+            self._sync_reference_film_args()
+            hydro = self.bearing.output(*args, **kwargs)
+            orifice_data = self._collect_orifice_info()
+            self.thermal_model.update_pressure_gradients(model, mesh_data)
+            miu_visc = self._get_thermal_viscosity(miu_field, miu_mean, mesh_data)
+            thermal = self.thermal_model.solve_segregated_newton(
                 model,
-                t_film,
-                miu_field,
+                miu_visc,
                 mesh_data,
-                t_film_nondim=t_film_nondim,
-                scales=scales,
+                orifice_data,
+                temperature_prev=temperature_prev,
+                transient=transient,
+                temperature_initial=temperature_guess,
+                miu0=self._miu0,
+                t_ref=self._t_ref,
             )
+            temperature_guess = np.asarray(thermal["temperature"], dtype=float).copy()
+            newton_iterations_total += int(thermal.get("newton_iterations", 0))
+            newton_line_search_steps_total += int(
+                thermal.get("newton_line_search_steps", 0)
+            )
+            newton_residual = float(thermal.get("newton_residual", np.nan))
+            subsolve_converged = bool(thermal.get("newton_converged", False))
+            subsolve_iterations = int(thermal.get("newton_iterations", 0))
+            subsolve_hit_limit = (
+                subsolve_iterations >= int(self.config.thermal_newton_max_iter)
+            )
+            hard_residual = max(1e-2, 100.0 * float(self.config.tol))
+            hard_failure = (not subsolve_converged) and (
+                (not np.isfinite(newton_residual))
+                or (subsolve_iterations < int(self.config.thermal_newton_max_iter))
+                or (subsolve_hit_limit and newton_residual > hard_residual)
+            )
+            if hard_failure:
+                t_film, t_film_nondim, _ = self._thermal_target_from_solution(
+                    thermal, mesh_data
+                )
+                return self._build_coupled_result(
+                    hydro,
+                    thermal,
+                    mesh_data,
+                    t_film,
+                    t_film_nondim,
+                    miu_field,
+                    miu_mean,
+                    relax_controller,
+                    converged=False,
+                    n_iter=n_iter,
+                    transient=transient,
+                    solver_used=solver_used,
+                    newton_iterations=newton_iterations_total,
+                    newton_residual=newton_residual,
+                    newton_line_search_steps=newton_line_search_steps_total,
+                )
+
+            _, _, miu_target = self._thermal_target_from_solution(thermal, mesh_data)
+
+            relax = relax_controller.value
+            miu_new = (1.0 - relax) * miu_field + relax * miu_target
+            rel_err = float(
+                np.max(np.abs(miu_new - miu_field))
+                / max(float(np.max(np.abs(miu_field))), 1e-12)
+            )
+            miu_field = miu_new
+            relax_controller.update(rel_err)
+            if subsolve_converged and rel_err < self.config.tol:
+                converged = True
+                break
+
+        self._apply_miu_ratio_to_nodes(miu_field)
+        miu_mean = float(np.mean(miu_field))
+        self._sync_reference_film_args()
+        hydro = self.bearing.output(*args, **kwargs)
+        orifice_data = self._collect_orifice_info()
+        self.thermal_model.update_pressure_gradients(model, mesh_data)
+        miu_visc = self._get_thermal_viscosity(miu_field, miu_mean, mesh_data)
+        thermal = self.thermal_model.solve_segregated_newton(
+            model,
+            miu_visc,
+            mesh_data,
+            orifice_data,
+            temperature_prev=temperature_prev,
+            transient=transient,
+            temperature_initial=temperature_guess,
+            miu0=self._miu0,
+            t_ref=self._t_ref,
         )
-        self.post_process.update(result)
-        return result
+        newton_iterations_total += int(thermal.get("newton_iterations", 0))
+        newton_line_search_steps_total += int(
+            thermal.get("newton_line_search_steps", 0)
+        )
+        newton_residual = float(thermal.get("newton_residual", np.nan))
+        t_film, t_film_nondim, _ = self._thermal_target_from_solution(
+            thermal, mesh_data
+        )
+        return self._build_coupled_result(
+            hydro,
+            thermal,
+            mesh_data,
+            t_film,
+            t_film_nondim,
+            miu_field,
+            miu_mean,
+            relax_controller,
+            converged=bool(converged and thermal.get("newton_converged", False)),
+            n_iter=n_iter,
+            transient=transient,
+            solver_used=solver_used,
+            newton_iterations=newton_iterations_total,
+            newton_residual=newton_residual,
+            newton_line_search_steps=newton_line_search_steps_total,
+        )
 
     def initialize_thermal_state(self, *args, **kwargs):
         """Solve a steady thermal field and store it as the transient initial state."""

@@ -1,0 +1,591 @@
+{
+  "reference_name": "thermal_segregated_newton_reference_v1",
+  "created_at": "2026-06-08T21:04:00",
+  "created_before_solver_change": true,
+  "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+  "python_version": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "cases": {
+    "dim_small_fixed_point": {
+      "hyd_config": {
+        "e": 0.25,
+        "angle": 30.0,
+        "freq": 50,
+        "x0": 0,
+        "lx": 360,
+        "lz": 2,
+        "nx": 11,
+        "nz": 7,
+        "miu": 0.0195,
+        "c": 8e-05,
+        "r": 0.04,
+        "l": 0.06,
+        "ps": 7000000.0,
+        "rho": 872,
+        "reynold": true,
+        "coe": true,
+        "p_set": 0,
+        "error_set": 1e-08,
+        "max_iter": 120,
+        "damp": 0.8,
+        "vib": false,
+        "dxt": 0,
+        "dyt": 0,
+        "vf": 1,
+        "iter_method": "newton",
+        "path": "",
+        "node_link": null,
+        "save_p": false,
+        "save_h": false,
+        "ngauss": 50,
+        "gdamp": 1.2,
+        "err": 0.001,
+        "adaptive_damp": null,
+        "w": 3000,
+        "angle_rad": 0.5235987755982988
+      },
+      "thermal_config": {
+        "t_in": 40.0,
+        "t_ref": null,
+        "miu0": null,
+        "beta": 0.03,
+        "k_lub": 0.0,
+        "cp_lub": 2000.0,
+        "flow_rate_factor": 1.0,
+        "max_delta_t": 80.0,
+        "heat_partition": 0.9,
+        "relax": 0.6,
+        "tol": 0.05,
+        "max_iter": 8,
+        "adaptive_damp": null,
+        "miu_min": 0.0001,
+        "miu_max": 1.0,
+        "coupling": "full",
+        "t_supply": null,
+        "axial_side_bc": "inflow_fixed",
+        "axial_side_t": null,
+        "supg": true,
+        "pressure_backend": "skfem",
+        "args_nodim": false,
+        "delta_t_scale": null,
+        "beta_nondim": null,
+        "t_ref_nondim": null,
+        "transient_enabled": false,
+        "dt": null
+      },
+      "input": {
+        "uxy": [
+          2e-05,
+          0.0
+        ],
+        "uxyt": [
+          0.0,
+          0.0
+        ],
+        "nodim_output": true
+      },
+      "summary": {
+        "force": [
+          -0.03951931250088059,
+          0.14461031620233306
+        ],
+        "friction": 0.9104796539255724,
+        "thermal_iterations": 3,
+        "thermal_converged": true
+      }
+    },
+    "nondim_small_fixed_point": {
+      "hyd_config": {
+        "e": 0.25,
+        "angle": 30.0,
+        "freq": 50,
+        "x0": 0,
+        "lx": 360,
+        "lz": 2,
+        "nx": 11,
+        "nz": 7,
+        "miu": 0.0195,
+        "c": 8e-05,
+        "r": 0.04,
+        "l": 0.06,
+        "ps": 7000000.0,
+        "rho": 872,
+        "reynold": true,
+        "coe": true,
+        "p_set": 0,
+        "error_set": 1e-08,
+        "max_iter": 120,
+        "damp": 0.8,
+        "vib": false,
+        "dxt": null,
+        "dyt": null,
+        "vf": 1,
+        "iter_method": "newton",
+        "path": "",
+        "node_link": null,
+        "save_p": false,
+        "save_h": false,
+        "ngauss": 50,
+        "gdamp": 1.2,
+        "err": 0.001,
+        "adaptive_damp": null,
+        "w": 3000,
+        "angle_rad": 0.5235987755982988
+      },
+      "thermal_config": {
+        "t_in": 40.0,
+        "t_ref": null,
+        "miu0": null,
+        "beta": 0.03,
+        "k_lub": 0.0,
+        "cp_lub": 2000.0,
+        "flow_rate_factor": 1.0,
+        "max_delta_t": 80.0,
+        "heat_partition": 0.9,
+        "relax": 0.6,
+        "tol": 0.05,
+        "max_iter": 8,
+        "adaptive_damp": null,
+        "miu_min": 0.0001,
+        "miu_max": 1.0,
+        "coupling": "full",
+        "t_supply": null,
+        "axial_side_bc": "inflow_fixed",
+        "axial_side_t": null,
+        "supg": true,
+        "pressure_backend": "skfem",
+        "args_nodim": true,
+        "delta_t_scale": 30.0,
+        "beta_nondim": null,
+        "t_ref_nondim": null,
+        "transient_enabled": false,
+        "dt": null
+      },
+      "input": {
+        "uxy": [
+          2e-05,
+          0.0
+        ],
+        "uxyt": [
+          0.0,
+          0.0
+        ],
+        "nodim_output": true
+      },
+      "summary": {
+        "force": [
+          -0.15294335538178563,
+          0.5686761053435324
+        ],
+        "beta_nondim": 0.8999999999999999,
+        "thermal_iterations": 3,
+        "thermal_converged": true
+      }
+    },
+    "s0011_diagnostic_fixed_point": {
+      "sample_ids": [
+        30,
+        33,
+        162946
+      ],
+      "config_path": "F:\\BaiduSyncdisk\\博士论文\\task\\PAPER\\config\\alb12.json5",
+      "csv_path": "SURROGATE_TRAIN\\outputs\\alb_data2\\S0011_alb_data2_exey0to0p9_200000_seed20260607_20260607\\alb_data2_results_n200000_seed20260607.csv",
+      "csv_sha256": "b540e7062843867b69d43a9ba89ab9ee912795e5e97e33586be248ba84e93da6",
+      "config_sha256": "893141e7243013d533c831e1a2063c8c3511a6bb09bdeb72db7374e95525d348",
+      "derived": {
+        "lambda_per_hz": 0.006563684651250103,
+        "beta_nondim": 0.10837155963302753,
+        "lr": 0.75,
+        "cq0": 1.3457122291523556,
+        "cq1": 0.20818792014191256,
+        "cq2": 0.009778479703566049,
+        "force_scale": 8400.0,
+        "thermal_expected": true
+      },
+      "records": [
+        {
+          "sample_id": 30,
+          "input": {
+            "freq": 31.32038217950415,
+            "ex": 0.3531811094550011,
+            "ey": 0.2270827227192638,
+            "vx": 0.2887600511071831,
+            "vy": 0.3636123561540438,
+            "sx": 0.5716872030590258,
+            "sy": 0.3092071540896751
+          },
+          "source_csv_force": [
+            -0.3894025838755073,
+            -0.421587729179337
+          ],
+          "force": [
+            -0.3894025838755065,
+            -0.4215877291793378
+          ],
+          "force_dim": [
+            -3270.981704554255,
+            -3541.3369251064373
+          ],
+          "force_norm": 0.573908168371484,
+          "hydro_converged": true,
+          "thermal_converged": false,
+          "thermal_iterations": 60,
+          "pad_thermal_flags": [
+            true,
+            true,
+            false,
+            true
+          ],
+          "pad_summaries": [
+            {
+              "pad": 0,
+              "thermal_converged": true,
+              "thermal_iterations": 15,
+              "t_eff": 20.3204434134224,
+              "viscosity": 0.019313703745564473,
+              "temperature_min": 20.0,
+              "temperature_mean": 20.3204434134224,
+              "temperature_max": 20.739299477811127,
+              "viscosity_min": 0.019072281810007988,
+              "viscosity_mean": 0.019313703745564473,
+              "viscosity_max": 0.0195
+            },
+            {
+              "pad": 1,
+              "thermal_converged": true,
+              "thermal_iterations": 15,
+              "t_eff": 20.349077043325664,
+              "viscosity": 0.01929741915171708,
+              "temperature_min": 20.0,
+              "temperature_mean": 20.349077043325664,
+              "temperature_max": 20.860524370517087,
+              "viscosity_min": 0.019003048046212348,
+              "viscosity_mean": 0.01929741915171708,
+              "viscosity_max": 0.0195
+            },
+            {
+              "pad": 2,
+              "thermal_converged": false,
+              "thermal_iterations": 60,
+              "t_eff": 25.49611648713034,
+              "viscosity": 0.01679013215661534,
+              "temperature_min": 20.0,
+              "temperature_mean": 25.49611648713034,
+              "temperature_max": 38.08737395343381,
+              "viscosity_min": 0.011334081303459049,
+              "viscosity_mean": 0.01679013215661534,
+              "viscosity_max": 0.0195
+            },
+            {
+              "pad": 3,
+              "thermal_converged": true,
+              "thermal_iterations": 14,
+              "t_eff": 20.143920170210002,
+              "viscosity": 0.019416069752510243,
+              "temperature_min": 20.0,
+              "temperature_mean": 20.143920170210002,
+              "temperature_max": 20.321367729517195,
+              "viscosity_min": 0.019312913946061452,
+              "viscosity_mean": 0.019416069752510243,
+              "viscosity_max": 0.0195
+            }
+          ],
+          "warning_count": 0,
+          "warning_summary": []
+        },
+        {
+          "sample_id": 33,
+          "input": {
+            "freq": 121.31861266857514,
+            "ex": 0.0881080431708112,
+            "ey": 0.5887129586303732,
+            "vx": 0.5937909366703565,
+            "vy": -0.2824705466439788,
+            "sx": 0.3981726731175634,
+            "sy": -0.5840385095141793
+          },
+          "source_csv_force": [
+            -0.8492986784691956,
+            -0.4694298937426213
+          ],
+          "force": [
+            -0.8492986784691956,
+            -0.46942989374262134
+          ],
+          "force_dim": [
+            -7134.1088991412435,
+            -3943.211107438019
+          ],
+          "force_norm": 0.9703982019710933,
+          "hydro_converged": true,
+          "thermal_converged": false,
+          "thermal_iterations": 60,
+          "pad_thermal_flags": [
+            true,
+            true,
+            false,
+            true
+          ],
+          "pad_summaries": [
+            {
+              "pad": 0,
+              "thermal_converged": true,
+              "thermal_iterations": 16,
+              "t_eff": 23.65243515858192,
+              "viscosity": 0.01750318258005077,
+              "temperature_min": 20.0,
+              "temperature_mean": 23.65243515858192,
+              "temperature_max": 25.9573601293332,
+              "viscosity_min": 0.01630862449013277,
+              "viscosity_mean": 0.01750318258005077,
+              "viscosity_max": 0.0195
+            },
+            {
+              "pad": 1,
+              "thermal_converged": true,
+              "thermal_iterations": 16,
+              "t_eff": 21.180674057278715,
+              "viscosity": 0.018825284266335892,
+              "temperature_min": 20.0,
+              "temperature_mean": 21.180674057278715,
+              "temperature_max": 22.63073539517984,
+              "viscosity_min": 0.018020193488872654,
+              "viscosity_mean": 0.018825284266335892,
+              "viscosity_max": 0.0195
+            },
+            {
+              "pad": 2,
+              "thermal_converged": false,
+              "thermal_iterations": 60,
+              "t_eff": 29.191483486251865,
+              "viscosity": 0.01508819015367561,
+              "temperature_min": 20.0,
+              "temperature_mean": 29.191483486251865,
+              "temperature_max": 54.91489854880807,
+              "viscosity_min": 0.006836984943354407,
+              "viscosity_mean": 0.01508819015367561,
+              "viscosity_max": 0.0195
+            },
+            {
+              "pad": 3,
+              "thermal_converged": true,
+              "thermal_iterations": 15,
+              "t_eff": 20.6476669163137,
+              "viscosity": 0.019125713746989317,
+              "temperature_min": 20.0,
+              "temperature_mean": 20.6476669163137,
+              "temperature_max": 21.161984779103122,
+              "viscosity_min": 0.018831966295882192,
+              "viscosity_mean": 0.019125713746989317,
+              "viscosity_max": 0.0195
+            }
+          ],
+          "warning_count": 0,
+          "warning_summary": []
+        },
+        {
+          "sample_id": 162946,
+          "input": {
+            "freq": 177.30851563994253,
+            "ex": 0.3794815287765869,
+            "ey": 0.8095750847915532,
+            "vx": 0.5633152563699577,
+            "vy": 0.5625667546072233,
+            "sx": 0.4933611808856685,
+            "sy": -0.4609363941920851
+          },
+          "source_csv_force": [
+            -33.19437564283684,
+            -58.981399461386886
+          ],
+          "force": [
+            -33.194375642837095,
+            -58.981399461387184
+          ],
+          "force_dim": [
+            -278832.75539983157,
+            -495443.75547565235
+          ],
+          "force_norm": 67.68066235448278,
+          "hydro_converged": true,
+          "thermal_converged": false,
+          "thermal_iterations": 60,
+          "pad_thermal_flags": [
+            true,
+            true,
+            false,
+            true
+          ],
+          "pad_summaries": [
+            {
+              "pad": 0,
+              "thermal_converged": true,
+              "thermal_iterations": 16,
+              "t_eff": 29.40687732899421,
+              "viscosity": 0.01476269389989362,
+              "temperature_min": 20.0,
+              "temperature_mean": 29.40687732899421,
+              "temperature_max": 31.988925129313223,
+              "viscosity_min": 0.013609200042115691,
+              "viscosity_mean": 0.01476269389989362,
+              "viscosity_max": 0.0195
+            },
+            {
+              "pad": 1,
+              "thermal_converged": true,
+              "thermal_iterations": 16,
+              "t_eff": 21.266745321445843,
+              "viscosity": 0.018780527564317816,
+              "temperature_min": 20.0,
+              "temperature_mean": 21.266745321445843,
+              "temperature_max": 23.58256127296091,
+              "viscosity_min": 0.017512908777402088,
+              "viscosity_mean": 0.018780527564317816,
+              "viscosity_max": 0.0195
+            },
+            {
+              "pad": 2,
+              "thermal_converged": false,
+              "thermal_iterations": 60,
+              "t_eff": 15.295833333333333,
+              "viscosity": 0.02255381795061043,
+              "temperature_min": 15.0,
+              "temperature_mean": 15.295833333333333,
+              "temperature_max": 100.0,
+              "viscosity_min": 0.0017690000891435443,
+              "viscosity_mean": 0.02255381795061043,
+              "viscosity_max": 0.02265576773320152
+            },
+            {
+              "pad": 3,
+              "thermal_converged": true,
+              "thermal_iterations": 15,
+              "t_eff": 20.567398632449308,
+              "viscosity": 0.019171818045181793,
+              "temperature_min": 20.0,
+              "temperature_mean": 20.567398632449308,
+              "temperature_max": 21.122890208619175,
+              "viscosity_min": 0.018854065703224364,
+              "viscosity_mean": 0.019171818045181793,
+              "viscosity_max": 0.0195
+            }
+          ],
+          "warning_count": 0,
+          "warning_summary": []
+        }
+      ]
+    }
+  },
+  "array_names": {
+    "dim_small_fixed_point.force": [
+      2
+    ],
+    "dim_small_fixed_point.friction": [
+      1
+    ],
+    "dim_small_fixed_point.pressure_field": [
+      12,
+      8
+    ],
+    "dim_small_fixed_point.temperature_field": [
+      12,
+      8
+    ],
+    "dim_small_fixed_point.temperature_film": [
+      96
+    ],
+    "dim_small_fixed_point.viscosity_field": [
+      96
+    ],
+    "dim_small_fixed_point.thermal_iterations": [
+      1
+    ],
+    "dim_small_fixed_point.thermal_converged": [
+      1
+    ],
+    "nondim_small_fixed_point.force": [
+      2
+    ],
+    "nondim_small_fixed_point.temperature_nondim": [
+      96
+    ],
+    "nondim_small_fixed_point.temperature_field": [
+      12,
+      8
+    ],
+    "nondim_small_fixed_point.viscosity_field_grid": [
+      12,
+      8
+    ],
+    "nondim_small_fixed_point.beta_nondim": [
+      1
+    ],
+    "nondim_small_fixed_point.thermal_iterations": [
+      1
+    ],
+    "nondim_small_fixed_point.thermal_converged": [
+      1
+    ],
+    "s0011_diagnostic_fixed_point.sample_30.force": [
+      2
+    ],
+    "s0011_diagnostic_fixed_point.sample_30.force_dim": [
+      2
+    ],
+    "s0011_diagnostic_fixed_point.sample_30.thermal_iterations_by_pad": [
+      4
+    ],
+    "s0011_diagnostic_fixed_point.sample_30.thermal_converged_by_pad": [
+      4
+    ],
+    "s0011_diagnostic_fixed_point.sample_30.temperature_summary": [
+      4,
+      3
+    ],
+    "s0011_diagnostic_fixed_point.sample_30.viscosity_summary": [
+      4,
+      3
+    ],
+    "s0011_diagnostic_fixed_point.sample_33.force": [
+      2
+    ],
+    "s0011_diagnostic_fixed_point.sample_33.force_dim": [
+      2
+    ],
+    "s0011_diagnostic_fixed_point.sample_33.thermal_iterations_by_pad": [
+      4
+    ],
+    "s0011_diagnostic_fixed_point.sample_33.thermal_converged_by_pad": [
+      4
+    ],
+    "s0011_diagnostic_fixed_point.sample_33.temperature_summary": [
+      4,
+      3
+    ],
+    "s0011_diagnostic_fixed_point.sample_33.viscosity_summary": [
+      4,
+      3
+    ],
+    "s0011_diagnostic_fixed_point.sample_162946.force": [
+      2
+    ],
+    "s0011_diagnostic_fixed_point.sample_162946.force_dim": [
+      2
+    ],
+    "s0011_diagnostic_fixed_point.sample_162946.thermal_iterations_by_pad": [
+      4
+    ],
+    "s0011_diagnostic_fixed_point.sample_162946.thermal_converged_by_pad": [
+      4
+    ],
+    "s0011_diagnostic_fixed_point.sample_162946.temperature_summary": [
+      4,
+      3
+    ],
+    "s0011_diagnostic_fixed_point.sample_162946.viscosity_summary": [
+      4,
+      3
+    ]
+  },
+  "elapsed_s": 40.87990709999576
+}
