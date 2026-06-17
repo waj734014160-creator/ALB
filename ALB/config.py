@@ -9,6 +9,7 @@ from ALB.damping import AdaptiveDampConfig, normalize_adaptive_damp_config
 
 
 _THERMAL_ITER_METHODS = {"direct", "newton", "direct_then_newton"}
+_THERMAL_MIU_UPDATE_METHODS = {"linear", "log"}
 
 
 def _normalize_thermal_iter_method(value: str) -> str:
@@ -18,6 +19,14 @@ def _normalize_thermal_iter_method(value: str) -> str:
         raise ValueError(
             "iter_method must be one of: 'direct', 'newton', 'direct_then_newton'"
         )
+    return method
+
+
+def _normalize_thermal_miu_update(value: str) -> str:
+    """Return the canonical thermal viscosity update method name."""
+    method = str(value).lower()
+    if method not in _THERMAL_MIU_UPDATE_METHODS:
+        raise ValueError("miu_update must be one of: 'linear', 'log'")
     return method
 
 
@@ -491,7 +500,7 @@ class ThermalConfig(ConfigData):
     t_ref: Optional[float] = None
     miu0: Optional[float] = None
     beta: float = 0.03
-    k_lub: float = 0.13
+    k_lub: float = 0.0
     cp_lub: float = 2000.0
     flow_rate_factor: float = 1.0
     max_delta_t: float = 80.0
@@ -510,7 +519,7 @@ class ThermalConfig(ConfigData):
     """Axial-side BC: ``fixed`` (both fixed-T) | ``adiabatic`` | ``inflow_fixed``."""
     axial_side_t: Optional[float] = None
     """Axial-side fixed temperature; defaults to ``t_supply``."""
-    supg: bool = False
+    supg: bool = True
     """Enable SUPG stabilization for advection-dominated regime."""
     pressure_backend: str = "skfem"
     """Retained for backward compatibility; only ``skfem`` is supported."""
@@ -538,10 +547,17 @@ class ThermalConfig(ConfigData):
     """Smallest damping factor allowed by the Newton line search."""
     thermal_newton_line_search: bool = False
     """Enable residual-decreasing line search for thermal Newton updates."""
+    miu_update: str = "linear"
+    """Outer thermal viscosity update method: linear or log."""
+    miu_update_max_ratio: Optional[float] = None
+    """Optional per-step viscosity multiplier cap used by log updates."""
+    heat_partition_steps: Optional[tuple] = None
+    """Optional heat-partition continuation schedule ending at heat_partition."""
 
     def __post_init__(self):
         self.adaptive_damp = normalize_adaptive_damp_config(self.adaptive_damp)
         self.iter_method = _normalize_thermal_iter_method(self.iter_method)
+        self.miu_update = _normalize_thermal_miu_update(self.miu_update)
         if self.thermal_newton_max_iter <= 0:
             raise ValueError("thermal_newton_max_iter must be > 0")
         if self.thermal_newton_tol is not None and self.thermal_newton_tol <= 0:
@@ -554,6 +570,20 @@ class ThermalConfig(ConfigData):
             raise ValueError(
                 "thermal_newton_min_damp must be <= thermal_newton_damp"
             )
+        if self.miu_update_max_ratio is not None and self.miu_update_max_ratio <= 1.0:
+            raise ValueError("miu_update_max_ratio must be > 1 when provided")
+        if self.heat_partition_steps is not None:
+            steps = tuple(float(value) for value in self.heat_partition_steps)
+            if not steps:
+                raise ValueError("heat_partition_steps must not be empty")
+            if any(value <= 0.0 for value in steps):
+                raise ValueError("heat_partition_steps values must be > 0")
+            target = float(self.heat_partition)
+            if not np.isclose(steps[-1], target):
+                steps = steps + (target,)
+            if any(value > target for value in steps):
+                raise ValueError("heat_partition_steps values must be <= heat_partition")
+            self.heat_partition_steps = steps
         if self.beta_nondim is None and self.t_ref_nondim is None:
             return
         if self.delta_t_scale is None or float(self.delta_t_scale) <= 0.0:

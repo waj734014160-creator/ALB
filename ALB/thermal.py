@@ -22,6 +22,8 @@ from ALB.film import (
 from ALB.matrix.static import calc_fe, calc_fe_vf, calc_ke
 from ALB.nondim import ThermalNondimScales
 
+_MIU_NUMERIC_FLOOR = 1e-12
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -491,7 +493,8 @@ class SkfemThermalModel:
         dp_dx = mesh_data["dp_dx_nodal"]
         dp_dz = mesh_data["dp_dz_nodal"]
 
-        h3_over_12mu = h_nodal**3 / (12.0 * viscosity_nodal)
+        viscosity_safe = np.maximum(viscosity_nodal, _MIU_NUMERIC_FLOOR)
+        h3_over_12mu = h_nodal**3 / (12.0 * viscosity_safe)
         qx_nodal = surface_speed * h_nodal / 2.0 - h3_over_12mu * dp_dx
         qz_nodal = -h3_over_12mu * dp_dz
 
@@ -654,9 +657,10 @@ class SkfemThermalModel:
         dp_dx = mesh_data["dp_dx_nodal"]
         dp_dz = mesh_data["dp_dz_nodal"]
 
-        h3_over_12mu = h_nodal**3 / (12.0 * viscosity_nodal)
+        viscosity_safe = np.maximum(viscosity_nodal, _MIU_NUMERIC_FLOOR)
+        h3_over_12mu = h_nodal**3 / (12.0 * viscosity_safe)
         dh3_over_12mu_dt = (
-            -(h_nodal**3) / (12.0 * viscosity_nodal**2) * dviscosity_dt
+            -(h_nodal**3) / (12.0 * viscosity_safe**2) * dviscosity_dt
         )
         qx_nodal = surface_speed * h_nodal / 2.0 - h3_over_12mu * dp_dx
         qz_nodal = -h3_over_12mu * dp_dz
@@ -2219,7 +2223,31 @@ class NodimThermalHydroBearing(BaseCSystem):
         """Write per-node viscosity ratio (miu / miu0) to film nodes."""
         model = self.bearing.main_model
         for i, node in enumerate(model.nodes.values()):
-            node.miu_ratio = float(miu_field[i]) / self._miu0
+            node_miu = max(float(miu_field[i]), _MIU_NUMERIC_FLOOR)
+            node.miu_ratio = node_miu / self._miu0
+
+    def _relaxed_miu_update(
+        self, miu_field: np.ndarray, miu_target: np.ndarray, relax: float
+    ):
+        """Return the relaxed viscosity field and its relative update norm."""
+        if self.config.miu_update == "log":
+            old_safe = np.maximum(miu_field, _MIU_NUMERIC_FLOOR)
+            target_safe = np.maximum(miu_target, _MIU_NUMERIC_FLOOR)
+            step = float(relax) * (np.log(target_safe) - np.log(old_safe))
+            if self.config.miu_update_max_ratio is not None:
+                cap = float(np.log(self.config.miu_update_max_ratio))
+                step = np.clip(step, -cap, cap)
+            miu_new = np.exp(np.log(old_safe) + step)
+            miu_new = np.minimum(miu_new, self.config.miu_max)
+            if self.config.miu_min > 0.0:
+                miu_new = np.maximum(miu_new, self.config.miu_min)
+        else:
+            miu_new = (1.0 - relax) * miu_field + relax * miu_target
+        rel_err = float(
+            np.max(np.abs(miu_new - miu_field))
+            / max(float(np.max(np.abs(miu_field))), _MIU_NUMERIC_FLOOR)
+        )
+        return miu_new, rel_err
 
     def _map_miu_to_thermal(
         self,
@@ -2374,6 +2402,29 @@ class NodimThermalHydroBearing(BaseCSystem):
         return self.bearing.calc_is_finished(*args, **kwargs)
 
     def _solve_coupled(self, *args, transient=False, temperature_prev=None, **kwargs):
+        if self.config.heat_partition_steps is not None:
+            return self._solve_coupled_continuation(
+                *args,
+                transient=transient,
+                temperature_prev=temperature_prev,
+                **kwargs,
+            )
+        return self._solve_coupled_for_method(
+            *args,
+            transient=transient,
+            temperature_prev=temperature_prev,
+            **kwargs,
+        )
+
+    def _solve_coupled_for_method(
+        self,
+        *args,
+        transient=False,
+        temperature_prev=None,
+        initial_miu_field: Optional[np.ndarray] = None,
+        initial_temperature: Optional[np.ndarray] = None,
+        **kwargs,
+    ):
         iter_method = self.config.iter_method
         if iter_method == "newton":
             return self._solve_coupled_newton(
@@ -2381,6 +2432,8 @@ class NodimThermalHydroBearing(BaseCSystem):
                 transient=transient,
                 temperature_prev=temperature_prev,
                 solver_used="newton",
+                initial_miu_field=initial_miu_field,
+                initial_temperature=initial_temperature,
                 **kwargs,
             )
         if iter_method == "direct_then_newton":
@@ -2389,6 +2442,7 @@ class NodimThermalHydroBearing(BaseCSystem):
                 transient=transient,
                 temperature_prev=temperature_prev,
                 solver_used="direct",
+                initial_miu_field=initial_miu_field,
                 **kwargs,
             )
             if fixed_result.get("thermal_converged", False):
@@ -2411,8 +2465,49 @@ class NodimThermalHydroBearing(BaseCSystem):
             transient=transient,
             temperature_prev=temperature_prev,
             solver_used="direct",
+            initial_miu_field=initial_miu_field,
             **kwargs,
         )
+
+    def _solve_coupled_continuation(
+        self, *args, transient=False, temperature_prev=None, **kwargs
+    ):
+        original_heat_partition = float(self.config.heat_partition)
+        schedule = tuple(float(value) for value in self.config.heat_partition_steps)
+        initial_miu_field = None
+        initial_temperature = None
+        completed_steps = []
+        result = None
+        try:
+            for heat_partition in schedule:
+                self.config.heat_partition = float(heat_partition)
+                result = self._solve_coupled_for_method(
+                    *args,
+                    transient=transient,
+                    temperature_prev=temperature_prev,
+                    initial_miu_field=initial_miu_field,
+                    initial_temperature=initial_temperature,
+                    **kwargs,
+                )
+                completed_steps.append(float(heat_partition))
+                initial_miu_field = np.asarray(
+                    result["viscosity_field"], dtype=float
+                ).copy()
+                initial_temperature = np.asarray(
+                    result["temperature"], dtype=float
+                ).copy()
+                if not bool(result.get("thermal_converged", False)):
+                    break
+        finally:
+            self.config.heat_partition = original_heat_partition
+
+        if result is None:
+            raise RuntimeError("heat_partition_steps produced no thermal solve")
+        result["thermal_continuation_steps"] = completed_steps
+        result["thermal_continuation_target"] = original_heat_partition
+        self._last_thermal["continuation_steps"] = completed_steps
+        self._last_thermal["continuation_target"] = original_heat_partition
+        return result
 
     def _thermal_target_from_solution(self, thermal: dict, mesh_data: dict):
         t_film = self._map_thermal_to_film(
@@ -2533,13 +2628,17 @@ class NodimThermalHydroBearing(BaseCSystem):
         transient=False,
         temperature_prev=None,
         solver_used="direct",
+        initial_miu_field: Optional[np.ndarray] = None,
         **kwargs,
     ):
         model = self.bearing.main_model
         n_nodes = len(model.nodes)
 
         # Initial viscosity field = uniform reference
-        miu_field = np.full(n_nodes, self._miu0, dtype=float)
+        if initial_miu_field is None or np.asarray(initial_miu_field).size != n_nodes:
+            miu_field = np.full(n_nodes, self._miu0, dtype=float)
+        else:
+            miu_field = np.asarray(initial_miu_field, dtype=float).reshape(-1).copy()
         relax_controller = AdaptiveDampController(
             self.config.relax, self.config.adaptive_damp
         )
@@ -2583,11 +2682,8 @@ class NodimThermalHydroBearing(BaseCSystem):
 
             # Relax
             relax = relax_controller.value
-            miu_new = (1.0 - relax) * miu_field + relax * miu_target
-
-            rel_err = float(
-                np.max(np.abs(miu_new - miu_field))
-                / max(float(np.max(np.abs(miu_field))), 1e-12)
+            miu_new, rel_err = self._relaxed_miu_update(
+                miu_field, miu_target, relax
             )
             miu_field = miu_new
             relax_controller.update(rel_err)
@@ -2725,10 +2821,8 @@ class NodimThermalHydroBearing(BaseCSystem):
             _, _, miu_target = self._thermal_target_from_solution(thermal, mesh_data)
 
             relax = relax_controller.value
-            miu_new = (1.0 - relax) * miu_field + relax * miu_target
-            rel_err = float(
-                np.max(np.abs(miu_new - miu_field))
-                / max(float(np.max(np.abs(miu_field))), 1e-12)
+            miu_new, rel_err = self._relaxed_miu_update(
+                miu_field, miu_target, relax
             )
             miu_field = miu_new
             relax_controller.update(rel_err)

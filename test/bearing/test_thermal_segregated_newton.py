@@ -34,6 +34,13 @@ PAPER_CONFIG = Path("F:/BaiduSyncdisk/博士论文/task/PAPER/config/alb12.json5
 S0011_SAMPLE_IDS = [30, 33, 162946]
 
 
+def _require_s0011_fixture():
+    """Skip S0011 integration checks when external paper fixtures are absent."""
+    missing = [path for path in (PAPER_CONFIG, S0011_CSV) if not path.exists()]
+    if missing:
+        pytest.skip(f"S0011 external fixtures are not available: {missing}")
+
+
 def _dataclass_args(cls, payload):
     names = {item.name for item in fields(cls)}
     return {key: payload[key] for key in names if key in payload}
@@ -237,10 +244,16 @@ def _pad_summary(model):
 
 
 def _run_s0011_reference():
+    _require_s0011_fixture()
     base_config = read_json5_with_share(str(PAPER_CONFIG))
     thermal_config = base_config.setdefault("thermal", {})
     thermal_config["iter_method"] = "direct"
     thermal_config["supg"] = True
+    thermal_config["miu_min"] = 1e-4
+    thermal_config["max_delta_t"] = 80.0
+    thermal_config["miu_update"] = "linear"
+    thermal_config.pop("miu_update_max_ratio", None)
+    thermal_config.pop("heat_partition_steps", None)
     derived = _derive_base_values(base_config)
     rows = pd.read_csv(S0011_CSV)
     rows = rows[rows["sample_id"].isin(S0011_SAMPLE_IDS)].sort_values("sample_id")
@@ -286,6 +299,7 @@ def _run_s0011_reference():
 
 
 def _run_s0011_case(sample_id, thermal_overrides):
+    _require_s0011_fixture()
     base_config = read_json5_with_share(str(PAPER_CONFIG))
     rows = pd.read_csv(S0011_CSV).set_index("sample_id")
     row = rows.loc[int(sample_id)]
@@ -328,14 +342,34 @@ def test_fixed_point_reference_snapshot_matches_pre_change_results_exactly():
 def test_thermal_config_accepts_and_validates_iter_method_options():
     default_config = ThermalConfig()
     assert default_config.iter_method == "direct"
-    assert default_config.k_lub == pytest.approx(0.13)
-    assert default_config.supg is False
+    assert default_config.k_lub == pytest.approx(0.0)
+    assert default_config.supg is True
     assert default_config.thermal_newton_line_search is False
+    assert default_config.miu_update == "linear"
+    assert default_config.miu_update_max_ratio is None
+    assert default_config.heat_partition_steps is None
     for method in ("direct", "newton", "direct_then_newton"):
         assert ThermalConfig.from_dict({"iter_method": method}).iter_method == method
+    log_config = ThermalConfig.from_dict(
+        {
+            "miu_update": "log",
+            "miu_update_max_ratio": 1.2,
+            "heat_partition": 0.9,
+            "heat_partition_steps": [0.3, 0.6],
+        }
+    )
+    assert log_config.miu_update == "log"
+    assert log_config.miu_update_max_ratio == pytest.approx(1.2)
+    assert log_config.heat_partition_steps == pytest.approx((0.3, 0.6, 0.9))
 
     with pytest.raises(ValueError, match="iter_method"):
         ThermalConfig(iter_method="bad_solver")
+    with pytest.raises(ValueError, match="miu_update"):
+        ThermalConfig(miu_update="bad_update")
+    with pytest.raises(ValueError, match="miu_update_max_ratio"):
+        ThermalConfig(miu_update_max_ratio=1.0)
+    with pytest.raises(ValueError, match="heat_partition_steps"):
+        ThermalConfig(heat_partition_steps=[0.2, 1.0])
     with pytest.raises(ValueError, match="Unknown ThermalConfig"):
         ThermalConfig.from_dict({"thermal_nonlinear_solver": "segregated_newton"})
     with pytest.raises(ValueError, match="thermal_newton_max_iter"):
@@ -384,6 +418,26 @@ def test_newton_nondim_small_case_converges_with_nondim_outputs():
     assert "temperature_nondim" in out
     assert "beta_nondim" in out
     assert np.all(np.isfinite(out["temperature_nondim"]))
+
+
+def test_direct_log_update_continuation_small_case_converges():
+    _, _, model = _make_small_thermal_model(
+        False,
+        iter_method="direct",
+        miu_min=0.0,
+        miu_update="log",
+        miu_update_max_ratio=1.2,
+        heat_partition_steps=[0.3, 0.6, 0.9],
+        max_iter=12,
+        tol=5e-2,
+    )
+
+    out = model.output(calc=True, nodim=True)
+
+    assert out["thermal_converged"]
+    assert out["thermal_solver_used"] == "direct"
+    assert out["thermal_continuation_steps"] == pytest.approx([0.3, 0.6, 0.9])
+    assert np.all(np.asarray(out["viscosity_field"]) > 0.0)
 
 
 def test_direct_then_newton_reports_s0011_sample_30_without_false_convergence():

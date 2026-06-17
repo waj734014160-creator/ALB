@@ -374,7 +374,7 @@ $$
 
 #### 2.3 SUPG 稳定化、边界与点源
 
-温度方程通常是对流占优问题。当前默认使用 `k_lub = 0.13` 的物理导热扩散并关闭 SUPG；显式启用 SUPG 时，有量纲路径的局部单元 Péclet 数和稳定参数为
+温度方程通常是对流占优问题。当前默认使用 `k_lub = 0.0` 并开启 SUPG，让对流稳定化由 SUPG 承担；若需要显式物理导热扩散，可设置 `k_lub > 0`。有量纲路径的局部单元 Péclet 数和稳定参数为
 
 $$
 \mathrm{Pe}_h
@@ -623,7 +623,7 @@ $$
 
 | 符号 | 含义 | 配置参数 |
 |------|------|----------|
-| $k$ | 润滑油导热扩散系数 | `k_lub = 0.13` 默认值 |
+| $k$ | 润滑油导热扩散系数 | `k_lub = 0.0` 默认值，可显式设置为正值 |
 | $\rho c_v$ | 体积热容 | `rho` × `cp_lub = 2000` J/(kg·K) |
 | $h$ | 油膜厚度（有量纲） | 从 film 模型获取 |
 | $\nabla p$ | 压力梯度 | 由 Reynolds 求解结果差分得到 |
@@ -981,7 +981,7 @@ $$
 
 对线性三角形单元 $\nabla^2 u = 0$，因此 SUPG 残差中只保留对流算子。
 
-> 通过 `ThermalConfig.supg = True` 显式启用 SUPG；默认关闭 SUPG，并使用 `k_lub = 0.13` 的物理导热项提供扩散稳定性。若为了诊断把 `k_lub` 取得很小，可手动启用 SUPG 观察纯对流离散振荡。
+> 默认 `ThermalConfig.supg = True` 且 `k_lub = 0.0`，以 SUPG 作为对流占优离散的稳定化项。若需要考察物理导热扩散影响，可显式设置正的 `k_lub`。
 
 ### 2.4 变粘度下的弱形式推导与一致性检查
 
@@ -1542,19 +1542,22 @@ $\varepsilon$ = `tol`（默认 $10^{-6}$）。
 | `t_ref` | `None`→`t_in` | 参考温度 |
 | `miu_ref` | `None`→初始粘度 | 参考粘度 |
 | `beta` | 0.03 1/°C | 粘温系数 |
-| `k_lub` | 0.13 | 导热扩散系数 |
+| `k_lub` | 0.0 | 导热扩散系数；正值会引入显式扩散 |
 | `cp_lub` | 2000 J/(kg·K) | 比热容 |
 | `flow_rate_factor` | 1.0 | Couette 流量修正 |
 | `max_delta_t` | 80 °C | 温升上限 |
 | `heat_partition` | 0.9 | 热分配系数 |
 | `relax` | 0.5 | 松弛因子 |
+| `miu_update` | `"linear"` | 外层粘度更新方式，可选 `"linear"` 或 `"log"` |
+| `miu_update_max_ratio` | `None` | 对数粘度更新时的单步粘度倍率上限 |
+| `heat_partition_steps` | `None` | 热分配 continuation 序列，末项自动补齐到 `heat_partition` |
 | `tol` | 1e-6 | 收敛容差 |
 | `max_iter` | 8 | 最大迭代次数 |
 | `miu_min` | 1e-4 Pa·s | 粘度下限 |
 | `miu_max` | 1.0 Pa·s | 粘度上限 |
 | `coupling` | `"full"` | 耦合模式 |
 | `t_supply` | `None`→`t_in` | 供油温度 |
-| `supg` | `False` | 是否启用 SUPG 对流稳定化 |
+| `supg` | `True` | 是否启用 SUPG 对流稳定化 |
 | `transient_enabled` | `False` | 是否启用非稳态热容项 |
 | `dt` | `None` | 非稳态时间步长，单位 s |
 
