@@ -10,6 +10,8 @@ contracts:
 * ``Net`` is the plain MLP architecture stored in checkpoints.
 * ``ALBNN`` loads a trained nondimensional force surrogate and presents the
   same ``input``/``output`` style as the bearing models.
+* ``ALBNNC4Canonical`` wraps first-quadrant ALBNN artifacts with C4 symmetry
+  so callers can use the full bearing plane without retraining the model.
 * ``ALBNNForceExpert`` and ``ALBNNResidualCorrector`` are metadata-dispatched
   deployment wrappers for specialized model artifacts.
 * The scaler classes are sklearn-like, pickle-friendly contracts that keep
@@ -56,6 +58,10 @@ ALBNN_POLAR_FORCE_OUTPUT_COLS = ["sin_f_theta", "cos_f_theta", "force_norm"]
 
 # Dot-product features used by polar and expert-style input contracts.
 ALBNN_POLAR_DOT_INPUT_COLS = ["e_dot_v", "e_dot_s", "s_dot_v"]
+
+# Vector-valued input pairs that must rotate together when a C4-symmetric model
+# is trained only in the ``ex >= 0, ey >= 0`` canonical quadrant.
+ALBNN_C4_VECTOR_PAIRS = (("ex", "ey"), ("vx", "vy"), ("sx", "sy"))
 
 # Positive scalar columns that can safely receive log companions in legacy
 # augmentation modes.
@@ -108,6 +114,89 @@ def polar_force_to_cartesian(values) -> np.ndarray:
     sin_unit[safe] = sin_f_theta[safe] / angle_norm[safe]
     cos_unit[safe] = cos_f_theta[safe] / angle_norm[safe]
     return np.column_stack([force_norm * cos_unit, force_norm * sin_unit])
+
+
+def _c4_steps_to_canonical(frame: pd.DataFrame) -> np.ndarray:
+    """Return per-row quarter-turn ids that map ``ex, ey`` to quadrant I."""
+    if not {"ex", "ey"} <= set(frame.columns):
+        raise ValueError("C4 canonical inference requires ex and ey columns")
+    ex = frame["ex"].to_numpy(dtype=float)
+    ey = frame["ey"].to_numpy(dtype=float)
+    steps = np.zeros(len(frame), dtype=np.int64)
+    steps[(ex < 0.0) & (ey >= 0.0)] = 1
+    steps[(ex < 0.0) & (ey < 0.0)] = 2
+    steps[(ex >= 0.0) & (ey < 0.0)] = 3
+    return steps
+
+
+def _c4_rotate_pair_to_canonical(x, y, steps: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Rotate one vector pair by the row-wise C4 canonicalization steps."""
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    out_x = x.copy()
+    out_y = y.copy()
+    mask = steps == 1
+    out_x[mask] = y[mask]
+    out_y[mask] = -x[mask]
+    mask = steps == 2
+    out_x[mask] = -x[mask]
+    out_y[mask] = -y[mask]
+    mask = steps == 3
+    out_x[mask] = -y[mask]
+    out_y[mask] = x[mask]
+    return out_x, out_y
+
+
+def c4_canonicalize_albnn_frame(
+    frame: pd.DataFrame,
+    *,
+    vector_pairs=ALBNN_C4_VECTOR_PAIRS,
+) -> tuple[pd.DataFrame, np.ndarray]:
+    """Rotate ALBNN vector inputs into the first-quadrant C4 canonical frame.
+
+    The same row-wise quarter-turn is applied to eccentricity, velocity, and
+    servo-command vector pairs when those columns are present. Scalar columns
+    such as ``lambda_value`` and ``cq*`` are copied unchanged.
+    """
+    canonical = frame.copy()
+    steps = _c4_steps_to_canonical(canonical)
+    for x_col, y_col in vector_pairs:
+        if {x_col, y_col} <= set(canonical.columns):
+            x_rot, y_rot = _c4_rotate_pair_to_canonical(
+                canonical[x_col].to_numpy(dtype=float),
+                canonical[y_col].to_numpy(dtype=float),
+                steps,
+            )
+            canonical[x_col] = x_rot
+            canonical[y_col] = y_rot
+    return canonical, steps
+
+
+def c4_restore_albnn_force(force, steps) -> np.ndarray:
+    """Rotate canonical ``fx, fy`` predictions back to the caller frame."""
+    force = np.asarray(force, dtype=float)
+    if force.ndim == 1:
+        force = force.reshape(1, -1)
+    if force.shape[1] != 2:
+        raise ValueError("C4 force restore expects two cartesian force columns")
+    steps = np.asarray(steps, dtype=np.int64)
+    if steps.ndim == 0:
+        steps = steps.reshape(1)
+    if len(steps) != len(force):
+        raise ValueError("C4 force restore requires one step value per force row")
+    fx = force[:, 0]
+    fy = force[:, 1]
+    out = force.copy()
+    mask = steps == 1
+    out[mask, 0] = -fy[mask]
+    out[mask, 1] = fx[mask]
+    mask = steps == 2
+    out[mask, 0] = -fx[mask]
+    out[mask, 1] = -fy[mask]
+    mask = steps == 3
+    out[mask, 0] = fy[mask]
+    out[mask, 1] = -fx[mask]
+    return out
 
 
 def _materialize_polar_pair(
@@ -727,6 +816,87 @@ class ALBNN:
         if self.target_output == "force_polar" or self.output_cols == ALBNN_POLAR_FORCE_OUTPUT_COLS:
             return polar_force_to_cartesian(y_target)
         return y_target
+
+    def predict(self, x, nodim: bool = True):
+        """Predict force and optionally convert it to dimensional units."""
+        force = self.predict_nondim(x)
+        if nodim:
+            return force
+        return force * self.force_scale
+
+    def output(self, nodim: bool = True):
+        """Return prediction for the last row set by ``input``."""
+        if self._x is None:
+            raise ValueError("Call input(...) before output(...)")
+        return self.predict(self._x, nodim=nodim)
+
+
+class ALBNNC4Canonical:
+    """C4-symmetry inference wrapper for first-quadrant ALBNN artifacts.
+
+    Some ALB training runs label only the canonical quadrant ``ex >= 0`` and
+    ``ey >= 0`` because a four-pad bearing can be rotated by 90-degree steps.
+    This wrapper maps caller inputs to that quadrant, evaluates the underlying
+    model, and rotates the cartesian force back to the caller frame.
+    """
+
+    def __init__(self, base_model):
+        """Wrap an already-loaded ALBNN-compatible model."""
+        self.base_model = base_model
+        self.model = getattr(base_model, "model", None)
+        self.scaler_X = getattr(base_model, "scaler_X", None)
+        self.scaler_y = getattr(base_model, "scaler_y", None)
+        self.config = getattr(base_model, "config", None)
+        self.input_cols = list(getattr(base_model, "input_cols", ALBNN_BASE_INPUT_COLS))
+        self.output_cols = list(getattr(base_model, "output_cols", ALBNN_OUTPUT_COLS))
+        self.use_augment = bool(getattr(base_model, "use_augment", True))
+        self.feature_set = getattr(base_model, "feature_set", "default")
+        self.target_output = getattr(base_model, "target_output", "cartesian")
+        self._x = None
+
+    @property
+    def force_scale(self) -> float:
+        """Dimensional force scale delegated from the wrapped model."""
+        return float(getattr(self.base_model, "force_scale", 1.0))
+
+    def input(
+        self,
+        uxy,
+        uxyt,
+        sxy,
+        lambda_value=None,
+        beta_nondim=None,
+        lr=None,
+        cq0=None,
+        cq1=None,
+        cq2=None,
+        extra=None,
+        nodim: bool = True,
+    ):
+        """Set one inference point using the same signature as ``ALBNN``."""
+        self.base_model.input(
+            uxy,
+            uxyt,
+            sxy,
+            lambda_value=lambda_value,
+            beta_nondim=beta_nondim,
+            lr=lr,
+            cq0=cq0,
+            cq1=cq1,
+            cq2=cq2,
+            extra=extra,
+            nodim=nodim,
+        )
+        self._x = self.base_model._x.copy()
+
+    def predict_nondim(self, x):
+        """Predict nondimensional force with C4 canonicalization."""
+        if not hasattr(self.base_model, "_base_frame"):
+            raise TypeError("C4 canonical inference requires an ALBNN-style base model")
+        frame = self.base_model._base_frame(x)
+        canonical, steps = c4_canonicalize_albnn_frame(frame)
+        force_canonical = self.base_model.predict_nondim(canonical)
+        return c4_restore_albnn_force(force_canonical, steps)
 
     def predict(self, x, nodim: bool = True):
         """Predict force and optionally convert it to dimensional units."""
@@ -2344,6 +2514,56 @@ def thermal_albnet(config, use_augment: bool = True):
     )
 
 
+def _c4_setting_from_value(value):
+    """Return an explicit C4 setting or ``None`` when value is unspecified."""
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        enabled = value.get("enabled")
+        if enabled is not None and not bool(enabled):
+            return False
+        value = value.get("name") or value.get("type") or value.get("mode")
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"", "none", "false", "off", "disabled", "disable"}:
+            return False
+        return normalized in {
+            "c4",
+            "c4_canonical",
+            "c4_canonical_quadrant",
+            "canonical_quadrant_c4",
+        }
+    return bool(value)
+
+
+def _use_c4_canonical_inference(metadata: dict, config) -> bool:
+    """Resolve C4 canonical inference from config override, then metadata."""
+    for name in (
+        "inference_symmetry",
+        "albnn_inference_symmetry",
+        "c4_canonical_quadrant",
+        "albnn_c4_canonical_quadrant",
+    ):
+        if hasattr(config, name):
+            explicit = _c4_setting_from_value(getattr(config, name))
+            if explicit is not None:
+                return explicit
+    for name in ("inference_symmetry", "c4_canonical_quadrant"):
+        explicit = _c4_setting_from_value(metadata.get(name))
+        if explicit is not None:
+            return explicit
+    return False
+
+
+def _wrap_c4_if_requested(model, metadata: dict, config):
+    """Wrap a loaded ALBNN-compatible model when metadata/config asks for C4."""
+    if isinstance(model, ALBNNC4Canonical):
+        return model
+    if _use_c4_canonical_inference(metadata, config):
+        return ALBNNC4Canonical(model)
+    return model
+
+
 def albnn(config, use_augment: bool = None):
     """Load a nondimensional thermal ALBSV force surrogate.
 
@@ -2434,7 +2654,7 @@ def albnn(config, use_augment: bool = None):
             metadata.get("residual_scaler_y"), getattr(config, "scaler_y", None)
         )
         residual_scaler_y = pd.read_pickle(residual_scaler_path)
-        return ALBNNResidualCorrector(
+        residual_model = ALBNNResidualCorrector(
             main_model,
             residual_net,
             residual_scaler_y,
@@ -2442,6 +2662,7 @@ def albnn(config, use_augment: bool = None):
             config=config,
             metadata=metadata,
         )
+        return _wrap_c4_if_requested(residual_model, metadata, config)
 
     with open(config.scaler_X, "rb") as f:
         scaler_X_model = pd.read_pickle(f)
@@ -2459,7 +2680,7 @@ def albnn(config, use_augment: bool = None):
         # Expert packages share the ALBNN input path but need a custom output
         # decoder because each expert emits force channels plus router logits.
         target_transform = metadata.get("target_transform", {})
-        return ALBNNForceExpert(
+        force_expert = ALBNNForceExpert(
             net,
             scaler_X_model,
             scaler_y_model,
@@ -2480,8 +2701,9 @@ def albnn(config, use_augment: bool = None):
             ),
             target_transform_scale=float(target_transform.get("scale", 2.0)),
         )
+        return _wrap_c4_if_requested(force_expert, metadata, config)
 
-    return ALBNN(
+    model = ALBNN(
         net,
         scaler_X_model,
         scaler_y_model,
@@ -2492,3 +2714,4 @@ def albnn(config, use_augment: bool = None):
         feature_set=metadata.get("feature_set", "default"),
         target_output=metadata.get("target_output", "cartesian"),
     )
+    return _wrap_c4_if_requested(model, metadata, config)

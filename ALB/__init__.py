@@ -50,6 +50,7 @@ _EXPORTS = {
     "NodimCSOrifice": ("ALB.orifice", "NodimCSOrifice"),
     "NodimNewtonFilm": ("ALB.film", "NodimNewtonFilm"),
     "ALBNN": ("ALB.nn", "ALBNN"),
+    "ALBNNC4Canonical": ("ALB.nn", "ALBNNC4Canonical"),
     "albnn": ("ALB.nn", "albnn"),
 }
 
@@ -111,5 +112,6 @@ __all__ = [
     "NodimCSOrifice",
     "NodimNewtonFilm",
     "ALBNN",
+    "ALBNNC4Canonical",
     "albnn",
 ]
