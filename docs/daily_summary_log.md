@@ -455,3 +455,24 @@
   source/doc cleanup candidates were found.
 - No source code, remote SSH, training, sampling, commits, deletes, moves,
   renames, or artifact archives were performed.
+
+## 2026-06-17
+
+### 交互式文档审计
+
+- 对 `ALB_MAIN` 和 `SURROGATE_TRAIN` 执行文档角色审计，详细报告写入
+  `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_20260617.md`。
+- 按角色边界压缩 `SURROGATE_TRAIN/docs/current_runtime_status.md`：移除旧
+  M0031-M0035、S0011、S0008 等已完成运行的实时叙事，只保留本次本地核对
+  的 no-active 状态和下一次 active-run 写入规则。
+- 更新 `SURROGATE_TRAIN/docs/albnn_training_log.md`：沉淀 M0031-M0035
+  packaged artifact 完整性和 validation summary 指标，保留 M35 的固定参数
+  S8b/S0011 KC 推荐边界。
+- 更新 `SURROGATE_TRAIN/docs/albnn_training_brief.md`：把 S0003 从当前活跃
+  workflow 改为已完成采样 workflow pattern，并刷新后续推荐动作。
+- `ALB_MAIN/docs/remote_workstation_connection.md` 保持稳定手册角色，只记录
+  `PAPER_WORK/run/remote` 作为论文远程任务入口；活跃论文任务状态仍属于
+  `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task/docs/current_task_status.md`。
+- 本次维护没有删除、移动、归档文件，也没有启动远程任务或训练；旧日志和
+  cleanup candidates 仅记录为待人工确认项。
+- `F:/BaiduSyncdisk/博士论文/PAPER_WORK` 不纳入本次 git 提交范围。

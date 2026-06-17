@@ -107,6 +107,15 @@ E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_monitor
 
 稳定实现维护在 `ALB.remote`：`job`、`albnn_queue`、`albnn_start`、`albnn_status`、`monitor` 和 `transport`。`SURROGATE_TRAIN/run/remote` 下的脚本是兼容入口，用于保持旧命令和 JSON queue config 可用。
 
+论文远程计算的本地入口已迁移到外部论文工作区：
+
+```powershell
+E:/Anaconda2023/envs/ALB/python.exe F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote/remote_job.py monitor --config F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote/configs/<paper-job>.json --json
+E:/Anaconda2023/envs/ALB/python.exe F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote/remote_job.py launch --config F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote/configs/<paper-job>.json
+```
+
+`PAPER_WORK/run/remote` 保存论文任务专用的 `configs/`、`scripts/` 和 `payloads/`；通用远程实现仍由 `ALB.remote` 提供，旧 `SURROGATE_TRAIN/run/remote` paper 副本仅作为历史兼容入口。
+
 新建非训练远程任务时，优先使用配置驱动的通用 wrapper：
 
 ```powershell
