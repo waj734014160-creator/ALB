@@ -41,7 +41,7 @@
 | 热模型与无量纲 helper | `ThermalHydroBearing`, `NodimThermalHydroBearing`, `SkfemThermalModel`, `SkfemThermalModelNondim`, `ThermalNondimScales`, `FilmNondimScales` | 热-流体耦合，以及有量纲 / 无量纲尺度转换。 |
 | 控制器与阀 | `PID`, `FuzzyPID`, `ALB.orifice.CSOrifice`, `NodimCSOrifice`, `ALB.servovalve.moog_servovalve`, `ALB.servovalve.static_sv` | ALB 装配中使用的控制器、伺服阀和节流孔组件。 |
 | 转子耦合 | `ALB.rotor.RossRotor`, `ALB.couple.RotorBearingCouple`, `ALB.couple.RsRotorBearingCouple`, `ALB.orbit.EllipseTrack`, `ALB.orbit.BearingForceTrack` | 转子-轴承耦合、轨道生成和时域响应 workflow。 |
-| ALBNN surrogate 支持 | `ALBNN`, `ALB.nn.ALBNNForceExpert`, `ALB.nn.ALBNet`, `albnn`, `ALB.nn.thermal_albnet`, `ALB.alb.ALBNNAgent`, `ALB.alb.FakeOf` | 打包神经网络力模型，以及用于本地验证和下游仿真的 ALB shell 替换组件。 |
+| ALBNN surrogate 支持 | `ALBNN`, `ALBNNC4Canonical`, `ALB.nn.ALBNNForceExpert`, `ALB.nn.ALBNet`, `albnn`, `ALB.nn.thermal_albnet`, `ALB.alb.ALBNNAgent`, `ALB.alb.FakeOf` | 打包神经网络力模型，以及用于本地验证和下游仿真的 ALB shell 替换组件。 |
 | 训练核心 | `ALB.train.TrainingConfig`, `ALB.train.ColumnTransformPipeline`, `ALB.train.AlbnnMlpTrainer` | 配置驱动的 surrogate 训练核心。项目 CLI 保留在 `SURROGATE_TRAIN/run/train`，稳定数据变换、scaler、loss、report 和 trainer 生命周期放在 package 中复用。 |
 | 远程操作 helper | `ALB.remote.job`, `ALB.remote.albnn_start`, `ALB.remote.albnn_status`, `ALB.remote.albnn_queue`, `ALB.remote.monitor`, `ALB.remote.transport` | 稳定的 SSH、PowerShell 7、Task Scheduler、launch、queue 和 monitor helper，供 `SURROGATE_TRAIN/run/remote` wrapper 使用；`ALB.remote.transport` 集中提供 encoded command 和 runner-file 命令构造。 |
 | 任务与结果 | `ALB.task.*`, `DataFrameResult`, `SaveTreeNode`, `read_json5`, `recognize_kc` | 可复用批处理入口、结果存储 helper、配置读取和信号分析工具。 |
@@ -66,10 +66,11 @@
 
 - 构建 ALB 系统时，优先使用配置对象，不要使用随意拼接的字典。
 - 新代码和文档中，粘度使用 `miu`，无量纲轴承参数使用 `lambda_value`。
-- `ThermalConfig.iter_method` 控制热非线性迭代方式：默认 `direct` 保持旧直接迭代行为；`newton` 在每个压力步固定压力场后对 `miu(T)` 代入的热方程做分离式 Newton 子迭代；`direct_then_newton` 仅在旧直接迭代未收敛时用末态触发 Newton fallback。Newton 默认关闭 line search 以避免重复装配 Jacobian 的高成本；默认和论文热计算使用 `k_lub=0.13` 作为物理扩散稳定项，并关闭 SUPG。热 wrapper 输出 `thermal_solver_used`、`thermal_newton_iterations`、`thermal_newton_residual` 和 `thermal_newton_line_search_steps` 作为诊断字段。
+- `ThermalConfig.iter_method` 控制热非线性迭代方式：默认 `direct` 保持旧直接迭代行为；`newton` 在每个压力步固定压力场后对 `miu(T)` 代入的热方程做分离式 Newton 子迭代；`direct_then_newton` 仅在旧直接迭代未收敛时用末态触发 Newton fallback。Newton 默认关闭 line search 以避免重复装配 Jacobian 的高成本；默认和论文热计算使用 `k_lub=0.0` 并开启 SUPG，避免把物理导热扩散当作主稳定来源；若需要显式导热扩散，可在配置中设置 `k_lub>0`。`miu_update="log"` 与 `heat_partition_steps` 可显式启用粘度对数松弛和热分配 continuation。热 wrapper 输出 `thermal_solver_used`、`thermal_newton_iterations`、`thermal_newton_residual` 和 `thermal_newton_line_search_steps` 作为诊断字段。
 - 当前 thermal surrogate workflow 中，`ALB.nn` 期望 12 个基础 ALBNN 输入：
   `ex, ey, vx, vy, sx, sy, lambda_value, beta_nondim, lr, cq0, cq1, cq2`，
   输出为 `fx, fy`。
+- 第一象限 canonical ALBNN 模型应通过 `ALBNNC4Canonical` 或 `metadata.json` 中的 `inference_symmetry.name="c4_canonical_quadrant"` 进行全域推理。该兼容层把 `ex/ey`、`vx/vy` 和 `sx/sy` 同步旋转到 `ex>=0, ey>=0`，调用原模型后再把 `fx/fy` 反向旋转回调用方坐标；未显式启用该 metadata/config 标记的旧模型保持原推理行为。
 - Polar ALBNN 实验可以使用派生输入列 `sin_theta, cos_theta, r` 替代 `ex, ey`，并训练目标契约 `sin_f_theta, cos_f_theta, force_norm`；打包推理会把该目标契约解码回 `fx, fy`。在这个 polar 契约中，角度 sine / cosine 列可以不经变换地通过 minmax scaler，半径、力范数和物理参数继续缩放。
 - Full-polar ALBNN 实验还可以把速度向量和伺服阀向量表示为 `sin_v_theta, cos_v_theta, v_norm` 与 `sin_s_theta, cos_s_theta, s_norm`。对于不使用额外特征增强的 15 输入实验，这些角度列可以不经变换地通过 minmax。
 - Force-polar ALBNN 目标可以只对 `force_norm` 使用可逆 signed `log1p` 变换后再 minmax 缩放，同时保持 `sin_f_theta, cos_f_theta` 作为角度直通目标列。
