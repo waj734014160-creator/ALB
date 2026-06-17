@@ -59,7 +59,7 @@
 
 ## Run 与当前状态定位
 
-使用 `docs/run_index.md` 获取工作区级 run 编号和路径规则。广泛搜索项目文件前，先使用拥有项目的 current-status 文档作为 agent 面向活跃工作的首要定位入口。对 SURROGATE_TRAIN 来说，该文件是 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。
+使用 `docs/run_index.md` 获取工作区级 run 编号和路径规则。广泛搜索项目文件前，先使用拥有项目的 current-status 文档作为 agent 面向活跃工作的首要定位入口。对 SURROGATE_TRAIN 来说，该文件是 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。对论文任务和 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task` 下的活跃计算来说，该文件是 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task/docs/current_task_status.md`。
 
 活跃 run 区块应保持足够结构化，能够定位 config、outputs、相关日志指针、远程任务名、最新进度、当前问题和下一步。日志不通过单一全局布局统一管理；详细原始证据保留在 artifacts 中，已完成 run 的耐久历史属于对应的时间顺序 log。
 
@@ -70,6 +70,8 @@
 ## 远程计算机连接
 
 远程工作站可通过 LAN 或 ZeroTier 上的 SSH 访问。详细连接检查、路径和长任务启动说明维护在 `docs/remote_workstation_connection.md`。
+
+论文远程计算脚本和配置的当前入口位于 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote`；通用 ALB 远程实现仍维护在 `ALB.remote` 和 `docs/remote_workstation_connection.md` 所述兼容 wrapper 中。
 
 启动远程 ALBNN training 时，默认启动 monitoring。优先使用 JSON queue wrapper，因为它会监督活跃任务，并把 status/log tails 同步到配置的输出路径；如果直接用 start wrapper 启动任务，应立即启动对应 queue monitor。
 两台远程计算工作站默认使用 PowerShell 7，且 `C:/Program Files/PowerShell/7` 已加入 Machine/User PATH。SSH encoded command 和交互短命令可调用 `pwsh`；Task Scheduler runner 默认优先使用 `C:/Program Files/PowerShell/7/pwsh.exe` 绝对路径，以避免服务环境或 WindowsApps alias 差异。
