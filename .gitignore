@@ -8,6 +8,9 @@
 /docs/daily_maintenance/logs/
 /docs/daily_maintenance/latest_codex_daily_doc_maintenance_status.txt
 /.ipynb_checkpoints/
+.idea/
+.pytest_tmp_review/
+_daily_alas_tmp/
 .vscode/
 *.py[cod]
 *.pyc*
