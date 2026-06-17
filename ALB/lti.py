@@ -10,6 +10,19 @@ from ALB.base import BaseSimpleModel
 from ALB.results import DataFrameResult, SaveTreeNode
 
 
+def _history_to_frame(history):
+    """Convert scalar/vector/matrix history entries into a 2-D DataFrame."""
+
+    rows = []
+    for entry in history:
+        values = np.asarray(entry)
+        if values.ndim == 0:
+            rows.append([values.item()])
+        else:
+            rows.append(values.reshape(-1))
+    return pd.DataFrame(rows)
+
+
 def lti_state_space_matrix_init(a, b, c, d, dt):
     """
     :param a: Continuous-time state matrix A.
@@ -195,10 +208,10 @@ class BaseLti(BaseSimpleModel):
             path = "lti_result"
         if name is None:
             name = "lti"
-        t = pd.DataFrame(self.ts)
-        yout = pd.DataFrame(self.yout)
-        xout = pd.DataFrame(self.xout)
-        u = pd.DataFrame(self.u)
+        t = _history_to_frame(self.ts)
+        yout = _history_to_frame(self.yout)
+        xout = _history_to_frame(self.xout)
+        u = _history_to_frame(self.u)
         res = DataFrameResult(
             {name + "_t": t, name + "_yout": yout, name + "_xout": xout, name + "_u": u}
         )

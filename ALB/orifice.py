@@ -698,6 +698,39 @@ class CSOrifice(NodimCSOrifice):
         return qdp
 
 
+def _as_numeric_vector(value, name):
+    """Return a flat float vector for scalar or array-like numeric inputs."""
+    try:
+        values = np.asarray(value, dtype=float).reshape(-1)
+    except ValueError as exc:
+        try:
+            values = np.concatenate(
+                [np.asarray(item, dtype=float).reshape(-1) for item in value]
+            )
+        except TypeError:
+            raise ValueError(f"{name} cannot be converted to a float vector.") from exc
+    if values.size == 0:
+        raise ValueError(f"{name} cannot be empty.")
+    return values
+
+
+def _as_scalar_float(value, name):
+    """Return the first numeric value as a Python float."""
+    return float(_as_numeric_vector(value, name)[0])
+
+
+def _match_numeric_length(value, length, name):
+    """Return a flat float vector with either scalar broadcast or exact length."""
+    values = _as_numeric_vector(value, name)
+    if values.size == 1 and length != 1:
+        return np.full(length, float(values[0]), dtype=float)
+    if values.size != length:
+        raise ValueError(
+            f"{name} length {values.size} does not match expected length {length}."
+        )
+    return values
+
+
 def define_equations(cq0, cq1, cq2, pn, xv, ps, q_leak):
     """
     :param cq0: the coefficient of the orifice
@@ -709,32 +742,43 @@ def define_equations(cq0, cq1, cq2, pn, xv, ps, q_leak):
     :param q_leak: the leakage flow
     """
 
+    pn = _as_numeric_vector(pn, "pn")
+    cq0 = _as_scalar_float(cq0, "cq0")
+    cq1 = _match_numeric_length(cq1, len(pn), "cq1")
+    cq2 = _as_scalar_float(cq2, "cq2")
+    xv = _as_scalar_float(xv, "xv")
+    ps = _as_scalar_float(ps, "ps")
+    q_leak = _as_scalar_float(q_leak, "q_leak")
+
     def equations(x):
-        x0 = x[0] - np.sum(x[2::])
+        x = _match_numeric_length(x, len(pn) + 2, "x")
+        x0 = float(x[0] - np.sum(x[2::]))
         if ps >= x[1]:
-            x1 = x[0] - q_leak - cq0 * xv * np.sqrt(ps - x[1])
+            x1 = float(x[0] - q_leak - cq0 * xv * np.sqrt(ps - x[1]))
         else:
-            x1 = x[0] + q_leak + cq0 * xv * np.sqrt(x[1] - ps)
+            x1 = float(x[0] + q_leak + cq0 * xv * np.sqrt(x[1] - ps))
         xs = [x0, x1]
         for i in range(2, len(x)):
-            if x[1] - pn[i - 2] > 0:
+            pn_i = float(pn[i - 2])
+            cq1_i = float(cq1[i - 2])
+            if x[1] - pn_i > 0:
                 xn = (
                     x[i]
-                    - (-cq2 + np.sqrt(cq2**2 + 4 * cq1[i - 2] * abs(x[1] - pn[i - 2])))
+                    - (-cq2 + np.sqrt(cq2**2 + 4 * cq1_i * abs(x[1] - pn_i)))
                     / 2
-                    / cq1[i - 2]
+                    / cq1_i
                 )
-            elif x[1] - pn[i - 2] < 0:
+            elif x[1] - pn_i < 0:
                 xn = (
                     x[i]
-                    + (-cq2 + np.sqrt(cq2**2 + 4 * cq1[i - 2] * abs(x[1] - pn[i - 2])))
+                    + (-cq2 + np.sqrt(cq2**2 + 4 * cq1_i * abs(x[1] - pn_i)))
                     / 2
-                    / cq1[i - 2]
+                    / cq1_i
                 )
             else:
                 xn = 0
-            xs.append(xn)
-        return xs
+            xs.append(float(xn))
+        return np.asarray(xs, dtype=float)
 
     return equations
 
@@ -749,8 +793,15 @@ def define_qprime(cq0, cq1_h2, cq2, pn, xv, ps):
     :param ps: the supply pressure
     """
 
+    pn = _as_numeric_vector(pn, "pn")
+    cq0 = _as_scalar_float(cq0, "cq0")
+    cq1_h2 = _match_numeric_length(cq1_h2, len(pn), "cq1_h2")
+    cq2 = _as_scalar_float(cq2, "cq2")
+    xv = _as_scalar_float(xv, "xv")
+    ps = _as_scalar_float(ps, "ps")
+
     def prime(x):
-        x = np.array(x)
+        x = _match_numeric_length(x, len(pn) + 2, "x")
         lpn = len(pn)
         x0 = np.hstack([1, 0, -np.ones(lpn)])
         if x[1] != ps:
@@ -783,11 +834,12 @@ def solve_q(cq0, cq1_h2, cq2, pn, xv, ps, q_leak, init=None):
     :param init: the initial value of the iteration
     return: the result of the iteration
     """
+    pn = _as_numeric_vector(pn, "pn")
     eqs = define_equations(cq0, cq1_h2, cq2, pn, xv, ps, q_leak)
     if init is None:
         init = np.zeros(len(pn) + 2)
     else:
-        init = init
+        init = _match_numeric_length(init, len(pn) + 2, "init")
     prime = define_qprime(cq0, cq1_h2, cq2, pn, xv, ps)
     ans = fsolve(eqs, init, fprime=prime)
     # ans = fsolve(eqs, init)
