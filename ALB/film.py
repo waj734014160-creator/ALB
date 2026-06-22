@@ -1786,9 +1786,7 @@ class FilmSystem(BaseSystem):
         simple_flags = [
             simple_model.calc_is_finished() for simple_model in self.simple_models
         ]
-        if len(simple_flags) == 0:
-            simple_flags.append(True)
-        simple_flag = any(simple_flags)
+        simple_flag = all(simple_flags) if simple_flags else True
         return self.main_model.calc_is_finished() and simple_flag
 
     def _input_rotoru(self, uxy: np.ndarray, *args, **kwargs):

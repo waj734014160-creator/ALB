@@ -654,6 +654,8 @@ class StaticPosition:
                 "error",
                 "finished",
                 "iter_num",
+                "inner_converged",
+                "stop_reason",
                 "dim_Fx",
                 "dim_Fy",
                 "dim_F",
@@ -666,6 +668,84 @@ class StaticPosition:
         self.child_nodes = []
         self.damp = damp
         self.delta = delta
+
+    def _limit_eccentricity_step(
+        self,
+        ex,
+        ey,
+        dex,
+        dey,
+        limit=1.0,
+        margin=1.0e-6,
+        min_scale=1.0e-6,
+    ):
+        """
+        Keep a Newton update inside the valid nondimensional eccentricity disk.
+
+        The film model accepts eccentricity only when sqrt(ex**2 + ey**2) < 1.
+        This helper preserves the Newton direction and backs off the step size
+        until the candidate point is inside that disk.
+        """
+        current = np.array([ex, ey], dtype=float)
+        step = np.array([dex, dey], dtype=float)
+        safe_limit = float(limit) - float(margin)
+
+        if not np.all(np.isfinite(step)):
+            return float(current[0]), float(current[1]), 0.0
+
+        candidate = current + step
+        if np.linalg.norm(candidate) < safe_limit:
+            return float(candidate[0]), float(candidate[1]), 1.0
+
+        scale = 0.5
+        while scale >= min_scale:
+            candidate = current + scale * step
+            if np.linalg.norm(candidate) < safe_limit:
+                return float(candidate[0]), float(candidate[1]), scale
+            scale *= 0.5
+
+        current_norm = np.linalg.norm(current)
+        if current_norm >= safe_limit and current_norm > 0.0:
+            current = current / current_norm * safe_limit
+        return float(current[0]), float(current[1]), 0.0
+
+    def _calc_static_error(self, wx, wy, force):
+        """Return the load-balance residual normalized by the applied load."""
+        w_norm = np.sqrt(wx**2 + wy**2)
+        return (
+            np.sqrt((wx + force[0]) ** 2 + (wy + force[1]) ** 2) / w_norm
+            if w_norm > 0
+            else 0.0
+        )
+
+    def _inner_is_finished(self):
+        """Return whether the latest nested bearing solve reported convergence."""
+        if not hasattr(self.bearing, "calc_is_finished"):
+            return True
+        status = self.bearing.calc_is_finished()
+        if status is None:
+            return True
+        return bool(status)
+
+    def _evaluate_static_force(self, wx, wy, ex, ey, nodim=True, include_dim=False):
+        """Evaluate force and convergence diagnostics at one static position."""
+        self.bearing.input(uxy=[ex, ey], uxyt=[0, 0], t=0, nodim=nodim)
+        self.bearing.output(nodim=nodim)
+        force = np.asarray(self.bearing.calc_capacity(calc=True, nodim=nodim))
+        dim_force = (
+            np.asarray(self.bearing.calc_capacity(calc=True, nodim=False))
+            if include_dim
+            else np.full(2, np.nan)
+        )
+        return {
+            "ex": float(ex),
+            "ey": float(ey),
+            "force": force,
+            "dim_force": dim_force,
+            "total_force": float(np.sqrt(force[0] ** 2 + force[1] ** 2)),
+            "error": float(self._calc_static_error(wx, wy, force)),
+            "inner_converged": self._inner_is_finished(),
+        }
 
     def run(self, wx, wy, ex=0, ey=0, nodim=True):
         """
@@ -681,7 +761,11 @@ class StaticPosition:
         error = 1
         delta = self.delta
         finished = False
+        inner_converged = True
+        stop_reason = "max_iter"
         i = 0
+        current_eval = None
+        state_matches_current_eval = False
         if hasattr(self.bearing, "init"):
             self.bearing.init()
         LOGGER.info("Static position iteration started: wx=%s, wy=%s", wx, wy)
@@ -690,21 +774,56 @@ class StaticPosition:
             if hasattr(self.bearing, "init"):
                 self.bearing.init()
             # print("Iteration {}".format(i))
-            self.bearing.input(uxy=[ex, ey], uxyt=[0, 0], t=0, nodim=nodim)
-            self.bearing.output()
-            force = self.bearing.calc_capacity(calc=True, nodim=nodim)
-            dim_force = self.bearing.calc_capacity(calc=True, nodim=False)
-            total_force = np.sqrt(force[0] ** 2 + force[1] ** 2)
+            current_eval = self._evaluate_static_force(
+                wx, wy, ex, ey, nodim=nodim, include_dim=True
+            )
+            force = current_eval["force"]
+            dim_force = current_eval["dim_force"]
+            total_force = current_eval["total_force"]
+            error = current_eval["error"]
+            inner_converged = current_eval["inner_converged"]
+            state_matches_current_eval = True
+            if i % 5 == 0:
+                pbar.set_description(
+                    f"Iter:{i + 1} Error:{error:.2e} Force:({force[0]:.2e},{force[1]:.2e}) "
+                    f"Exy:({ex:.2e},{ey:.2e})"
+                )
+            if not inner_converged:
+                stop_reason = "inner_not_converged"
+                LOGGER.warning(
+                    "Static position stopped because the inner solve did not converge"
+                )
+                break
+            if error < self.error_set:
+                finished = True
+                stop_reason = "converged"
+                break
             # dex = (wx + force[0]) / (self.kx * (1 + abs(ex)))
             # dey = (wy + force[1]) / (self.ky * (1 + abs(ey)))
-            self.bearing.input(uxy=[ex + delta, ey], uxyt=[0, 0], t=0, nodim=nodim)
-            self.bearing.output()
-            force_dx = self.bearing.calc_capacity(calc=True, nodim=nodim)
+            eval_dx = self._evaluate_static_force(
+                wx, wy, ex + delta, ey, nodim=nodim
+            )
+            state_matches_current_eval = False
+            if not eval_dx["inner_converged"]:
+                stop_reason = "inner_not_converged_dx"
+                LOGGER.warning(
+                    "Static position stopped because the dx inner solve did not converge"
+                )
+                break
+            force_dx = eval_dx["force"]
             dfx_dex = (force_dx[0] - force[0]) / delta
             dfy_dex = (force_dx[1] - force[1]) / delta
-            self.bearing.input(uxy=[ex, ey + delta], uxyt=[0, 0], t=0, nodim=nodim)
-            self.bearing.output()
-            force_dy = self.bearing.calc_capacity(calc=True, nodim=nodim)
+            eval_dy = self._evaluate_static_force(
+                wx, wy, ex, ey + delta, nodim=nodim
+            )
+            state_matches_current_eval = False
+            if not eval_dy["inner_converged"]:
+                stop_reason = "inner_not_converged_dy"
+                LOGGER.warning(
+                    "Static position stopped because the dy inner solve did not converge"
+                )
+                break
+            force_dy = eval_dy["force"]
             dfx_dey = (force_dy[0] - force[0]) / delta
             dfy_dey = (force_dy[1] - force[1]) / delta
             J = np.array([[dfx_dex, dfx_dey], [dfy_dex, dfy_dey]])
@@ -715,27 +834,29 @@ class StaticPosition:
                 LOGGER.warning("Jacobian is singular, fallback to default stiffness")
                 delta_e = -res / np.array([self.kx, self.ky])
             dex, dey = delta_e * self.damp
-            ex = ex + dex
-            ey = ey + dey
-            w_norm = np.sqrt(wx**2 + wy**2)
-            error = (
-                np.sqrt((wx + force[0]) ** 2 + (wy + force[1]) ** 2) / w_norm
-                if w_norm > 0
-                else 0.0
-            )
-
-            if i % 50 == 0:
-                pbar.set_description(
-                    f"Iter:{i + 1} Error:{error:.2e} Force:({force[0]:.2e},{force[1]:.2e}) "
-                    f"Exy:({ex:.2e},{ey:.2e})"
-                )
+            ex, ey, _ = self._limit_eccentricity_step(ex, ey, dex, dey)
+            state_matches_current_eval = False
             # print("Current iteration residual is: {}".format(error))
-            if abs(ex) >= 1 or abs(ey) >= 1:
+            e_norm = np.sqrt(ex**2 + ey**2)
+            if e_norm >= 1:
                 ex = ex / 2
                 ey = ey / 2
-            if error < self.error_set:
+        if current_eval is None or not np.allclose(
+            [current_eval["ex"], current_eval["ey"]], [ex, ey]
+        ) or not state_matches_current_eval:
+            current_eval = self._evaluate_static_force(
+                wx, wy, ex, ey, nodim=nodim, include_dim=True
+            )
+            force = current_eval["force"]
+            dim_force = current_eval["dim_force"]
+            total_force = current_eval["total_force"]
+            error = current_eval["error"]
+            inner_converged = current_eval["inner_converged"]
+            if inner_converged and error < self.error_set:
                 finished = True
-                break
+                stop_reason = "converged"
+            elif not inner_converged and stop_reason == "max_iter":
+                stop_reason = "inner_not_converged_final"
         LOGGER.info(
             "Static position finished: iter=%s, converged=%s, residual=%s",
             i,
@@ -753,6 +874,8 @@ class StaticPosition:
             error,
             finished,
             i,
+            inner_converged,
+            stop_reason,
             dim_force[0],
             dim_force[1],
             np.sqrt(dim_force[0] ** 2 + dim_force[1] ** 2),

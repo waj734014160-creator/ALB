@@ -175,11 +175,21 @@ def wrap_pad_collection_with_thermal(pads, thermal_config: Optional[ThermalConfi
         return list(pads)
 
     wrapped_pads = []
-    thermal_args = vars(thermal_config)
+    thermal_args = vars(thermal_config).copy()
     for pad in pads:
-        wrapped_pads.append(
-            ThermalHydroBearing(pad, ThermalConfig.from_dict(thermal_args))
+        cfg = ThermalConfig.from_dict(thermal_args)
+        pad_args_nodim = bool(
+            getattr(getattr(pad, "main_model", None), "args", {}).get(
+                "args_nodim", False
+            )
         )
+        if pad_args_nodim != bool(cfg.args_nodim):
+            raise TypeError(
+                "ThermalConfig.args_nodim must match the wrapped pad film model "
+                "unit mode."
+            )
+        wrapper_cls = NodimThermalHydroBearing if pad_args_nodim else ThermalHydroBearing
+        wrapped_pads.append(wrapper_cls(pad, cfg))
     return wrapped_pads
 
 
@@ -398,10 +408,9 @@ def _nondim_temperature_flux_source_jacobian_form(u, v, w):
 class SkfemThermalModel:
     """Steady thermal model in the x-z plane solved by scikit-fem.
 
-    Used by :class:`ThermalHydroBearing` for the dimensional coupling path.
-    The nondimensional wrapper :class:`NodimThermalHydroBearing` always uses
-    :class:`SkfemThermalModelNondim`.  This class is retained as a reference
-    implementation for direct dimensional thermal solves and validation.
+    This dimensional implementation is retained as a reference for direct
+    dimensional thermal solves and validation.  Public thermal-bearing wrappers
+    use :class:`SkfemThermalModelNondim` as the coupled solve core.
     """
 
     def __init__(self, config: ThermalConfig):
@@ -1222,6 +1231,42 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         mesh_data["dp_dx_nodal"] = dp_dx_grid[node_ix, node_iz]
         mesh_data["dp_dz_nodal"] = dp_dz_grid[node_ix, node_iz]
 
+    def _apply_nondim_transient_term(
+        self,
+        K,
+        f,
+        basis,
+        h_bar: np.ndarray,
+        scales: ThermalNondimScales,
+        temperature_prev: np.ndarray,
+        t_supply: float,
+    ):
+        """Add the dimensionless film thermal storage term."""
+        dt = self.config.dt
+        if dt is None or dt <= 0:
+            raise ValueError("Transient thermal solve requires a positive dt")
+        if temperature_prev is None:
+            raise ValueError(
+                "Transient thermal solve requires temperature_prev as the initial field"
+            )
+        t_prev = np.asarray(temperature_prev, dtype=float).reshape(-1)
+        if t_prev.size != basis.N:
+            raise ValueError(
+                "temperature_prev size must match the thermal mesh node count"
+            )
+        t_prev_bar = scales.temperature_to_nondim(t_prev, t_supply)
+        storage_over_dt = h_bar * scales.c * scales.r / (scales.flow_scale * dt)
+        interp_mass = basis.interpolate(storage_over_dt)
+        interp_t_prev = basis.interpolate(t_prev_bar)
+        K += asm(_transient_mass_form, basis, rho_cv_h_over_dt=interp_mass)
+        f += asm(
+            _transient_rhs_form,
+            basis,
+            rho_cv_h_over_dt=interp_mass,
+            t_prev=interp_t_prev,
+        )
+        return K, f
+
     def solve_segregated_newton(
         self,
         model,
@@ -1523,10 +1568,6 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         temperature_prev: Optional[np.ndarray] = None,
         transient: bool = False,
     ) -> Dict[str, np.ndarray]:
-        if transient:
-            raise NotImplementedError(
-                "The nondimensional thermal solver currently supports steady solves only."
-            )
         if mesh_data is None:
             mesh_data = self.build_mesh(model)
 
@@ -1614,6 +1655,16 @@ class SkfemThermalModelNondim(SkfemThermalModel):
                 q=basis.interpolate(phi_bar),
             )
 
+        t_supply = (
+            self.config.t_supply
+            if self.config.t_supply is not None
+            else self.config.t_in
+        )
+        if transient:
+            K, f = self._apply_nondim_transient_term(
+                K, f, basis, h_bar, scales, temperature_prev, t_supply
+            )
+
         if orifice_data:
             K = K.tolil()
             tx = mesh.p[0]
@@ -1628,11 +1679,6 @@ class SkfemThermalModelNondim(SkfemThermalModel):
                 f[j] += float(q_bar) * t_supply_bar
             K = K.tocsr()
 
-        t_supply = (
-            self.config.t_supply
-            if self.config.t_supply is not None
-            else self.config.t_in
-        )
         side_temp = (
             self.config.axial_side_t
             if self.config.axial_side_t is not None
@@ -2058,9 +2104,7 @@ class NodimThermalHydroBearing(BaseCSystem):
             raise ValueError(_PRESSURE_BACKEND_ERROR)
 
         old_model = self.bearing.main_model
-        if isinstance(
-            old_model, (ViscositySkfemNewtonFilm, NodimViscositySkfemNewtonFilm)
-        ):
+        if isinstance(old_model, NodimViscositySkfemNewtonFilm):
             return
 
         save_switch = getattr(old_model, "save_switch", {"p": False, "h": False})
@@ -2399,7 +2443,10 @@ class NodimThermalHydroBearing(BaseCSystem):
         self.bearing.input(*args, **kwargs)
 
     def calc_is_finished(self, *args, **kwargs):
-        return self.bearing.calc_is_finished(*args, **kwargs)
+        bearing_finished = bool(self.bearing.calc_is_finished(*args, **kwargs))
+        if not self._last_thermal:
+            return bearing_finished
+        return bearing_finished and bool(self._last_thermal.get("converged", False))
 
     def _solve_coupled(self, *args, transient=False, temperature_prev=None, **kwargs):
         if self.config.heat_partition_steps is not None:
@@ -2525,6 +2572,10 @@ class NodimThermalHydroBearing(BaseCSystem):
             miu_target = self._viscosity_from_temperature(t_film)
         return t_film, t_film_nondim, miu_target
 
+    def _thermal_output_coordinates(self, thermal: dict, mesh_data: dict):
+        """Return public thermal mesh coordinates for this wrapper."""
+        return thermal["mesh"].p[0].copy(), thermal["mesh"].p[1].copy()
+
     def _build_coupled_result(
         self,
         hydro: dict,
@@ -2561,6 +2612,9 @@ class NodimThermalHydroBearing(BaseCSystem):
             "newton_line_search_steps": int(newton_line_search_steps),
         }
 
+        temperature_x, temperature_z = self._thermal_output_coordinates(
+            thermal, mesh_data
+        )
         result = dict(hydro)
         result.update(
             {
@@ -2583,8 +2637,8 @@ class NodimThermalHydroBearing(BaseCSystem):
                 ],
                 "temperature": thermal["temperature"],
                 "temperature_film": t_film,
-                "temperature_x": thermal["mesh"].p[0].copy(),
-                "temperature_z": thermal["mesh"].p[1].copy(),
+                "temperature_x": temperature_x,
+                "temperature_z": temperature_z,
                 "viscosity_field": miu_field.copy(),
                 "q_orifice_total": thermal.get("q_orifice_total", 0.0),
                 "thermal_transient": bool(transient),
@@ -2924,11 +2978,10 @@ class NodimThermalHydroBearing(BaseCSystem):
 class ThermalHydroBearing(NodimThermalHydroBearing):
     """Dimensional thermal-hydro bearing wrapper.
 
-    Mirrors the :class:`FilmModel` -> :class:`NodimFilmModel` design: this
-    dimensional subclass owns the dim<->nondim translation and delegates the
-    actual coupled solve to :class:`NodimThermalHydroBearing` via overrides
-    on the validation, pressure-backend, viscosity-sync and thermal-solver
-    selection hooks.
+    The public API accepts dimensional film inputs and returns dimensional
+    outputs by default.  The coupled pressure / thermal solve itself is still
+    delegated to the nondimensional core inherited from
+    :class:`NodimThermalHydroBearing`.
     """
 
     # ------------------------------------------------------------------
@@ -2951,14 +3004,7 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
             )
 
     # ------------------------------------------------------------------
-    # Solver selection: use dimensional thermal solver
-    # ------------------------------------------------------------------
-
-    def _build_thermal_model(self):
-        return SkfemThermalModel(self.config)
-
-    # ------------------------------------------------------------------
-    # Pressure backend: keep dimensional viscosity-aware skfem film model
+    # Pressure backend: convert dimensional film args to the nodim core model
     # ------------------------------------------------------------------
 
     def _ensure_pressure_backend(self):
@@ -2967,16 +3013,37 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
             raise ValueError(_PRESSURE_BACKEND_ERROR)
 
         old_model = self.bearing.main_model
-        if isinstance(
-            old_model, (ViscositySkfemNewtonFilm, NodimViscositySkfemNewtonFilm)
-        ):
+        if isinstance(old_model, NodimViscositySkfemNewtonFilm):
             return
 
         save_switch = getattr(old_model, "save_switch", {"p": False, "h": False})
         input_args = self._current_film_input_args(old_model)
-        model_kwargs = {key: input_args[key] for key in _FILM_MODEL_PARAM_KEYS}
-        new_model = ViscositySkfemNewtonFilm(
-            **model_kwargs,
+        input_args, nd_args = _transform_film_args(input_args)
+        x_lim = nd_args["x_lim"]
+        z_lim = nd_args["z_lim"]
+        new_model = NodimViscositySkfemNewtonFilm(
+            lambda_value=nd_args["lambda"],
+            lambda0=old_model.args.get("lambda0", nd_args.get("lambda0")),
+            lr=nd_args["lr"],
+            x0=x_lim[0],
+            lx=x_lim[1] - x_lim[0],
+            lz=z_lim[1] - z_lim[0],
+            nx=nd_args["nx"],
+            nz=nd_args["nz"],
+            miu=input_args["miu"],
+            c=input_args["c"],
+            r=input_args["r"],
+            l=input_args["l"],
+            ps=input_args["ps"],
+            rho=input_args["rho"],
+            w=input_args["w"],
+            dxt=input_args["dxt"],
+            dyt=input_args["dyt"],
+            vf=input_args["vf"],
+            xct=nd_args["xct"],
+            yct=nd_args["yct"],
+            angle_unit="rad",
+            input_args=input_args,
             reynold=old_model.args.get("reynold", True),
             error_set=getattr(old_model, "_error_set", 1e-7),
             damp=getattr(old_model, "_damp", 0.8),
@@ -3022,6 +3089,14 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
         model.args["lambda0"] = lambda0
         model.args["lambda"] = lambda0
         model.elem_manager.elems_args = model.args
+
+    def _thermal_output_coordinates(self, thermal: dict, mesh_data: dict):
+        grid = mesh_data["grid"]
+        node_ix = mesh_data["node_ix"]
+        node_iz = mesh_data["node_iz"]
+        x_dim = np.asarray(grid["x_dim"], dtype=float)
+        z_dim = np.asarray(grid["z_dim"], dtype=float)
+        return x_dim[node_ix].copy(), z_dim[node_iz].copy()
 
     # ------------------------------------------------------------------
     # Default to dimensional output unless caller asks for nondim explicitly

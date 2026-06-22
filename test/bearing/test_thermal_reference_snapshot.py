@@ -52,10 +52,21 @@ def _run_reference_case():
     }
 
 
-def test_thermal_small_model_matches_reference_snapshot_exactly():
+def test_thermal_small_model_matches_reference_snapshot():
     with np.load(REF_NPZ) as reference:
         actual = _run_reference_case()
         assert set(actual) == set(reference.files)
 
         for key in reference.files:
-            np.testing.assert_array_equal(actual[key], reference[key], err_msg=key)
+            if np.issubdtype(reference[key].dtype, np.floating):
+                # The dimensional thermal wrapper now delegates to the equivalent
+                # nondimensional backend, which can shift final rounding bits.
+                np.testing.assert_allclose(
+                    actual[key],
+                    reference[key],
+                    rtol=1e-7,
+                    atol=1e-9,
+                    err_msg=key,
+                )
+            else:
+                np.testing.assert_array_equal(actual[key], reference[key], err_msg=key)

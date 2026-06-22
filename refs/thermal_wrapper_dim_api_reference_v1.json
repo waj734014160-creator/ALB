@@ -1,0 +1,178 @@
+{
+  "arrays": {
+    "dim_force": {
+      "dtype": "float64",
+      "shape": [
+        2
+      ]
+    },
+    "dim_pressure_field": {
+      "dtype": "float64",
+      "shape": [
+        10,
+        6
+      ]
+    },
+    "dim_temperature": {
+      "dtype": "float64",
+      "shape": [
+        60
+      ]
+    },
+    "dim_temperature_film": {
+      "dtype": "float64",
+      "shape": [
+        60
+      ]
+    },
+    "dim_viscosity_field": {
+      "dtype": "float64",
+      "shape": [
+        60
+      ]
+    },
+    "nodim_force": {
+      "dtype": "float64",
+      "shape": [
+        2
+      ]
+    },
+    "nodim_pressure_field": {
+      "dtype": "float64",
+      "shape": [
+        10,
+        6
+      ]
+    },
+    "nodim_temperature": {
+      "dtype": "float64",
+      "shape": [
+        60
+      ]
+    },
+    "nodim_temperature_film": {
+      "dtype": "float64",
+      "shape": [
+        60
+      ]
+    },
+    "nodim_viscosity_field": {
+      "dtype": "float64",
+      "shape": [
+        60
+      ]
+    }
+  },
+  "comparison_policy": {
+    "booleans_and_solver_name": "exact",
+    "numeric": "np.testing.assert_allclose with rtol=1e-8, atol=1e-10 because the maintenance intentionally switches dimensional internals to the equivalent nondimensional backend."
+  },
+  "generated_at_utc": "2026-06-21T04:05:59.226722+00:00",
+  "hyd_config": {
+    "adaptive_damp": null,
+    "angle": 20.0,
+    "angle_rad": 0.3490658503988659,
+    "c": 8e-05,
+    "coe": false,
+    "damp": 0.8,
+    "dxt": 0,
+    "dyt": 0,
+    "e": 0.12,
+    "err": 0.001,
+    "error_set": 1e-08,
+    "freq": 50.0,
+    "gdamp": 1.2,
+    "iter_method": "newton",
+    "l": 0.08,
+    "lx": 120.0,
+    "lz": 2.0,
+    "max_iter": 80,
+    "miu": 0.0195,
+    "ngauss": 50,
+    "node_link": null,
+    "nx": 9,
+    "nz": 5,
+    "p_set": 0,
+    "path": "",
+    "ps": 10000000.0,
+    "r": 0.04,
+    "reynold": true,
+    "rho": 872.0,
+    "save_h": false,
+    "save_p": false,
+    "vf": 1,
+    "vib": false,
+    "w": 3000.0,
+    "x0": -45.0
+  },
+  "input": {
+    "uxy_dim": [
+      1.4400000000000001e-05,
+      -5.600000000000001e-06
+    ],
+    "uxyt_dim": [
+      0.0,
+      0.0
+    ]
+  },
+  "name": "thermal_wrapper_dim_api_reference_v1",
+  "purpose": "Numeric baseline for ThermalHydroBearing dimensional public API before nodim-core wrapper refactor.",
+  "scalars": {
+    "dim_friction": 16.514268330311104,
+    "dim_q_orifice_total": 0.0,
+    "dim_t_eff": 40.30798544954128,
+    "dim_thermal_converged": true,
+    "dim_thermal_iterations": 1.0,
+    "dim_thermal_newton_iterations": 0.0,
+    "dim_thermal_newton_line_search_steps": 0.0,
+    "dim_thermal_newton_residual": NaN,
+    "dim_thermal_solver_used": "direct",
+    "nodim_friction": 0.26814827150870096,
+    "nodim_q_orifice_total": 0.0,
+    "nodim_t_eff": 40.30798544954128,
+    "nodim_thermal_converged": true,
+    "nodim_thermal_iterations": 1.0,
+    "nodim_thermal_newton_iterations": 0.0,
+    "nodim_thermal_newton_line_search_steps": 0.0,
+    "nodim_thermal_newton_residual": NaN,
+    "nodim_thermal_solver_used": "direct"
+  },
+  "thermal_config": {
+    "adaptive_damp": null,
+    "args_nodim": false,
+    "axial_side_bc": "inflow_fixed",
+    "axial_side_t": null,
+    "beta": 0.03,
+    "beta_nondim": null,
+    "coupling": "full",
+    "cp_lub": 2000.0,
+    "delta_t_scale": 20.0,
+    "dt": null,
+    "flow_rate_factor": 1.0,
+    "heat_partition": 0.25,
+    "heat_partition_steps": null,
+    "iter_method": "direct",
+    "k_lub": 0.0,
+    "max_delta_t": 80.0,
+    "max_iter": 8,
+    "miu0": null,
+    "miu_max": 1.0,
+    "miu_min": 0.0001,
+    "miu_update": "linear",
+    "miu_update_max_ratio": null,
+    "pressure_backend": "skfem",
+    "relax": 0.6,
+    "supg": true,
+    "t_in": 40.0,
+    "t_ref": 40.0,
+    "t_ref_nondim": null,
+    "t_supply": 40.0,
+    "thermal_newton_damp": 1.0,
+    "thermal_newton_line_search": false,
+    "thermal_newton_max_iter": 30,
+    "thermal_newton_min_damp": 0.001,
+    "thermal_newton_tol": null,
+    "tol": 0.05,
+    "transient_enabled": false
+  }
+}
