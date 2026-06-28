@@ -14,7 +14,6 @@ from scipy.linalg import block_diag, pinv, schur
 from ALB.base import BaseSimpleModel
 from ALB.config import FuzzyPIDConfig, PIDConfig
 from ALB.results import DataFrameResult, SaveTreeNode
-from ALB.rotor import location_mapping_matrix, rotor0
 from ALB.servovalve import limit_signal, moog_servovalve
 
 
@@ -688,6 +687,8 @@ class ALBLQGController(BaseSimpleModel):
 
         Returns a continuous-time state-space system.
         """
+        from ALB.rotor import location_mapping_matrix
+
         self.ndof = self.rotor._rotor.ndof
         lti_r = self.rotor._rotor._lti(self.freq)
         self._Ar_full, self._Br_full = lti_r.A, lti_r.B
@@ -1640,6 +1641,8 @@ def modal_truncation_by_dominance(sys, order, alpha=0.0):
 
 
 def test_lqg(eso=True, dt=1e-3, freq=50, alpha=1e-3, beta=2e-3):
+    from ALB.rotor import rotor0
+
     rotor = rotor0(dt, freq, alpha=alpha, beta=beta)
 
     # Example two-bearing setup.

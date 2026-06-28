@@ -1,11 +1,14 @@
 ﻿# -- coding: utf-8 --
+from __future__ import annotations
+
 import os
-from typing import Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Union
 
 import numpy as np
 import pandas as pd
-import plotly
-from ross import Rotor, TimeResponseResults
+
+if TYPE_CHECKING:
+    from ross import Rotor, TimeResponseResults
 
 
 class BaseResult:
@@ -112,6 +115,8 @@ class RossRotorResult(BaseResult):
             os.makedirs(path)
         if self.name is None:
             self.name = "rotor"
+        import plotly
+
         t = pd.DataFrame(self.t)
         xout = pd.DataFrame(self.xout)
         yout = pd.DataFrame(self.yout)

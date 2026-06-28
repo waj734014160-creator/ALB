@@ -1,0 +1,14 @@
+{
+  share_name: [
+    'model',
+    'scaler_X',
+    'scaler_y',
+    'c',
+    'vf',
+    'freq',
+    'ps',
+    'l',
+    'r',
+    'agent',
+  ],
+}

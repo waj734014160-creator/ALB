@@ -1,0 +1,10 @@
+{
+  // Read these values from the shared config when available.
+  share_name: [
+    'freq',
+    'dt',
+    'rotor_path',
+    'alpha',
+    'beta',
+  ],
+}

@@ -24,6 +24,7 @@ from matplotlib.figure import Figure  # noqa: E402
 from PySide6.QtCore import Qt, QThread, QTimer, Signal  # noqa: E402
 from PySide6.QtGui import QAction  # noqa: E402
 from PySide6.QtWidgets import (  # noqa: E402
+    QAbstractSpinBox,
     QApplication,
     QCheckBox,
     QComboBox,
@@ -34,6 +35,7 @@ from PySide6.QtWidgets import (  # noqa: E402
     QLabel,
     QMainWindow,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QScrollArea,
     QSpinBox,
@@ -116,31 +118,82 @@ QStatusBar {
     background: #081017;
     color: #94aab3;
 }
+QProgressBar {
+    background: #0e1720;
+    border: 1px solid #24414a;
+    border-radius: 4px;
+    color: #e6f2f5;
+    min-height: 20px;
+    text-align: center;
+}
+QProgressBar::chunk {
+    background: #24b8a7;
+    border-radius: 3px;
+}
 """
 
 
 class ComputeWorker(QThread):
     """Run a GUI calculation in a worker thread."""
 
+    progress = Signal(int, str)
     finished = Signal(object)
 
-    def __init__(self, func: Callable[[dict], object], config: dict) -> None:
+    def __init__(self, func: Callable[..., object], config: dict) -> None:
         super().__init__()
         self._func = func
         self._config = config
 
     def run(self) -> None:
         try:
-            self.finished.emit(self._func(self._config))
+            self.finished.emit(
+                self._func(self._config, progress_callback=self.progress.emit)
+            )
         except Exception as exc:
             exc._worker_traceback = traceback.format_exc()
             self.finished.emit(exc)
+
+
+class NoWheelDoubleSpinBox(QDoubleSpinBox):
+    """Double spin box that keeps mouse wheel events for the scroll area."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setButtonSymbols(QAbstractSpinBox.NoButtons)
+
+    def wheelEvent(self, event) -> None:  # noqa: N802
+        event.ignore()
+
+
+class NoWheelSpinBox(QSpinBox):
+    """Integer spin box that keeps mouse wheel events for the scroll area."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setButtonSymbols(QAbstractSpinBox.NoButtons)
+
+    def wheelEvent(self, event) -> None:  # noqa: N802
+        event.ignore()
+
+
+class NoWheelComboBox(QComboBox):
+    """Combo box that does not change selection on mouse wheel."""
+
+    def wheelEvent(self, event) -> None:  # noqa: N802
+        event.ignore()
 
 
 class ParameterPanel(QWidget):
     """Grouped parameter controls for ALB GUI input."""
 
     changed = Signal()
+    _DISPLAY_SCALES = {
+        ("bearing", "c"): 1e6,
+        ("dynamic", "a"): 1e6,
+        ("dynamic", "b"): 1e6,
+        ("dynamic", "a0"): 1e6,
+        ("dynamic", "b0"): 1e6,
+    }
 
     def __init__(self, config: dict, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -183,7 +236,7 @@ class ParameterPanel(QWidget):
         step: float = 1.0,
         suffix: str = "",
     ) -> None:
-        widget = QDoubleSpinBox()
+        widget = NoWheelDoubleSpinBox()
         widget.setRange(minimum, maximum)
         widget.setDecimals(decimals)
         widget.setSingleStep(step)
@@ -202,7 +255,7 @@ class ParameterPanel(QWidget):
         minimum: int = 0,
         maximum: int = 100000,
     ) -> None:
-        widget = QSpinBox()
+        widget = NoWheelSpinBox()
         widget.setRange(minimum, maximum)
         widget.valueChanged.connect(self._emit_changed)
         form.addRow(label, widget)
@@ -224,7 +277,7 @@ class ParameterPanel(QWidget):
         label: str,
         values: list[str],
     ) -> None:
-        widget = QComboBox()
+        widget = NoWheelComboBox()
         widget.addItems(values)
         widget.currentTextChanged.connect(self._emit_changed)
         form.addRow(label, widget)
@@ -237,7 +290,7 @@ class ParameterPanel(QWidget):
         self._add_double(form, "bearing", "angle", "偏位角", minimum=-360, maximum=360, decimals=3, suffix=" deg")
         self._add_double(form, "bearing", "r", "半径 r", minimum=1e-6, maximum=10, decimals=6, suffix=" m")
         self._add_double(form, "bearing", "l", "长度 l", minimum=1e-6, maximum=10, decimals=6, suffix=" m")
-        self._add_double(form, "bearing", "c", "间隙 c", minimum=1e-9, maximum=0.01, decimals=9, suffix=" m")
+        self._add_double(form, "bearing", "c", "间隙 c", minimum=0.001, maximum=10000, decimals=6, suffix=" um")
         self._add_double(form, "bearing", "lx", "周向长度", minimum=1, maximum=360, decimals=3, suffix=" deg")
         self._add_double(form, "bearing", "lz", "轴向长度", minimum=0.01, maximum=100, decimals=4)
         self._add_int(form, "bearing", "nx", "周向网格 nx", minimum=2, maximum=1000)
@@ -277,7 +330,6 @@ class ParameterPanel(QWidget):
 
     def _add_pid_group(self, layout: QVBoxLayout) -> None:
         form = self._add_group(layout, "PID 控制参数")
-        self._add_double(form, "pid", "dt", "控制步长", minimum=1e-9, maximum=1, decimals=9, suffix=" s")
         self._add_double(form, "pid", "kp", "Kp", minimum=0, maximum=1000, decimals=6)
         self._add_double(form, "pid", "ki", "Ki", minimum=0, maximum=1000, decimals=6)
         self._add_double(form, "pid", "kd", "Kd", minimum=0, maximum=1000, decimals=6)
@@ -289,10 +341,10 @@ class ParameterPanel(QWidget):
 
     def _add_dynamic_group(self, layout: QVBoxLayout) -> None:
         form = self._add_group(layout, "动特性轨迹")
-        self._add_double(form, "dynamic", "a", "x 幅值", minimum=0, maximum=1, decimals=9, suffix=" m")
-        self._add_double(form, "dynamic", "b", "y 幅值", minimum=0, maximum=1, decimals=9, suffix=" m")
-        self._add_double(form, "dynamic", "a0", "x 原点", minimum=-1, maximum=1, decimals=9, suffix=" m")
-        self._add_double(form, "dynamic", "b0", "y 原点", minimum=-1, maximum=1, decimals=9, suffix=" m")
+        self._add_double(form, "dynamic", "a", "x 幅值", minimum=0, maximum=1000000, decimals=6, suffix=" um")
+        self._add_double(form, "dynamic", "b", "y 幅值", minimum=0, maximum=1000000, decimals=6, suffix=" um")
+        self._add_double(form, "dynamic", "a0", "x 原点", minimum=-1000000, maximum=1000000, decimals=6, suffix=" um")
+        self._add_double(form, "dynamic", "b0", "y 原点", minimum=-1000000, maximum=1000000, decimals=6, suffix=" um")
         self._add_double(form, "dynamic", "f0", "轨迹相位", minimum=-360, maximum=360, decimals=6)
         self._add_int(form, "dynamic", "n", "轨迹圈数", minimum=1, maximum=10000)
         self._add_int(form, "dynamic", "pt", "每圈点数", minimum=4, maximum=100000)
@@ -315,6 +367,16 @@ class ParameterPanel(QWidget):
             return
         config.setdefault(section, {})[key] = value
 
+    def _to_widget_value(self, section: str, key: str, value: Any) -> float:
+        """Convert stored SI values to the unit displayed by the widget."""
+
+        return float(value) * self._DISPLAY_SCALES.get((section, key), 1.0)
+
+    def _from_widget_value(self, section: str, key: str, value: float) -> float:
+        """Convert displayed widget values back to stored SI values."""
+
+        return float(value) / self._DISPLAY_SCALES.get((section, key), 1.0)
+
     def set_config(self, config: dict) -> None:
         self._loading = True
         self._config = copy.deepcopy(config)
@@ -325,7 +387,7 @@ class ParameterPanel(QWidget):
                     continue
                 if isinstance(widget, QDoubleSpinBox):
                     if np.isfinite(float(value)):
-                        widget.setValue(float(value))
+                        widget.setValue(self._to_widget_value(section, key, value))
                 elif isinstance(widget, QSpinBox):
                     widget.setValue(int(value))
                 elif isinstance(widget, QCheckBox):
@@ -342,7 +404,7 @@ class ParameterPanel(QWidget):
         data = copy.deepcopy(self._config)
         for (section, key), widget in self._widgets.items():
             if isinstance(widget, QDoubleSpinBox):
-                value: Any = widget.value()
+                value: Any = self._from_widget_value(section, key, widget.value())
             elif isinstance(widget, QSpinBox):
                 value = widget.value()
             elif isinstance(widget, QCheckBox):
@@ -355,6 +417,7 @@ class ParameterPanel(QWidget):
         dyn = data.setdefault("dynamic", {})
         dyn["freq"] = data.get("bearing", {}).get("freq", dyn.get("freq", 50.0))
         dyn["vf"] = data.get("boundary", {}).get("vf", dyn.get("vf", 1.0))
+        data.setdefault("pid", {}).pop("dt", None)
         return data
 
 
@@ -463,6 +526,11 @@ class AlbGuiWindow(QMainWindow):
         self._dynamic_button = QPushButton("运行动特性计算")
         self._dynamic_button.clicked.connect(self._run_dynamic)
         btns.addWidget(self._dynamic_button)
+        self._dynamic_progress = QProgressBar()
+        self._dynamic_progress.setRange(0, 100)
+        self._dynamic_progress.setValue(0)
+        self._dynamic_progress.setFormat("待运行")
+        btns.addWidget(self._dynamic_progress, 1)
         btns.addStretch(1)
         layout.addLayout(btns)
 
@@ -514,10 +582,17 @@ class AlbGuiWindow(QMainWindow):
     def _run_dynamic(self) -> None:
         self._save_current_config()
         self._set_busy(True)
+        self._on_dynamic_progress(0, "初始化动特性模型")
         self._status.showMessage("正在计算动特性...")
         self._worker = ComputeWorker(run_dynamic_calculation, clone_config(self._config))
+        self._worker.progress.connect(self._on_dynamic_progress)
         self._worker.finished.connect(self._on_dynamic_done)
         self._worker.start()
+
+    def _on_dynamic_progress(self, value: int, message: str) -> None:
+        self._dynamic_progress.setValue(max(0, min(100, int(value))))
+        self._dynamic_progress.setFormat(f"{self._dynamic_progress.value()}%  {message}")
+        self._status.showMessage(message)
 
     def _handle_error(self, title: str, result: object) -> bool:
         if not isinstance(result, Exception):
@@ -525,6 +600,8 @@ class AlbGuiWindow(QMainWindow):
         tb = getattr(result, "_worker_traceback", "")
         QMessageBox.critical(self, title, f"{result}\n\n{tb}")
         self._status.showMessage(f"{title}: {result}")
+        if title.startswith("动特性"):
+            self._on_dynamic_progress(0, "计算失败")
         self._set_busy(False)
         return True
 
@@ -562,6 +639,7 @@ class AlbGuiWindow(QMainWindow):
             return
         assert isinstance(result, DynamicResult)
         self._set_busy(False)
+        self._on_dynamic_progress(100, "动特性计算完成")
         k = result.stiffness
         c = result.damping
         self._dynamic_text.setText(

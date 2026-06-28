@@ -766,6 +766,7 @@ class StaticPosition:
         i = 0
         current_eval = None
         state_matches_current_eval = False
+        last_jacobian = None
         if hasattr(self.bearing, "init"):
             self.bearing.init()
         LOGGER.info("Static position iteration started: wx=%s, wy=%s", wx, wy)
@@ -800,34 +801,56 @@ class StaticPosition:
                 break
             # dex = (wx + force[0]) / (self.kx * (1 + abs(ex)))
             # dey = (wy + force[1]) / (self.ky * (1 + abs(ey)))
+            res = np.array([wx + force[0], wy + force[1]])
+            # Build the force Jacobian with forward finite differences. If a
+            # perturbed probe's inner (coupled film) solve fails to converge,
+            # reuse the most recent successfully built Jacobian ("frozen
+            # Jacobian") and continue the Newton step instead of aborting the
+            # whole static iteration. Only when no Jacobian has been built yet
+            # does a non-converged probe stop the iteration.
+            jacobian_built = True
             eval_dx = self._evaluate_static_force(
                 wx, wy, ex + delta, ey, nodim=nodim
             )
             state_matches_current_eval = False
             if not eval_dx["inner_converged"]:
-                stop_reason = "inner_not_converged_dx"
+                jacobian_built = False
+            eval_dy = None
+            if jacobian_built:
+                eval_dy = self._evaluate_static_force(
+                    wx, wy, ex, ey + delta, nodim=nodim
+                )
+                state_matches_current_eval = False
+                if not eval_dy["inner_converged"]:
+                    jacobian_built = False
+            if jacobian_built:
+                force_dx = eval_dx["force"]
+                force_dy = eval_dy["force"]
+                dfx_dex = (force_dx[0] - force[0]) / delta
+                dfy_dex = (force_dx[1] - force[1]) / delta
+                dfx_dey = (force_dy[0] - force[0]) / delta
+                dfy_dey = (force_dy[1] - force[1]) / delta
+                J = np.array([[dfx_dex, dfx_dey], [dfy_dex, dfy_dey]])
+                last_jacobian = J
+            elif last_jacobian is not None:
+                # Frozen Jacobian: a probe inner solve did not converge, so
+                # keep the previous Jacobian and continue the Newton step.
+                J = last_jacobian
                 LOGGER.warning(
-                    "Static position stopped because the dx inner solve did not converge"
+                    "Static position reusing frozen Jacobian because a perturbed "
+                    "probe inner solve did not converge"
+                )
+            else:
+                stop_reason = (
+                    "inner_not_converged_dx"
+                    if not eval_dx["inner_converged"]
+                    else "inner_not_converged_dy"
+                )
+                LOGGER.warning(
+                    "Static position stopped because a probe inner solve did not "
+                    "converge and no previous Jacobian is available"
                 )
                 break
-            force_dx = eval_dx["force"]
-            dfx_dex = (force_dx[0] - force[0]) / delta
-            dfy_dex = (force_dx[1] - force[1]) / delta
-            eval_dy = self._evaluate_static_force(
-                wx, wy, ex, ey + delta, nodim=nodim
-            )
-            state_matches_current_eval = False
-            if not eval_dy["inner_converged"]:
-                stop_reason = "inner_not_converged_dy"
-                LOGGER.warning(
-                    "Static position stopped because the dy inner solve did not converge"
-                )
-                break
-            force_dy = eval_dy["force"]
-            dfx_dey = (force_dy[0] - force[0]) / delta
-            dfy_dey = (force_dy[1] - force[1]) / delta
-            J = np.array([[dfx_dex, dfx_dey], [dfy_dex, dfy_dey]])
-            res = np.array([wx + force[0], wy + force[1]])
             try:
                 delta_e = np.linalg.solve(J, -res)
             except np.linalg.LinAlgError:

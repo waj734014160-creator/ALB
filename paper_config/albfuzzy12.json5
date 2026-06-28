@@ -1,0 +1,66 @@
+{
+  share_name: [
+    // Shared hydro-bearing parameters.
+    'e',
+    'angle',
+    'lx',
+    'lz',
+    'nx',
+    'nz',
+    'miu',
+    'c',
+    'r',
+    'l',
+    'ps',
+    'rho',
+    'reynold',
+    'coe',
+    'p_set',
+    'error_set',
+    'max_iter',
+    'damp',
+    'vib',
+    'dxt',
+    'dyt',
+    'vf',
+    'iter_method',
+    'path',
+
+    // Shared recess geometry.
+    'xrange',
+    'zrange',
+    'h_tank',
+
+    // Shared ALB actuator layout.
+    'gxy',
+    'gxyt',
+
+    // Shared servo selection and Moog parameters.
+    'servo',
+    'dt',
+    'delay',
+    'tw',
+    'zeta',
+    'tp3',
+
+    // Shared excitation, output, and sensor settings.
+    'freq',
+    'save_p',
+    'save_h',
+    'sensor_angles',
+    'bias',
+
+    // Shared fuzzy-PID settings.
+    'error_range',
+    'delta_error_range',
+    'kp_range',
+    'ki_range',
+    'kd_range',
+    'rule_path',
+
+    // Shared thermal-effect placeholders for ALB modes.
+    'thermal_enabled',
+    'thermal',
+  ],
+  node_link: 12,
+}

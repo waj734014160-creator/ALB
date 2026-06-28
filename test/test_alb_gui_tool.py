@@ -1,4 +1,6 @@
 # -- coding: utf-8 --
+import contextlib
+import io
 import os
 import tempfile
 import unittest
@@ -12,18 +14,24 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from tools.manual.alb_gui.backend import (
     DynamicResult,
     StaticResult,
+    build_alb_config,
     run_dynamic_calculation,
     run_static_calculation,
 )
 from tools.manual.alb_gui.config_io import (
     DEFAULT_PAPER_CONFIG_DIR,
+    PAPER_CONFIG_DIR_NAME,
     build_flat_alb_config,
     load_paper_gui_config,
     load_runtime_config,
     make_small_test_config,
     save_runtime_config,
 )
-from tools.manual.alb_gui.fields import merge_pad_field
+from tools.manual.alb_gui.fields import (
+    merge_pad_field,
+    pressure_map_from_pads,
+    temperature_map_from_pads,
+)
 
 
 def _paper_config_available():
@@ -64,6 +72,8 @@ class TestAlbGuiConfig(unittest.TestCase):
 
         self.assertIn("PAPER", message.upper())
         self.assertEqual(config["source_config_dir"], str(DEFAULT_PAPER_CONFIG_DIR))
+        self.assertEqual(DEFAULT_PAPER_CONFIG_DIR.name, PAPER_CONFIG_DIR_NAME)
+        self.assertTrue((DEFAULT_PAPER_CONFIG_DIR / "share.json5").is_file())
         self.assertEqual(config["bearing"]["freq"], 50)
         self.assertEqual(config["bearing"]["bias"], 45)
         self.assertIn("miu", config["fluid"])
@@ -71,15 +81,23 @@ class TestAlbGuiConfig(unittest.TestCase):
         self.assertIn("settings", config["thermal"])
         self.assertEqual(config["dynamic"]["n"], 8)
         self.assertEqual(config["dynamic"]["pt"], 500)
+        self.assertNotIn("dt", config["pid"])
 
         flat = build_flat_alb_config(config)
+        derived_dt = 1.0 / (config["bearing"]["freq"] * config["dynamic"]["pt"])
         self.assertEqual(flat["freq"], config["bearing"]["freq"])
+        self.assertAlmostEqual(flat["dt"], derived_dt)
         self.assertEqual(flat["thermal_enabled"], config["thermal"]["enabled"])
         self.assertEqual(flat["thermal"]["t_in"], config["thermal"]["settings"]["t_in"])
+
+        dynamic_flat = build_flat_alb_config(config, dynamic=True)
+        self.assertAlmostEqual(dynamic_flat["dt"], derived_dt)
+        self.assertAlmostEqual(dynamic_flat["thermal"]["dt"], derived_dt)
 
     def test_runtime_config_round_trip_preserves_special_values(self):
         config, _ = load_paper_gui_config()
         config["thermal"]["settings"]["max_delta_t"] = np.inf
+        config.setdefault("pid", {})["dt"] = 123.0
 
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "config.json"
@@ -89,6 +107,24 @@ class TestAlbGuiConfig(unittest.TestCase):
         self.assertEqual(loaded["bearing"]["c"], config["bearing"]["c"])
         self.assertTrue(np.isinf(loaded["thermal"]["settings"]["max_delta_t"]))
         self.assertEqual(loaded["dynamic"]["repeat"], config["dynamic"]["repeat"])
+        self.assertNotIn("dt", loaded["pid"])
+
+    def test_static_flat_config_forces_fixed_journal_control(self):
+        config, _ = load_paper_gui_config()
+        config["pid"].update({"ki": 1.5, "kd": 2.5, "servo": "moog"})
+
+        static_flat = build_flat_alb_config(config, dynamic=False)
+        dynamic_flat = build_flat_alb_config(config, dynamic=True)
+
+        self.assertEqual(static_flat["ki"], 0.0)
+        self.assertEqual(static_flat["kd"], 0.0)
+        self.assertEqual(static_flat["servo"], "static")
+        self.assertEqual(dynamic_flat["ki"], 1.5)
+        self.assertEqual(dynamic_flat["kd"], 2.5)
+        self.assertEqual(dynamic_flat["servo"], "moog")
+        self.assertEqual(config["pid"]["ki"], 1.5)
+        self.assertEqual(config["pid"]["kd"], 2.5)
+        self.assertEqual(config["pid"]["servo"], "moog")
 
 
 class TestAlbGuiFieldMerge(unittest.TestCase):
@@ -141,10 +177,164 @@ class TestAlbGuiBackend(unittest.TestCase):
         self.assertIsNone(result.temperature)
         self.assertEqual(len(result.pad_status), 4)
 
+    def test_static_gui_backend_matches_script_style_result(self):
+        from ALB.alb import alb2_static
+
+        config = make_small_test_config(thermal=False)
+        gui_result = run_static_calculation(config)
+
+        script_model = alb2_static(build_alb_config(config, dynamic=False))
+        script_model.init()
+        bearing = config["bearing"]
+        angle = np.deg2rad(float(bearing["angle"]))
+        uxy = np.array(
+            [
+                float(bearing["e"]) * np.cos(angle),
+                float(bearing["e"]) * np.sin(angle),
+            ],
+            dtype=float,
+        )
+        script_model.input(uxy=uxy, uxyt=np.zeros(2), t=0.0, nodim=True)
+        script_output = script_model.output(nodim=False)
+        script_pads = list(script_model.pads)
+        script_pressure = pressure_map_from_pads(script_pads)
+        script_temperature = temperature_map_from_pads(script_pads)
+
+        np.testing.assert_allclose(gui_result.force, script_output["force"])
+        np.testing.assert_allclose(gui_result.friction, script_output["friction"])
+        np.testing.assert_allclose(
+            gui_result.pressure.values, script_pressure.values
+        )
+        self.assertIsNone(gui_result.temperature)
+        self.assertIsNone(script_temperature)
+
+    def test_parallel_orbit_matches_serial_orbit_nonthermal(self):
+        from ALB.alb import alb2
+        from ALB.orbit import (
+            EllipseTrack,
+            orbitime,
+            test_bearing_orbit,
+            test_bearing_orbit_parallel,
+        )
+
+        config = make_small_test_config(thermal=False)
+        alb_config = build_alb_config(config, dynamic=True)
+        dyn = config["dynamic"]
+        time_iter = orbitime(config["bearing"]["freq"], dyn["n"], dyn["pt"])
+        serial_track = EllipseTrack(
+            a=dyn["a"],
+            b=dyn["b"],
+            freq=config["bearing"]["freq"],
+            a0=dyn["a0"],
+            b0=dyn["b0"],
+            f0=dyn["f0"],
+            vf=config["boundary"]["vf"],
+        )
+        parallel_track = EllipseTrack(
+            a=dyn["a"],
+            b=dyn["b"],
+            freq=config["bearing"]["freq"],
+            a0=dyn["a0"],
+            b0=dyn["b0"],
+            f0=dyn["f0"],
+            vf=config["boundary"]["vf"],
+        )
+        serial_model = alb2(alb_config)
+        parallel_model = alb2(alb_config)
+        serial_model.init()
+        parallel_model.init()
+        progress = []
+
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+            io.StringIO()
+        ):
+            serial = test_bearing_orbit(
+                time_iter,
+                serial_model,
+                serial_track,
+                repeat=dyn["repeat"],
+                pt=dyn["pt"],
+                tr=[dyn["tr_start"], dyn["tr_end"]],
+            )
+            parallel = test_bearing_orbit_parallel(
+                time_iter,
+                parallel_model,
+                parallel_track,
+                repeat=dyn["repeat"],
+                pt=dyn["pt"],
+                tr=[dyn["tr_start"], dyn["tr_end"]],
+                progress_callback=lambda value, message: progress.append(
+                    (value, message)
+                ),
+            )
+
+        np.testing.assert_allclose(
+            parallel["hkc"]["k"], serial["hkc"]["k"], rtol=1e-10, atol=1e-8
+        )
+        np.testing.assert_allclose(
+            parallel["hkc"]["c"], serial["hkc"]["c"], rtol=1e-10, atol=1e-8
+        )
+        values = [value for value, _message in progress]
+        self.assertEqual(values[0], 0)
+        self.assertEqual(values[-1], 100)
+        self.assertEqual(values, sorted(values))
+        self.assertTrue(
+            any("Parallel vortex force calculation" in message for _, message in progress)
+        )
+
+    def test_dynamic_gui_backend_matches_script_style_result(self):
+        from ALB.alb import alb2
+        from ALB.orbit import EllipseTrack, orbitime, test_bearing_orbit
+
+        config = make_small_test_config(thermal=False)
+        gui_result = run_dynamic_calculation(config)
+        dyn = config["dynamic"]
+        freq = float(dyn.get("freq", config["bearing"]["freq"]))
+        time_iter = orbitime(freq, int(dyn["n"]), int(dyn["pt"]))
+        track = EllipseTrack(
+            a=float(dyn["a"]),
+            b=float(dyn["b"]),
+            freq=freq,
+            a0=float(dyn["a0"]),
+            b0=float(dyn["b0"]),
+            f0=float(dyn["f0"]),
+            vf=float(dyn.get("vf", config["boundary"]["vf"])),
+        )
+        script_model = alb2(build_alb_config(config, dynamic=True))
+        script_model.init()
+
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+            io.StringIO()
+        ):
+            script_result = test_bearing_orbit(
+                time_iter,
+                script_model,
+                track,
+                repeat=int(dyn["repeat"]),
+                pt=int(dyn["pt"]),
+                tr=[float(dyn["tr_start"]), float(dyn["tr_end"])],
+            )
+
+        script_bft = script_result["bft"].bearing_forces
+        np.testing.assert_allclose(gui_result.stiffness, script_result["hkc"]["k"])
+        np.testing.assert_allclose(gui_result.damping, script_result["hkc"]["c"])
+        np.testing.assert_allclose(
+            gui_result.trajectory, script_bft[["ux", "uy"]].to_numpy(dtype=float)
+        )
+        np.testing.assert_allclose(
+            gui_result.force_track, script_bft[["fx", "fy"]].to_numpy(dtype=float)
+        )
+        np.testing.assert_allclose(
+            gui_result.time, script_bft["t"].to_numpy(dtype=float)
+        )
+
     def test_dynamic_smoke_nonthermal(self):
         config = make_small_test_config(thermal=False)
+        progress = []
 
-        result = run_dynamic_calculation(config)
+        result = run_dynamic_calculation(
+            config, progress_callback=lambda value, message: progress.append((value, message))
+        )
 
         self.assertIsInstance(result, DynamicResult)
         self.assertEqual(result.stiffness.shape, (2, 2))
@@ -153,6 +343,9 @@ class TestAlbGuiBackend(unittest.TestCase):
         self.assertTrue(np.isfinite(result.damping).all())
         self.assertEqual(result.trajectory.shape[1], 2)
         self.assertEqual(result.force_track.shape[1], 2)
+        self.assertEqual(progress[0][0], 0)
+        self.assertEqual(progress[-1][0], 100)
+        self.assertTrue(any("正反涡动并行计算" in message for _, message in progress))
 
 
 @unittest.skipUnless(_paper_config_available(), "paper config directory is unavailable")
@@ -187,6 +380,7 @@ class TestAlbGuiWindow(unittest.TestCase):
         panel = ParameterPanel(config)
         emissions = []
         panel.changed.connect(lambda: emissions.append("changed"))
+        self.assertNotIn(("pid", "dt"), panel._widgets)
 
         freq_widget = panel._widgets[("bearing", "freq")]
         freq_widget.setValue(77.0)
@@ -195,6 +389,7 @@ class TestAlbGuiWindow(unittest.TestCase):
         updated = panel.config()
         self.assertEqual(updated["bearing"]["freq"], 77.0)
         self.assertEqual(updated["dynamic"]["freq"], 77.0)
+        self.assertNotIn("dt", updated["pid"])
         self.assertTrue(emissions)
 
         emissions.clear()
@@ -202,6 +397,88 @@ class TestAlbGuiWindow(unittest.TestCase):
         app.processEvents()
         self.assertEqual(emissions, [])
         panel.close()
+
+    def test_parameter_panel_displays_clearance_and_track_in_micrometers(self):
+        app = _qt_app()
+        if app is None:
+            self.skipTest("PySide6 is not installed")
+
+        from tools.manual.alb_gui.window import ParameterPanel
+
+        config = make_small_test_config(thermal=False)
+        config["bearing"]["c"] = 80e-6
+        config["dynamic"].update(
+            {"a": 2e-6, "b": 3e-6, "a0": -4e-6, "b0": 5e-6}
+        )
+        panel = ParameterPanel(config)
+
+        c_widget = panel._widgets[("bearing", "c")]
+        a_widget = panel._widgets[("dynamic", "a")]
+        b_widget = panel._widgets[("dynamic", "b")]
+        a0_widget = panel._widgets[("dynamic", "a0")]
+        b0_widget = panel._widgets[("dynamic", "b0")]
+
+        self.assertEqual(c_widget.suffix(), " um")
+        self.assertEqual(a_widget.suffix(), " um")
+        self.assertAlmostEqual(c_widget.value(), 80.0)
+        self.assertAlmostEqual(a_widget.value(), 2.0)
+        self.assertAlmostEqual(b_widget.value(), 3.0)
+        self.assertAlmostEqual(a0_widget.value(), -4.0)
+        self.assertAlmostEqual(b0_widget.value(), 5.0)
+
+        c_widget.setValue(125.0)
+        a_widget.setValue(6.5)
+        b_widget.setValue(7.5)
+        a0_widget.setValue(-8.5)
+        b0_widget.setValue(9.5)
+        updated = panel.config()
+
+        self.assertAlmostEqual(updated["bearing"]["c"], 125e-6)
+        self.assertAlmostEqual(updated["dynamic"]["a"], 6.5e-6)
+        self.assertAlmostEqual(updated["dynamic"]["b"], 7.5e-6)
+        self.assertAlmostEqual(updated["dynamic"]["a0"], -8.5e-6)
+        self.assertAlmostEqual(updated["dynamic"]["b0"], 9.5e-6)
+        panel.close()
+        app.processEvents()
+
+    def test_parameter_panel_wheel_does_not_change_input_values(self):
+        app = _qt_app()
+        if app is None:
+            self.skipTest("PySide6 is not installed")
+
+        from PySide6.QtWidgets import QAbstractSpinBox
+
+        from tools.manual.alb_gui.window import ParameterPanel
+
+        class _WheelEvent:
+            def __init__(self):
+                self.ignored = False
+
+            def ignore(self):
+                self.ignored = True
+
+        config = make_small_test_config(thermal=False)
+        panel = ParameterPanel(config)
+        double_widget = panel._widgets[("bearing", "freq")]
+        int_widget = panel._widgets[("dynamic", "pt")]
+        combo_widget = panel._widgets[("boundary", "iter_method")]
+
+        double_value = double_widget.value()
+        int_value = int_widget.value()
+        combo_index = combo_widget.currentIndex()
+
+        for widget in (double_widget, int_widget, combo_widget):
+            event = _WheelEvent()
+            widget.wheelEvent(event)
+            self.assertTrue(event.ignored)
+
+        self.assertEqual(double_widget.value(), double_value)
+        self.assertEqual(int_widget.value(), int_value)
+        self.assertEqual(combo_widget.currentIndex(), combo_index)
+        self.assertEqual(double_widget.buttonSymbols(), QAbstractSpinBox.NoButtons)
+        self.assertEqual(int_widget.buttonSymbols(), QAbstractSpinBox.NoButtons)
+        panel.close()
+        app.processEvents()
 
     def test_parameter_panel_updates_nested_thermal_settings(self):
         app = _qt_app()
@@ -351,6 +628,25 @@ class TestAlbGuiWindow(unittest.TestCase):
         self.assertEqual(len(window._fig_trajectory.axes[0].lines), 3)
         self.assertEqual(len(window._fig_force.axes[0].lines), 3)
         self.assertEqual(window._status.currentMessage(), "动特性计算完成")
+        self.assertEqual(window._dynamic_progress.value(), 100)
+        self.assertIn("动特性计算完成", window._dynamic_progress.text())
+        window.close()
+        app.processEvents()
+
+    def test_window_dynamic_progress_updates_progress_bar(self):
+        app = _qt_app()
+        if app is None:
+            self.skipTest("PySide6 is not installed")
+
+        from tools.manual.alb_gui.window import AlbGuiWindow
+
+        window = AlbGuiWindow(config=make_small_test_config(thermal=False))
+
+        window._on_dynamic_progress(42, "正向涡动轨迹 4/10")
+
+        self.assertEqual(window._dynamic_progress.value(), 42)
+        self.assertIn("正向涡动轨迹", window._dynamic_progress.text())
+        self.assertEqual(window._status.currentMessage(), "正向涡动轨迹 4/10")
         window.close()
         app.processEvents()
 

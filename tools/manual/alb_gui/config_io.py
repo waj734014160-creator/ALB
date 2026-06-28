@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, Tuple
 
@@ -13,9 +14,18 @@ import numpy as np
 from ALB.tool import read_json5_with_share
 
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_PAPER_CONFIG_DIR = Path("F:/BaiduSyncdisk/博士论文/PAPER_WORK/task/PAPER/config")
-FALLBACK_PAPER_CONFIG_DIR = Path("G:/ALB_PROJECTS/PARAM_SCAN/task/PAPER/config")
+def _app_root() -> Path:
+    """Return the writable application root for source and frozen runs."""
+
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parents[3]
+
+
+REPO_ROOT = _app_root()
+PAPER_CONFIG_DIR_NAME = "paper_config"
+DEFAULT_PAPER_CONFIG_DIR = REPO_ROOT / PAPER_CONFIG_DIR_NAME
+FALLBACK_PAPER_CONFIG_DIR = DEFAULT_PAPER_CONFIG_DIR
 RUNTIME_CONFIG_PATH = REPO_ROOT / "outputs" / "alb_gui" / "config.json"
 
 PAPER_CONFIG_FILES = {
@@ -25,6 +35,7 @@ PAPER_CONFIG_FILES = {
     "time": "time_iter.json5",
     "recognition": "tbo.json5",
 }
+PAPER_SHARED_CONFIG_FILE = "share.json5"
 
 
 class GuiConfigError(RuntimeError):
@@ -32,7 +43,7 @@ class GuiConfigError(RuntimeError):
 
 
 def _required_files() -> Iterable[str]:
-    return PAPER_CONFIG_FILES.values()
+    return [*PAPER_CONFIG_FILES.values(), PAPER_SHARED_CONFIG_FILE]
 
 
 def _missing_files(config_dir: Path) -> list[str]:
@@ -49,8 +60,7 @@ def resolve_paper_config_dir(
         candidates = [("selected", Path(config_dir))]
     else:
         candidates = [
-            ("default", DEFAULT_PAPER_CONFIG_DIR),
-            ("fallback", FALLBACK_PAPER_CONFIG_DIR),
+            ("bundled", DEFAULT_PAPER_CONFIG_DIR),
         ]
 
     failures: list[str] = []
@@ -180,7 +190,6 @@ def paper_configs_to_gui_config(configs: Dict[str, dict], config_dir: Path) -> d
             **_copy_section(
                 alb,
                 [
-                    "dt",
                     "kp",
                     "ki",
                     "kd",
@@ -226,8 +235,8 @@ def load_paper_gui_config(config_dir: Path | str | None = None) -> Tuple[dict, s
     resolved_dir, source_label, failures = resolve_paper_config_dir(config_dir)
     configs = _read_paper_files(resolved_dir)
     gui_config = paper_configs_to_gui_config(configs, resolved_dir)
-    if source_label == "fallback":
-        message = f"Loaded fallback paper config: {resolved_dir}"
+    if source_label == "bundled":
+        message = f"Loaded bundled paper config: {resolved_dir}"
     elif source_label == "selected":
         message = f"Loaded selected paper config: {resolved_dir}"
     else:
@@ -241,7 +250,9 @@ def load_runtime_config(path: Path | str = RUNTIME_CONFIG_PATH) -> dict:
     """Load the persisted GUI runtime config."""
 
     data = json.loads(Path(path).read_text(encoding="utf-8"))
-    return _restore_special_values(data)
+    data = _restore_special_values(data)
+    data.get("pid", {}).pop("dt", None)
+    return data
 
 
 def save_runtime_config(
@@ -283,15 +294,26 @@ def build_flat_alb_config(config: dict, *, dynamic: bool = False) -> dict:
     for section in ("bearing", "fluid", "boundary", "pid"):
         flat.update(copy.deepcopy(config.get(section, {})))
 
+    if not dynamic:
+        # Static calculations evaluate a fixed journal position, so integral and
+        # derivative control must be disabled and the valve must be steady.
+        flat["ki"] = 0.0
+        flat["kd"] = 0.0
+        flat["servo"] = "static"
+
+    dyn = config.get("dynamic", {})
+    freq = float(dyn.get("freq", flat.get("freq", 50.0)))
+    pt = int(dyn.get("pt", 20))
+    if freq <= 0.0 or pt <= 0:
+        raise ValueError("dynamic freq and pt must be > 0 to derive dt")
+    derived_dt = 1.0 / (freq * pt)
+    flat["dt"] = derived_dt
+
     thermal = copy.deepcopy(config.get("thermal", {}))
     flat["thermal_enabled"] = bool(thermal.get("enabled", False))
     flat["thermal"] = copy.deepcopy(thermal.get("settings", {}))
     if dynamic and flat["thermal_enabled"]:
-        dyn = config.get("dynamic", {})
-        freq = float(dyn.get("freq", flat.get("freq", 50.0)))
-        pt = int(dyn.get("pt", 20))
-        if pt > 0 and freq > 0:
-            flat["thermal"]["dt"] = 1.0 / (freq * pt)
+        flat["thermal"]["dt"] = derived_dt
         flat["thermal"]["transient_enabled"] = True
 
     dyn_freq = config.get("dynamic", {}).get("freq")
@@ -356,4 +378,3 @@ def make_small_test_config(*, thermal: bool = False) -> dict:
         }
     )
     return cfg
-

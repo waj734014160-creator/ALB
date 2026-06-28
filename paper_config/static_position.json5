@@ -1,0 +1,7 @@
+{
+  iter_num: 80,
+  kx: 3,
+  ky: 7,
+  error_set: 0.001,
+  damp: 0.2,
+}

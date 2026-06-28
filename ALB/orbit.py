@@ -1,6 +1,8 @@
 ﻿# coding: utf-8
 
 import copy
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 import pandas as pd
@@ -245,6 +247,117 @@ def test_bearing_orbit(time_iter, bearing, et, **kwargs):
         f0 = np.tile(f0[-n:, :], (repeat, 1))
         f1 = np.tile(f1[-n:, :], (repeat, 1))
     hkc = recognize_kc(time_iter.t_list, freq, u0.T, -f0.T, u1.T, -f1.T, **kwargs)
+    return {"bft": bft0, "ibft": bft1, "hkc": hkc}
+
+
+def _emit_progress(progress_callback, value, message):
+    """Emit bounded integer progress for orbit calculations."""
+
+    if progress_callback is not None:
+        progress_callback(max(0, min(100, int(value))), message)
+
+
+def _calculate_bearing_force_track(bearing, t, u, v, a, progress_callback=None):
+    """Calculate a bearing force track without a tqdm progress bar."""
+
+    bft = BearingForceTrack(bearing, t, u, v, a)
+    for index, (ti, ui, vi, ai) in enumerate(zip(t, u, v, a), start=1):
+        bearing.input(uxy=ui, uxyt=vi, uxytt=ai, t=ti, nodim=False)
+        output = bearing.output()
+        bft.bearing_forces.loc[len(bft.bearing_forces)] = np.hstack(
+            (ti, ui, vi, ai, output["force"])
+        )
+        if progress_callback is not None:
+            progress_callback(index, len(u))
+    return bft
+
+
+def test_bearing_orbit_parallel(time_iter, bearing, et, **kwargs):
+    """
+    Test bearing orbit with parallel forward and reverse vortex force solves.
+
+    This function keeps the same result contract as ``test_bearing_orbit`` while
+    using two independent bearing instances for the forward and reverse
+    trajectories. ``progress_callback`` receives ``(percent, message)`` if
+    provided. ``max_workers`` defaults to 2 and is not forwarded to
+    ``recognize_kc``.
+    """
+
+    progress_callback = kwargs.pop("progress_callback", None)
+    max_workers = max(1, int(kwargs.pop("max_workers", 2)))
+    dt = time_iter.dt
+    freq = et.freq
+    n = kwargs.get("pt", 1 / freq / dt)
+    repeat = kwargs.get("repeat", 0)
+    u0, v0, a0 = et.generate_track(time_iter)
+    u1, v1, a1 = et.generate_itrack(time_iter)
+    bearing1 = copy.deepcopy(bearing)
+
+    _emit_progress(progress_callback, 0, "Initializing parallel orbit calculation")
+    _emit_progress(progress_callback, 5, "Generating forward and reverse tracks")
+
+    progress_total = max(1, len(u0) + len(u1))
+    progress_state = {"completed": 0, "last_value": -1}
+    progress_lock = threading.Lock()
+
+    def _on_force_step(_index, _total):
+        with progress_lock:
+            progress_state["completed"] += 1
+            completed = progress_state["completed"]
+            value = 5 + 90 * completed // progress_total
+            if value != progress_state["last_value"]:
+                _emit_progress(
+                    progress_callback,
+                    value,
+                    f"Parallel vortex force calculation {completed}/{progress_total}",
+                )
+                progress_state["last_value"] = value
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(
+                _calculate_bearing_force_track,
+                bearing,
+                time_iter.t_list,
+                u0,
+                v0,
+                a0,
+                _on_force_step,
+            ): "bft",
+            executor.submit(
+                _calculate_bearing_force_track,
+                bearing1,
+                time_iter.t_list,
+                u1,
+                v1,
+                a1,
+                _on_force_step,
+            ): "ibft",
+        }
+        results = {}
+        for future in as_completed(futures):
+            results[futures[future]] = future.result()
+
+    bft0 = results["bft"]
+    bft1 = results["ibft"]
+    f0 = bft0.bearing_forces[["fx", "fy"]].to_numpy()
+    f1 = bft1.bearing_forces[["fx", "fy"]].to_numpy()
+
+    if not np.isclose(n, np.around(n), atol=0, rtol=1e-10) and repeat != 0:
+        raise ValueError(
+            "n={},The time iterator is not compatible with the frequency".format(n)
+        )
+    else:
+        n = int(np.around(n))
+    if repeat > 0:
+        u0 = np.tile(u0[-n:, :], (repeat, 1))
+        u1 = np.tile(u1[-n:, :], (repeat, 1))
+        f0 = np.tile(f0[-n:, :], (repeat, 1))
+        f1 = np.tile(f1[-n:, :], (repeat, 1))
+
+    _emit_progress(progress_callback, 98, "Identifying stiffness and damping matrices")
+    hkc = recognize_kc(time_iter.t_list, freq, u0.T, -f0.T, u1.T, -f1.T, **kwargs)
+    _emit_progress(progress_callback, 100, "Dynamic orbit calculation complete")
     return {"bft": bft0, "ibft": bft1, "hkc": hkc}
 
 

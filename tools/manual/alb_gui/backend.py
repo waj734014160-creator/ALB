@@ -6,16 +6,18 @@ import contextlib
 import copy
 import io
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 
 from ALB.alb import alb2, alb2_static
 from ALB.config import ALBConfig
-from ALB.orbit import EllipseTrack, orbitime, test_bearing_orbit
+from ALB.orbit import EllipseTrack, orbitime, test_bearing_orbit_parallel
 
 from .config_io import build_flat_alb_config
 from .fields import FieldMap, pressure_map_from_pads, temperature_map_from_pads
+
+ProgressCallback = Callable[[int, str], None]
 
 
 @dataclass
@@ -80,7 +82,9 @@ def build_alb_config(config: dict, *, dynamic: bool = False) -> ALBConfig:
     return ALBConfig.from_dict(build_flat_alb_config(config, dynamic=dynamic))
 
 
-def run_static_calculation(config: dict) -> StaticResult:
+def run_static_calculation(
+    config: dict, progress_callback: ProgressCallback | None = None
+) -> StaticResult:
     """Run a static ALB force and field calculation."""
 
     alb_config = build_alb_config(config, dynamic=False)
@@ -101,9 +105,37 @@ def run_static_calculation(config: dict) -> StaticResult:
     )
 
 
-def run_dynamic_calculation(config: dict) -> DynamicResult:
+def _emit_progress(
+    progress_callback: ProgressCallback | None, value: int, message: str
+) -> None:
+    """Emit bounded integer progress if a callback is available."""
+
+    if progress_callback is not None:
+        progress_callback(max(0, min(100, int(value))), message)
+
+
+def _translate_orbit_progress(message: str) -> str:
+    """Translate package-level orbit progress messages for the GUI."""
+
+    replacements = {
+        "Initializing parallel orbit calculation": "初始化并行动特性模型",
+        "Generating forward and reverse tracks": "生成正向/反向轨迹",
+        "Parallel vortex force calculation": "正反涡动并行计算",
+        "Identifying stiffness and damping matrices": "识别刚度/阻尼矩阵",
+        "Dynamic orbit calculation complete": "动特性计算完成",
+    }
+    for source, target in replacements.items():
+        if message.startswith(source):
+            return message.replace(source, target, 1)
+    return message
+
+
+def run_dynamic_calculation(
+    config: dict, progress_callback: ProgressCallback | None = None
+) -> DynamicResult:
     """Run dynamic orbit identification and return dimensional K/C matrices."""
 
+    _emit_progress(progress_callback, 0, "初始化动特性模型")
     alb_config = build_alb_config(config, dynamic=True)
     model = alb2(alb_config)
     model.init()
@@ -126,8 +158,19 @@ def run_dynamic_calculation(config: dict) -> DynamicResult:
         "pt": points_per_cycle,
         "tr": [float(dyn.get("tr_start", 0.0)), float(dyn.get("tr_end", 1.0))],
     }
+
+    def gui_progress(value: int, message: str) -> None:
+        _emit_progress(progress_callback, value, _translate_orbit_progress(message))
+
     with contextlib.redirect_stdout(io.StringIO()):
-        result = test_bearing_orbit(time_iter, model, track, **kwargs)
+        result = test_bearing_orbit_parallel(
+            time_iter,
+            model,
+            track,
+            progress_callback=gui_progress,
+            max_workers=2,
+            **kwargs,
+        )
     hkc = result["hkc"]
     bft = result["bft"].bearing_forces
     return DynamicResult(
@@ -143,4 +186,3 @@ def clone_config(config: dict) -> dict:
     """Return a deep copy suitable for worker threads."""
 
     return copy.deepcopy(config)
-

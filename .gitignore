@@ -29,3 +29,6 @@ build/
 dist/
 tmp/
 temp/
+
+# Local-only email credential (SMTP password); never commit
+paper_config/email.json5

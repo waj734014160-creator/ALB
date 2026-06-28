@@ -1,0 +1,43 @@
+{
+  share_name: [
+    // Shared hydro-bearing parameters.
+    'e',
+    'angle',
+    'lx',
+    'lz',
+    'nx',
+    'nz',
+    'miu',
+    'c',
+    'r',
+    'l',
+    'ps',
+    'rho',
+    'reynold',
+    'coe',
+    'p_set',
+    'error_set',
+    'max_iter',
+    'damp',
+    'vib',
+    'dxt',
+    'dyt',
+    'vf',
+    'iter_method',
+    'path',
+    'freq',
+    'bias',
+    'save_p',
+    'save_h',
+
+    // Shared Gauss-iteration settings.
+    'ngauss',
+    'gdamp',
+    'err',
+
+    // Shared thermal-effect placeholders for hydro-bearing modes.
+    'thermal_enabled',
+    'thermal',
+  ],
+  node_link: 34,
+}
