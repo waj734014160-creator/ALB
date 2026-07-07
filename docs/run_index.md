@@ -87,6 +87,10 @@ outputs/archive/<run_id>/   # 仅在确认归档后使用
 
 `outputs/archive/<run_id>/` 只在任务完成且用户确认该运行已不活跃或已废弃后使用。对于 active、running、stopped、failed-but-not-archived 的运行，不要在活跃 locator 块中写入未来归档路径，除非归档已经真实存在。
 
+## 论文任务外部路径
+
+论文任务使用外部工作区 `F:/BaiduSyncdisk/博士论文/PAPER_WORK`，不分配 `ALB_PROJECTS` 项目前缀 run number。该工作区的路径族、命名、current-status 和证据保留规则由 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` 维护；本文只保留该外部入口指针。
+
 ## 项目归属
 
 - `SURROGATE_TRAIN` 负责 ALBNN 采样、训练、模型测试、队列配置、运行证据和实验输出。

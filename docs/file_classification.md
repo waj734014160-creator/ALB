@@ -35,6 +35,10 @@
 | 训练数据、模型、图、日志 | `outputs/`, `run/_*`, `test/**/_*`, `*.png`, `*.csv`, `*.json`, `*.pkl`, `*.pth` | 按实验目标/日期归档；默认不删除。 | metadata、scaler、模型权重和 CSV 可能是复现必需资产。 |
 | IDE、缓存和临时文件 | `.idea/`, `.vscode/`, `.pytest_cache/`, `__pycache__/`, `output.txt` | 确认不是刻意跟踪后，标记为清理候选。 | 当前工作区可能有未提交修改；清理必须单独复查。 |
 
+## 外部论文工作区规则入口
+
+`F:/BaiduSyncdisk/博士论文/PAPER_WORK` 是论文任务的外部工作区，不是 `ALB_MAIN` 仓库的一部分；`ALB_MAIN` 只提供包代码、远程 helper 和稳定文档规则。该工作区的脚本、日志、远程配置、图目录、数据目录、图片审计和 current-status 归属规则已迁移到 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md`。整理或审计论文任务文件前，应先读取该文件。
+
 ## ALB 模块图
 
 `ALB/` 目前应继续作为公共包边界。下表只提供职责视图；维护公共接口和包边界时，应优先阅读 `docs/alb_package_overview.md`。

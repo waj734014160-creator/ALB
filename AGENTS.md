@@ -59,9 +59,17 @@
 
 ## Run 与当前状态定位
 
-使用 `docs/run_index.md` 获取工作区级 run 编号和路径规则。广泛搜索项目文件前，先使用拥有项目的 current-status 文档作为 agent 面向活跃工作的首要定位入口。对 SURROGATE_TRAIN 来说，该文件是 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。对论文任务和 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task` 下的活跃计算来说，该文件是 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task/docs/current_task_status.md`。
+使用 `docs/run_index.md` 获取工作区级 run 编号和路径规则。广泛搜索项目文件前，先使用拥有项目的 current-status 文档作为 agent 面向活跃工作的首要定位入口。对 SURROGATE_TRAIN 来说，该文件是 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。对论文任务和 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task` 下的活跃计算来说，该文件是 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md`。
 
 活跃 run 区块应保持足够结构化，能够定位 config、outputs、相关日志指针、远程任务名、最新进度、当前问题和下一步。日志不通过单一全局布局统一管理；详细原始证据保留在 artifacts 中，已完成 run 的耐久历史属于对应的时间顺序 log。
+
+## 文件、路径与命名约束
+
+- `AGENTS.md` 保存稳定代理执行规则；`docs/file_classification.md` 保存文件归属和清理策略；`docs/run_index.md` 保存 run 编号、路径族和 current-status 归属。涉及文件管理时先查这些文档，不要只凭当前打开目录判断。
+- 新建、迁移或复制文件前，先检查目标任务已有命名方式和目录结构。除非用户明确要求重构目录，不要把数据、脚本、日志、note、图件平铺混放在同一目录。
+- `ALB_MAIN` 仓库只放稳定包代码、项目文档、回归参考、测试和工程验证资产。论文任务的计算脚本、任务日志和绘图数据默认不放入 `ALB_MAIN`。
+- `F:/BaiduSyncdisk/博士论文/PAPER_WORK` 的论文任务脚本、远程配置、图目录、数据目录和自查表规则由 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` 维护；进入该工作区前先读该文件。
+- 清理或压缩文档时，只压缩叙事和过时状态；`.csv`、`.json`、`.log`、`.pth`、`.pkl` 等原始证据不因文档整理而删除，删除或归档必须另行确认。
 
 ## ALBNN / 热采样
 

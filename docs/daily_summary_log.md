@@ -472,7 +472,7 @@
   workflow 改为已完成采样 workflow pattern，并刷新后续推荐动作。
 - `ALB_MAIN/docs/remote_workstation_connection.md` 保持稳定手册角色，只记录
   `PAPER_WORK/run/remote` 作为论文远程任务入口；活跃论文任务状态仍属于
-  `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task/docs/current_task_status.md`。
+  `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md`。
 - 本次维护没有删除、移动、归档文件，也没有启动远程任务或训练；旧日志和
   cleanup candidates 仅记录为待人工确认项。
 - `F:/BaiduSyncdisk/博士论文/PAPER_WORK` 不纳入本次 git 提交范围。

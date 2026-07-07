@@ -57,7 +57,7 @@
 
 ## Run 与当前状态定位
 
-使用 `docs/run_index.md` 获取工作区级 run 编号和路径规则。广泛搜索项目文件前，先使用拥有项目的 current-status 文档作为 agent 面向活跃工作的首要定位入口。对 SURROGATE_TRAIN 来说，该文件是 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。对论文任务和 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task` 下的活跃计算来说，该文件是 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task/docs/current_task_status.md`。
+使用 `docs/run_index.md` 获取工作区级 run 编号和路径规则。广泛搜索项目文件前，先使用拥有项目的 current-status 文档作为 agent 面向活跃工作的首要定位入口。对 SURROGATE_TRAIN 来说，该文件是 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。对论文任务和 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task` 下的活跃计算来说，该文件是 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md`。
 
 活跃 run 区块应保持足够结构化，能够定位 config、outputs、相关日志指针、远程任务名、最新进度、当前问题和下一步。日志不通过单一全局布局统一管理；详细原始证据保留在 artifacts 中，已完成 run 的耐久历史属于对应的时间顺序 log。
 

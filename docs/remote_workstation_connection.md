@@ -36,13 +36,13 @@
 - Username: `amd64\amd64-0`
 - Local SSH key: `C:/Users/73401/.ssh/alb_64core_zt_10_182_216_30_ed25519`
 - Candidate remote work directory: `G:/GWJ/20260512-train-thermal`
-- ALB Python environment: `G:/GWJ/envs/ALB/python.exe`
+- ALB Python environment: `E:/Anaconda2023/envs/ALB/python.exe`
 - System Python also available: `E:/Program Files/Python312/python.exe`
 - PowerShell 7: `C:/Program Files/PowerShell/7/pwsh.exe`，2026-05-21 已通过 SSH 与 Task Scheduler smoke test 验证，版本 `7.6.1`。
 - 硬件：AMD Ryzen Threadripper 7980X，64 cores / 128 logical processors，约 256GB RAM。
 - 2026-05-12 已验证：ZeroTier `SSH 22`。
-- 2026-05-12 已验证 ALB 环境依赖：
-  Python 3.10.13，`numpy`、`pandas`、`scipy`、`tqdm`、`matplotlib`、`skfem` 可用。该 ALB 环境未安装 `sklearn` 和 `torch`，因此优先用于 ALB 样本生成；训练需要另行安装包或使用单独训练环境。
+- 2026-07-07 已验证 ALB 环境依赖：
+  Python 3.10.17，`numpy==1.24.3`、`scipy==1.10.1`、`python-control==0.10.2`、`numba==0.58.1`、`scikit-fem==12.0.1`、`pandas==2.1.1`、`sklearn==1.6.1` 和 `torch==2.11.0+cu128` 可用。旧重建环境 `G:/GWJ/envs/ALB` 使用 `python-control==0.9.4`，已在 2026-07-07 确认无进程占用后删除。
 
 ## 连接检查
 
@@ -114,7 +114,7 @@ E:/Anaconda2023/envs/ALB/python.exe F:/BaiduSyncdisk/博士论文/PAPER_WORK/run
 E:/Anaconda2023/envs/ALB/python.exe F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote/remote_job.py launch --config F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote/configs/<paper-job>.json
 ```
 
-`PAPER_WORK/run/remote` 保存论文任务专用的 `configs/`、`scripts/` 和 `payloads/`；通用远程实现仍由 `ALB.remote` 提供，旧 `SURROGATE_TRAIN/run/remote` paper 副本仅作为历史兼容入口。
+论文任务文件归属规则由 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` 维护；通用远程实现仍由 `ALB.remote` 提供，旧 `SURROGATE_TRAIN/run/remote` paper 副本仅作为历史兼容入口。
 
 新建非训练远程任务时，优先使用配置驱动的通用 wrapper：
 
@@ -140,7 +140,7 @@ JSON schema 的职责边界：
 
 非训练长任务如样本生成，应使用 `remote_job.py` 或通用 monitor wrapper，避免临时 SSH 状态片段。它通过短 PowerShell 命令检查 Task Scheduler、PID 或匹配进程、metadata 进度、CSV/log 时间戳和 ETA。
 
-AMD64 上的非训练 solver 任务，如 ALB 样本生成或 finite-difference label evaluation，应通过 `remote_job.py` 和 Task Scheduler 使用 `G:/GWJ/envs/ALB/python.exe`。数值库保持单线程，Python 进程使用进程并行，例如 `pooln=60`：
+AMD64 上的非训练 solver 任务，如 ALB 样本生成或 finite-difference label evaluation，应通过 `remote_job.py` 和 Task Scheduler 使用 `E:/Anaconda2023/envs/ALB/python.exe`。数值库保持单线程，Python 进程使用进程并行，例如 `pooln=60`：
 
 ```text
 OMP_NUM_THREADS=1

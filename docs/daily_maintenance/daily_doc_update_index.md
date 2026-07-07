@@ -51,7 +51,8 @@
 
 | 文件 | 角色 | 检查触发条件 |
 | --- | --- | --- |
-| `ALB_MAIN/AGENTS.md` | 稳定代理策略 | 代理策略、源码修改边界、包概览或远程操作规则变化。 |
+| `ALB_MAIN/AGENTS.md` | 稳定代理策略 | 代理策略、源码修改边界、文件/路径命名约束、包概览或远程操作规则变化。 |
+| `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` | PAPER_WORK 稳定代理策略 | 论文任务脚本、远程配置、图目录、数据目录、current-status 或证据保留规则变化。 |
 | `SURROGATE_TRAIN/AGENTS.md` | 稳定训练项目代理策略 | 本地/远程启动边界、文档频率、训练源码归属或文档角色策略变化。 |
 | `ARTIFACTS_ARCHIVE/docs/file_classification.md` | 归档文件归属策略 | 归档结构或保留策略变化。 |
 | `DATA_POSTPROCESS/docs/file_classification.md` | 后处理文件归属策略 | 后处理/notebook 类别变化。 |
@@ -82,6 +83,8 @@
 | `SURROGATE_TRAIN/outputs/remote_monitor_logs/` | 远程采样 monitor 状态。 |
 | `SURROGATE_TRAIN/outputs/queue_logs/` | 远程训练队列状态和同步日志尾部。 |
 | `ALB_MAIN/docs/run_index.md` | 人类可读的工作区全局 run 编号和路径策略。 |
+| `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` | 论文任务文件管理、路径命名和证据保留规则。 |
+| `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md` | 论文任务当前状态、最新输出路径、检查命令和下一步。 |
 | `SURROGATE_TRAIN/docs/current_runtime_status.md` | 当前活跃 run 定位、进度和下一步状态。 |
 | `ALB_MAIN/docs/daily_maintenance/latest_codex_daily_doc_maintenance_status.txt` | 指向最近一次计划维护的机器可读状态；由审计流程生成，不是维护叙事文档。 |
 | `ALB_MAIN/docs/daily_maintenance/logs/` | 计划维护 stdout/stderr/final-message 证据。 |
