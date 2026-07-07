@@ -632,7 +632,16 @@ class MultiPad(BaseCSystem):
 
 class StaticPosition:
     def __init__(
-        self, bearing, kx=5, ky=5, iter_num=30, error_set=1e-4, damp=0.05, delta=1e-2
+        self,
+        bearing,
+        kx=5,
+        ky=5,
+        iter_num=30,
+        error_set=1e-4,
+        damp=0.05,
+        delta=1e-2,
+        newton_stall_patience=5,
+        stall_rel_tol=0.0,
     ):
         """
         Calculates the static equilibrium position of a bearing.
@@ -642,6 +651,13 @@ class StaticPosition:
         :param iter_num: Maximum number of iterations.
         :param error_set: Convergence error tolerance.
         :param damp: Damping factor for iteration.
+        :param newton_stall_patience: Number of consecutive Newton iterations
+            that fail to improve the best residual before the solver switches
+            permanently to the fixed-stiffness kx/ky fixed-point update. Set to
+            0 (or negative) to disable the switch and always use Newton.
+        :param stall_rel_tol: Minimum relative reduction of the residual that
+            counts as an improvement when detecting Newton stall. 0.0 means any
+            strictly new minimum residual resets the stall counter.
         """
         self.bearing = bearing
         self.data = pd.DataFrame(
@@ -668,6 +684,8 @@ class StaticPosition:
         self.child_nodes = []
         self.damp = damp
         self.delta = delta
+        self.newton_stall_patience = newton_stall_patience
+        self.stall_rel_tol = stall_rel_tol
 
     def _limit_eccentricity_step(
         self,
@@ -767,6 +785,9 @@ class StaticPosition:
         current_eval = None
         state_matches_current_eval = False
         last_jacobian = None
+        best_error = np.inf
+        stall_count = 0
+        use_kxky = False
         if hasattr(self.bearing, "init"):
             self.bearing.init()
         LOGGER.info("Static position iteration started: wx=%s, wy=%s", wx, wy)
@@ -799,64 +820,97 @@ class StaticPosition:
                 finished = True
                 stop_reason = "converged"
                 break
-            # dex = (wx + force[0]) / (self.kx * (1 + abs(ex)))
-            # dey = (wy + force[1]) / (self.ky * (1 + abs(ey)))
+            # Stall detection: track the best residual seen so far. When the
+            # Newton (Jacobian) update fails to improve it for
+            # ``newton_stall_patience`` consecutive iterations, switch
+            # permanently to the simpler fixed-stiffness kx/ky fixed-point
+            # update. The finite-difference Jacobian can become ill-conditioned
+            # or oscillate on hard cases; the kx/ky update is slower but more
+            # robust and needs no probe solves.
+            if error < best_error * (1.0 - self.stall_rel_tol):
+                best_error = error
+                stall_count = 0
+            else:
+                stall_count += 1
+            if (
+                not use_kxky
+                and self.newton_stall_patience > 0
+                and stall_count >= self.newton_stall_patience
+            ):
+                use_kxky = True
+                LOGGER.warning(
+                    "Static position switching to kx/ky fixed-point update after "
+                    "%d non-improving Newton iterations (best error=%.3e)",
+                    stall_count,
+                    best_error,
+                )
             res = np.array([wx + force[0], wy + force[1]])
-            # Build the force Jacobian with forward finite differences. If a
-            # perturbed probe's inner (coupled film) solve fails to converge,
-            # reuse the most recent successfully built Jacobian ("frozen
-            # Jacobian") and continue the Newton step instead of aborting the
-            # whole static iteration. Only when no Jacobian has been built yet
-            # does a non-converged probe stop the iteration.
-            jacobian_built = True
-            eval_dx = self._evaluate_static_force(
-                wx, wy, ex + delta, ey, nodim=nodim
-            )
-            state_matches_current_eval = False
-            if not eval_dx["inner_converged"]:
-                jacobian_built = False
-            eval_dy = None
-            if jacobian_built:
-                eval_dy = self._evaluate_static_force(
-                    wx, wy, ex, ey + delta, nodim=nodim
+            if use_kxky:
+                # Fixed-stiffness kx/ky fixed-point update (previously the
+                # commented-out method): the displacement increment is the load
+                # residual scaled by the configured stiffness and (1 + |e|). No
+                # Jacobian probe solves are needed, so the inner film model is
+                # evaluated only once per iteration at the current point.
+                dex = res[0] / (self.kx * (1.0 + abs(ex)))
+                dey = res[1] / (self.ky * (1.0 + abs(ey)))
+            else:
+                # Build the force Jacobian with forward finite differences. If a
+                # perturbed probe's inner (coupled film) solve fails to converge,
+                # reuse the most recent successfully built Jacobian ("frozen
+                # Jacobian") and continue the Newton step instead of aborting the
+                # whole static iteration. Only when no Jacobian has been built yet
+                # does a non-converged probe stop the iteration.
+                jacobian_built = True
+                eval_dx = self._evaluate_static_force(
+                    wx, wy, ex + delta, ey, nodim=nodim
                 )
                 state_matches_current_eval = False
-                if not eval_dy["inner_converged"]:
+                if not eval_dx["inner_converged"]:
                     jacobian_built = False
-            if jacobian_built:
-                force_dx = eval_dx["force"]
-                force_dy = eval_dy["force"]
-                dfx_dex = (force_dx[0] - force[0]) / delta
-                dfy_dex = (force_dx[1] - force[1]) / delta
-                dfx_dey = (force_dy[0] - force[0]) / delta
-                dfy_dey = (force_dy[1] - force[1]) / delta
-                J = np.array([[dfx_dex, dfx_dey], [dfy_dex, dfy_dey]])
-                last_jacobian = J
-            elif last_jacobian is not None:
-                # Frozen Jacobian: a probe inner solve did not converge, so
-                # keep the previous Jacobian and continue the Newton step.
-                J = last_jacobian
-                LOGGER.warning(
-                    "Static position reusing frozen Jacobian because a perturbed "
-                    "probe inner solve did not converge"
-                )
-            else:
-                stop_reason = (
-                    "inner_not_converged_dx"
-                    if not eval_dx["inner_converged"]
-                    else "inner_not_converged_dy"
-                )
-                LOGGER.warning(
-                    "Static position stopped because a probe inner solve did not "
-                    "converge and no previous Jacobian is available"
-                )
-                break
-            try:
-                delta_e = np.linalg.solve(J, -res)
-            except np.linalg.LinAlgError:
-                LOGGER.warning("Jacobian is singular, fallback to default stiffness")
-                delta_e = -res / np.array([self.kx, self.ky])
-            dex, dey = delta_e * self.damp
+                eval_dy = None
+                if jacobian_built:
+                    eval_dy = self._evaluate_static_force(
+                        wx, wy, ex, ey + delta, nodim=nodim
+                    )
+                    state_matches_current_eval = False
+                    if not eval_dy["inner_converged"]:
+                        jacobian_built = False
+                if jacobian_built:
+                    force_dx = eval_dx["force"]
+                    force_dy = eval_dy["force"]
+                    dfx_dex = (force_dx[0] - force[0]) / delta
+                    dfy_dex = (force_dx[1] - force[1]) / delta
+                    dfx_dey = (force_dy[0] - force[0]) / delta
+                    dfy_dey = (force_dy[1] - force[1]) / delta
+                    J = np.array([[dfx_dex, dfx_dey], [dfy_dex, dfy_dey]])
+                    last_jacobian = J
+                elif last_jacobian is not None:
+                    # Frozen Jacobian: a probe inner solve did not converge, so
+                    # keep the previous Jacobian and continue the Newton step.
+                    J = last_jacobian
+                    LOGGER.warning(
+                        "Static position reusing frozen Jacobian because a perturbed "
+                        "probe inner solve did not converge"
+                    )
+                else:
+                    stop_reason = (
+                        "inner_not_converged_dx"
+                        if not eval_dx["inner_converged"]
+                        else "inner_not_converged_dy"
+                    )
+                    LOGGER.warning(
+                        "Static position stopped because a probe inner solve did not "
+                        "converge and no previous Jacobian is available"
+                    )
+                    break
+                try:
+                    delta_e = np.linalg.solve(J, -res)
+                except np.linalg.LinAlgError:
+                    LOGGER.warning(
+                        "Jacobian is singular, fallback to default stiffness"
+                    )
+                    delta_e = -res / np.array([self.kx, self.ky])
+                dex, dey = delta_e * self.damp
             ex, ey, _ = self._limit_eccentricity_step(ex, ey, dex, dey)
             state_matches_current_eval = False
             # print("Current iteration residual is: {}".format(error))

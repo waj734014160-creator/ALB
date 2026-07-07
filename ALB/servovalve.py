@@ -128,6 +128,11 @@ class ServoValve2(BaseValve):
 #         self._results = pd.concat([self._results, new_data], ignore_index=True)
 
 
+MOOG_2ND_NATURAL_FREQ_HZ = 166.0
+MOOG_2ND_TW = 9.587647174210562e-4
+MOOG_2ND_ZETA = 0.7
+
+
 def moog_servovalve(dt, delay=0, tw=1.5059e-8, zeta=0.0039795, tp3=0.0017924):
     """
     moog servovalve model with optional delay. If delay is zero, returns a standard second-order system. If delay is greater than zero, includes a Pade approximation of the delay in the transfer function.
@@ -143,6 +148,29 @@ def moog_servovalve(dt, delay=0, tw=1.5059e-8, zeta=0.0039795, tp3=0.0017924):
         return sv
     else:
         return moog_servovalve_with_delay(dt, delay, tw, zeta, tp3)
+
+
+def moog_2nd_servovalve(
+    dt, delay=0.0, tw=MOOG_2ND_TW, zeta=MOOG_2ND_ZETA
+):
+    """
+    Moog-style servovalve with only the second-order core dynamics.
+
+    The transfer function is
+    ``1 / (tw**2 * s**2 + 2 * zeta * tw * s + 1)``.  This omits the legacy
+    ``tp3`` first-order pole used by :func:`moog_servovalve`.
+    """
+
+    kp = 1
+    tf_final = cl.tf(kp, [tw**2, 2 * tw * zeta, 1])
+    if delay > 0:
+        num_pade, den_pade = cl.pade(delay, n=1)
+        tf_delay = cl.tf(num_pade, den_pade)
+        tf_final = cl.series(tf_final, tf_delay)
+    ss_final = cl.tf2ss(tf_final)
+    lti = BaseLti(ss_final, dt)
+    sv = ServoValve2(lti, [])
+    return sv
 
 
 def moog_servovalve_with_delay(

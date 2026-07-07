@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "purpose": "Lock the accepted servovalve configuration contract after introducing moog_2nd paper defaults.",
+  "source_files": [
+    "ALB/config.py",
+    "ALB/servovalve.py",
+    "ALB/alb.py"
+  ],
+  "contract": {
+    "ServoConfig": "keeps legacy moog defaults",
+    "Moog2ndServoConfig": "provides the current single-second-order Moog defaults",
+    "ALBConfig": "defaults to servo='moog_2nd' and Moog2ndServoConfig",
+    "NodimALBConfig": "defaults to servo='moog_2nd' and Moog2ndServoConfig",
+    "from_dict": "does not route nested servo_config by servo family; flat tw/zeta/tp3/delay override the moog_2nd base"
+  },
+  "constants": {
+    "MOOG_2ND_NATURAL_FREQ_HZ": 166.0,
+    "MOOG_2ND_TW": 0.0009587647174210562,
+    "MOOG_2ND_ZETA": 0.7
+  },
+  "cases": {
+    "ServoConfig": {
+      "class": "ServoConfig",
+      "dt": 0.0006667,
+      "tw": 1.5059e-08,
+      "zeta": 0.0039795,
+      "tp3": 0.0017924,
+      "delay": 0.0
+    },
+    "Moog2ndServoConfig": {
+      "class": "Moog2ndServoConfig",
+      "dt": 0.0006667,
+      "tw": 0.0009587647174210562,
+      "zeta": 0.7,
+      "tp3": 0.0017924,
+      "delay": 0.0
+    },
+    "ALBConfig_default": {
+      "class": "ALBConfig",
+      "servo": "moog_2nd",
+      "dt": 0.0006667,
+      "servo_config": {
+        "class": "Moog2ndServoConfig",
+        "dt": 0.0006667,
+        "tw": 0.0009587647174210562,
+        "zeta": 0.7,
+        "tp3": 0.0017924,
+        "delay": 0.0
+      }
+    },
+    "ALBConfig_from_empty": {
+      "class": "ALBConfig",
+      "servo": "moog_2nd",
+      "dt": 0.0006667,
+      "servo_config": {
+        "class": "Moog2ndServoConfig",
+        "dt": 0.0006667,
+        "tw": 0.0009587647174210562,
+        "zeta": 0.7,
+        "tp3": 0.0017924,
+        "delay": 0.0
+      }
+    },
+    "ALBConfig_from_servo_moog_no_override": {
+      "class": "ALBConfig",
+      "servo": "moog",
+      "dt": 0.0006667,
+      "servo_config": {
+        "class": "Moog2ndServoConfig",
+        "dt": 0.0006667,
+        "tw": 0.0009587647174210562,
+        "zeta": 0.7,
+        "tp3": 0.0017924,
+        "delay": 0.0
+      }
+    },
+    "ALBConfig_from_servo_moog_with_legacy_override": {
+      "class": "ALBConfig",
+      "servo": "moog",
+      "dt": 0.0006667,
+      "servo_config": {
+        "class": "Moog2ndServoConfig",
+        "dt": 0.0006667,
+        "tw": 1.5059e-08,
+        "zeta": 0.0039795,
+        "tp3": 0.0017924,
+        "delay": 0.0
+      }
+    },
+    "ALBConfig_from_flat_override": {
+      "class": "ALBConfig",
+      "servo": "moog_2nd",
+      "dt": 0.0006667,
+      "servo_config": {
+        "class": "Moog2ndServoConfig",
+        "dt": 0.0006667,
+        "tw": 0.001,
+        "zeta": 0.55,
+        "tp3": 0.0017924,
+        "delay": 0.002
+      }
+    },
+    "NodimALBConfig_default": {
+      "class": "NodimALBConfig",
+      "servo": "moog_2nd",
+      "dt": 0.0006667,
+      "servo_config": {
+        "class": "Moog2ndServoConfig",
+        "dt": 0.0006667,
+        "tw": 0.0009587647174210562,
+        "zeta": 0.7,
+        "tp3": 0.0017924,
+        "delay": 0.0
+      }
+    },
+    "NodimALBConfig_from_empty": {
+      "class": "NodimALBConfig",
+      "servo": "moog_2nd",
+      "dt": 0.0006667,
+      "servo_config": {
+        "class": "Moog2ndServoConfig",
+        "dt": 0.0006667,
+        "tw": 0.0009587647174210562,
+        "zeta": 0.7,
+        "tp3": 0.0017924,
+        "delay": 0.0
+      }
+    },
+    "NodimALBConfig_from_servo_moog_no_override": {
+      "class": "NodimALBConfig",
+      "servo": "moog",
+      "dt": 0.0006667,
+      "servo_config": {
+        "class": "Moog2ndServoConfig",
+        "dt": 0.0006667,
+        "tw": 0.0009587647174210562,
+        "zeta": 0.7,
+        "tp3": 0.0017924,
+        "delay": 0.0
+      }
+    },
+    "NodimALBConfig_from_flat_override": {
+      "class": "NodimALBConfig",
+      "servo": "moog_2nd",
+      "dt": 0.0006667,
+      "servo_config": {
+        "class": "Moog2ndServoConfig",
+        "dt": 0.0006667,
+        "tw": 0.001,
+        "zeta": 0.55,
+        "tp3": 0.0017924,
+        "delay": 0.002
+      }
+    }
+  },
+  "system_cases": {
+    "alb2_default": {
+      "class": "ALB",
+      "servo_state_dims": [
+        2,
+        2
+      ],
+      "servo_input_dims": [
+        1,
+        1
+      ],
+      "servo_output_dims": [
+        1,
+        1
+      ]
+    },
+    "nodim_alb_default": {
+      "class": "NodimALB",
+      "servo_state_dims": [
+        2,
+        2
+      ],
+      "servo_input_dims": [
+        1,
+        1
+      ],
+      "servo_output_dims": [
+        1,
+        1
+      ]
+    }
+  },
+  "arrays": {
+    "moog_2nd_continuous_A": {
+      "shape": [
+        2,
+        2
+      ]
+    },
+    "moog_2nd_continuous_B": {
+      "shape": [
+        2,
+        1
+      ]
+    },
+    "moog_2nd_continuous_C": {
+      "shape": [
+        1,
+        2
+      ]
+    },
+    "moog_2nd_continuous_D": {
+      "shape": [
+        1,
+        1
+      ]
+    },
+    "moog_2nd_discrete_A": {
+      "shape": [
+        2,
+        2
+      ]
+    },
+    "moog_2nd_discrete_Bd0": {
+      "shape": [
+        1,
+        2
+      ]
+    },
+    "moog_2nd_discrete_Bd1": {
+      "shape": [
+        1,
+        2
+      ]
+    },
+    "moog_2nd_discrete_C": {
+      "shape": [
+        1,
+        2
+      ]
+    },
+    "moog_2nd_discrete_D": {
+      "shape": [
+        1,
+        1
+      ]
+    }
+  },
+  "comparison": {
+    "json": "exact scalar/string/list equality",
+    "npz": "np.testing.assert_array_equal for deterministic same-environment matrices"
+  }
+}

@@ -23,7 +23,7 @@ from ALB.config import (
 from ALB.controller import PID, FuzzyPID
 from ALB.orifice import CSOrifice, NodimCSOrifice
 from ALB.results import DataFrameResult, SaveTreeNode
-from ALB.servovalve import moog_servovalve, static_sv
+from ALB.servovalve import moog_2nd_servovalve, moog_servovalve, static_sv
 from ALB.thermal import (
     NodimThermalHydroBearing,
     ThermalConfig,
@@ -900,6 +900,19 @@ class ALBBuilder:
                 self.servo_config.zeta,
                 self.servo_config.tp3,
             )
+        elif servo_type == "moog_2nd":
+            sv_x = moog_2nd_servovalve(
+                self.servo_config.dt,
+                self.servo_config.delay,
+                self.servo_config.tw,
+                self.servo_config.zeta,
+            )
+            sv_y = moog_2nd_servovalve(
+                self.servo_config.dt,
+                self.servo_config.delay,
+                self.servo_config.tw,
+                self.servo_config.zeta,
+            )
         elif servo_type == "static":
             sv_x = static_sv(self.servo_config.dt)
             sv_y = static_sv(self.servo_config.dt)
@@ -1256,10 +1269,20 @@ def nodim_alb(
             )
             for _ in range(2)
         ]
+    elif alb_config.servo == "moog_2nd":
+        servos = [
+            moog_2nd_servovalve(
+                servo_config.dt,
+                servo_config.delay,
+                servo_config.tw,
+                servo_config.zeta,
+            )
+            for _ in range(2)
+        ]
     elif alb_config.servo == "static":
         servos = [static_sv(servo_config.dt) for _ in range(2)]
     else:
-        raise ValueError("servo must be 'moog' or 'static'")
+        raise ValueError("servo must be 'moog', 'moog_2nd', or 'static'")
 
     orifice_config = alb_config.orifice_config
     # X and Y branches share the same nondimensional slot model, while the

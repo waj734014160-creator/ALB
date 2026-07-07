@@ -457,13 +457,26 @@ class OrificeConfig(ConfigData):
 
 @dataclass
 class ServoConfig(ConfigData):
-    """Configuration for the servovalve."""
+    """Configuration for the servovalve.
+
+    The class defaults preserve the legacy ``moog`` servovalve parameters.
+    ``ALBConfig`` and ``NodimALBConfig`` install the current ``moog_2nd``
+    defaults through their own ``servo_config`` default factories.
+    """
 
     dt: float = 6.667e-4
     tw: float = 1.5059e-8
     zeta: float = 0.0039795
     tp3: float = 0.0017924
     delay: float = 0.0
+
+
+@dataclass
+class Moog2ndServoConfig(ServoConfig):
+    """Default configuration for the single-second-order Moog servovalve."""
+
+    tw: float = 9.587647174210562e-4
+    zeta: float = 0.7
 
 
 @dataclass
@@ -750,7 +763,7 @@ class ALBConfig(ConfigData):
     """Configuration for the Active Lubricated Bearing (ALB) system."""
 
     pad_config: FPBConfig = field(default_factory=FPBConfig)
-    servo_config: ServoConfig = field(default_factory=ServoConfig)
+    servo_config: ServoConfig = field(default_factory=Moog2ndServoConfig)
     orifice_config: OrificeConfig = field(default_factory=OrificeConfig)
     tank_config: TankConfig = field(default_factory=TankConfig)
     controller_config: Union[PIDConfig, FuzzyPIDConfig] = field(
@@ -761,7 +774,7 @@ class ALBConfig(ConfigData):
     gxy: np.ndarray = np.eye(2)
     gxyt: np.ndarray = np.zeros((2, 2))
     alb: str = "ALB"  # ALB or ALBSV
-    servo: str = "moog"  # moog or static
+    servo: str = "moog_2nd"  # moog_2nd, moog, or static
     switch: bool = True  # Whether to enable control
     c: Optional[float] = None  # Optional displacement scale override.
     w: Optional[float] = None  # Optional speed scale override, rpm.
@@ -790,13 +803,17 @@ class ALBConfig(ConfigData):
         alb = config_dict.get("alb", "ALB")
         if alb not in {"ALB", "ALBSV"}:
             raise ValueError("alb must be 'ALB' or 'ALBSV'")
-        servo = config_dict.get("servo", "moog")
-        if servo not in {"moog", "static"}:
-            raise ValueError("servo must be 'moog' or 'static'")
+        servo = config_dict.get("servo", "moog_2nd")
+        if servo not in {"moog_2nd", "moog", "static"}:
+            raise ValueError("servo must be 'moog_2nd', 'moog', or 'static'")
 
         # Create instances for each nested configuration item
         pad_config_instance = FPBConfig.from_dict(config_dict)
-        servo_config_instance = cls.set_config(ServoConfig, config_dict)
+        servo_config_data = Moog2ndServoConfig().to_dict()
+        servo_config_data.update(
+            {key: config_dict[key] for key in servo_config_data if key in config_dict}
+        )
+        servo_config_instance = Moog2ndServoConfig(**servo_config_data)
         orifice_config_instance = cls.set_config(OrificeConfig, config_dict)
         tank_config_instance = cls.set_config(TankConfig, config_dict)
         if selected_controller == "PID":
@@ -1019,7 +1036,7 @@ class NodimALBConfig(ConfigData):
 
     pad_config: NodimPadConfig = field(default_factory=NodimPadConfig)
     orifice_config: NodimOrificeConfig = field(default_factory=NodimOrificeConfig)
-    servo_config: ServoConfig = field(default_factory=ServoConfig)
+    servo_config: ServoConfig = field(default_factory=Moog2ndServoConfig)
     tank_config: TankConfig = field(default_factory=TankConfig)
     controller_config: Union[PIDConfig, FuzzyPIDConfig] = field(
         default_factory=PIDConfig
@@ -1029,7 +1046,7 @@ class NodimALBConfig(ConfigData):
     gxy: np.ndarray = np.eye(2)
     gxyt: np.ndarray = np.zeros((2, 2))
     alb: str = "ALB"  # ALB or ALBSV
-    servo: str = "moog"  # moog or static
+    servo: str = "moog_2nd"  # moog_2nd, moog, or static
     switch: bool = True
 
     @property
@@ -1050,9 +1067,9 @@ class NodimALBConfig(ConfigData):
         alb = config_dict.get("alb", "ALB")
         if alb not in {"ALB", "ALBSV"}:
             raise ValueError("alb must be 'ALB' or 'ALBSV'")
-        servo = config_dict.get("servo", "moog")
-        if servo not in {"moog", "static"}:
-            raise ValueError("servo must be 'moog' or 'static'")
+        servo = config_dict.get("servo", "moog_2nd")
+        if servo not in {"moog_2nd", "moog", "static"}:
+            raise ValueError("servo must be 'moog_2nd', 'moog', or 'static'")
 
         controller_class = PIDConfig if selected_controller == "PID" else FuzzyPIDConfig
         direct_keys = [
@@ -1067,13 +1084,18 @@ class NodimALBConfig(ConfigData):
         direct_args = {
             key: config_dict[key] for key in direct_keys if key in config_dict
         }
+        servo_config_data = Moog2ndServoConfig().to_dict()
+        servo_config_data.update(
+            {key: config_dict[key] for key in servo_config_data if key in config_dict}
+        )
+        servo_config_instance = Moog2ndServoConfig(**servo_config_data)
 
         # Mirror ALBConfig.from_dict by rebuilding the nested nodim config
         # objects from a shared flat configuration payload.
         return cls(
             pad_config=NodimPadConfig.from_dict(config_dict),
             orifice_config=NodimOrificeConfig.from_dict(config_dict),
-            servo_config=cls.set_config(ServoConfig, config_dict),
+            servo_config=servo_config_instance,
             tank_config=cls.set_config(TankConfig, config_dict),
             controller_config=cls.set_config(controller_class, config_dict),
             **direct_args,
