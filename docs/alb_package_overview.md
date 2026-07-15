@@ -36,10 +36,10 @@
 | 接口分组 | 主要入口 | 用途 |
 | --- | --- | --- |
 | ALB 系统 | `ALB`, `NodimALB`, `alb2`, `alb2_static`, `alb2_fuzzy`, `nodim_alb` | 从配置对象构建有量纲或无量纲 active lubricated bearing 系统。 |
-| 配置契约 | `ALBConfig`, `NodimALBConfig`, `ServoConfig`, `Moog2ndServoConfig`, `FPBConfig`, `NodimPadConfig`, `OrificeConfig`, `NodimOrificeConfig`, `PIDConfig`, `FuzzyPIDConfig`, `ThermalConfig`, `GasConfig`, `ALBNetConfig` | builder、task 和 surrogate wrapper 使用的 dataclass-style 配置对象。 |
+| 配置契约 | `ALBConfig`, `NodimALBConfig`, `ServoConfig`, `Moog2ndServoConfig`, `FPBConfig`, `NodimPadConfig`, `OrificeConfig`, `NodimOrificeConfig`, `PIDConfig`, `FuzzyPIDConfig`, `LQGConfig`, `ThermalConfig`, `GasConfig`, `ALBNetConfig` | builder、task 和 surrogate wrapper 使用的 dataclass-style 配置对象。 |
 | 轴承与油膜模型 | `HydrostaticBearing`, `NodimHydrostaticBearing`, `MultiPad`, `four_pads_bearing`, `four_pads_bearings`, `NodimNewtonFilm`, `GasBearing` | 油膜、气膜、静压瓦块和多瓦块轴承模型。 |
 | 热模型与无量纲 helper | `ThermalHydroBearing`, `NodimThermalHydroBearing`, `SkfemThermalModel`, `SkfemThermalModelNondim`, `ThermalNondimScales`, `FilmNondimScales` | 热-流体耦合，以及有量纲 / 无量纲尺度转换。 |
-| 控制器与阀 | `PID`, `FuzzyPID`, `ALB.orifice.CSOrifice`, `NodimCSOrifice`, `ALB.servovalve.moog_2nd_servovalve`, `ALB.servovalve.moog_servovalve`, `ALB.servovalve.static_sv` | ALB 装配中使用的控制器、伺服阀和节流孔组件。 |
+| 控制器与阀 | `PID`, `FuzzyPID`, `ALB.controller.ALBLQGController`, `ALB.orifice.CSOrifice`, `NodimCSOrifice`, `ALB.servovalve.moog_2nd_servovalve`, `ALB.servovalve.moog_servovalve`, `ALB.servovalve.static_sv` | ALB 装配中使用的控制器、伺服阀和节流孔组件；LQG 输出默认限制在 `[-1, 1]`，也可通过 `LQGConfig` 设置标量或逐通道上下限。 |
 | 转子耦合 | `ALB.rotor.RossRotor`, `ALB.couple.RotorBearingCouple`, `ALB.couple.RsRotorBearingCouple`, `ALB.orbit.EllipseTrack`, `ALB.orbit.BearingForceTrack`, `ALB.orbit.test_bearing_orbit_parallel` | 转子-轴承耦合、轨道生成和时域响应 workflow；并行轨道识别函数用于正反涡动力轨迹同步计算。 |
 | ALBNN surrogate 支持 | `ALBNN`, `ALBNNC4Canonical`, `ALB.nn.ALBNNForceExpert`, `ALB.nn.ALBNet`, `albnn`, `ALB.nn.thermal_albnet`, `ALB.alb.ALBNNAgent`, `ALB.alb.FakeOf` | 打包神经网络力模型，以及用于本地验证和下游仿真的 ALB shell 替换组件。 |
 | 训练核心 | `ALB.train.TrainingConfig`, `ALB.train.ColumnTransformPipeline`, `ALB.train.AlbnnMlpTrainer` | 配置驱动的 surrogate 训练核心。项目 CLI 保留在 `SURROGATE_TRAIN/run/train`，稳定数据变换、scaler、loss、report 和 trainer 生命周期放在 package 中复用。 |

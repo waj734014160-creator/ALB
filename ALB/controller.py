@@ -12,7 +12,7 @@ from control.matlab import c2d, lqe, lqr, ss
 from scipy.linalg import block_diag, pinv, schur
 
 from ALB.base import BaseSimpleModel
-from ALB.config import FuzzyPIDConfig, PIDConfig
+from ALB.config import FuzzyPIDConfig, LQGConfig, PIDConfig
 from ALB.results import DataFrameResult, SaveTreeNode
 from ALB.servovalve import limit_signal, moog_servovalve
 
@@ -439,19 +439,69 @@ class ALBLQGController(BaseSimpleModel):
 
     This class builds the coupled rotor-valve plant, designs an LQG controller
     (optionally with an ESO disturbance branch), and supports model reduction
-    for both plant and controller stages.
+    for both plant and controller stages. ``freq`` is the shaft rotational
+    frequency in Hz; ROSS rotor state-space models are evaluated at the
+    corresponding angular speed in rad/s. Returned actuator commands are
+    limited to ``output_min`` and ``output_max``; both bounds default to
+    ``-1`` and ``1`` and may be scalar or per-channel values.
     """
 
     # Public API.
 
-    def __init__(self, rotor, dt, freq=50.0, eso_enable=True):
+    def __init__(
+        self,
+        rotor,
+        dt=None,
+        freq=50.0,
+        eso_enable=True,
+        output_min=-1.0,
+        output_max=1.0,
+        *,
+        config=None,
+    ):
+        """Initialize the LQG controller and its runtime output protection.
+
+        Parameters
+        ----------
+        rotor : object
+            ALB rotor wrapper exposing ``_rotor`` and the operating ``_speed``.
+        dt : float, optional
+            Sampling time in seconds. Required unless ``config`` is supplied.
+        freq : float, optional
+            Shaft rotational frequency in Hz.
+        eso_enable : bool, optional
+            Enable the disturbance-state observer branch.
+        output_min, output_max : float or array-like, optional
+            Actuator command bounds. Scalars apply to every output channel.
+        config : LQGConfig or dict, optional
+            Core LQG configuration. When supplied, it replaces the direct
+            runtime arguments and ``dt`` must be omitted.
+        """
         super().__init__()
+        if config is not None:
+            if dt is not None:
+                raise ValueError("dt and config cannot be supplied together")
+            config = LQGConfig.from_dict(config)
+        else:
+            if dt is None:
+                raise TypeError("dt is required when config is not supplied")
+            config = LQGConfig(
+                dt=dt,
+                freq=freq,
+                eso_enable=eso_enable,
+                output_min=output_min,
+                output_max=output_max,
+            )
+
         # Core simulation settings.
         self.rotor = rotor
-        self.dt = dt
-        self.freq = freq
-        self.omega = 2 * np.pi * freq
-        self.eso_enable = eso_enable
+        self.config = config
+        self.dt = float(config.dt)
+        self.freq = float(config.freq)
+        self.omega = 2.0 * np.pi * self.freq
+        self.eso_enable = config.eso_enable
+        self.output_min = config.output_min
+        self.output_max = config.output_max
 
         # User-defined bearing and disturbance configuration.
         self.bearings: list[BearingContent] = []
@@ -482,6 +532,25 @@ class ALBLQGController(BaseSimpleModel):
 
     # Internal helpers.
 
+    def _rotor_lti(self):
+        """Return the ROSS rotor LTI model at the configured shaft speed.
+
+        ALB exposes ``freq`` in Hz, whereas ROSS interprets a plain numeric
+        rotor ``speed`` as rad/s. The wrapped rotor and the controller design
+        must use the same physical operating speed.
+        """
+        rotor_speed = getattr(self.rotor, "_speed", None)
+        if rotor_speed is not None and not np.isclose(
+            float(rotor_speed), self.omega, rtol=1e-9, atol=1e-12
+        ):
+            raise ValueError(
+                "RossRotor speed does not match the LQG operating frequency: "
+                f"rotor speed={float(rotor_speed):.12g} rad/s, "
+                f"controller freq={self.freq:.12g} Hz "
+                f"({self.omega:.12g} rad/s)."
+            )
+        return self.rotor._rotor._lti(self.omega)
+
     def _effective_unbalance_nodes(self):
         """
         Return effective disturbance nodes for ESO modeling.
@@ -502,7 +571,7 @@ class ALBLQGController(BaseSimpleModel):
 
         Useful for sizing LQR/LQE weighting matrices.
         """
-        lti_r = self.rotor._rotor._lti(self.freq)
+        lti_r = self._rotor_lti()
         n_rotor = rotor_order if rotor_order is not None else lti_r.A.shape[0]
 
         n_valve = 0
@@ -690,7 +759,7 @@ class ALBLQGController(BaseSimpleModel):
         from ALB.rotor import location_mapping_matrix
 
         self.ndof = self.rotor._rotor.ndof
-        lti_r = self.rotor._rotor._lti(self.freq)
+        lti_r = self._rotor_lti()
         self._Ar_full, self._Br_full = lti_r.A, lti_r.B
 
         Ar, Br = self._Ar_full, self._Br_full
@@ -980,8 +1049,32 @@ class ALBLQGController(BaseSimpleModel):
         self.x_next = np.zeros((n, 1))
         self.y_current = np.zeros((self.active_ctrl_sys_d.B.shape[1], 1))
         self.u_current = np.zeros((self.active_ctrl_sys_d.C.shape[0], 1))
+        self.u_raw_current = self.u_current.copy()
         # Logged per control step for analysis/debug.
-        self._history = {"t": [], "y": [], "u": [], "x_hat": []}
+        self._history = {"t": [], "y": [], "u_raw": [], "u": [], "x_hat": []}
+
+    def _output_bound(self, bound, output_count, name):
+        """Return one scalar or one value per actuator as a column vector."""
+        values = np.asarray(bound, dtype=float).reshape(-1)
+        if values.size == 1:
+            values = np.full(output_count, values.item())
+        elif values.size != output_count:
+            raise ValueError(
+                f"{name} must be scalar or contain {output_count} values; "
+                f"received {values.size}."
+            )
+        return values.reshape(-1, 1)
+
+    def _limit_output(self, output):
+        """Apply configured scalar or per-channel command bounds."""
+        output_count = output.shape[0]
+        lower = self._output_bound(self.output_min, output_count, "output_min")
+        upper = self._output_bound(self.output_max, output_count, "output_max")
+        if np.any(lower >= upper):
+            raise ValueError(
+                "output_min must be less than output_max for every channel"
+            )
+        return np.clip(output, lower, upper)
 
     def init(self):
         """Reset runtime state for a new simulation run."""
@@ -1001,13 +1094,15 @@ class ALBLQGController(BaseSimpleModel):
         Cd = self.active_ctrl_sys_d.C
         Dd = self.active_ctrl_sys_d.D
 
-        # Static output equation.
-        self.u_current = Cd @ self.x_hat + Dd @ self.y_current
+        # Static output equation followed by actuator command protection.
+        self.u_raw_current = Cd @ self.x_hat + Dd @ self.y_current
+        self.u_current = self._limit_output(self.u_raw_current)
 
         # Save history after time has started advancing.
         if self.t_prev >= 0:  # Skip initial pre-step state.
             self._history["t"].append(self.t_prev)
             self._history["y"].append(self.y_current.flatten())
+            self._history["u_raw"].append(self.u_raw_current.flatten())
             self._history["u"].append(self.u_current.flatten())
             self._history["x_hat"].append(self.x_hat.flatten())
 
@@ -1028,6 +1123,7 @@ class ALBLQGController(BaseSimpleModel):
         res = {
             "t": np.array(self._history["t"]),
             "y": np.array(self._history["y"]),
+            "u_raw": np.array(self._history["u_raw"]),
             "u": np.array(self._history["u"]),
             "x_hat": np.array(self._history["x_hat"]),
         }
@@ -1039,6 +1135,8 @@ class ALBLQGController(BaseSimpleModel):
             df = pd.DataFrame({"t": res["t"]})
             for i in range(res["y"].shape[1]):
                 df[f"y_{i}"] = res["y"][:, i]
+            for i in range(res["u_raw"].shape[1]):
+                df[f"u_raw_{i}"] = res["u_raw"][:, i]
             for i in range(res["u"].shape[1]):
                 df[f"u_{i}"] = res["u"][:, i]
             for i in range(res["x_hat"].shape[1]):
@@ -1089,6 +1187,8 @@ class ALBLQGController(BaseSimpleModel):
         print(f"Discrete order        : {n_disc}")
         print(f"Sampling time         : {self.dt:g}")
         print(f"Operating frequency   : {self.freq:g} Hz")
+        print(f"Output lower limit    : {np.asarray(self.output_min).tolist()}")
+        print(f"Output upper limit    : {np.asarray(self.output_max).tolist()}")
         print("==================================\n")
 
     def plot_rotor_reduction(self, reduce_func, reduce_kwargs=None, channel=(0, 0)):

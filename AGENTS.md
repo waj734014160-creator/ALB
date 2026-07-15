@@ -2,6 +2,9 @@
 
 本文件保存 coding agent 在本仓库工作时需要遵守的稳定项目级指令。
 
+## 思考时间
+Spend time on thinking; you do not need to use the commentary channel to report progress to me.
+
 ## 环境
 
 - Python：`E:/Anaconda2023/envs/ALB/python.exe`

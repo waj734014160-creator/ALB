@@ -325,6 +325,18 @@ class RossRotor:
         """
         Wrapper for ROSS rotor with unified continuous/discrete interfaces.
 
+        Parameters
+        ----------
+        rotor : ross.Rotor
+            Underlying ROSS rotor model.
+        speed : float
+            Rotor angular speed in rad/s, which is the base unit expected by
+            ROSS when a plain numeric value is passed.
+        dt : float
+            Simulation time step in seconds.
+        discrete : bool, optional
+            Use the ROSS discrete model instead of the continuous-time model.
+
         """
         self._b = None
         self._a = None
@@ -689,7 +701,13 @@ def rotor0(
     beta=0,
     rotor_path=r"G:\项目文件\202103 - 173计划 - 舰船涡轮机主动智能声纹控制技术\jwk-转子文件\elements.xls",
 ):
-    # Build default rotor and wrap it with RossRotor interface.
+    """Build the default ROSS rotor at a rotational frequency in Hz.
+
+    ``freq`` follows the ALB configuration convention and is expressed in Hz.
+    ROSS expects a plain numeric ``speed`` in rad/s, so this factory performs
+    the conversion exactly once before constructing :class:`RossRotor`.
+    """
+    # Build the default rotor and convert the public Hz input for ROSS.
     steel = rs.Material(name="Steel", rho=7850, E=2.1e11, G_s=8.08e10)
     rotor_csv = pd.read_excel(rotor_path, header=None)
     ls = rotor_csv[4] * 1e-3
@@ -728,7 +746,8 @@ def rotor0(
     rr = rs.Rotor(
         shaft_elements=r_elems, bearing_elements=bearings, disk_elements=disks
     )
-    rr = RossRotor(rr, freq, dt)
+    speed_rad_s = 2.0 * np.pi * float(freq)
+    rr = RossRotor(rr, speed_rad_s, dt)
     return rr
 
 

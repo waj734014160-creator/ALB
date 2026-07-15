@@ -20,3 +20,5 @@
 - `docs/run_index.md`：工作区全局 run 编号、路径和 current-status 边界规则。
 
 刻意排除的内容：`.env`、`.git`、IDE 目录、缓存、notebook、模型输出和生成产物。
+
+ALB GUI 的打包产物位于 `G:/ALB_PROJECTS/TOOL/ALB_GUI`。启动器和打包入口已迁移到 `G:/ALB_PROJECTS/TOOL/start_alb_gui.bat` 与 `G:/ALB_PROJECTS/TOOL/pack_alb_gui.bat`。

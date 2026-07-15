@@ -501,6 +501,57 @@ class PIDConfig(ConfigData):
 
 
 @dataclass
+class LQGConfig(ConfigData):
+    """Core runtime configuration for :class:`ALBLQGController`.
+
+    Scalar output bounds apply to every actuator channel. One-dimensional
+    sequences can be used when individual channels require different bounds.
+    Plant assembly and weighting-matrix policies remain explicit controller
+    design inputs because their dimensions depend on the selected rotor.
+    """
+
+    dt: float = 6.667e-4
+    freq: float = 50.0
+    eso_enable: bool = True
+    output_min: Union[float, list] = -1.0
+    output_max: Union[float, list] = 1.0
+
+    def __post_init__(self):
+        if self.dt <= 0:
+            raise ValueError("dt must be > 0")
+        if self.freq <= 0:
+            raise ValueError("freq must be > 0")
+        if not isinstance(self.eso_enable, (bool, np.bool_)):
+            raise TypeError("eso_enable must be a boolean")
+        self.eso_enable = bool(self.eso_enable)
+
+        lower = np.asarray(self.output_min, dtype=float)
+        upper = np.asarray(self.output_max, dtype=float)
+        if lower.ndim > 1 or upper.ndim > 1:
+            raise ValueError("output limits must be scalars or one-dimensional")
+        if lower.size == 0 or upper.size == 0:
+            raise ValueError("output limits must not be empty")
+        if not np.all(np.isfinite(lower)) or not np.all(np.isfinite(upper)):
+            raise ValueError("output limits must be finite")
+        if lower.size != upper.size and lower.size != 1 and upper.size != 1:
+            raise ValueError("output_min and output_max sizes are incompatible")
+        lower, upper = np.broadcast_arrays(lower.reshape(-1), upper.reshape(-1))
+        if np.any(lower >= upper):
+            raise ValueError("output_min must be less than output_max")
+
+    @classmethod
+    def from_dict(cls, config_dict):
+        """Build the core LQG config from a flat shared-config payload."""
+        if isinstance(config_dict, cls):
+            return config_dict
+        valid_fields = {item.name for item in fields(cls)}
+        values = {
+            key: config_dict[key] for key in valid_fields if key in config_dict
+        }
+        return cls(**values)
+
+
+@dataclass
 class ThermalConfig(ConfigData):
     """Configuration for thermo-hydrodynamic viscosity coupling.
 

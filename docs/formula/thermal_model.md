@@ -24,10 +24,16 @@
 
 本节按当前代码执行顺序说明温度场如何离散计算。压力场先由带局部粘度比的 Reynolds 方程求得；温度场再用压力梯度、膜厚和粘度场组装对流-扩散-热源方程；最后通过温度-粘度关系把二者耦合迭代。
 
-当前实现有两条求解路径：
+当前对外有两种输入接口，但并不是两套独立的热求解内核：
 
-- `ThermalHydroBearing`：有量纲输入，温度方程由 `SkfemThermalModel` 组装，支持稳态和隐式 Euler 非稳态项。
-- `NodimThermalHydroBearing`：无量纲输入，温度方程由 `SkfemThermalModelNondim` 组装，当前只支持稳态热场。
+- `ThermalHydroBearing` 接收有量纲油膜输入，在初始化时把压力模型转换为
+  `NodimViscositySkfemNewtonFilm`，随后继承并调用无量纲耦合内核。
+- `NodimThermalHydroBearing` 直接接收无量纲油膜输入。
+- 两个接口最终均由 `SkfemThermalModelNondim` 组装温度方程；保留在源码中的
+  `SkfemThermalModel` 不是当前 `ThermalHydroBearing` 的实际调用路径。
+- `iter_method="direct"` 的无量纲温度求解支持稳态和隐式 Euler 非稳态项；
+  `iter_method="newton"` 的 `solve_segregated_newton()` 当前只支持稳态，非稳态会明确抛出
+  `NotImplementedError`。
 
 ### 1. 压力场计算步骤
 
@@ -43,23 +49,49 @@ $$
 l_r = \frac{L}{2R}
 $$
 
+代码中的转子涡动速度先按
+
+$$
+\omega=\frac{2\pi n}{60},\qquad
+xct=\frac{\dot x_c}{c\,v_f\omega},\qquad
+yct=\frac{\dot y_c}{c\,v_f\omega}
+$$
+
+转换。因此 `xct`、`yct` 是无量纲速度，而不是 m/s。为避免把代码变量与真实的无量纲时间导数混淆，定义
+
+$$
+\dot{\bar h}_{\mathrm{code}}
+=xct\sin\theta-yct\cos\theta,
+\qquad
+\bar t=\omega t,
+\qquad
+\frac{\partial\bar h}{\partial\bar t}
+=v_f\dot{\bar h}_{\mathrm{code}}.
+$$
+
+也就是说，`vf` 已经包含在 `xct` 的归一化分母中，但在恢复真实的
+$\partial\bar h/\partial\bar t$ 时必须乘回；不能在没有先说明时间尺度和 `xct` 定义时直接删掉 `vf`。
+
 以及局部粘度比 $\bar\mu$，无量纲压力方程采用：
 
 $$
-l_r^2\frac{\partial}{\partial x}
+l_r^2\frac{\partial}{\partial\bar x}
 \left(
 \frac{\bar h^3}{\bar\mu}
-\frac{\partial p}{\partial x}
+\frac{\partial\bar p}{\partial\bar x}
 \right)
 +
-\frac{\partial}{\partial z}
+\frac{\partial}{\partial\bar z}
 \left(
 \frac{\bar h^3}{\bar\mu}
-\frac{\partial p}{\partial z}
+\frac{\partial\bar p}{\partial\bar z}
 \right)
 =
-\Lambda_0\frac{\partial \bar h}{\partial x}
-+2\Lambda_0 v_f\frac{\partial \bar h}{\partial t}.
+\Lambda_0\frac{\partial \bar h}{\partial\bar x}
++2\Lambda_0\frac{\partial \bar h}{\partial\bar t}
+=
+\Lambda_0\frac{\partial \bar h}{\partial\bar x}
++2\Lambda_0v_f\dot{\bar h}_{\mathrm{code}}.
 $$
 
 取测试函数 $v$，并对左端分部积分，得到当前实现装配的弱式：
@@ -68,14 +100,14 @@ $$
 \int_{\Omega_h}
 \frac{\bar h^3}{\bar\mu}
 \left(
-l_r^2\frac{\partial p}{\partial x}\frac{\partial v}{\partial x}
-+\frac{\partial p}{\partial z}\frac{\partial v}{\partial z}
+l_r^2\frac{\partial\bar p}{\partial\bar x}\frac{\partial v}{\partial\bar x}
++\frac{\partial\bar p}{\partial\bar z}\frac{\partial v}{\partial\bar z}
 \right)d\Omega
 =
 \int_{\Omega_h}
 \left(
--\Lambda_0\frac{\partial \bar h}{\partial x}
--2\Lambda_0 v_f\frac{\partial \bar h}{\partial t}
+   -\Lambda_0\frac{\partial \bar h}{\partial\bar x}
+   -2\Lambda_0 v_f\dot{\bar h}_{\mathrm{code}}
 \right)v\,d\Omega.
 $$
 
@@ -99,8 +131,8 @@ K^{p}_{ij}
 \int_{\Omega_h}
 \frac{\bar h^3}{\bar\mu}
 \left(
-l_r^2\frac{\partial N_j}{\partial x}\frac{\partial N_i}{\partial x}
-+\frac{\partial N_j}{\partial z}\frac{\partial N_i}{\partial z}
+l_r^2\frac{\partial N_j}{\partial\bar x}\frac{\partial N_i}{\partial\bar x}
++\frac{\partial N_j}{\partial\bar z}\frac{\partial N_i}{\partial\bar z}
 \right)d\Omega,
 $$
 
@@ -109,8 +141,8 @@ f^p_i
 =
 \int_{\Omega_h}
 \left(
--\Lambda_0\frac{\partial \bar h}{\partial x}
--2\Lambda_0 v_f\frac{\partial \bar h}{\partial t}
+   -\Lambda_0\frac{\partial \bar h}{\partial\bar x}
+   -2\Lambda_0 v_f\dot{\bar h}_{\mathrm{code}}
 \right)N_i\,d\Omega.
 $$
 
@@ -134,9 +166,9 @@ $$
 
 ### 2. 温度场计算步骤
 
-#### 2.1 有量纲温度方程
+#### 2.1 用于量纲核对的有量纲温度方程
 
-有量纲路径在油膜中面 $\Omega_h$ 上求解二维对流-扩散能量方程。给定当前压力梯度和粘度场后，先计算面内体积通量：
+当前公开包装器实际调用无量纲内核；本节保留有量纲式，用于说明无量纲化来源并逐项核对单位。给定当前压力梯度和粘度场后，面内单位宽度体积通量为：
 
 $$
 q_x
@@ -176,8 +208,30 @@ q_x\frac{\partial T}{\partial x}
 +q_z\frac{\partial T}{\partial z}
 \right)
 =
-k\nabla^2T+\Phi.
+k_{2D}\nabla^2T+\Phi.
 $$
+
+这里的 $k_{2D}$ 必须是厚度积分后的二维等效系数，单位为 W/K；只有这样
+$k_{2D}\nabla^2T$ 才与其余各项同为 W/m$^2$。若从润滑油体导热系数
+$k_{\mathrm{bulk}}$（W/(m·K)）出发，则薄膜厚度积分后的物理导热项应写成
+
+$$
+\nabla\cdot\left(k_{\mathrm{bulk}}h\nabla T\right),
+$$
+
+而不是直接写成 $k_{\mathrm{bulk}}\nabla^2T$。当前代码没有实现这项厚度相关的体导热模型；默认
+`k_lub = 0.0`，即忽略很小的面内物理热传导，`k_lub > 0` 只表示显式加入一个二维等效扩散/数值正则化系数。
+
+量纲逐项为：
+
+| 项 | 单位 |
+|---|---|
+| $\rho c_p h\,\partial T/\partial t$ | W/m$^2$ |
+| $\rho c_p q_x\,\partial T/\partial x$、$\rho c_p q_z\,\partial T/\partial z$ | W/m$^2$ |
+| $\mu U^2/h$、$h^3|\nabla p|^2/(12\mu)$ | W/m$^2$ |
+| $k_{2D}\nabla^2T$，其中 $[k_{2D}]=$ W/K | W/m$^2$ |
+
+因此在当前默认 `k_lub = 0.0` 下，储热、对流和耗散热源之间量纲一致。
 
 把扩散项移到左端，并用线性有限元近似
 
@@ -197,7 +251,7 @@ $$
 K^T_{ij}
 =
 \int_{\Omega_h}
-k\nabla N_j\cdot\nabla N_i\,d\Omega
+k_{2D}\nabla N_j\cdot\nabla N_i\,d\Omega
 +
 \int_{\Omega_h}
 \rho c_p
@@ -224,10 +278,10 @@ q_x\frac{\partial T}{\partial x}
 +q_z\frac{\partial T}{\partial z}
 \right)
 =
-k\nabla^2T+\Phi.
+k_{2D}\nabla^2T+\Phi.
 $$
 
-当前有量纲实现使用隐式 Euler：
+当前无量纲内核的直接求解路径使用有量纲时间步长 `dt`，并以隐式 Euler 离散时间项：
 
 $$
 \frac{\partial T}{\partial t}
@@ -372,9 +426,12 @@ D_z=\frac{D_x}{l_r^2},
 Q_w=\frac{p_sc^3}{12\mu_0l_r^2R}.
 $$
 
+其中 $Q_w$ 的单位为 m$^2$/s，因此要使 $D_x$、$D_z$ 无量纲，当前参数
+`k_lub` 的单位必须是 W/K。它不是未经厚度积分的润滑油体导热系数 W/(m·K)。
+
 #### 2.3 SUPG 稳定化、边界与点源
 
-温度方程通常是对流占优问题。当前默认使用 `k_lub = 0.0` 并开启 SUPG，让对流稳定化由 SUPG 承担；若需要显式物理导热扩散，可设置 `k_lub > 0`。有量纲路径的局部单元 Péclet 数和稳定参数为
+温度方程通常是对流占优问题。当前默认使用 `k_lub = 0.0` 并开启 SUPG，让空间对流稳定化由 SUPG 承担；若设置 `k_lub > 0`，应把它理解为二维等效扩散或数值正则化参数。保留的有量纲离散形式中，局部单元 Péclet 数和稳定参数为
 
 $$
 \mathrm{Pe}_h
@@ -447,6 +504,22 @@ $$
 $$
 
 其中当前温度标度下 $\bar T_{\mathrm{supply}}=0$。
+
+这里无量纲点源流量必须定义为
+
+$$
+\bar Q_i=\frac{Q_i}{Q_{\mathrm{vol},0}},
+\qquad
+Q_{\mathrm{vol},0}=Q_wl_rR
+=\frac{p_sc^3}{12\mu_0l_r}.
+$$
+
+当前调用链存在尚未修复的单位契约不一致：`CSOrifice.flow_info()` 在无量纲压力模型下返回
+无量纲位置，但第三项仍是有量纲 `q_vol`（m$^3$/s）；
+`NodimThermalHydroBearing._collect_orifice_info()` 原样转发；
+`SkfemThermalModelNondim.solve()` 又把第三项直接当作 $\bar Q_i$ 加到矩阵。
+因此点源的理论式本身正确，但当前公开热包装器的点源调用链缺少
+$Q_i/Q_{\mathrm{vol},0}$ 转换，不能据此宣称点源冷却强度已与无量纲方程一致。
 
 最终施加 Dirichlet 条件后，用稀疏线性求解器求解温度节点值：
 
@@ -558,7 +631,7 @@ $$
 
 时认为热-流-粘度耦合收敛；否则进入下一次迭代。若启用自适应松弛，`AdaptiveDampController` 会根据误差变化调整 $\alpha$。
 
-收敛后，代码再用最终粘度场执行一次压力求解和一次温度求解，输出最终压力、温度、粘度、供油孔流量以及结构化后处理场。若启用有量纲非稳态热项，第一次调用会先求稳态温度作为 $T^0$；之后每次 `output()` 使用上一时刻缓存的 $T^n$，求得 $T^{n+1}$ 后回写缓存。
+收敛后，代码再用最终粘度场执行一次压力求解和一次温度求解，输出最终压力、温度、粘度、供油孔流量以及结构化后处理场。若启用非稳态热项，第一次调用会先求稳态温度作为 $T^0$；之后每次 `output()` 使用上一时刻缓存的 $T^n$，求得 $T^{n+1}$ 后回写缓存。
 
 ---
 
@@ -574,7 +647,7 @@ $$
 
 | 符号 | 含义 | 配置参数 |
 |------|------|----------|
-| $\mu_{\text{ref}}$ | 参考温度下的动力粘度 | `miu_ref`（默认取初始粘度） |
+| $\mu_{\text{ref}}$ | 参考温度下的动力粘度 | `miu0`（默认取初始粘度） |
 | $T_{\text{ref}}$ | 参考温度 | `t_ref`（默认取 `t_in`） |
 | $\beta$ | 粘温系数 | `beta = 0.03` |
 
@@ -583,7 +656,7 @@ $$
 默认情况下，在油膜 $x$-$z$ 平面上求解稳态对流-扩散能量方程：
 
 $$
-\rho\, c_v \left( q_x \frac{\partial T}{\partial x} + q_z \frac{\partial T}{\partial z} \right) = k \nabla^2 T + \Phi
+\rho\, c_v \left( q_x \frac{\partial T}{\partial x} + q_z \frac{\partial T}{\partial z} \right) = k_{2D} \nabla^2 T + \Phi
 $$
 
 当启用非稳态项时，控制方程扩展为：
@@ -591,7 +664,7 @@ $$
 $$
 \rho c_v h\,\frac{\partial T}{\partial t}
 + \rho c_v \left( q_x \frac{\partial T}{\partial x} + q_z \frac{\partial T}{\partial z} \right)
-= k \nabla^2 T + \Phi
+= k_{2D} \nabla^2 T + \Phi
 $$
 
 其中时间项前乘以局部膜厚 $h$，表示按单位轴承面积积算油膜内的热容储存。
@@ -623,7 +696,7 @@ $$
 
 | 符号 | 含义 | 配置参数 |
 |------|------|----------|
-| $k$ | 润滑油导热扩散系数 | `k_lub = 0.0` 默认值，可显式设置为正值 |
+| $k_{2D}$ | 厚度积分后的二维等效扩散/正则化系数，单位 W/K | `k_lub = 0.0` 默认值 |
 | $\rho c_v$ | 体积热容 | `rho` × `cp_lub = 2000` J/(kg·K) |
 | $h$ | 油膜厚度（有量纲） | 从 film 模型获取 |
 | $\nabla p$ | 压力梯度 | 由 Reynolds 求解结果差分得到 |
@@ -755,7 +828,8 @@ $$
 = \bar{\Phi}_E
 $$
 
-但在实际有限元计算中，若完全去掉扩散项，则纯对流方程更容易出现网格依赖和非物理振荡。因此实现层仍保留一个小的各向同性扩散项，作为**数值稳定化项**而非主导物理项。于是计算中实际组装的是正则化后的温度方程：
+若完全去掉扩散项，纯对流 Galerkin 离散更容易出现网格依赖和非物理振荡。当前默认实现并未偷偷加入一个正的各向同性扩散系数，而是令
+`k_lub = 0.0` 并用 SUPG 稳定空间对流。只有显式设置 `k_lub > 0` 时，才组装下列带二维等效扩散/正则化项的温度方程：
 
 $$
 \mathrm{St}_{\Omega}\,\bar{h}\,\frac{\partial \bar{T}}{\partial \bar{t}}
@@ -777,7 +851,7 @@ $$
 \alpha_{\text{stab}} = \frac{k_{\text{stab}}}{\rho c_v}
 $$
 
-表示**稳定化 Péclet 数**。代码实现中该稳定化扩散目前仍由参数 `k_lub` 提供；因此在高 Péclet 工况下，`k_lub` 应优先理解为数值正则化强度，而不是温度场主导物理机制。
+表示显式二维等效扩散对应的 Péclet 数。高 Péclet 工况下，`k_lub` 应优先理解为数值正则化强度，而不是温度场主导物理机制；默认零值时，SUPG 的流线稳定仍然有效。
 
 其中热源项 $\bar{\Phi}_E$ 还可以继续按 $\bar{h}$、$\bar{\mu}$、$\bar{p}$ 展开。由
 
@@ -950,12 +1024,12 @@ $$
 
 ### 2.3 SUPG 稳定化
 
-在本文推荐的物理近似中，热扩散项在控制方程里被忽略，温度场本质上是一个对流主导方程。为了避免纯对流 Galerkin 离散的非物理振荡，当前实现采用“两层稳定化”：
+在本文推荐的物理近似中，面内热传导很小，温度场本质上是一个对流主导方程。
+默认 `k_lub = 0.0` 时并不存在额外的各向同性扩散层；当前实现只使用
+**SUPG（Streamline Upwind Petrov-Galerkin）** 沿流线方向稳定空间对流离散。
+只有用户显式设置正的 `k_lub` 时，才同时出现二维等效扩散/数值正则化项。
 
-- 保留一个很小的各向同性扩散项 $k_{\text{stab}}\nabla^2 T$ 作为正则化；
-- 再使用 **SUPG（Streamline Upwind Petrov-Galerkin）** 沿流线方向补充稳定化。
-
-因此这里的单元 Péclet 数不再强调“真实物理扩散与对流的竞争”，而是表示**稳定化扩散**相对于对流的局部强弱：
+因此这里的单元 Péclet 数主要用于构造 SUPG 稳定参数：
 
 **单元 Péclet 数**：
 
@@ -966,7 +1040,7 @@ $$
 **稳定参数**：
 
 $$
-	au = \frac{\xi(\mathrm{Pe}_{h,\text{stab}})\, h_e}{2|\mathbf{q}|}, \quad \xi(\mathrm{Pe}) = \coth(\mathrm{Pe}) - \frac{1}{\mathrm{Pe}}
+\tau = \frac{\xi(\mathrm{Pe}_{h,\text{stab}})\, h_e}{2|\mathbf{q}|}, \quad \xi(\mathrm{Pe}) = \coth(\mathrm{Pe}) - \frac{1}{\mathrm{Pe}}
 $$
 
 **附加刚度与载荷**：
@@ -979,9 +1053,12 @@ $$
 f_{\text{SUPG}} = \int_\Omega \tau\, (\mathbf{q} \cdot \nabla v)\, \Phi\, d\Omega
 $$
 
-对线性三角形单元 $\nabla^2 u = 0$，因此 SUPG 残差中只保留对流算子。
+当前 SUPG 实现只对空间对流-热源残差做流线稳定化，不把隐式 Euler 的瞬态储热项并入
+SUPG 残差。它的用途是稳态/每个时间步空间对流方程的数值稳定，不负责时间离散稳定；
+按当前建模目的，这一点不作为推导错误，也不需要修改瞬态质量项。
 
-> 默认 `ThermalConfig.supg = True` 且 `k_lub = 0.0`，以 SUPG 作为对流占优离散的稳定化项。若需要考察物理导热扩散影响，可显式设置正的 `k_lub`。
+> 默认 `ThermalConfig.supg = True` 且 `k_lub = 0.0`，没有额外的各向同性扩散层；
+> 对流稳定仅由 SUPG 提供。正的 `k_lub` 表示另行启用二维等效扩散/数值正则化。
 
 ### 2.4 变粘度下的弱形式推导与一致性检查
 
@@ -993,9 +1070,12 @@ $$
 无量纲 Reynolds 方程的强形式为（不含节流流量项 $\bar{q}$，对应教材公式 1-16）：
 
 $$
-l_r^2\frac{\partial}{\partial x}\!\left(\frac{\bar h^3}{\bar\mu}\frac{\partial p}{\partial x}\right)
-+\frac{\partial}{\partial z}\!\left(\frac{\bar h^3}{\bar\mu}\frac{\partial p}{\partial z}\right)
-= \Lambda_0\,\frac{\partial h}{\partial x} + 2\Lambda_0 v_f\,\frac{\partial h}{\partial t}
+l_r^2\frac{\partial}{\partial\bar x}\!\left(\frac{\bar h^3}{\bar\mu}\frac{\partial\bar p}{\partial\bar x}\right)
++\frac{\partial}{\partial\bar z}\!\left(\frac{\bar h^3}{\bar\mu}\frac{\partial\bar p}{\partial\bar z}\right)
+= \Lambda_0\,\frac{\partial\bar h}{\partial\bar x}
++2\Lambda_0\frac{\partial\bar h}{\partial\bar t}
+= \Lambda_0\,\frac{\partial\bar h}{\partial\bar x}
++2\Lambda_0v_f\dot{\bar h}_{\mathrm{code}}
 $$
 
 其中 $\bar\mu=\mu/\mu_0$，$l_r = L/(2R)$，$\Lambda_0$ 为参考粘度 $\mu_0$ 对应的无量纲轴承数；代码实现中仍沿用历史变量名 `vx_ref`。
@@ -1015,7 +1095,7 @@ $$
 \left(l_r^2\frac{\partial p}{\partial x}\frac{\partial v}{\partial x}
 +\frac{\partial p}{\partial z}\frac{\partial v}{\partial z}\right)\,d\Omega
 =
-\int_\Omega \left(-\Lambda_0\frac{\partial h}{\partial x}-2\Lambda_0 v_f \frac{\partial h}{\partial t}\right) v\,d\Omega
+\int_\Omega \left(-\Lambda_0\frac{\partial\bar h}{\partial\bar x}-2\Lambda_0 v_f\dot{\bar h}_{\mathrm{code}}\right) v\,d\Omega
 $$
 
 即 FEM 系统 $Kp = f$，其中 $f_i$ 的被积函数带负号。
@@ -1023,7 +1103,10 @@ $$
 对应代码实现：
 
 - 左端（`BilinearForm`）：`_reynolds_lhs_miu` → `h3_over_miu * (lr² ∂u/∂x ∂v/∂x + ∂u/∂z ∂v/∂z)`
-- 右端（`LinearForm`）：`_reynolds_rhs_miu0` → `(-vx0 * dh_dx - 2*vx0*vf*dh_dt) * v`
+- 右端（`LinearForm`）：`_reynolds_rhs_miu0` →
+  `(-lambda0 * dh_dx - 2*lambda0*vf*dh_dt) * v`，其中代码内的
+  `dh_dt = xct*sin(theta) - yct*cos(theta)` 是 $\dot{\bar h}_{\mathrm{code}}$，不是已经乘过
+  `vf` 的 $\partial\bar h/\partial\bar t$。
 
 **符号一致性**：强形式 RHS 正号 → 分部积分后弱形式 RHS 负号 → 与代码 `_reynolds_rhs_miu0` 完全一致。
 
@@ -1054,7 +1137,7 @@ $$
 - $\mathrm{St}_{\Omega}$ 只在非稳态热方程中保留；若只做稳态代理，可从输入中去掉。
 - $v_f$ 只在挤压项存在时保留；若仅做静态膜厚问题，也可去掉。
 
-若训练数据来自当前带稳定化扩散的有限元求解器，则可额外引入
+若训练数据来自显式设置 `k_lub > 0` 的有限元求解器，则可额外引入
 
 $$
 \mathrm{Pe}_{\text{stab}}
@@ -1068,7 +1151,9 @@ $$
 l_r^2\frac{\partial}{\partial \bar{x}}\!\left(\frac{\bar h^3}{\bar\mu}\frac{\partial \bar p}{\partial \bar x}\right)
 + \frac{\partial}{\partial \bar z}\!\left(\frac{\bar h^3}{\bar\mu}\frac{\partial \bar p}{\partial \bar z}\right)
 = \Lambda_0\frac{\partial \bar h}{\partial \bar x}
-+ 2\Lambda_0 v_f\frac{\partial \bar h}{\partial \bar t}
++ 2\Lambda_0\frac{\partial \bar h}{\partial \bar t}
+= \Lambda_0\frac{\partial \bar h}{\partial \bar x}
++ 2\Lambda_0v_f\dot{\bar h}_{\mathrm{code}}
 $$
 
 对应的无量纲通量不再单独作为独立符号输入，而是直接压缩为
@@ -1103,14 +1188,18 @@ $$
 \mathrm{St}_{\Omega}\,\bar h\frac{\partial \bar T}{\partial \bar t}
 + \left(\Lambda_0\bar h - l_r^2\frac{\bar h^3}{\bar\mu}\frac{\partial \bar p}{\partial \bar x}\right)
 \frac{\partial \bar T}{\partial \bar x}
-- \frac{1}{l_r}\frac{\bar h^3}{\bar\mu}\frac{\partial \bar p}{\partial \bar z}
+- \frac{\bar h^3}{\bar\mu}\frac{\partial \bar p}{\partial \bar z}
 \frac{\partial \bar T}{\partial \bar z}
 = \bar{\Phi}_E
 $$
 
+轴向项中没有额外的 $1/l_r$：代码先定义
+$\bar q_z=-l_r(\bar h^3/\bar\mu)\,\partial_{\bar z}\bar p$，随后对流系数使用
+$\bar q_z/l_r$，两者正好约去。旧版在压缩式中保留 $1/l_r$ 是代数错误。
+
 这样，原先作为中间符号存在的 $\bar q_x$、$\bar q_z$、$\bar{\Phi}_E$ 都被压缩回了核心场变量和核心参数中。
 
-若需要忠实对应当前数值求解器，则可在上式右端再补上
+若配置 `k_lub > 0`，则在上式右端再补上
 
 $$
 \frac{1}{\mathrm{Pe}_{\text{stab}}}
@@ -1138,7 +1227,7 @@ $$
 \rho c_v h\,\frac{\partial T}{\partial t} + \rho c_v(\mathbf q\cdot\nabla T)=\Phi
 $$
 
-但在计算实现中，为了正则化和稳定化，实际组装的方程仍保留一个小扩散项：
+若显式配置 `k_lub > 0`，计算式再加入二维等效扩散/正则化项：
 
 $$
 -k_{\text{stab}}\nabla^2T + \rho c_v h\,\frac{\partial T}{\partial t} + \rho c_v(\mathbf q\cdot\nabla T)=\Phi
@@ -1310,11 +1399,11 @@ $$
 \bar T^n\bar v\,d\hat{\Omega}
 $$
 
-这个无量纲弱式与有量纲实现的矩阵结构一一对应：瞬态质量项对应 $\mathrm{St}_{\Omega}\bar h/\Delta\bar t$，稳定化扩散项对应 $\mathrm{Pe}_{\text{stab}}^{-1}$，对流项对应 $\bar q_x\partial_{\bar x}\bar T + l_r^{-1}\bar q_z\partial_{\bar z}\bar T$，右端载荷对应 $\bar\Phi_E$。
+这个无量纲弱式与当前无量纲内核的矩阵结构一一对应：瞬态质量项对应 $\mathrm{St}_{\Omega}\bar h/\Delta\bar t$，可选二维等效扩散项对应 $\mathrm{Pe}_{\text{stab}}^{-1}$，对流项对应 $\bar q_x\partial_{\bar x}\bar T + l_r^{-1}\bar q_z\partial_{\bar z}\bar T$，右端载荷对应 $\bar\Phi_E$。
 
 对应代码：
 
-- 扩散 + 对流：`_advection_diffusion_form`
+- 扩散 + 对流：`_nondim_advection_diffusion_form`
 - 热源载荷：`_source_form`
 - 系数：`rho_cv = rho * cp_lub`
 - 瞬态质量项：`_transient_mass_form`
@@ -1328,14 +1417,20 @@ K_{\text{SUPG}} = \int_\Omega \tau\,\rho c_v\,(\mathbf q\cdot\nabla v)(\mathbf q
 f_{\text{SUPG}} = \int_\Omega \tau\,(\mathbf q\cdot\nabla v)\,\Phi\,d\Omega
 $$
 
-与 `_supg_stiffness_form`、`_supg_load_form` 一致。
+当前无量纲内核对应 `_nondim_supg_stiffness_form`、`_nondim_supg_load_form`。
 
 #### 2.4.3 本次检查结论
 
-1. `cp_lub` 与 `c_v` 未重复建模：仅有 `cp_lub` 配置，离散中统一用 `rho_cv`。
-2. 压力弱形式正确体现“LHS 变粘度、RHS 固定参考粘度”的修正。
-3. 温度弱形式（含稳定化扩散和 SUPG）与实现一致，热源与通量中的粘度依赖关系一致。
-4. 非稳态模式通过隐式 Euler 将时间项转化为“左端附加质量矩阵 + 右端历史温度项”，与代码实现一致。
+1. `cp_lub` 与 $c_v$ 未重复建模：仅有 `cp_lub` 配置，离散中统一用 `rho_cv = rho * cp_lub`。
+2. `xct`、`yct` 是按 $c\,v_f\omega$ 归一化的无量纲速度；代码 RHS 中的
+   `vf * dh_dt` 恰好恢复 $\partial\bar h/\partial\bar t$，不应删除 `vf`。
+3. 压力弱形式正确体现“LHS 变粘度、RHS 固定参考粘度”的修正。
+4. 无量纲温度压缩式的旧版轴向对流项多写了 $1/l_r$；已按
+   `qz_bar / lr` 的实际装配关系修正。
+5. 非稳态直接求解通过隐式 Euler 将时间项转化为“左端附加质量矩阵 + 右端历史温度项”，
+   与代码一致；SUPG 只稳定空间对流残差，不包含瞬态储热残差，这不影响其稳态对流稳定用途。
+6. 点源理论式正确，但当前 `CSOrifice.flow_info()` 到无量纲热求解器的调用链混用了
+   有量纲 `q_vol` 与无量纲 $\bar Q$，属于代码单位契约问题，尚不能判为文档错误。
 
 ### 2.6 含粘度场的 Reynolds 方程
 
@@ -1404,12 +1499,18 @@ $$
 
 物理含义：在节点 $j$ 处注入流量 $Q_i$ 的冷油（温度 $T_{\text{supply}}$），相当于对该节点增加了一个 "对流换热" 源项，将局部温度拉向 $T_{\text{supply}}$。
 
+上式是有量纲理论式。当前公开包装器实际进入无量纲热内核，必须先把 $Q_i$ 除以
+$Q_{\mathrm{vol},0}=p_sc^3/(12\mu_0l_r)$；现有调用链缺少这一步，详见前文 2.3 节的单位契约检查。
+
 **特点**：
 
 - 冷却效应仅作用于单个节点（点源），在该节点处会出现局部温度突降
-- 当存在**均压槽**（tank）时，均压槽区域膜厚增大导致扩散系数增加，温度在槽内自然趋于平均化，弥补了点源的局部性
+- 当存在**均压槽**（tank）时，膜厚增大主要通过
+  $q_x=Uh/2-h^3p_x/(12\mu)$ 与 $q_z=-h^3p_z/(12\mu)$ 改变槽内对流输运；
+  其中 Couette 通量随 $h$ 变化，Poiseuille 通量随 $h^3$ 变化，同时流速变化会改变 SUPG 的
+  等效流线数值扩散。默认 `k_lub = 0.0` 时，这不是“物理热传导系数随膜厚增加”
 - 对网格密度有一定敏感性：粗网格时节点覆盖面积大，点源影响域大；细网格时节点面积小，点源更集中
-- 从 40×28 网格起基本收敛
+- 点源对网格敏感，不能沿用旧版“从 40×28 起基本收敛”的无条件结论；应在修复流量归一化后重新做网格收敛检查
 
 ### 3.3 能量平衡中的供油孔修正
 
@@ -1456,7 +1557,7 @@ $$
 
 for iter = 1, 2, ..., max_iter:
     ├─ 1. 写入逐节点粘度比 miu_ratio = μ_i / μ_ref
-    ├─ 2. 更新全局参数 vx（基于平均粘度 μ_mean）
+    ├─ 2. 同步参考压力参数，保持参考粘度 μ0 对应的 lambda0 固定
     ├─ 3. 求解 Reynolds 方程 → 压力场 p(x,z)
     ├─ 4. 收集供油孔流量 Q_i（依赖压力场）
     ├─ 5. 更新压力梯度：update_pressure_gradients(model, mesh_data)
@@ -1467,6 +1568,7 @@ for iter = 1, 2, ..., max_iter:
     │       d. 若为非稳态：加入 (ρcvh/Δt)·T^n 到右端
     │       e. 添加 SUPG 稳定项（如启用）
     │       f. 供油孔点源处理：修改 K, f 加入点源 → spsolve → T(x,z)
+    │          （当前 q_vol → q_bar 的单位转换契约仍需修复）
     ├─ 7. 映射温度到油膜节点（预计算索引查表）
     ├─ 8. 计算目标粘度 μ_target = μ_ref·exp[-β(T - T_ref)]
     ├─ 9. 松弛更新：μ_new = (1-α)μ_old + α·μ_target
@@ -1540,9 +1642,9 @@ $\varepsilon$ = `tol`（默认 $10^{-6}$）。
 |------|--------|------|
 | `t_in` | 40.0 °C | 入口油温 |
 | `t_ref` | `None`→`t_in` | 参考温度 |
-| `miu_ref` | `None`→初始粘度 | 参考粘度 |
+| `miu0` | `None`→初始粘度 | 参考粘度 |
 | `beta` | 0.03 1/°C | 粘温系数 |
-| `k_lub` | 0.0 | 导热扩散系数；正值会引入显式扩散 |
+| `k_lub` | 0.0 W/K | 二维等效扩散/数值正则化系数；不是 W/(m·K) 的体导热系数 |
 | `cp_lub` | 2000 J/(kg·K) | 比热容 |
 | `flow_rate_factor` | 1.0 | Couette 流量修正 |
 | `max_delta_t` | 80 °C | 温升上限 |
@@ -1552,7 +1654,7 @@ $\varepsilon$ = `tol`（默认 $10^{-6}$）。
 | `miu_update_max_ratio` | `None` | 对数粘度更新时的单步粘度倍率上限 |
 | `heat_partition_steps` | `None` | 热分配 continuation 序列，末项自动补齐到 `heat_partition` |
 | `tol` | 1e-6 | 收敛容差 |
-| `max_iter` | 8 | 最大迭代次数 |
+| `max_iter` | 60 | 最大迭代次数 |
 | `miu_min` | 1e-4 Pa·s | 粘度下限 |
 | `miu_max` | 1.0 Pa·s | 粘度上限 |
 | `coupling` | `"full"` | 耦合模式 |
@@ -1566,27 +1668,33 @@ $\varepsilon$ = `tol`（默认 $10^{-6}$）。
 ## 7 类结构
 
 ```
-ThermalHydroBearing (BaseCSystem)
-├── bearing: HydrostaticBearing      # 流体动力学模型
-├── thermal_model: SkfemThermalModel  # 温度场求解器
-├── config: ThermalConfig             # 热配置
-│
-├── ViscosityFilmNode (RectFilmNode)  # 带 miu_ratio 的节点
-└── ViscosityFilmElem (RectFilmElem)  # 带粘度场的单元
-    ├── calc_matrixs(): 历史保留的 h_eff 写法，不作为当前 skfem 路径的公式依据
-    └── calc_rights():  f_e(h, vx_ref) + f_vf(vx_ref, vf, dh/dt)
+ThermalHydroBearing (NodimThermalHydroBearing)
+├── 接收有量纲 film/config
+├── _ensure_pressure_backend()
+│   └── 转换为 NodimViscositySkfemNewtonFilm
+└── 继承无量纲耦合与温度求解流程
 
-SkfemThermalModel
-├── build_mesh(model)                 # 构建网格/basis + 预计算映射索引（仅调用一次）
-├── update_pressure_gradients(model, mesh_data)  # 迭代内只更新 ∇p
+NodimThermalHydroBearing (BaseCSystem)
+├── bearing: HydrostaticBearing             # 压力/流量模型
+├── thermal_model: SkfemThermalModelNondim  # 当前实际温度求解器
+├── config: ThermalConfig
+├── _collect_orifice_info()                 # 当前原样转发 flow_info 元组
+└── _solve_coupled_for_method()
+    ├── direct: fixed-point，支持稳态和隐式 Euler 非稳态
+    ├── newton: segregated Newton，当前只支持稳态
+    └── direct_then_newton: direct 未收敛后转 Newton
+
+SkfemThermalModelNondim
+├── build_mesh(model)                       # 每次耦合求解构建一次网格/映射
+├── update_pressure_gradients(model, mesh_data)
 └── solve(model, viscosity, mesh_data, orifice_data, temperature_prev, transient)
-    ├── 对流-扩散 FEM 组装（_advection_diffusion_form）
-    ├── 非稳态质量项（_transient_mass_form + _transient_rhs_form）
-     ├── SUPG 稳定项（_supg_stiffness_form + _supg_load_form）
-     ├── 供油孔点源处理：K[j,j] += ρcv·Q, f[j] += ρcv·Q·Ts → spsolve
-     └── Dirichlet BC + spsolve → T(x,z)
+    ├── 无量纲对流/等效扩散 FEM（_nondim_advection_diffusion_form）
+    ├── 空间对流 SUPG（_nondim_supg_stiffness_form + _nondim_supg_load_form）
+    ├── 可选隐式 Euler 质量项（_transient_mass_form + _transient_rhs_form）
+    ├── 点源 K[j,j] += q_bar（当前上游仍传 q_vol，单位契约待修复）
+    └── Dirichlet BC + spsolve → T_bar，再恢复 T
 
-ThermalHydroBearing
+NodimThermalHydroBearing.output()
 ├── initialize_thermal_state()        # 先求稳态热场，作为非稳态初场
 └── output()
     ├── steady: 直接求当前热-粘耦合结果
