@@ -4,7 +4,7 @@ import numpy as np
 
 from ALB.physics.bearing import StaticPosition
 from ALB.physics.film import FilmSystem
-from ALB.thermal import NodimThermalHydroBearing
+from ALB.physics.thermal import NodimThermalHydroBearing
 
 
 class _FakeSignal:

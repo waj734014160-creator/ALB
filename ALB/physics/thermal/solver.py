@@ -21,7 +21,7 @@ from ALB.physics.film import (
     film_args_trans,
 )
 from ALB.core.numerics.static import calc_fe, calc_fe_vf, calc_ke
-from ALB.nondim import ThermalNondimScales
+from .scales import ThermalNondimScales
 
 _MIU_NUMERIC_FLOOR = 1e-12
 

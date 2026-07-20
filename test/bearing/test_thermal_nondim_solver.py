@@ -4,13 +4,12 @@ from skfem import MeshTri
 from scipy.sparse import eye
 
 from ALB.physics.bearing import HydrostaticBearing, NodimHydrostaticBearing
-from ALB.config import HydConfig
-from ALB.nondim import ThermalNondimScales
-from ALB.thermal import (
+from ALB.config import HydConfig, ThermalConfig
+from ALB.physics.thermal import (
     NodimThermalHydroBearing,
     SkfemThermalModelNondim,
-    ThermalConfig,
     ThermalHydroBearing,
+    ThermalNondimScales,
 )
 
 

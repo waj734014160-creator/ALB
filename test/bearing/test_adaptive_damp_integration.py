@@ -2,7 +2,8 @@ import numpy as np
 
 from ALB.physics.bearing import HydrostaticBearing
 from ALB.config import HydConfig
-from ALB.thermal import ThermalConfig, ThermalHydroBearing
+from ALB.config import ThermalConfig
+from ALB.physics.thermal import ThermalHydroBearing
 
 
 def test_pressure_solver_records_adaptive_damp_history_when_enabled():

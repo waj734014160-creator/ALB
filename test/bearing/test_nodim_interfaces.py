@@ -21,7 +21,8 @@ from ALB.config import (
 from ALB.controller import PID
 from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
 from ALB.servovalve import static_sv
-from ALB.thermal import NodimThermalHydroBearing, ThermalConfig, ThermalHydroBearing
+from ALB.config import ThermalConfig
+from ALB.physics.thermal import NodimThermalHydroBearing, ThermalHydroBearing
 
 
 def _unit_scale_hyd_config(config_class=HydConfig, **kwargs):

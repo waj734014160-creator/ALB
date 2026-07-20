@@ -15,8 +15,11 @@ _EXPORTS = {
     "GasBearing": ("ALB.physics.gas", "GasBearing"),
     "CSOrifice": ("ALB.physics.hydraulics", "CSOrifice"),
     "NodimCSOrifice": ("ALB.physics.hydraulics", "NodimCSOrifice"),
-    "ThermalHydroBearing": ("ALB.thermal", "ThermalHydroBearing"),
-    "NodimThermalHydroBearing": ("ALB.thermal", "NodimThermalHydroBearing"),
+    "ThermalHydroBearing": ("ALB.physics.thermal", "ThermalHydroBearing"),
+    "NodimThermalHydroBearing": (
+        "ALB.physics.thermal",
+        "NodimThermalHydroBearing",
+    ),
 }
 
 

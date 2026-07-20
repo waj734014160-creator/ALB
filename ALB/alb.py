@@ -20,15 +20,15 @@ from ALB.config import (
     PIDConfig,
     ServoConfig,
     TankConfig,
+    ThermalConfig,
+    build_thermal_config,
 )
 from ALB.controller import PID, FuzzyPID
 from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
 from ALB.results import DataFrameResult, SaveTreeNode
 from ALB.servovalve import moog_2nd_servovalve, moog_servovalve, static_sv
-from ALB.thermal import (
+from ALB.physics.thermal import (
     NodimThermalHydroBearing,
-    ThermalConfig,
-    build_thermal_config,  # noqa: F401  re-exported for backward compatibility
     wrap_pad_collection_with_thermal,
 )
 

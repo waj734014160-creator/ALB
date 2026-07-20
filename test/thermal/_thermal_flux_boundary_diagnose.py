@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from ALB.config import FPBConfig
-from ALB.thermal import ThermalConfig
+from ALB.config import ThermalConfig
 from run.compare_orifice_methods import (
     HYD_MAX_ITER,
     _uxy_from_e_right_down,
@@ -48,7 +48,7 @@ def flux_stats_for(e_ratio, pad_name="down"):
     pad_names = ["up", "down", "right", "left"]
     # Rebuild identical thermal wrapped pad object from result path is not retained by solve_thermal,
     # so rerun only the target pad with object access.
-    from ALB.thermal import ThermalHydroBearing
+    from ALB.physics.thermal import ThermalHydroBearing
 
     alb2, csos2 = build_alb(pad_cfg)
     thermal_pads = [ThermalHydroBearing(pad, tcfg) for pad in alb2.pads]

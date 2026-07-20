@@ -5,7 +5,8 @@ import numpy as np
 
 from ALB.physics.bearing import HydrostaticBearing
 from ALB.config import HydConfig
-from ALB.thermal import ThermalConfig, ThermalHydroBearing
+from ALB.config import ThermalConfig
+from ALB.physics.thermal import ThermalHydroBearing
 
 
 ROOT = Path(__file__).resolve().parents[2]

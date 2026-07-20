@@ -222,7 +222,7 @@ def film_args_trans(w, x0, lx, lz, nx, nz, miu, c, r, l, ps, rho, dxt, dyt, vf):
     Transform dimensional film inputs into solver-ready nondimensional arguments.
 
     Thin wrapper that delegates the scaling formulas to
-    :class:`ALB.nondim.FilmNondimScales` so the conversion lives in one place.
+    :class:`ALB.physics.thermal.FilmNondimScales` so the conversion lives in one place.
 
     :param w: Rotor speed in rpm.
     :param x0: Start angle in degrees.
@@ -242,7 +242,7 @@ def film_args_trans(w, x0, lx, lz, nx, nz, miu, c, r, l, ps, rho, dxt, dyt, vf):
     :return: ``(input_args, args)`` where ``input_args`` is the dimensional
         record and ``args`` is the nondimensional dict consumed by film models.
     """
-    from ALB.nondim import FilmNondimScales
+    from ALB.physics.thermal.scales import FilmNondimScales
 
     input_args = {
         "w": w,

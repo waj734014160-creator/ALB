@@ -101,7 +101,8 @@ from ALB.remote.transport import (
 from ALB.results import DataFrameResult, NpyResult, SaveTreeNode
 from ALB.rotor import RossRotor
 from ALB.servovalve import moog_2nd_servovalve
-from ALB.thermal import ThermalConfig, ThermalHydroBearing
+from ALB.config import ThermalConfig
+from ALB.physics.thermal import ThermalHydroBearing
 from ALB.train.losses import sample_loss_values, weighted_mean
 from ALB.train.transforms import MidpointMinMaxScaler
 from ALB.core import Signal, TimeIterDt

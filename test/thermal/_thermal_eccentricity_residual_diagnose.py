@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from ALB.config import FPBConfig
-from ALB.thermal import ThermalConfig
+from ALB.config import ThermalConfig
 from run.compare_orifice_methods import (
     HYD_MAX_ITER,
     _uxy_from_e_right_down,

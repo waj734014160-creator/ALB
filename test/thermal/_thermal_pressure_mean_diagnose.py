@@ -7,7 +7,7 @@ import numpy as np
 from ALB.core import TimeIterDt
 from ALB.physics.bearing import MultiPad
 from ALB.orbit import test_bearing_orbit
-from ALB.thermal import ThermalHydroBearing
+from ALB.physics.thermal import ThermalHydroBearing
 from run import thermal_kc_compare as kc
 
 OUT = Path("outputs/thermal_kc_compare/pressure_mean_diagnosis.json")

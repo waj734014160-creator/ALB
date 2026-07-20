@@ -19,7 +19,7 @@ from ALB.config import (
 from ALB.couple import RsRotorBearingCouple
 from ALB.orbit import EllipseTrack, orbitime, test_bearing_orbit
 from ALB.rotor import rotor0
-from ALB.thermal import wrap_pad_collection_with_thermal
+from ALB.physics.thermal import wrap_pad_collection_with_thermal
 from ALB.tool import read_json5, read_json5_with_share
 
 

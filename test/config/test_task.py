@@ -8,11 +8,10 @@ import numpy as np
 
 from ALB.alb import ALB, alb2, alb2_fuzzy
 from ALB.physics.bearing import MultiPad, four_pads_bearing
-from ALB.config import ALBConfig, FPBConfig
+from ALB.config import ALBConfig, FPBConfig, build_thermal_config
 from ALB.servovalve import moog_servovalve
-from ALB.thermal import (
+from ALB.physics.thermal import (
     ThermalHydroBearing,
-    build_thermal_config,
     wrap_pad_collection_with_thermal,
 )
 from ALB.tool import read_json5_with_share

@@ -22,14 +22,14 @@ from ALB.config import (
     PIDConfig,
     ServoConfig,
     TankConfig,
+    ThermalConfig,
 )
 from ALB.controller import PID
 from ALB.orbit import EllipseTrack
 from ALB.orbit import test_bearing_orbit as run_bearing_orbit
 from ALB.physics.hydraulics import CSOrifice
 from ALB.servovalve import moog_servovalve
-from ALB.thermal import (
-    ThermalConfig,
+from ALB.physics.thermal import (
     ThermalHydroBearing,
     ThermalPostProcess,
     ViscosityFilmNode,

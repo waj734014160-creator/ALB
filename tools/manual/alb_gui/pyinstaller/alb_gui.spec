@@ -77,12 +77,12 @@ hiddenimports = [
     "ALB.matrix.dynmaic",
     "ALB.matrix.static",
     "ALB.mesh",
-    "ALB.nondim",
+    "ALB.physics.thermal.scales",
     "ALB.orbit",
     "ALB.physics.hydraulics.orifice",
     "ALB.results",
     "ALB.servovalve",
-    "ALB.thermal",
+    "ALB.physics.thermal",
     "ALB.tool",
 ]
 hiddenimports += collect_submodules("tools.manual.alb_gui")

@@ -12,7 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from ALB.alb import alb2, nodim_alb
 from ALB.config import ALBConfig, CsoArgs, NodimALBConfig, ThermalConfig
-from ALB.nondim import FilmNondimScales
+from ALB.physics.thermal import FilmNondimScales
 
 BASE = dict(
     alb="ALBSV",

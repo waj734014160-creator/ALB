@@ -7,7 +7,7 @@ import pytest
 
 from ALB.physics.bearing import HydrostaticBearing, NodimHydrostaticBearing
 from ALB.config import HydConfig, ThermalConfig
-from ALB.thermal import (
+from ALB.physics.thermal import (
     NodimThermalHydroBearing,
     NodimViscositySkfemNewtonFilm,
     SkfemThermalModelNondim,
