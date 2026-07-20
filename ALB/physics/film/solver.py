@@ -48,7 +48,7 @@ from ALB.core.numerics.iteration import (
 # from .logger import delogger, logger
 from ALB.core.numerics.static import calc_fe, calc_fe_vf, calc_ke
 from ALB.core.fem.mesh import Mesh
-from .results import DataFrameResult, NpyResult, SaveTreeNode
+from ALB.results import DataFrameResult, NpyResult, SaveTreeNode
 
 __all__ = [
     "NodimFilmModel",
@@ -242,7 +242,7 @@ def film_args_trans(w, x0, lx, lz, nx, nz, miu, c, r, l, ps, rho, dxt, dyt, vf):
     :return: ``(input_args, args)`` where ``input_args`` is the dimensional
         record and ``args`` is the nondimensional dict consumed by film models.
     """
-    from .nondim import FilmNondimScales
+    from ALB.nondim import FilmNondimScales
 
     input_args = {
         "w": w,

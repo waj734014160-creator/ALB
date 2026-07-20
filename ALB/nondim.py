@@ -20,7 +20,7 @@ import numpy as np
 class FilmNondimScales:
     """Reference scales for nondimensionalising the Reynolds film equation.
 
-    The conventions here match the legacy :func:`ALB.film.film_args_trans`
+    The conventions here match :func:`ALB.physics.film.film_args_trans`
     helper but expose them as a typed, immutable object so any caller can
     convert between dimensional and nondimensional film inputs without
     duplicating the formulas.

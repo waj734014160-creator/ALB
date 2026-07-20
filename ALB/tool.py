@@ -270,7 +270,7 @@ def itercouple(**kwargs):
 
 
 def get_main_model_from_filmsystem(system):
-    from ALB.film import FilmModel, FilmSystem
+    from ALB.physics.film import FilmModel, FilmSystem
 
     """
     Get the main model from FilmSystem

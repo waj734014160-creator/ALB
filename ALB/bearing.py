@@ -14,7 +14,7 @@ from ALB.core.component import BaseCSystem
 from ALB.core.fem import ElemManager, MatrixProcess, Mesh, NodeManager
 from ALB.config import FPBConfig, HydConfig
 from ALB.core.validation import get_unit_system
-from ALB.film import (
+from ALB.physics.film import (
     FilmBoundary,
     FilmModel,
     FilmPostProcess,

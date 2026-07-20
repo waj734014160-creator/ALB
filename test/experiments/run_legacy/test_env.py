@@ -3,7 +3,7 @@ import math
 
 import numpy as np
 
-from ALB.film import RectFilmElem, RectFilmNode, FilmBoundary
+from ALB.physics.film import FilmBoundary, RectFilmElem, RectFilmNode
 from ALB.core.fem import ElemManager, MatrixProcess, Mesh, NodeManager
 
 mesh = Mesh()

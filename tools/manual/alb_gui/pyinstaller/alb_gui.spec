@@ -71,7 +71,7 @@ hiddenimports = [
     "ALB.config",
     "ALB.controller",
     "ALB.damping",
-    "ALB.film",
+    "ALB.physics.film",
     "ALB.gauss",
     "ALB.lti",
     "ALB.matrix.dynmaic",

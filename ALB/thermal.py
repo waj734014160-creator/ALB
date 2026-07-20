@@ -12,7 +12,7 @@ from ALB.adapters import BearingDecoratorBase
 from ALB.core.fem.base import BasePostProcess
 from ALB.config import ThermalConfig, build_thermal_config  # noqa: F401  re-exported
 from ALB.core.numerics.damping import AdaptiveDampController
-from ALB.film import (
+from ALB.physics.film import (
     FilmOutput,
     NodimNewtonFilm,
     RectFilmElem,

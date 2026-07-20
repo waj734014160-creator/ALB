@@ -19,7 +19,7 @@ from ALB.contracts import (
 from ALB.core import BearingComponentBase
 from ALB.core.validation import require_unit_system, validate_bearing_output
 from ALB.couple import RsRotorBearingCouple
-from ALB.film import FilmSystem
+from ALB.physics.film import FilmSystem
 from ALB.orifice import CsoArgs as OrificeCsoArgs
 from ALB.results import DataFrameResult, SaveTreeNode
 

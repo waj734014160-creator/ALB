@@ -7,7 +7,7 @@ from skfem.helpers import grad
 from ALB.core.component import BaseSimpleModel
 from ALB.core.fem import ElemManager, MatrixProcess, Mesh, NodeManager
 from ALB.config import GasConfig
-from ALB.film import (
+from ALB.physics.film import (
     FilmBoundary,
     FilmSystem,
     RectFilmElem,

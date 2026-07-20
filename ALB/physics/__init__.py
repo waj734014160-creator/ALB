@@ -4,8 +4,8 @@ from importlib import import_module
 
 
 _EXPORTS = {
-    "FilmSystem": ("ALB.film", "FilmSystem"),
-    "NodimNewtonFilm": ("ALB.film", "NodimNewtonFilm"),
+    "FilmSystem": ("ALB.physics.film", "FilmSystem"),
+    "NodimNewtonFilm": ("ALB.physics.film", "NodimNewtonFilm"),
     "HydrostaticBearing": ("ALB.bearing", "HydrostaticBearing"),
     "NodimHydrostaticBearing": ("ALB.bearing", "NodimHydrostaticBearing"),
     "MultiPad": ("ALB.bearing", "MultiPad"),
