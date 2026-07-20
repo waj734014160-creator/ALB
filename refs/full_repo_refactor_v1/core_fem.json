@@ -1,0 +1,160 @@
+{
+  "schema": "alb.full-repo-refactor-reference.v1",
+  "domain": "core_fem",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "seed": 20260720,
+  "purpose": "FEM node/element ordering, assembly, boundaries, and kernels",
+  "fixed_inputs": {
+    "rect_size": [
+      2,
+      2
+    ],
+    "assembly_freedoms": 4,
+    "gauss_max_iterations": 50
+  },
+  "arrays": {
+    "rect_points": {
+      "shape": [
+        9,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "11a70ca02724279bf7e82d06964c4f36fb798c8b73d1e87617c4ace0956f01d0"
+    },
+    "rect_elements": {
+      "shape": [
+        4,
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "23a64014c8fd86089d4ff4295782f86958a25a54154793b1a923c85b6bc5a640"
+    },
+    "serend_points": {
+      "shape": [
+        13,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "89f78364a50ab481285bc6ef20e7a088fda14975be9c69d7355115fdac54d323"
+    },
+    "serend_elements": {
+      "shape": [
+        2,
+        8
+      ],
+      "dtype": "int64",
+      "sha256": "c56482445e7b9583b9269add0f9c56a0c42308db434c91d08ce15f446363b083"
+    },
+    "assembled_matrix": {
+      "shape": [
+        4,
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "086d2b1a0e12cd4318b296a3eb1e96fe3ff113f280f82c5048306aef6049e08e"
+    },
+    "assembled_right": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "b0d52678c8132def1422764c1fa54120571f7db2136cdc118090b0f5061c0933"
+    },
+    "continuity_matrix": {
+      "shape": [
+        2,
+        4
+      ],
+      "dtype": "float32",
+      "sha256": "a5f84f87c75eb6ed3751f8e6038992aa26904f6b9483e87fb42f796c1e29108d"
+    },
+    "continuity_right": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "value_matrix": {
+      "shape": [
+        2,
+        4
+      ],
+      "dtype": "float32",
+      "sha256": "2a228be734fcc0edad63a88a6d8eb74220fb45af27fe716854242c701cab5e85"
+    },
+    "value_right": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "1b8c1e2c9a0be06d4f03783e4248d50bdf03c8b58fa62931a83cc90e9242b761"
+    },
+    "coupled_matrix": {
+      "shape": [
+        8,
+        8
+      ],
+      "dtype": "float64",
+      "sha256": "3bd62aef23e18df2f48179c1c6638a6b94a0aa09fbc4fae57845124f2da3c789"
+    },
+    "coupled_right": {
+      "shape": [
+        8
+      ],
+      "dtype": "float64",
+      "sha256": "6bf320d43971aca2acc66b6b59d030384ce6a53f5a777d2fc80f3205b4d83350"
+    },
+    "static_ke": {
+      "shape": [
+        4,
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "fd9561fa5ee7c4f0487259c2bdf5041073b0e0689a08e946834661c252842244"
+    },
+    "static_fe": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "38c1761fa04e62c3c75855cea172566ad0041c42a56253debab832cf7acc0637"
+    },
+    "static_fe_vf": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "1fef6c407271f4c09d030cd1d486cf51e955ca10a2487a7c025f53f7aefa8dd5"
+    },
+    "dynamic_ke_dx": {
+      "shape": [
+        4,
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "16d00cd02961d771ffb08699dcee30309dd3e0645884240726866583d4c90f49"
+    },
+    "dynamic_fe_dx": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "e6e4eb650ea01abfc0ee6e3401e106f0a9966c7433ca16dd792e987f9ae2410f"
+    },
+    "gauss_solution": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "bf78e50c30800a3baa75deb71a8334a4d761fe61ba4b4365de59cc66832965f0"
+    },
+    "gauss_summary": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "1dc84765da261aeca0763fc48096344189e483a8ef20d112401b4fdbcb18a904"
+    }
+  }
+}

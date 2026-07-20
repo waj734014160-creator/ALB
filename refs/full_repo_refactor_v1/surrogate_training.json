@@ -1,0 +1,173 @@
+{
+  "schema": "alb.full-repo-refactor-reference.v1",
+  "domain": "surrogate_training",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "seed": 20260720,
+  "purpose": "ALBNN feature, inference, scaler, and loss behavior",
+  "base_columns": [
+    "ex",
+    "ey",
+    "vx",
+    "vy",
+    "sx",
+    "sy",
+    "lambda_value",
+    "beta_nondim",
+    "lr",
+    "cq0",
+    "cq1",
+    "cq2"
+  ],
+  "augmented_columns": [
+    "ex",
+    "ey",
+    "vx",
+    "vy",
+    "sx",
+    "sy",
+    "lambda_value",
+    "beta_nondim",
+    "lr",
+    "cq0",
+    "cq1",
+    "cq2",
+    "sqrt_abs_ex",
+    "sqrt_abs_ey",
+    "sqrt_abs_vx",
+    "sqrt_abs_vy",
+    "sqrt_abs_sx",
+    "sqrt_abs_sy",
+    "sqrt_abs_lambda_value",
+    "sqrt_abs_beta_nondim",
+    "sqrt_abs_lr",
+    "sqrt_abs_cq0",
+    "sqrt_abs_cq1",
+    "sqrt_abs_cq2",
+    "e_norm",
+    "v_norm",
+    "s_norm",
+    "sqrt_lambda_over_lr"
+  ],
+  "network_architecture": [
+    12,
+    8,
+    2
+  ],
+  "arrays": {
+    "base_frame": {
+      "shape": [
+        4,
+        12
+      ],
+      "dtype": "float64",
+      "sha256": "ad064e1bf8c23c9f7c9800d557db996f439b0b9fa374a83b1c556728a151dcaa"
+    },
+    "augmented_frame": {
+      "shape": [
+        4,
+        28
+      ],
+      "dtype": "float64",
+      "sha256": "096c4940e2ec2fee6111a71f09a6492329c2b207daf29f77c04cc9f933a5c1e8"
+    },
+    "canonical_frame": {
+      "shape": [
+        4,
+        12
+      ],
+      "dtype": "float64",
+      "sha256": "fc43aaa46bed0055139a92da5d3a46a5637be60a9b17ca276661f18a3676bc5f"
+    },
+    "canonical_steps": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "a1e03200f1f82ad2c1cec8795c271aaecf98f5aa2d151d2229ec5fa0c177cf77"
+    },
+    "canonical_forces": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "6173f95cbb747900de6e4b99b21944e2513de0028384df04185394ecf7505416"
+    },
+    "network_input": {
+      "shape": [
+        4,
+        12
+      ],
+      "dtype": "float32",
+      "sha256": "eca7d2ea07cdc95caa865699ba11f2ecdbcb8e479634f529277b21d1c011b1fb"
+    },
+    "network_parameters": {
+      "shape": [
+        122
+      ],
+      "dtype": "float32",
+      "sha256": "f5db03c5f4f19847d9a760041f52b1831623001963226ea9a0000701345c1201"
+    },
+    "network_output": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float32",
+      "sha256": "5128fcf8286f46a4abec3c2e160bffab40e0cdc26dfb5ac3a516af2f740e3ab5"
+    },
+    "scaler_input": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "78be66bb703857aa699e3155221bbc3d5050b4cd0a6d00fce78e3e7d636bc1d1"
+    },
+    "scaler_output": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "e31191d8e1d3f4f6f862ab752d1cc5e37d964f7db3faa5dd5c5a3bb8e24a6ae8"
+    },
+    "sample_losses": {
+      "shape": [
+        2
+      ],
+      "dtype": "float32",
+      "sha256": "f215ad6794ecf7749882847497e64036014da8e984d740a83531290b2433e949"
+    },
+    "weighted_loss": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "b6643c12c15ec8081392e1572a58231e08b3928d6985a75609ff0fc18d14aa17"
+    },
+    "training_target": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float32",
+      "sha256": "fd11ac76f6453d32d6a0b9b8ea54c846abd616c0d4136c444321ddcc345c493d"
+    },
+    "training_losses": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "e8b023c2ce9d59cd6571bb9df9e3fdde2f1a829f0c6ac66971f5e51b88d12177"
+    },
+    "training_parameters": {
+      "shape": [
+        2,
+        122
+      ],
+      "dtype": "float32",
+      "sha256": "8ad977c73c88dbed3b96bf85af8b239ad615f3932d4d7e2c34c65b32b1ee0e6c"
+    }
+  }
+}

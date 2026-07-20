@@ -1,0 +1,129 @@
+{
+  "schema": "alb.full-repo-refactor-reference.v1",
+  "domain": "control_valve",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "seed": 20260720,
+  "purpose": "Controller and servo-valve state transition order",
+  "pid_result_columns": [
+    "t",
+    "input",
+    "output",
+    "error",
+    "delta_error",
+    "kp_calc",
+    "ki_calc",
+    "kd_calc"
+  ],
+  "servo_class": "ServoValve2",
+  "arrays": {
+    "time": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "ca2616ffaab18a63340a150f12bb93818471dbd79213d5400b65669ac70083fe"
+    },
+    "pid_errors": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "84783f7acfd5de8449f1767ad7898a6e3b2d61580446cc4cf79aa0e2da0aee72"
+    },
+    "pid_outputs": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "f326ca06615eade62be4c3cd3fb81817d29ce79243b0b5da595c70e9b9e9ac5b"
+    },
+    "pid_kp_terms": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "0cee925eb403f7d9a57161fc4ad76fe403d3042f1b9fbebb93c1b795fb500c8b"
+    },
+    "pid_ki_terms": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8a7947e74e0f3d2400556c97d92f686391180e4b90be1e3864bd8f95b3e7248d"
+    },
+    "pid_kd_terms": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "06b4df35d39f076f0c17e0096149a7ec184e3f267a54a48b224cec071d9be381"
+    },
+    "servo_commands": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "c0da28b9f1a7a62e7f91f279ecfd4cf18d4ee2254589770fbb8398269f3d45b1"
+    },
+    "servo_outputs": {
+      "shape": [
+        4,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "7739a9144e6acd15841da0e566b4b336aba49ea25f904f7db3dcfab44cb10a66"
+    },
+    "servo_state_history": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8f9b01c4d8122ca929f6fa3f20aa753acd428faf8bf5fd2a446dce1f5b12028b"
+    },
+    "servo_output_history": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "7739a9144e6acd15841da0e566b4b336aba49ea25f904f7db3dcfab44cb10a66"
+    },
+    "servo_A": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "008835ca29b231c6e6ff9fd7d19d2b9f125cd10c9d3844b0c21ee9ac28c25b97"
+    },
+    "servo_B": {
+      "shape": [
+        2,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "727a3ad05c855d5c16a5bee39806dd8ae6f5ca34b02f3f92ef5dc40d0d655b81"
+    },
+    "servo_C": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "ab8fcfda69f4c19259c6e8ea2c6d7b3e59a249cdcd053a6b92f02f660b221f62"
+    },
+    "servo_D": {
+      "shape": [
+        1,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc"
+    }
+  }
+}

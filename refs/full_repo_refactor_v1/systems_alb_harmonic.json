@@ -1,0 +1,115 @@
+{
+  "schema": "alb.full-repo-refactor-reference.v1",
+  "domain": "systems_alb_harmonic",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "seed": 20260720,
+  "purpose": "ALB builder behavior and formal harmonic coefficients",
+  "harmonic_output_keys": [
+    "force",
+    "force_damping",
+    "force_spool",
+    "force_stiffness",
+    "friction",
+    "spool",
+    "spool_command"
+  ],
+  "alb_class": "NodimALB",
+  "pad_count": 4,
+  "pad_final_iterations": [
+    10,
+    1,
+    1,
+    10
+  ],
+  "converged": true,
+  "arrays": {
+    "harmonic_positions": {
+      "shape": [
+        6,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "3cc37458d22912cbe958620d32ff2af9588df2e757431377083a0456e3370ee7"
+    },
+    "harmonic_velocities": {
+      "shape": [
+        6,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "55805ac9bb4bd7363530bcc72d9e3ac268751b28dcdc3a508e2a25e151e8675f"
+    },
+    "harmonic_forces": {
+      "shape": [
+        6,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "aa0b29425dc66a555a4c8e31371ef6ed712d8e4345a92282878e475290b7ee83"
+    },
+    "harmonic_K": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "00012848b4f0ee355a1da9cdc6e3dde1f7a932c656ef7b4a50658ceb6b1d834f"
+    },
+    "harmonic_C": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "26e79aec4ed459e2fe0b1a3d47884af2c2f2fee95cbea4199981aa69e213e04c"
+    },
+    "harmonic_G_xv_real": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "418e19dddf5e3d823ba13cd22fd2db2cf6b858e61086e9aad3d71c9b7519dca1"
+    },
+    "harmonic_G_xv_imag": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "9e8e607dee7eae9c97b352bcfda84447b732fcb382fb55b40e051649eceb0432"
+    },
+    "alb_inputs": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d78d831571d82c9940a30fda9621e1d3861a63aad0d60d3d01c2eaf583b1c8a3"
+    },
+    "alb_velocities": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8c81b3896cc7dfce063e5409377a8edd7718facc93659c3dd15caa7651e05317"
+    },
+    "alb_forces": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "a5173ced662128e7a9ed5615b45c60bc70f8624ad9893ab4c8ada4c2bd4586b4"
+    },
+    "alb_pad_pressures": {
+      "shape": [
+        4,
+        24
+      ],
+      "dtype": "float64",
+      "sha256": "2e42a45f2c8e3cbf12d538800b0977c13feb2250894e12e542526e3d1cad5043"
+    }
+  }
+}

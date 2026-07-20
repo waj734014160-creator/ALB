@@ -1,0 +1,45 @@
+{
+  "schema": "alb.full-repo-refactor-reference.v1",
+  "domain": "gas",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "seed": 20260720,
+  "purpose": "Gas bearing pressure and load behavior",
+  "config": {
+    "nx": 12,
+    "nz": 8,
+    "damp": 0.7
+  },
+  "final_iter": 6,
+  "converged": true,
+  "arrays": {
+    "pressure": {
+      "shape": [
+        117
+      ],
+      "dtype": "float64",
+      "sha256": "b8c4ea59b15294aa14e79e84bbed76d7d4a0d66d3c9d6058e74f67a77db229aa"
+    },
+    "pressure_field": {
+      "shape": [
+        13,
+        9
+      ],
+      "dtype": "float64",
+      "sha256": "b8c4ea59b15294aa14e79e84bbed76d7d4a0d66d3c9d6058e74f67a77db229aa"
+    },
+    "force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7ed3b3a8bf42d7dfe1f7b65727d557117eef847cca3af28635eb28b7f7aa2af6"
+    },
+    "residual_history": {
+      "shape": [
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "c9e40394466b5ed657dee88840583d63f278894b43c63b8751f61acbe9621d14"
+    }
+  }
+}

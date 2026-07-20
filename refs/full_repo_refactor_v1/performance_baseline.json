@@ -1,0 +1,118 @@
+{
+  "schema": "alb.full-repo-refactor-performance.v1",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "policy": "Pause a domain when its same-machine median exceeds the baseline by more than 15 percent.",
+  "benchmarks": [
+    {
+      "case": "film",
+      "work_units_per_sample": 30,
+      "samples_seconds": [
+        0.008107336666823055,
+        0.007378866667083154,
+        0.006716313333405803,
+        0.007705370000136705,
+        0.00766385333360328,
+        0.00927894000002804,
+        0.007454863333259709
+      ],
+      "median_seconds": 0.00766385333360328,
+      "mad_seconds": 0.0002849866665201265,
+      "p25_seconds": 0.007416865000171431,
+      "p75_seconds": 0.00790635333347988,
+      "noise_ratio": 0.03718581947159153,
+      "noise_threshold_ratio": 0.05,
+      "baseline_stable": true,
+      "allowed_ratio": 1.15
+    },
+    {
+      "case": "thermal",
+      "work_units_per_sample": 5,
+      "samples_seconds": [
+        0.11417040000087582,
+        0.11777337999665179,
+        0.11523036000435241,
+        0.12216689999913796,
+        0.12059907999937422,
+        0.1182310200005304,
+        0.12452889999840408
+      ],
+      "median_seconds": 0.1182310200005304,
+      "mad_seconds": 0.00300065999617799,
+      "p25_seconds": 0.1165018700005021,
+      "p75_seconds": 0.12138298999925609,
+      "noise_ratio": 0.02537963384029444,
+      "noise_threshold_ratio": 0.05,
+      "baseline_stable": true,
+      "allowed_ratio": 1.15
+    },
+    {
+      "case": "alb",
+      "work_units_per_sample": 20,
+      "samples_seconds": [
+        0.1428369350003777,
+        0.1324909700007993,
+        0.1346891199995298,
+        0.13586693000106606,
+        0.13998433500091778,
+        0.14041337999951792,
+        0.138950954999018
+      ],
+      "median_seconds": 0.138950954999018,
+      "mad_seconds": 0.003084024997951934,
+      "p25_seconds": 0.13527802500029792,
+      "p75_seconds": 0.14019885750021785,
+      "noise_ratio": 0.02219506154508783,
+      "noise_threshold_ratio": 0.05,
+      "baseline_stable": true,
+      "allowed_ratio": 1.15
+    },
+    {
+      "case": "albnn",
+      "work_units_per_sample": 200,
+      "samples_seconds": [
+        0.005373385499988217,
+        0.005512713000061922,
+        0.005137493000074755,
+        0.0050039714999729765,
+        0.005539900500007206,
+        0.006341893500066362,
+        0.00546447150001768,
+        0.005116525999910664,
+        0.005426538999890909,
+        0.005354856999911135,
+        0.005379482499993173
+      ],
+      "median_seconds": 0.005379482499993173,
+      "mad_seconds": 0.00013323050006874837,
+      "p25_seconds": 0.005246174999992945,
+      "p75_seconds": 0.005488592250039801,
+      "noise_ratio": 0.024766415741461646,
+      "noise_threshold_ratio": 0.05,
+      "baseline_stable": true,
+      "allowed_ratio": 1.15
+    },
+    {
+      "case": "coupling",
+      "work_units_per_sample": 20,
+      "samples_seconds": [
+        0.07884059000061824,
+        0.07697723499877611,
+        0.07717252500005997,
+        0.07626232000038727,
+        0.07828855000116164,
+        0.08025273000093876,
+        0.07626720499974908,
+        0.08801360499928705,
+        0.08655281500105047
+      ],
+      "median_seconds": 0.07828855000116164,
+      "mad_seconds": 0.0019641799997771187,
+      "p25_seconds": 0.07697723499877611,
+      "p75_seconds": 0.08025273000093876,
+      "noise_ratio": 0.02508898171888449,
+      "noise_threshold_ratio": 0.05,
+      "baseline_stable": true,
+      "allowed_ratio": 1.15
+    }
+  ]
+}

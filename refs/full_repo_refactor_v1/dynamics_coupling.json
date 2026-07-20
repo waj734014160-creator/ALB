@@ -1,0 +1,108 @@
+{
+  "schema": "alb.full-repo-refactor-reference.v1",
+  "domain": "dynamics_coupling",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "seed": 20260720,
+  "purpose": "Rotor advance timing and coupling exchange order",
+  "legacy_output_advances_state": true,
+  "coupling_result_keys": [
+    "bearing0"
+  ],
+  "save_tree": {
+    "rotor_bearing_couple": {
+      "reference_rotor": null,
+      "ALBHarmonicLinear12": null
+    }
+  },
+  "arrays": {
+    "rotor_forces": {
+      "shape": [
+        4,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "8973d05d50122ec06def9b5bc27fe3d9d1978bb88144db0f400a95ec7c5346d4"
+    },
+    "rotor_states": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "aad2496dd94b56eb88069b5241e54c3463f91cd42d27f3a75cb3ac77354755ce"
+    },
+    "rotor_state_history": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "aad2496dd94b56eb88069b5241e54c3463f91cd42d27f3a75cb3ac77354755ce"
+    },
+    "rotor_output_history": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "aad2496dd94b56eb88069b5241e54c3463f91cd42d27f3a75cb3ac77354755ce"
+    },
+    "rotor_Ad": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8a3d35ae7115c547823a3668d60456d96edff5c4fe17d8767a6f17d519a8a3d7"
+    },
+    "rotor_Bd0": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "9ce5339462c3a0846a019d9734e632925ae24081c6fc4f3e938edc75c594980d"
+    },
+    "rotor_Bd1": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "0661350d5c41d60258ec7e5eb925e362bc3cce65a75b2cd4de3af122909e591e"
+    },
+    "coupling_times": {
+      "shape": [
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "488accf474e33936b10723aae3742ad321176e29a72848d2a3894b878af24f40"
+    },
+    "coupling_forces": {
+      "shape": [
+        3,
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "b1d11541ce261b5e1ccba7408df49256d6e8a5b8a9cc46cb7ae6e4e6b16823bb"
+    },
+    "coupling_previous_forces": {
+      "shape": [
+        3,
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "60fb5503af670c8a5d462b3e260f667d0ba16f778fce4a9e9c529f928f9b65a3"
+    },
+    "coupling_bearing_results": {
+      "shape": [
+        3,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "bcd65adbf21f7b65b76606f37b2c491ef3b2ffba382012b6773a2ff81883af07"
+    }
+  }
+}

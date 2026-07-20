@@ -1,0 +1,164 @@
+{
+  "schema": "alb.full-repo-refactor-reference.v1",
+  "domain": "thermal",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "seed": 20260720,
+  "purpose": "Thermal coupling fields, memory, and local convergence",
+  "hyd_config": {
+    "nx": 7,
+    "nz": 5
+  },
+  "thermal_config": {
+    "max_iter": 12,
+    "tol": 0.03,
+    "coupling": "full"
+  },
+  "thermal_iterations": 3,
+  "thermal_converged": true,
+  "thermal_solver_used": "direct",
+  "thermal_state_keys": [
+    "adaptive_damp_enabled",
+    "converged",
+    "iterations",
+    "newton_iterations",
+    "newton_line_search_steps",
+    "newton_residual",
+    "relax",
+    "relax_history",
+    "solver_used",
+    "t_eff",
+    "viscosity",
+    "viscosity_field"
+  ],
+  "transient_steps": 3,
+  "transient_commits_per_step": 1,
+  "arrays": {
+    "input_uxy": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "294e233b476e1912598343094bfbdffcd135347406f2900fbdc0deb3c066c17f"
+    },
+    "input_uxyt": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "0dffbd91c116d7ad7323063bcc14168af193e329754e1c9dc6234506859fdb46"
+    },
+    "pressure_field": {
+      "shape": [
+        8,
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "97accc5ad945bc664527485c33f008645ab8a5ee1b1efb8e60c117b6b606072e"
+    },
+    "temperature_field": {
+      "shape": [
+        8,
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "eb5662bc00258062aac7919198fb284aa7709435ab5329dae073c505195f7e9b"
+    },
+    "temperature_film": {
+      "shape": [
+        48
+      ],
+      "dtype": "float64",
+      "sha256": "eb5662bc00258062aac7919198fb284aa7709435ab5329dae073c505195f7e9b"
+    },
+    "viscosity_field": {
+      "shape": [
+        48
+      ],
+      "dtype": "float64",
+      "sha256": "203fd9b15c1b48bb82a7f12d85922de74c54de64bd3275a03d275c09d867eea4"
+    },
+    "viscosity_field_grid": {
+      "shape": [
+        8,
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "203fd9b15c1b48bb82a7f12d85922de74c54de64bd3275a03d275c09d867eea4"
+    },
+    "thermal_relax_history": {
+      "shape": [
+        0
+      ],
+      "dtype": "float64",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "pressure_residual_history": {
+      "shape": [
+        0
+      ],
+      "dtype": "float64",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "thermal_scalars": {
+      "shape": [
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "85fdc24cbf262cac9fe3a30435ddf048f813bb72746e0cc7dab5ccbca70803d3"
+    },
+    "transient_positions": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "791fd2bd4c640003b47a267d9a1102160e770d64b8910c41b4de6a38dba813e9"
+    },
+    "transient_velocities": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "835d41188c15c1c921ac2942675b24a5e01bdec2dc67f955ec39ab2ac8825479"
+    },
+    "transient_temperature": {
+      "shape": [
+        3,
+        24
+      ],
+      "dtype": "float64",
+      "sha256": "8cdb6100f52fea6dff14fe8b5143cad6adfc3b04a73bc34f123438f27c389419"
+    },
+    "transient_force": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "b2e90360dd100469773ac12be9a0f0ae98f3b0b7679f8b26146c9eeee0e92ed9"
+    },
+    "transient_t_eff": {
+      "shape": [
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "216b7474cbb656e15a3ab5b726f5f9aabc74cf611eee90943b854f9d5240fea6"
+    },
+    "transient_committed_temperature": {
+      "shape": [
+        3,
+        24
+      ],
+      "dtype": "float64",
+      "sha256": "8cdb6100f52fea6dff14fe8b5143cad6adfc3b04a73bc34f123438f27c389419"
+    }
+  }
+}

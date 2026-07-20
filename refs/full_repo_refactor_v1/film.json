@@ -1,0 +1,83 @@
+{
+  "schema": "alb.full-repo-refactor-reference.v1",
+  "domain": "film",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "seed": 20260720,
+  "purpose": "Reynolds film field, force, and residual order",
+  "config": {
+    "nx": 7,
+    "nz": 5,
+    "max_iter": 20,
+    "error_set": 1e-09,
+    "damp": 0.7,
+    "iter_method": "newton"
+  },
+  "final_iter": 7,
+  "converged": true,
+  "arrays": {
+    "input_uxy": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "b2eff439f4eba700442adeb6bc40a1f2c01ce195e9009fbd6966e7f87ce129d6"
+    },
+    "input_uxyt": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "ee119baaae059ac3130a1abc9085fb071f3dd3e6f81155eb397fe8e11184bb69"
+    },
+    "pressure": {
+      "shape": [
+        48
+      ],
+      "dtype": "float64",
+      "sha256": "5b85677008a769ba536caaac8a80dffc96b1a2ff99ede1f1380958832e9052a6"
+    },
+    "pressure_field": {
+      "shape": [
+        8,
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "5b85677008a769ba536caaac8a80dffc96b1a2ff99ede1f1380958832e9052a6"
+    },
+    "thickness": {
+      "shape": [
+        48
+      ],
+      "dtype": "float64",
+      "sha256": "41cc42f6d2ed4b1dd328e472a8cf9b46e7eb85c1a2e3734264ee3b1663b13930"
+    },
+    "force_nondim": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "c224664cfd48fbf871c6a6bd853d33eabbe1925698153701468ff7ac90c9300f"
+    },
+    "force_dimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7307f52f5402666bfc5861e96793eac39356988aaf48b9280a820aa0b4710ed0"
+    },
+    "friction_nondim": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "6b34df8ab8448cb7ca298c4854c640dc19136b3257524ddb604cae5a83dcf254"
+    },
+    "residual_history": {
+      "shape": [
+        8
+      ],
+      "dtype": "float64",
+      "sha256": "f3c63805a3e31f5a3e38362b34379de015067a23e2b8e28056d06918b30d913e"
+    }
+  }
+}

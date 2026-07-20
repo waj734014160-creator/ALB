@@ -1,0 +1,88 @@
+{
+  "schema": "alb.full-repo-refactor-reference.v1",
+  "domain": "bearing",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "seed": 20260720,
+  "purpose": "Four-pad ordering and aggregate bearing behavior",
+  "pad_order": [
+    "up",
+    "down",
+    "right",
+    "left"
+  ],
+  "pad_final_iterations": [
+    5,
+    0,
+    4,
+    4
+  ],
+  "converged": true,
+  "arrays": {
+    "input_uxy": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "6791ce1700128656ee766ad6e5a6ecb647f53c5381b7d556e69fd55d8e153e67"
+    },
+    "input_uxyt": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "38f7243e189d5939defc76964e6ce94cf0313071e5472a6a5f0fdc5f4675bb43"
+    },
+    "aggregate_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7eccb2ab3e2b4a7d7a9cad7da892b87c7666ed18be1e4e1387d1afd8c28b8f53"
+    },
+    "aggregate_friction": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "04edec35fb10382be5457ca44f8ca4f14e669d891378a9fa53fd16d8ffdd0e4a"
+    },
+    "pad_force": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "fcd3bab6ae2aa300b52441d38729539bf0ac8918c389ec56d9244e1bd48f1bd9"
+    },
+    "pad_pressure": {
+      "shape": [
+        4,
+        24
+      ],
+      "dtype": "float64",
+      "sha256": "3c9e9cce7804ba4bab8d16178bdf5e89fa5ddcf7703b05c8670c5f17e7d67118"
+    },
+    "pad_residual_history": {
+      "shape": [
+        17
+      ],
+      "dtype": "float64",
+      "sha256": "51405dbe438ca1c4f6a4533f19f803c7af67b7697a0e3b4e236f152dac210730"
+    },
+    "pad_residual_offsets": {
+      "shape": [
+        5
+      ],
+      "dtype": "int32",
+      "sha256": "3f0cb90bed898a4f81f3d6e8a86762d45eab404672d42e4555242b1b0a8c57da"
+    },
+    "result_rows": {
+      "shape": [
+        1,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "61e431cca6e1e1549923c02045567564eceea3ba09ba3c1dcbd6f6e90aa35831"
+    }
+  }
+}

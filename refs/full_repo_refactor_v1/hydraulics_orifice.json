@@ -1,0 +1,76 @@
+{
+  "schema": "alb.full-repo-refactor-reference.v1",
+  "domain": "hydraulics_orifice",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "seed": 20260720,
+  "purpose": "Orifice pressure-flow coupling and pad response",
+  "orifice_count": 2,
+  "final_iter": 7,
+  "converged": true,
+  "arrays": {
+    "input_uxy": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "302f5811a74dea96e574d6de1bf36ff036bd38dd250a3a601120ba846b47c8a8"
+    },
+    "input_uxyt": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "5cc609e35cd1525d628d6b39eae1309241b38c36d6f88a821ece38c8d2ab2447"
+    },
+    "pressure": {
+      "shape": [
+        24
+      ],
+      "dtype": "float64",
+      "sha256": "416a96aa85726c8877a75a23fba6db53964847f77163934c871301ffc88ba000"
+    },
+    "force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "f38b0085537621a8d547bd20de771a44aec9ae4a7b2ba372feb08f638a1b1a41"
+    },
+    "qn": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d155661b57a9c69ec1da0628437ce967298610cbeb03488b2bb2c9887f4253c4"
+    },
+    "flow": {
+      "shape": [
+        2,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "2843bb2ac4353e6a34d892876af0a5b29a0e082a910fb86faa16fcb1738d4987"
+    },
+    "flow_nondim": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d155661b57a9c69ec1da0628437ce967298610cbeb03488b2bb2c9887f4253c4"
+    },
+    "flow_volumetric": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "05d7f8efe32170c247e04f046abbf3ba045077bdab56812f443e7434ccb87415"
+    },
+    "residual_history": {
+      "shape": [
+        8
+      ],
+      "dtype": "float64",
+      "sha256": "afb3d7981a54f22d459f59415d9e3224b7cee95ccb07e596f41380bd86c37c32"
+    }
+  }
+}
