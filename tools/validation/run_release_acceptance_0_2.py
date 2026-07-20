@@ -41,7 +41,7 @@ def _git(*args: str) -> str:
         cwd=REPOSITORY_ROOT,
         text=True,
         encoding="utf-8",
-    ).strip()
+    ).rstrip("\r\n")
 
 
 def _tracked_status() -> list[str]:
