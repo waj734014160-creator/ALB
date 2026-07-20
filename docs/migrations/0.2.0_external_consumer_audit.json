@@ -1,0 +1,2189 @@
+{
+  "schema": "alb.external-consumer-audit.v1",
+  "version": "0.2.0",
+  "audit_date": "2026-07-21",
+  "read_only": true,
+  "projects": [
+    {
+      "project": "SURROGATE_TRAIN",
+      "root": "G:/ALB_PROJECTS/SURROGATE_TRAIN",
+      "declared_count": 23,
+      "counts": {
+        "direct": 19,
+        "context": 4
+      },
+      "entries": [
+        {
+          "kind": "direct",
+          "path": "run/analysis/check_s0008_dimensional_cross_validation.py",
+          "sha256": "fae32198b99bcc3930960810d2f0e55aff32977d2c44608c8828791713ad760e",
+          "size_bytes": 14940,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.systems.alb"
+          ],
+          "migration_requirements": [],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/analysis/compare_packaged_albnn_force_kc.py",
+          "sha256": "f894b7f773e9a280fd7215d6d2b2cebc8c7c5ca4651aa5d7849caf6384b3cb12",
+          "size_bytes": 45581,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "ALBNNAgent",
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig",
+                "ALBNetConfig",
+                "FPBConfig",
+                "OrificeConfig",
+                "PIDConfig",
+                "ServoConfig",
+                "TankConfig",
+                "ThermalConfig"
+              ]
+            },
+            {
+              "module": "ALB.nn",
+              "names": [
+                "albnn"
+              ]
+            },
+            {
+              "module": "ALB.nondim",
+              "names": [
+                "ThermalNondimScales"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack"
+              ]
+            },
+            {
+              "module": "ALB.orifice",
+              "names": [
+                "CSOrifice"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "recognize_kc"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.hydraulics.orifice",
+            "ALB.physics.thermal.scales",
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers",
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/analysis/knn_local_oracle_kc.py",
+          "sha256": "48d8d1d1a04c4a28caef4a782d6e06c758987e8e60f62d17ef7dd1b82fffbbc5",
+          "size_bytes": 20703,
+          "old_imports": [
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBNetConfig"
+              ]
+            },
+            {
+              "module": "ALB.nn",
+              "names": [
+                "albnn"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/analysis/knn_validation_oracle_g0.py",
+          "sha256": "d8cba83941e9611b4fff927bdfd615fdeadc1e487fce40952dc16e60f9fe96ef",
+          "size_bytes": 13242,
+          "old_imports": [
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBNetConfig"
+              ]
+            },
+            {
+              "module": "ALB.nn",
+              "names": [
+                "albnn"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/analysis/retry_s0011_thermal_settings.py",
+          "sha256": "358160b793425b258b08fc4c4d0baa1fde766849abfcf1cfe0c0fbeb23bfe625",
+          "size_bytes": 10741,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/jupyter/data_check.ipynb",
+          "sha256": "7babd957916c9da5f295d96fbb5a7523b99f0e6ee1118644d906af1da36b2431",
+          "size_bytes": 13990,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "nodim_alb"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "NodimALBConfig",
+                "NodimOrificeConfig",
+                "NodimPadConfig",
+                "ThermalConfig"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/remote/remote_job.py",
+          "sha256": "fe1cfd6a848afc14172c48236ce041d668479218d2811137962ed63c839e31c1",
+          "size_bytes": 458,
+          "old_imports": [
+            {
+              "module": "ALB.remote.job",
+              "names": [
+                "main"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.infrastructure.remote",
+            "ALB.surrogate.training.remote"
+          ],
+          "migration_requirements": [],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/remote/remote_monitor_job.py",
+          "sha256": "990da153494a340a9b4aa6d7f02d608bce2d3e155fccbd53618ce27cc0705695",
+          "size_bytes": 466,
+          "old_imports": [
+            {
+              "module": "ALB.remote.monitor",
+              "names": [
+                "main"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.infrastructure.remote",
+            "ALB.surrogate.training.remote"
+          ],
+          "migration_requirements": [],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/remote/remote_query_albnn_status.py",
+          "sha256": "4f98b81ed16b47c671595424c9ae8ef674c9e72530b52e537d7465e5248538ac",
+          "size_bytes": 477,
+          "old_imports": [
+            {
+              "module": "ALB.remote.albnn_status",
+              "names": [
+                "main"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.infrastructure.remote",
+            "ALB.surrogate.training.remote"
+          ],
+          "migration_requirements": [],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/remote/remote_queue_albnn_activation_sweep.py",
+          "sha256": "c44d49db81ded2f6d1576c0d349eb030b19e2a43c4b8a9392dd29c2cd2134c21",
+          "size_bytes": 475,
+          "old_imports": [
+            {
+              "module": "ALB.remote.albnn_queue",
+              "names": [
+                "main"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.infrastructure.remote",
+            "ALB.surrogate.training.remote"
+          ],
+          "migration_requirements": [],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/remote/remote_start_albnn_train.py",
+          "sha256": "20d173b19fa07fc17a2bafad4c8bb1ff092c2d1ca814587b43203b2b5a2887b0",
+          "size_bytes": 475,
+          "old_imports": [
+            {
+              "module": "ALB.remote.albnn_start",
+              "names": [
+                "main"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.infrastructure.remote",
+            "ALB.surrogate.training.remote"
+          ],
+          "migration_requirements": [],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/remote/retry_invalid_adaptive_damp.py",
+          "sha256": "6fa6ce460cfc40b0f9333d4835ffb0890b16225daaff554c55cc2de433c936c3",
+          "size_bytes": 6735,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "nodim_alb"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "NodimALBConfig"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.systems.alb"
+          ],
+          "migration_requirements": [],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "context",
+          "path": "run/train/run_acceptance_training_campaign.py",
+          "sha256": "875e6acd5b3a3e6b43a51162e1468f23419a20f6fdea292c0fed4ab1817d7aa6",
+          "size_bytes": 8516,
+          "old_imports": [],
+          "target_namespaces": [],
+          "migration_requirements": [],
+          "context_note": "仅固定 ALB Python 环境路径。",
+          "external_file_modified": false
+        },
+        {
+          "kind": "context",
+          "path": "run/train/run_local_kc_campaign.py",
+          "sha256": "3e9d91e0b7529ce774f43935679b9a246dec0acc2c547cf31eeb39f6047646f5",
+          "size_bytes": 10190,
+          "old_imports": [],
+          "target_namespaces": [],
+          "migration_requirements": [],
+          "context_note": "仅固定 ALB Python 环境路径。",
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/train/train_alb_agent.py",
+          "sha256": "3d852bcea144387fd6b9ad1f2ab37bb103e1bc4f8d0ccdb450bb32e336009271",
+          "size_bytes": 8428,
+          "old_imports": [
+            {
+              "module": "ALB.nn",
+              "names": [
+                "ALBNN_BASE_INPUT_COLS",
+                "ALBNN_OUTPUT_COLS"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/train/train_albnn.py",
+          "sha256": "3bc11f144b0fc74dfcb26b6d85840f9a88f4db240a81339861eaf0d4bfdaf310",
+          "size_bytes": 136284,
+          "old_imports": [
+            {
+              "module": "ALB.nn",
+              "names": [
+                "ALBNN_BASE_INPUT_COLS",
+                "ALBNN_FEATURE_SETS",
+                "ALBNN_OUTPUT_COLS",
+                "ALBNN_POLAR_FORCE_OUTPUT_COLS",
+                "AsinhTargetScaler",
+                "ColumnSignedLog1pTargetScaler",
+                "Cq2SigLogMinMaxScaler",
+                "IdentityTargetScaler",
+                "MinMaxCubeRootTargetScaler",
+                "MinMaxWithScaledEvsFeaturesScaler",
+                "MotionStandardParamDirectMinMaxScaler",
+                "MotionStandardParamMinMaxScaler",
+                "Net",
+                "PolarMotionStandardParamMinMaxScaler",
+                "SelectiveMinMaxScaler",
+                "SelectiveStandardScaler",
+                "SignedLog1pTargetScaler",
+                "StandardTargetScaler",
+                "StandardThenMinMaxScaler",
+                "albnn_augment_frame",
+                "cartesian_force_to_polar_frame",
+                "polar_force_to_cartesian"
+              ]
+            },
+            {
+              "module": "ALB.train",
+              "names": [
+                "AlbnnMlpTrainer",
+                "TrainingConfig"
+              ]
+            },
+            {
+              "module": "ALB.train.config",
+              "names": [
+                "runtime_overrides"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers",
+            "ALB.surrogate.training"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/train/train_albnn_expert.py",
+          "sha256": "301b6f34a2ae1be4917c4c7d68f7d24052e99282766708b1444d0907c10ebde6",
+          "size_bytes": 62758,
+          "old_imports": [
+            {
+              "module": "ALB.nn",
+              "names": [
+                "ALBNN_BASE_INPUT_COLS",
+                "ALBNN_FEATURE_SETS",
+                "ALBNN_OUTPUT_COLS",
+                "ALBNN_POLAR_FORCE_OUTPUT_COLS",
+                "AsinhTargetScaler",
+                "IdentityTargetScaler",
+                "Net"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "run/train/train_albnn_residual_expert.py",
+          "sha256": "b43e9b0520673a61fff06008f23480798f82ae36f374338c56f9b824d29aed09",
+          "size_bytes": 37677,
+          "old_imports": [
+            {
+              "module": "ALB.nn",
+              "names": [
+                "ALBNN_OUTPUT_COLS",
+                "Net",
+                "net_from_checkpoint"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "context",
+          "path": "run/train/train_thermal_mlp.py",
+          "sha256": "29a2d1a92b7fef5f74d6b250fb76bf5af65908dc1acd61f599b5d0550feab22f",
+          "size_bytes": 14102,
+          "old_imports": [],
+          "target_namespaces": [],
+          "migration_requirements": [],
+          "context_note": "仅在注释中引用旧 ALB.nn.Net 模式。",
+          "external_file_modified": false
+        },
+        {
+          "kind": "context",
+          "path": "run/train/watch_heat_albnn_pipeline.py",
+          "sha256": "6080f9ca6a87e5a934082233d2b0d2e151012c20de6ae36bb12e4a28691f26e9",
+          "size_bytes": 8334,
+          "old_imports": [],
+          "target_namespaces": [],
+          "migration_requirements": [],
+          "context_note": "仅使用 ALB_PYTHON 环境变量和解释器路径。",
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/task_alb_data2.py",
+          "sha256": "86edba976a43d7e1af8143b8bf3089fc7c9eebb707a1a33556ead4e888162925",
+          "size_bytes": 23830,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig",
+                "CsoArgs"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "DoELHS",
+                "read_json5_with_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/task_albnn_data.py",
+          "sha256": "27bcc84d2295489542f615dd92dc660e3976b6da382ea413e6b73dae8db85148",
+          "size_bytes": 36840,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "nodim_alb"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBNetConfig",
+                "NodimALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.nn",
+              "names": [
+                "albnn"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers",
+            "ALB.systems.alb"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/task_thermal_forces.py",
+          "sha256": "5f7a62503690d2f189cd8658efd71238883ee69fa31486449cca686ad15de4c1",
+          "size_bytes": 11430,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "ALB"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "four_pads_bearings"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig",
+                "CsoArgs",
+                "FPBConfig",
+                "OrificeConfig",
+                "PIDConfig",
+                "ServoConfig"
+              ]
+            },
+            {
+              "module": "ALB.controller",
+              "names": [
+                "PID"
+              ]
+            },
+            {
+              "module": "ALB.orifice",
+              "names": [
+                "CSOrifice"
+              ]
+            },
+            {
+              "module": "ALB.servovalve",
+              "names": [
+                "moog_servovalve"
+              ]
+            },
+            {
+              "module": "ALB.thermal",
+              "names": [
+                "ThermalConfig",
+                "ThermalHydroBearing"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.control",
+            "ALB.control.valve",
+            "ALB.physics.bearing",
+            "ALB.physics.hydraulics.orifice",
+            "ALB.physics.thermal",
+            "ALB.systems.alb"
+          ],
+          "migration_requirements": [],
+          "context_note": null,
+          "external_file_modified": false
+        }
+      ]
+    },
+    {
+      "project": "PAPER_WORK",
+      "root": "F:/BaiduSyncdisk/博士论文/PAPER_WORK",
+      "declared_count": 27,
+      "counts": {
+        "direct": 25,
+        "transitive": 2
+      },
+      "entries": [
+        {
+          "kind": "direct",
+          "path": "run/remote/remote_job.py",
+          "sha256": "3a1b2a95aa2466ad5edc71fb67aa223ba05caaf80cee0fddb0cfbcfd1891c9ae",
+          "size_bytes": 569,
+          "old_imports": [
+            {
+              "module": "ALB.remote.job",
+              "names": [
+                "main"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.infrastructure.remote",
+            "ALB.surrogate.training.remote"
+          ],
+          "migration_requirements": [],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_3_2/动特性轨迹示意图.py",
+          "sha256": "fd83d23381bdbe3c36d5edef1fe082e5050581102f0abf1b3aad5e961dfea268",
+          "size_bytes": 15029,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "BearingForceTrack",
+                "EllipseTrack",
+                "orbitime"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share",
+                "recognize_kc"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_4_1/主动供油冷源对油膜温度场的影响.py",
+          "sha256": "3c0f302abe4c15b47f9a3d287bf5ea0d820c1ca90c5435c59905db4c1b4210a7",
+          "size_bytes": 12193,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_4_1/热流耦合模型下油膜压力温度和黏度分布.py",
+          "sha256": "0b6d266c5ded8ed3183e018fa208d46f41497a0eb331f8451bac5163b445cc68",
+          "size_bytes": 7998,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_4_1/等温模型与热流耦合模型的静特性参数对比.py",
+          "sha256": "9bae2438fdad36779beb38dc3182cc754be46c3f17098c96c1f91201f6bd3097",
+          "size_bytes": 19762,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_4_2/不同供油孔直径下的静特性.py",
+          "sha256": "90814a76c8ebe3cfd6e44cdcc413ca3ff7aef5cdca2db081e8cb41728325c52d",
+          "size_bytes": 26566,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_4_2/不同供油孔长度下的静特性.py",
+          "sha256": "1bc82d5fd735bf120f53c65e3f4de55e84b78e29007972c8d0ce968120531580",
+          "size_bytes": 35581,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_4_2/不同油源压力下的静特性.py",
+          "sha256": "20456021a97b8b809e9c6a03f0e24d31f3cd6d2a030ae73acf8a93ca02162fc2",
+          "size_bytes": 25318,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_4_2/不同阀芯面积下的静特性.py",
+          "sha256": "7a20056a10ba9dfa71867f273734370474f20c68c33f97d1b9e391bf5001a017",
+          "size_bytes": 53610,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.film",
+              "names": []
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.physics.film",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_4_2/不同阀芯面积下的静特性_ALBNN载荷工况重算.py",
+          "sha256": "461f2328477a7a4241613d6047aeade81896b1411ea9dfc1104a7b0ab0a4b887",
+          "size_bytes": 21224,
+          "old_imports": [
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBNetConfig"
+              ]
+            },
+            {
+              "module": "ALB.nn",
+              "names": [
+                "albnn"
+              ]
+            },
+            {
+              "module": "ALB.results",
+              "names": [
+                "DataFrameResult",
+                "SaveTreeNode"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.contracts.results",
+            "ALB.infrastructure.persistence",
+            "ALB.physics.bearing",
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers",
+            "replace_result_tree_io_with_result_bundle_writer"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_1/不同微分系数下热效应对动力学系数的影响.py",
+          "sha256": "75d5581077ce1bb4cace111d1a0b9c67a4ae2deecce9550d996eb4f72744cce7",
+          "size_bytes": 16693,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_1/不同微分系数下热效应对动力学系数的影响_无热惯性.py",
+          "sha256": "834cd562c6a4e0e6d8b337b33ee661cd04e0cd5984ef10760ff06ab6c436b695",
+          "size_bytes": 18682,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_1/不同比例系数下热效应对动力学系数的影响.py",
+          "sha256": "fa94e870c62dc40dcb5938fce2b1bda53cd928b6b4f788640371a7b3d28a4697",
+          "size_bytes": 17143,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_1/不同比例系数下热效应对动力学系数的影响_无热惯性.py",
+          "sha256": "a2946839089b92999a31fe4439f49e4f8b4d32652010f223a49f297a4cef185d",
+          "size_bytes": 19144,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_1/热流耦合对动力学系数的影响.py",
+          "sha256": "0b768675334eed1d40d5bc5df224257af1006c67c4df9e01719def32e3df2538",
+          "size_bytes": 18939,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_1/热流耦合对动态油膜力的影响.py",
+          "sha256": "beb6f33ff5ee34bbf534b61fc2fdd841d1d60bbd2dbf613d74868a3f8a907eda",
+          "size_bytes": 21202,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2",
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_2/fixed_center_dynamic_runner.py",
+          "sha256": "c769f6a9633710c8e7df1c1205300b3ba3e43ada30f0f28e2cec1f5efd649fa3",
+          "size_bytes": 44220,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2",
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_2/不同油压对动力学系数的影响.py",
+          "sha256": "3e435ad5f284ad40d79b032e5456a83300cc06c2f99ec42fc990a6192f46e619",
+          "size_bytes": 26151,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2",
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_2/不同节流孔径下的动力学特性.py",
+          "sha256": "9cd07a36804878b054629062e36fa8a64fa2856d7b5a7d85483d663e0cd69728",
+          "size_bytes": 29920,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_2/不同阀芯面积下的动力学特性.py",
+          "sha256": "b990cc3404c351a39e7f1878003fd35c83f5ed5d40fe8c7fec3d1bf8fab9db4e",
+          "size_bytes": 30357,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "transitive",
+          "path": "task/paper_2_5_2/计算被动工况动力学系数基准.py",
+          "sha256": "ea426535449f6d39de4deb93dfd724a16efa3882925e048eb5a1d36e0792eaa5",
+          "size_bytes": 3298,
+          "old_imports": [],
+          "target_namespaces": [],
+          "migration_requirements": [],
+          "context_note": "通过 fixed_center_dynamic_runner 传递依赖，需在直接消费者迁移后 smoke。",
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_3/不同伺服阀固有频率对动力学系数和临界质量的影响.py",
+          "sha256": "fce5afeb6397a1c8730815a9e711e08ba711df23a4e84f05a738dcb6a8580dcd",
+          "size_bytes": 35270,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2",
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_3/不同伺服阀阻尼比对动力学系数和临界质量的影响.py",
+          "sha256": "58cd46abde88b7395d41df3d08909c25e22bbc0d56d0e6b5d8fadf81665e4766",
+          "size_bytes": 34741,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2",
+                "alb2_static"
+              ]
+            },
+            {
+              "module": "ALB.bearing",
+              "names": [
+                "StaticPosition"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.physics.bearing",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_3/伺服阀频响传递链时域数据计算.py",
+          "sha256": "849f8edc83c1fc2c1ba211cc02db5e71293a1a953ef49f833622d14247d1faab",
+          "size_bytes": 17280,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.dynamics.identification",
+            "ALB.infrastructure.config_io",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_3/工作转速范围伺服阀频响动力系数稳定性重算.py",
+          "sha256": "ca6d4f5c086d88a624051800d95ea0c4ab4f76efdde4bf1d891e18917733df1a",
+          "size_bytes": 33130,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "FakeOf",
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.base",
+              "names": [
+                "BaseSimpleModel"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig",
+                "ALBNetConfig"
+              ]
+            },
+            {
+              "module": "ALB.nn",
+              "names": [
+                "albnn"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.contracts",
+            "ALB.core",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers",
+            "replace_legacy_base_with_dto_block_lifecycle",
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "direct",
+          "path": "task/paper_2_5_3/工作转速范围伺服阀频响动力系数稳定性重算_zeta0p7.py",
+          "sha256": "ac0d02e742afcfe57c16503a50e9ecec7a4071cd7725ff58d7d41cdf1225b62b",
+          "size_bytes": 29351,
+          "old_imports": [
+            {
+              "module": "ALB.alb",
+              "names": [
+                "FakeOf",
+                "alb2"
+              ]
+            },
+            {
+              "module": "ALB.base",
+              "names": [
+                "BaseSimpleModel"
+              ]
+            },
+            {
+              "module": "ALB.config",
+              "names": [
+                "ALBConfig",
+                "ALBNetConfig"
+              ]
+            },
+            {
+              "module": "ALB.nn",
+              "names": [
+                "albnn"
+              ]
+            },
+            {
+              "module": "ALB.orbit",
+              "names": [
+                "EllipseTrack",
+                "orbitime",
+                "test_bearing_orbit"
+              ]
+            },
+            {
+              "module": "ALB.tool",
+              "names": [
+                "read_json5_with_share",
+                "read_share"
+              ]
+            }
+          ],
+          "target_namespaces": [
+            "ALB.config.control",
+            "ALB.config.film",
+            "ALB.config.hydraulics",
+            "ALB.config.surrogate",
+            "ALB.config.system",
+            "ALB.config.thermal",
+            "ALB.contracts",
+            "ALB.core",
+            "ALB.dynamics.identification",
+            "ALB.dynamics.orbit",
+            "ALB.infrastructure.config_io",
+            "ALB.surrogate.features",
+            "ALB.surrogate.inference",
+            "ALB.surrogate.networks",
+            "ALB.surrogate.scalers",
+            "ALB.systems.alb",
+            "ALB.workflows.doe"
+          ],
+          "migration_requirements": [
+            "migrate_model_package_and_scalers",
+            "replace_legacy_base_with_dto_block_lifecycle",
+            "semantic_tool_split_not_mechanical_import_replace"
+          ],
+          "context_note": null,
+          "external_file_modified": false
+        },
+        {
+          "kind": "transitive",
+          "path": "task/paper_2_5_3/伺服阀固有频率和阻尼比云图_M35_ALBNN重算.py",
+          "sha256": "a9e25172c48ab94b062d55355f30c59cffee3e4b8fce62c76c3f330fc5da4b9b",
+          "size_bytes": 9960,
+          "old_imports": [],
+          "target_namespaces": [],
+          "migration_requirements": [],
+          "context_note": "通过 importlib 动态加载直接消费者，需做动态加载 smoke。",
+          "external_file_modified": false
+        }
+      ]
+    }
+  ],
+  "scope_exclusions": {
+    "SURROGATE_TRAIN": "未纳入 declared snapshot 的附录消费者不计入 23 个主清单。",
+    "PAPER_WORK": "排除 run/local、notebook、downloads 和 run/remote/payloads 历史冻结副本；动态加载的 run/local 消费者在 transitive 项附注中保留。"
+  },
+  "migration_gates": [
+    "旧 JSON5 必须先由 0.2 schema 工具另存，再改用 infrastructure.config_io。",
+    "旧 ALB.nn pickle 不属于 0.2 运行时兼容面，必须迁移 model package 和 scaler。",
+    "旧 output(calc=True) 或隐式推进调用必须改为 input/evaluate-or-solve/output。",
+    "外部文件本轮保持只读；每个项目应在独立迁移提交中修改并 smoke。"
+  ]
+}

@@ -1,0 +1,4441 @@
+{
+  "schema": "alb.import-migration-map.v1",
+  "version": "0.2.0",
+  "baseline_tag": "pre-full-repo-refactor-20260720",
+  "baseline_commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+  "breaking": true,
+  "root_api": {
+    "exports": [
+      "__version__",
+      "UnitSystem",
+      "StepContext",
+      "ConvergenceStatus",
+      "ComputationalBlock",
+      "SolvableBlock",
+      "EvaluableBlock",
+      "CommandBlock",
+      "AdvancingBlock"
+    ],
+    "note": "All domain implementations require explicit namespace imports."
+  },
+  "module_mappings": [
+    {
+      "source": "ALB",
+      "targets": [
+        "ALB.contracts",
+        "ALB"
+      ],
+      "status": "root_contract_only",
+      "source_file": "ALB/__init__.py"
+    },
+    {
+      "source": "ALB.adapters",
+      "targets": [
+        "ALB.physics.bearing.decorators",
+        "ALB.systems.alb.ports"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/adapters/__init__.py"
+    },
+    {
+      "source": "ALB.adapters.bearing",
+      "targets": [
+        "ALB.physics.bearing.decorators",
+        "ALB.systems.alb.ports"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/adapters/bearing.py"
+    },
+    {
+      "source": "ALB.alb",
+      "targets": [
+        "ALB.systems.alb.assembly"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/alb.py"
+    },
+    {
+      "source": "ALB.base",
+      "targets": [
+        "ALB.core.component",
+        "ALB.core.fem.base"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/base.py"
+    },
+    {
+      "source": "ALB.bearing",
+      "targets": [
+        "ALB.physics.bearing",
+        "ALB.physics.bearing.solver"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/bearing.py"
+    },
+    {
+      "source": "ALB.boundary",
+      "targets": [
+        "ALB.core.fem.boundary"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/boundary.py"
+    },
+    {
+      "source": "ALB.config",
+      "targets": [
+        "ALB.config"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/config.py"
+    },
+    {
+      "source": "ALB.contracts",
+      "targets": [
+        "ALB.contracts"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/contracts/__init__.py"
+    },
+    {
+      "source": "ALB.contracts.bearing",
+      "targets": [
+        "ALB.contracts.bearing"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/contracts/bearing.py"
+    },
+    {
+      "source": "ALB.contracts.control",
+      "targets": [
+        "ALB.contracts.control"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/contracts/control.py"
+    },
+    {
+      "source": "ALB.contracts.dynamics",
+      "targets": [
+        "ALB.contracts.dynamics"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/contracts/dynamics.py"
+    },
+    {
+      "source": "ALB.contracts.model",
+      "targets": [
+        "ALB.contracts.model"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/contracts/model.py"
+    },
+    {
+      "source": "ALB.contracts.notification",
+      "targets": [
+        "ALB.contracts.notification"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/contracts/notification.py"
+    },
+    {
+      "source": "ALB.control",
+      "targets": [
+        "ALB.control"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/control/__init__.py"
+    },
+    {
+      "source": "ALB.controller",
+      "targets": [
+        "ALB.control.controllers",
+        "ALB.control.fuzzy",
+        "ALB.control.lqg",
+        "ALB.control.pid"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/controller.py"
+    },
+    {
+      "source": "ALB.core",
+      "targets": [
+        "ALB.core"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/core/__init__.py"
+    },
+    {
+      "source": "ALB.core.component",
+      "targets": [
+        "ALB.core.component"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/core/component.py"
+    },
+    {
+      "source": "ALB.core.events",
+      "targets": [
+        "ALB.core.events"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/core/events.py"
+    },
+    {
+      "source": "ALB.core.time",
+      "targets": [
+        "ALB.core.time"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/core/time.py"
+    },
+    {
+      "source": "ALB.core.validation",
+      "targets": [
+        "ALB.core.validation"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/core/validation.py"
+    },
+    {
+      "source": "ALB.couple",
+      "targets": [
+        "ALB.dynamics.coupling"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/couple.py"
+    },
+    {
+      "source": "ALB.damping",
+      "targets": [
+        "ALB.core.numerics.damping"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/damping.py"
+    },
+    {
+      "source": "ALB.dynamics",
+      "targets": [
+        "ALB.dynamics"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/dynamics/__init__.py"
+    },
+    {
+      "source": "ALB.film",
+      "targets": [
+        "ALB.physics.film",
+        "ALB.physics.film.solver"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/film.py"
+    },
+    {
+      "source": "ALB.gas",
+      "targets": [
+        "ALB.physics.gas",
+        "ALB.physics.gas.solver"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/gas.py"
+    },
+    {
+      "source": "ALB.gauss",
+      "targets": [
+        "ALB.core.numerics.iteration"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/gauss.py"
+    },
+    {
+      "source": "ALB.harmonic_linear",
+      "targets": [
+        "ALB.systems.alb.harmonic"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/harmonic_linear.py"
+    },
+    {
+      "source": "ALB.logger",
+      "targets": [
+        "ALB.infrastructure.logging"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/logger.py"
+    },
+    {
+      "source": "ALB.lti",
+      "targets": [
+        "ALB.control.state_space"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/lti.py"
+    },
+    {
+      "source": "ALB.matrix",
+      "targets": [
+        "ALB.core.numerics"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/matrix/__init__.py"
+    },
+    {
+      "source": "ALB.matrix.dynmaic",
+      "targets": [
+        "ALB.core.numerics.dynamic"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/matrix/dynmaic.py"
+    },
+    {
+      "source": "ALB.matrix.static",
+      "targets": [
+        "ALB.core.numerics.static"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/matrix/static.py"
+    },
+    {
+      "source": "ALB.mesh",
+      "targets": [
+        "ALB.core.fem.mesh"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/mesh.py"
+    },
+    {
+      "source": "ALB.nn",
+      "targets": [
+        "ALB.surrogate.features",
+        "ALB.surrogate.inference",
+        "ALB.surrogate.networks",
+        "ALB.surrogate.package",
+        "ALB.surrogate.scalers"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/nn.py"
+    },
+    {
+      "source": "ALB.nondim",
+      "targets": [
+        "ALB.physics.thermal.scales"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/nondim.py"
+    },
+    {
+      "source": "ALB.orbit",
+      "targets": [
+        "ALB.dynamics.orbit"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/orbit.py"
+    },
+    {
+      "source": "ALB.orifice",
+      "targets": [
+        "ALB.physics.hydraulics.orifice"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/orifice.py"
+    },
+    {
+      "source": "ALB.physics",
+      "targets": [
+        "ALB.physics"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/physics/__init__.py"
+    },
+    {
+      "source": "ALB.plot",
+      "targets": [
+        "ALB.workflows.plotting"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/plot.py"
+    },
+    {
+      "source": "ALB.postprocess",
+      "targets": [
+        "ALB.workflows.postprocess"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/postprocess.py"
+    },
+    {
+      "source": "ALB.remote",
+      "targets": [
+        "ALB.infrastructure.remote"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/remote/__init__.py"
+    },
+    {
+      "source": "ALB.remote.albnn_queue",
+      "targets": [
+        "ALB.surrogate.training.remote.queue"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/remote/albnn_queue.py"
+    },
+    {
+      "source": "ALB.remote.albnn_start",
+      "targets": [
+        "ALB.surrogate.training.remote.start"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/remote/albnn_start.py"
+    },
+    {
+      "source": "ALB.remote.albnn_status",
+      "targets": [
+        "ALB.surrogate.training.remote.status"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/remote/albnn_status.py"
+    },
+    {
+      "source": "ALB.remote.common",
+      "targets": [
+        "ALB.infrastructure.remote.common"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/remote/common.py"
+    },
+    {
+      "source": "ALB.remote.defaults",
+      "targets": [
+        "ALB.infrastructure.remote.defaults"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/remote/defaults.py"
+    },
+    {
+      "source": "ALB.remote.job",
+      "targets": [
+        "ALB.infrastructure.remote.job"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/remote/job.py"
+    },
+    {
+      "source": "ALB.remote.monitor",
+      "targets": [
+        "ALB.infrastructure.remote.monitor"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/remote/monitor.py"
+    },
+    {
+      "source": "ALB.remote.transport",
+      "targets": [
+        "ALB.infrastructure.remote.transport"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/remote/transport.py"
+    },
+    {
+      "source": "ALB.results",
+      "targets": [
+        "ALB.contracts.result_tree",
+        "ALB.contracts.results",
+        "ALB.infrastructure.persistence"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/results.py"
+    },
+    {
+      "source": "ALB.rotor",
+      "targets": [
+        "ALB.dynamics.rotor"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/rotor.py"
+    },
+    {
+      "source": "ALB.servovalve",
+      "targets": [
+        "ALB.control.valve"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/servovalve.py"
+    },
+    {
+      "source": "ALB.surrogate",
+      "targets": [
+        "ALB.surrogate"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/surrogate/__init__.py"
+    },
+    {
+      "source": "ALB.systems",
+      "targets": [
+        "ALB.systems"
+      ],
+      "status": "unchanged_namespace",
+      "source_file": "ALB/systems/__init__.py"
+    },
+    {
+      "source": "ALB.task",
+      "targets": [
+        "ALB.workflows.alb",
+        "ALB.workflows.configuration",
+        "ALB.workflows.execution"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/task.py"
+    },
+    {
+      "source": "ALB.thermal",
+      "targets": [
+        "ALB.physics.thermal",
+        "ALB.physics.thermal.solver"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/thermal.py"
+    },
+    {
+      "source": "ALB.tool",
+      "targets": [
+        "ALB.config.parameters",
+        "ALB.control.reduction",
+        "ALB.core.numerics.arrays",
+        "ALB.dynamics.identification",
+        "ALB.infrastructure.config_io",
+        "ALB.infrastructure.notification",
+        "ALB.physics.film.mesh_export",
+        "ALB.physics.film.model_utils",
+        "ALB.workflows.configuration",
+        "ALB.workflows.doe",
+        "ALB.workflows.execution",
+        "ALB.workflows.naming"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/tool.py"
+    },
+    {
+      "source": "ALB.train",
+      "targets": [
+        "ALB.surrogate.training"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/train/__init__.py"
+    },
+    {
+      "source": "ALB.train.config",
+      "targets": [
+        "ALB.surrogate.training.config"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/train/config.py"
+    },
+    {
+      "source": "ALB.train.data",
+      "targets": [
+        "ALB.surrogate.training.data"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/train/data.py"
+    },
+    {
+      "source": "ALB.train.losses",
+      "targets": [
+        "ALB.surrogate.training.losses"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/train/losses.py"
+    },
+    {
+      "source": "ALB.train.reports",
+      "targets": [
+        "ALB.surrogate.training.reports"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/train/reports.py"
+    },
+    {
+      "source": "ALB.train.runs",
+      "targets": [
+        "ALB.surrogate.training.runs"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/train/runs.py"
+    },
+    {
+      "source": "ALB.train.transforms",
+      "targets": [
+        "ALB.surrogate.training.transforms"
+      ],
+      "status": "migrated",
+      "source_file": "ALB/train/transforms.py"
+    }
+  ],
+  "symbol_mappings": [
+    {
+      "source": "ALB.adapters.bearing.BearingDecoratorBase",
+      "targets": [
+        "ALB.physics.bearing.decorators.BearingDecoratorBase"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.adapters.bearing.LegacyBearingAdapter",
+      "targets": [
+        "ALB.physics.bearing.decorators.LegacyBearingAdapter"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.ALB",
+      "targets": [
+        "ALB.systems.alb.assembly.ALB"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.ALBSV",
+      "targets": [
+        "ALB.systems.alb.assembly.ALBSV"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.NodimALB",
+      "targets": [
+        "ALB.systems.alb.assembly.NodimALB"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.NodimALBSV",
+      "targets": [
+        "ALB.systems.alb.assembly.NodimALBSV"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.ALBLinear",
+      "targets": [
+        "ALB.systems.alb.assembly.ALBLinear"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.FakeOf",
+      "targets": [
+        "ALB.systems.alb.assembly.FakeOf"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.ALBLinearAgent",
+      "targets": [
+        "ALB.systems.alb.assembly.ALBLinearAgent"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.ALBNNAgent",
+      "targets": [
+        "ALB.systems.alb.assembly.ALBNNAgent"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.TimerSwitch",
+      "targets": [
+        "ALB.systems.alb.assembly.TimerSwitch"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.ALBBuilder",
+      "targets": [
+        "ALB.systems.alb.assembly.ALBBuilder"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.alb2",
+      "targets": [
+        "ALB.systems.alb.assembly.alb2"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.alb2_fuzzy",
+      "targets": [
+        "ALB.systems.alb.assembly.alb2_fuzzy"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.alb2_static",
+      "targets": [
+        "ALB.systems.alb.assembly.alb2_static"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.nodim_alb",
+      "targets": [
+        "ALB.systems.alb.assembly.nodim_alb"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.alb_no_controller",
+      "targets": [
+        "ALB.systems.alb.assembly.alb_no_controller"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.linear_alb",
+      "targets": [
+        "ALB.systems.alb.assembly.linear_alb"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.alb.nn_agent",
+      "targets": [
+        "ALB.systems.alb.assembly.nn_agent"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.resize",
+      "targets": [
+        "ALB.core.fem.base.resize"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.BaseNode",
+      "targets": [
+        "ALB.core.fem.base.BaseNode"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.is_this_func",
+      "targets": [
+        "ALB.core.fem.base.is_this_func"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.NodeManager",
+      "targets": [
+        "ALB.core.fem.base.NodeManager"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.BaseElem",
+      "targets": [
+        "ALB.core.fem.base.BaseElem"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.ElemManager",
+      "targets": [
+        "ALB.core.fem.base.ElemManager"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.BaseMesh",
+      "targets": [
+        "ALB.core.fem.base.BaseMesh"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.MatrixProcess",
+      "targets": [
+        "ALB.core.fem.base.MatrixProcess"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.BaseBoundary",
+      "targets": [
+        "ALB.core.fem.base.BaseBoundary"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.BaseMainModel",
+      "targets": [
+        "ALB.core.fem.base.BaseMainModel"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.BaseSimpleModels",
+      "targets": [
+        "ALB.core.fem.base.BaseSimpleModels"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.BaseOutput",
+      "targets": [
+        "ALB.core.fem.base.BaseOutput"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.BasePostProcess",
+      "targets": [
+        "ALB.core.fem.base.BasePostProcess"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.BaseResults",
+      "targets": [
+        "ALB.core.fem.base.BaseResults"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.base.TestResult",
+      "targets": [
+        "ALB.core.fem.base.TestResult"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.HydrostaticBearing",
+      "targets": [
+        "ALB.physics.bearing.solver.HydrostaticBearing"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.NodimHydrostaticBearing",
+      "targets": [
+        "ALB.physics.bearing.solver.NodimHydrostaticBearing"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.MultiPad",
+      "targets": [
+        "ALB.physics.bearing.solver.MultiPad"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.StaticPosition",
+      "targets": [
+        "ALB.physics.bearing.solver.StaticPosition"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.BearingDynamicChar",
+      "targets": [
+        "ALB.physics.bearing.solver.BearingDynamicChar"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.Dkxelem",
+      "targets": [
+        "ALB.physics.bearing.solver.Dkxelem"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.Dkyelem",
+      "targets": [
+        "ALB.physics.bearing.solver.Dkyelem"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.DCxelem",
+      "targets": [
+        "ALB.physics.bearing.solver.DCxelem"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.DCyelem",
+      "targets": [
+        "ALB.physics.bearing.solver.DCyelem"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.four_pads_bearings",
+      "targets": [
+        "ALB.physics.bearing.solver.four_pads_bearings"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.nodim_four_pads_bearings",
+      "targets": [
+        "ALB.physics.bearing.solver.nodim_four_pads_bearings"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.four_pads_bearing",
+      "targets": [
+        "ALB.physics.bearing.solver.four_pads_bearing"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.nodim_four_pads_bearing",
+      "targets": [
+        "ALB.physics.bearing.solver.nodim_four_pads_bearing"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.TiltingPadHydrodynamicPad",
+      "targets": [
+        "ALB.physics.bearing.solver.TiltingPadHydrodynamicPad"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.tilting_pads_bearings",
+      "targets": [
+        "ALB.physics.bearing.solver.tilting_pads_bearings"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.tilting_pads_bearing",
+      "targets": [
+        "ALB.physics.bearing.solver.tilting_pads_bearing"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.get_pad_pressure_fields",
+      "targets": [
+        "ALB.physics.bearing.solver.get_pad_pressure_fields"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.bearing.solve_tilting_pad_equilibrium",
+      "targets": [
+        "ALB.physics.bearing.solver.solve_tilting_pad_equilibrium"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.boundary.set_continuity_boundary",
+      "targets": [
+        "ALB.core.fem.boundary.set_continuity_boundary"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.boundary.set_value_boundary",
+      "targets": [
+        "ALB.core.fem.boundary.set_value_boundary"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.boundary.check_boundary",
+      "targets": [
+        "ALB.core.fem.boundary.check_boundary"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.boundary.couple_boundary_matrix",
+      "targets": [
+        "ALB.core.fem.boundary.couple_boundary_matrix"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.ConfigData",
+      "targets": [
+        "ALB.config._models.ConfigData"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.ResolvedTimeGrid",
+      "targets": [
+        "ALB.config._models.ResolvedTimeGrid"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.TimeGridConfig",
+      "targets": [
+        "ALB.config._models.TimeGridConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.HydConfig",
+      "targets": [
+        "ALB.config._models.HydConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.GasConfig",
+      "targets": [
+        "ALB.config._models.GasConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.TankConfig",
+      "targets": [
+        "ALB.config._models.TankConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.OrificeConfig",
+      "targets": [
+        "ALB.config._models.OrificeConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.ServoConfig",
+      "targets": [
+        "ALB.config._models.ServoConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.Moog2ndServoConfig",
+      "targets": [
+        "ALB.config._models.Moog2ndServoConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.PIDConfig",
+      "targets": [
+        "ALB.config._models.PIDConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.LQGConfig",
+      "targets": [
+        "ALB.config._models.LQGConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.ThermalConfig",
+      "targets": [
+        "ALB.config._models.ThermalConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.build_thermal_config",
+      "targets": [
+        "ALB.config._models.build_thermal_config"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.FPBConfig",
+      "targets": [
+        "ALB.config._models.FPBConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.FuzzyPIDConfig",
+      "targets": [
+        "ALB.config._models.FuzzyPIDConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.ALBConfig",
+      "targets": [
+        "ALB.config._models.ALBConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.NodimPadConfig",
+      "targets": [
+        "ALB.config._models.NodimPadConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.NodimOrificeConfig",
+      "targets": [
+        "ALB.config._models.NodimOrificeConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.NodimALBConfig",
+      "targets": [
+        "ALB.config._models.NodimALBConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.config.ALBNetConfig",
+      "targets": [
+        "ALB.config._models.ALBNetConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.bearing.BearingProtocol",
+      "targets": [
+        "ALB.contracts.bearing.BearingProtocol"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.bearing.BearingCoefficientProtocol",
+      "targets": [
+        "ALB.contracts.bearing.BearingCoefficientProtocol"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.control.ControllerProtocol",
+      "targets": [
+        "ALB.contracts.control.ControllerProtocol"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.control.ServoValveProtocol",
+      "targets": [
+        "ALB.contracts.control.ServoValveProtocol"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.dynamics.RotorProtocol",
+      "targets": [
+        "ALB.contracts.dynamics.RotorProtocol"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.model.SignalProtocol",
+      "targets": [
+        "ALB.contracts.model.SignalProtocol"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.model.LifecycleProtocol",
+      "targets": [
+        "ALB.contracts.model.LifecycleProtocol"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.model.PersistableProtocol",
+      "targets": [
+        "ALB.contracts.model.PersistableProtocol"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.model.TimeGridProtocol",
+      "targets": [
+        "ALB.contracts.model.TimeGridProtocol"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.model.ConvergenceStatus",
+      "targets": [
+        "ALB.contracts.model.ConvergenceStatus"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.contracts.notification.NotifierProtocol",
+      "targets": [
+        "ALB.contracts.notification.NotifierProtocol"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.PID",
+      "targets": [
+        "ALB.control.controllers.PID"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.FuzzyPID",
+      "targets": [
+        "ALB.control.controllers.FuzzyPID"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.BearingContent",
+      "targets": [
+        "ALB.control.controllers.BearingContent"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.ALBLQGController",
+      "targets": [
+        "ALB.control.controllers.ALBLQGController"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.RCConfig",
+      "targets": [
+        "ALB.control.controllers.RCConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.RepetitiveController",
+      "targets": [
+        "ALB.control.controllers.RepetitiveController"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.default_rules",
+      "targets": [
+        "ALB.control.controllers.default_rules"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.alpha_shift",
+      "targets": [
+        "ALB.control.controllers.alpha_shift"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.alpha_unshift",
+      "targets": [
+        "ALB.control.controllers.alpha_unshift"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.balanced_truncation",
+      "targets": [
+        "ALB.control.controllers.balanced_truncation"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.compute_modal_info",
+      "targets": [
+        "ALB.control.controllers.compute_modal_info"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.print_modal_table",
+      "targets": [
+        "ALB.control.controllers.print_modal_table"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.modal_truncation_by_frequency",
+      "targets": [
+        "ALB.control.controllers.modal_truncation_by_frequency"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.modal_truncation_by_damping",
+      "targets": [
+        "ALB.control.controllers.modal_truncation_by_damping"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.modal_truncation_by_index",
+      "targets": [
+        "ALB.control.controllers.modal_truncation_by_index"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.modal_truncation_by_dominance",
+      "targets": [
+        "ALB.control.controllers.modal_truncation_by_dominance"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.test_lqg",
+      "targets": [
+        "ALB.control.controllers.test_lqg"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.controller.balreal",
+      "targets": [
+        "ALB.control.controllers.balreal"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.component.ComponentBase",
+      "targets": [
+        "ALB.core.component.ComponentBase"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.component.BaseSimpleModel",
+      "targets": [
+        "ALB.core.component.BaseSimpleModel"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.component.BearingComponentBase",
+      "targets": [
+        "ALB.core.component.BearingComponentBase"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.component.BaseSystem",
+      "targets": [
+        "ALB.core.component.BaseSystem"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.component.BaseCSystem",
+      "targets": [
+        "ALB.core.component.BaseCSystem"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.events.Signal",
+      "targets": [
+        "ALB.core.events.Signal"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.time.TimeIter",
+      "targets": [
+        "ALB.core.time.TimeIter"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.time.TimeIterDt",
+      "targets": [
+        "ALB.core.time.TimeIterDt"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.validation.finite_vector",
+      "targets": [
+        "ALB.core.validation.finite_vector"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.validation.validate_bearing_output",
+      "targets": [
+        "ALB.core.validation.validate_bearing_output"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.validation.get_unit_system",
+      "targets": [
+        "ALB.core.validation.get_unit_system"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.validation.require_unit_system",
+      "targets": [
+        "ALB.core.validation.require_unit_system"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.core.validation.limit_signal",
+      "targets": [
+        "ALB.core.validation.limit_signal"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.couple.RotorBearingCouple",
+      "targets": [
+        "ALB.dynamics.coupling.RotorBearingCouple"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.couple.RsRotorBearingCouple",
+      "targets": [
+        "ALB.dynamics.coupling.RsRotorBearingCouple"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.couple.get_all_attribute_values",
+      "targets": [
+        "ALB.dynamics.coupling.get_all_attribute_values"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.damping.AdaptiveDampConfig",
+      "targets": [
+        "ALB.core.numerics.damping.AdaptiveDampConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.damping.normalize_adaptive_damp_config",
+      "targets": [
+        "ALB.core.numerics.damping.normalize_adaptive_damp_config"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.damping.AdaptiveDampController",
+      "targets": [
+        "ALB.core.numerics.damping.AdaptiveDampController"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.RectFilmNode",
+      "targets": [
+        "ALB.physics.film.solver.RectFilmNode"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.RectFilmElem",
+      "targets": [
+        "ALB.physics.film.solver.RectFilmElem"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.film_args_trans",
+      "targets": [
+        "ALB.physics.film.solver.film_args_trans"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.NodimFilmModel",
+      "targets": [
+        "ALB.physics.film.solver.NodimFilmModel"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.FilmModel",
+      "targets": [
+        "ALB.physics.film.solver.FilmModel"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.NodimNewtonFilm",
+      "targets": [
+        "ALB.physics.film.solver.NodimNewtonFilm"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.NewtonFilm",
+      "targets": [
+        "ALB.physics.film.solver.NewtonFilm"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.reynolds_lhs",
+      "targets": [
+        "ALB.physics.film.solver.reynolds_lhs"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.reynolds_rhs",
+      "targets": [
+        "ALB.physics.film.solver.reynolds_rhs"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.SkfemNewtonFilm",
+      "targets": [
+        "ALB.physics.film.solver.SkfemNewtonFilm"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.GaussSeidelFilm",
+      "targets": [
+        "ALB.physics.film.solver.GaussSeidelFilm"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.LsqFilm",
+      "targets": [
+        "ALB.physics.film.solver.LsqFilm"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.PSetFilmBoundary",
+      "targets": [
+        "ALB.physics.film.solver.PSetFilmBoundary"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.ThicknessModel",
+      "targets": [
+        "ALB.physics.film.solver.ThicknessModel"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.FilmPostProcess",
+      "targets": [
+        "ALB.physics.film.solver.FilmPostProcess"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.FilmOutput",
+      "targets": [
+        "ALB.physics.film.solver.FilmOutput"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.FilmInput",
+      "targets": [
+        "ALB.physics.film.solver.FilmInput"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.FilmSystem",
+      "targets": [
+        "ALB.physics.film.solver.FilmSystem"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.FilmBoundary",
+      "targets": [
+        "ALB.physics.film.solver.FilmBoundary"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.area",
+      "targets": [
+        "ALB.physics.film.solver.area"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.order_vertices",
+      "targets": [
+        "ALB.physics.film.solver.order_vertices"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.is_point_in_polygon",
+      "targets": [
+        "ALB.physics.film.solver.is_point_in_polygon"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.film.check_point_in_polygon",
+      "targets": [
+        "ALB.physics.film.solver.check_point_in_polygon"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.gas.GasFoilTextureCoupling",
+      "targets": [
+        "ALB.physics.gas.solver.GasFoilTextureCoupling"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.gas.gas_reynolds_residual",
+      "targets": [
+        "ALB.physics.gas.solver.gas_reynolds_residual"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.gas.gas_reynolds_jacobian",
+      "targets": [
+        "ALB.physics.gas.solver.gas_reynolds_jacobian"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.gas.GasSkfemNewtonFilm",
+      "targets": [
+        "ALB.physics.gas.solver.GasSkfemNewtonFilm"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.gas.GasBearing",
+      "targets": [
+        "ALB.physics.gas.solver.GasBearing"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.gauss.gauss_seidel_iteration_film",
+      "targets": [
+        "ALB.core.numerics.iteration.gauss_seidel_iteration_film"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.gauss.gauss_seidel_iteration_matrix",
+      "targets": [
+        "ALB.core.numerics.iteration.gauss_seidel_iteration_matrix"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.harmonic_linear.ALBHarmonicCoefficients",
+      "targets": [
+        "ALB.systems.alb.harmonic.ALBHarmonicCoefficients"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.harmonic_linear.load_builtin_alb_harmonic_coefficients",
+      "targets": [
+        "ALB.systems.alb.harmonic.load_builtin_alb_harmonic_coefficients"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.harmonic_linear.ALBHarmonicLinear",
+      "targets": [
+        "ALB.systems.alb.harmonic.ALBHarmonicLinear"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.harmonic_linear.alb_harmonic_linear",
+      "targets": [
+        "ALB.systems.alb.harmonic.alb_harmonic_linear"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.logger.DuplicateLogFilter",
+      "targets": [
+        "ALB.infrastructure.logging.DuplicateLogFilter"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.logger.configure_logging",
+      "targets": [
+        "ALB.infrastructure.logging.configure_logging"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.lti.lti_state_space_matrix_init",
+      "targets": [
+        "ALB.control.state_space.lti_state_space_matrix_init"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.lti.dlti_state_space_matrix_init",
+      "targets": [
+        "ALB.control.state_space.dlti_state_space_matrix_init"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.lti.BaseLti",
+      "targets": [
+        "ALB.control.state_space.BaseLti"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.lti.BaseDlti",
+      "targets": [
+        "ALB.control.state_space.BaseDlti"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.lti.get_space_matrix_from_sys",
+      "targets": [
+        "ALB.control.state_space.get_space_matrix_from_sys"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.lti.TSLti",
+      "targets": [
+        "ALB.control.state_space.TSLti"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.lti.TSDlti",
+      "targets": [
+        "ALB.control.state_space.TSDlti"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.dynmaic.calc_ke_dx",
+      "targets": [
+        "ALB.core.numerics.dynamic.calc_ke_dx"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.dynmaic.calc_fe_dx",
+      "targets": [
+        "ALB.core.numerics.dynamic.calc_fe_dx"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.dynmaic.calc_ke_dy",
+      "targets": [
+        "ALB.core.numerics.dynamic.calc_ke_dy"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.dynmaic.calc_fe_dy",
+      "targets": [
+        "ALB.core.numerics.dynamic.calc_fe_dy"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.dynmaic.calc_fe_dxt",
+      "targets": [
+        "ALB.core.numerics.dynamic.calc_fe_dxt"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.dynmaic.calc_fe_dyt",
+      "targets": [
+        "ALB.core.numerics.dynamic.calc_fe_dyt"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.dynmaic.calc_ke2_dx2",
+      "targets": [
+        "ALB.core.numerics.dynamic.calc_ke2_dx2"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.dynmaic.calc_ke2_dy2",
+      "targets": [
+        "ALB.core.numerics.dynamic.calc_ke2_dy2"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.dynmaic.calc_ke2_dx_dy",
+      "targets": [
+        "ALB.core.numerics.dynamic.calc_ke2_dx_dy"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.dynmaic.test_calc_ke2_dx2",
+      "targets": [
+        "ALB.core.numerics.dynamic.test_calc_ke2_dx2"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.static.calc_ke",
+      "targets": [
+        "ALB.core.numerics.static.calc_ke"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.static.calc_fe",
+      "targets": [
+        "ALB.core.numerics.static.calc_fe"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.matrix.static.calc_fe_vf",
+      "targets": [
+        "ALB.core.numerics.static.calc_fe_vf"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.mesh.take_args",
+      "targets": [
+        "ALB.core.fem.mesh.take_args"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.mesh.create_serend_2d",
+      "targets": [
+        "ALB.core.fem.mesh.create_serend_2d"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.mesh.create_rect",
+      "targets": [
+        "ALB.core.fem.mesh.create_rect"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.mesh.create_rect_by_mesh",
+      "targets": [
+        "ALB.core.fem.mesh.create_rect_by_mesh"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.mesh.create_tri",
+      "targets": [
+        "ALB.core.fem.mesh.create_tri"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.mesh.Mesh",
+      "targets": [
+        "ALB.core.fem.mesh.Mesh"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.mesh.MeshTest",
+      "targets": [
+        "ALB.core.fem.mesh.MeshTest"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.mesh.pair_wise",
+      "targets": [
+        "ALB.core.fem.mesh.pair_wise"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.cartesian_force_to_polar_frame",
+      "targets": [
+        "ALB.surrogate.inference.cartesian_force_to_polar_frame"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.polar_force_to_cartesian",
+      "targets": [
+        "ALB.surrogate.inference.polar_force_to_cartesian"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.c4_canonicalize_albnn_frame",
+      "targets": [
+        "ALB.surrogate.inference.c4_canonicalize_albnn_frame"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.c4_restore_albnn_force",
+      "targets": [
+        "ALB.surrogate.inference.c4_restore_albnn_force"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.albnn_augment_frame",
+      "targets": [
+        "ALB.surrogate.inference.albnn_augment_frame"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.NetMlpOld",
+      "targets": [
+        "ALB.surrogate.inference.NetMlpOld"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.Net",
+      "targets": [
+        "ALB.surrogate.inference.Net"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.net_from_checkpoint",
+      "targets": [
+        "ALB.surrogate.inference.net_from_checkpoint"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.NetApl",
+      "targets": [
+        "ALB.surrogate.inference.NetApl"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.ALBNN",
+      "targets": [
+        "ALB.surrogate.inference.ALBNN"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.ALBNNC4Canonical",
+      "targets": [
+        "ALB.surrogate.inference.ALBNNC4Canonical"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.ALBNNResidualCorrector",
+      "targets": [
+        "ALB.surrogate.inference.ALBNNResidualCorrector"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.ALBNNForceExpert",
+      "targets": [
+        "ALB.surrogate.inference.ALBNNForceExpert"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.IdentityTargetScaler",
+      "targets": [
+        "ALB.surrogate.inference.IdentityTargetScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.StandardTargetScaler",
+      "targets": [
+        "ALB.surrogate.inference.StandardTargetScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.SelectiveStandardScaler",
+      "targets": [
+        "ALB.surrogate.inference.SelectiveStandardScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.StandardThenMinMaxScaler",
+      "targets": [
+        "ALB.surrogate.inference.StandardThenMinMaxScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.MotionStandardParamMinMaxScaler",
+      "targets": [
+        "ALB.surrogate.inference.MotionStandardParamMinMaxScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.MotionStandardParamDirectMinMaxScaler",
+      "targets": [
+        "ALB.surrogate.inference.MotionStandardParamDirectMinMaxScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.PolarMotionStandardParamMinMaxScaler",
+      "targets": [
+        "ALB.surrogate.inference.PolarMotionStandardParamMinMaxScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.AsinhTargetScaler",
+      "targets": [
+        "ALB.surrogate.inference.AsinhTargetScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.SignedLog1pTargetScaler",
+      "targets": [
+        "ALB.surrogate.inference.SignedLog1pTargetScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.MinMaxCubeRootTargetScaler",
+      "targets": [
+        "ALB.surrogate.inference.MinMaxCubeRootTargetScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.ColumnSignedLog1pTargetScaler",
+      "targets": [
+        "ALB.surrogate.inference.ColumnSignedLog1pTargetScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.SelectiveMinMaxScaler",
+      "targets": [
+        "ALB.surrogate.inference.SelectiveMinMaxScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.MinMaxWithScaledEvsFeaturesScaler",
+      "targets": [
+        "ALB.surrogate.inference.MinMaxWithScaledEvsFeaturesScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.Cq2SigLogMinMaxScaler",
+      "targets": [
+        "ALB.surrogate.inference.Cq2SigLogMinMaxScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.ALBNet",
+      "targets": [
+        "ALB.surrogate.inference.ALBNet"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.alb_agent_nn",
+      "targets": [
+        "ALB.surrogate.inference.alb_agent_nn"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.train_loop",
+      "targets": [
+        "ALB.surrogate.inference.train_loop"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.test_loop",
+      "targets": [
+        "ALB.surrogate.inference.test_loop"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.mlp_train",
+      "targets": [
+        "ALB.surrogate.inference.mlp_train"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.save_model",
+      "targets": [
+        "ALB.surrogate.inference.save_model"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.get_samples_bound",
+      "targets": [
+        "ALB.surrogate.inference.get_samples_bound"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.ThermalALBNet",
+      "targets": [
+        "ALB.surrogate.inference.ThermalALBNet"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.thermal_albnet",
+      "targets": [
+        "ALB.surrogate.inference.thermal_albnet"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nn.albnn",
+      "targets": [
+        "ALB.surrogate.inference.albnn"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nondim.FilmNondimScales",
+      "targets": [
+        "ALB.physics.thermal.scales.FilmNondimScales"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.nondim.ThermalNondimScales",
+      "targets": [
+        "ALB.physics.thermal.scales.ThermalNondimScales"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orbit.EllipseTrack",
+      "targets": [
+        "ALB.dynamics.orbit.EllipseTrack"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orbit.BearingForceTrack",
+      "targets": [
+        "ALB.dynamics.orbit.BearingForceTrack"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orbit.test_bearing_orbit",
+      "targets": [
+        "ALB.dynamics.orbit.test_bearing_orbit"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orbit.test_bearing_orbit_parallel",
+      "targets": [
+        "ALB.dynamics.orbit.test_bearing_orbit_parallel"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orbit.orbitime",
+      "targets": [
+        "ALB.dynamics.orbit.orbitime"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orifice.BaseOrifice",
+      "targets": [
+        "ALB.physics.hydraulics.orifice.BaseOrifice"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orifice.Orifice",
+      "targets": [
+        "ALB.physics.hydraulics.orifice.Orifice"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orifice.NodimCSOrifice",
+      "targets": [
+        "ALB.physics.hydraulics.orifice.NodimCSOrifice"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orifice.CSOrifice",
+      "targets": [
+        "ALB.physics.hydraulics.orifice.CSOrifice"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orifice.define_equations",
+      "targets": [
+        "ALB.physics.hydraulics.orifice.define_equations"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orifice.define_qprime",
+      "targets": [
+        "ALB.physics.hydraulics.orifice.define_qprime"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orifice.solve_q",
+      "targets": [
+        "ALB.physics.hydraulics.orifice.solve_q"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orifice.BuildOrifices",
+      "targets": [
+        "ALB.physics.hydraulics.orifice.BuildOrifices"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.orifice.Orifices",
+      "targets": [
+        "ALB.physics.hydraulics.orifice.Orifices"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.plot.PlotSCIStyle",
+      "targets": [
+        "ALB.workflows.plotting.PlotSCIStyle"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.postprocess.read_pickles",
+      "targets": [
+        "ALB.workflows.postprocess.read_pickles"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.postprocess.static",
+      "targets": [
+        "ALB.workflows.postprocess.static"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.postprocess.dynamic",
+      "targets": [
+        "ALB.workflows.postprocess.dynamic"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.postprocess.rotor_respone",
+      "targets": [
+        "ALB.workflows.postprocess.rotor_response"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.ActivationSpec",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.ActivationSpec"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.TransformSpec",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.TransformSpec"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.ComboSpec",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.ComboSpec"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.lr_token",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.lr_token"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.architecture_token",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.architecture_token"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.activation_token",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.activation_token"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.model_name_for",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.model_name_for"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.task_name_for",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.task_name_for"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.build_combos",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.build_combos"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.load_config",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.load_config"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.apply_config_defaults",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.apply_config_defaults"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.build_config_combos",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.build_config_combos"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.extract_json_value",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.extract_json_value"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.fetch_remote_models",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.fetch_remote_models"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.model_index",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.model_index"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.combo_status",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.combo_status"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.query_args",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.query_args"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.latest_logged_losses",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.latest_logged_losses"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.safe_name",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.safe_name"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.sync_root",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.sync_root"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.write_text",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.write_text"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.sync_logs",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.sync_logs"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.state_from_query",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.state_from_query"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.wait_for_combo",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.wait_for_combo"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.launch_command",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.launch_command"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.launch_combo",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.launch_combo"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.print_queue",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.print_queue"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.run_queue",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.run_queue"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.run_combos",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.run_combos"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.build_parser",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.build_parser"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_queue.main",
+      "targets": [
+        "ALB.surrogate.training.remote.queue.main"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_start.build_training_cmd",
+      "targets": [
+        "ALB.surrogate.training.remote.start.build_training_cmd"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_start.powershell_array",
+      "targets": [
+        "ALB.surrogate.training.remote.start.powershell_array"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_start.build_runner_content",
+      "targets": [
+        "ALB.surrogate.training.remote.start.build_runner_content"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_start.build_model_dir_check_script",
+      "targets": [
+        "ALB.surrogate.training.remote.start.build_model_dir_check_script"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_start.build_launch_script",
+      "targets": [
+        "ALB.surrogate.training.remote.start.build_launch_script"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_start.build_parser",
+      "targets": [
+        "ALB.surrogate.training.remote.start.build_parser"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_start.main",
+      "targets": [
+        "ALB.surrogate.training.remote.start.main"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_status.remote_stdout",
+      "targets": [
+        "ALB.surrogate.training.remote.status.remote_stdout"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_status.parse_json_text",
+      "targets": [
+        "ALB.surrogate.training.remote.status.parse_json_text"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_status.parse_key_values",
+      "targets": [
+        "ALB.surrogate.training.remote.status.parse_key_values"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_status.latest_epoch",
+      "targets": [
+        "ALB.surrogate.training.remote.status.latest_epoch"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_status.parse_json_output",
+      "targets": [
+        "ALB.surrogate.training.remote.status.parse_json_output"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_status.split_lines",
+      "targets": [
+        "ALB.surrogate.training.remote.status.split_lines"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_status.query_remote",
+      "targets": [
+        "ALB.surrogate.training.remote.status.query_remote"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_status.summarize",
+      "targets": [
+        "ALB.surrogate.training.remote.status.summarize"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_status.build_parser",
+      "targets": [
+        "ALB.surrogate.training.remote.status.build_parser"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.albnn_status.main",
+      "targets": [
+        "ALB.surrogate.training.remote.status.main"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.common.extract_json",
+      "targets": [
+        "ALB.infrastructure.remote.common.extract_json"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.common.parse_iso",
+      "targets": [
+        "ALB.infrastructure.remote.common.parse_iso"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.RemoteJobError",
+      "targets": [
+        "ALB.infrastructure.remote.job.RemoteJobError"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.JobSpec",
+      "targets": [
+        "ALB.infrastructure.remote.job.JobSpec"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.UploadSpec",
+      "targets": [
+        "ALB.infrastructure.remote.job.UploadSpec"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.ConditionResult",
+      "targets": [
+        "ALB.infrastructure.remote.job.ConditionResult"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.load_config",
+      "targets": [
+        "ALB.infrastructure.remote.job.load_config"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.profile_config",
+      "targets": [
+        "ALB.infrastructure.remote.job.profile_config"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.connection_args",
+      "targets": [
+        "ALB.infrastructure.remote.job.connection_args"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.expand_value",
+      "targets": [
+        "ALB.infrastructure.remote.job.expand_value"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.is_remote_absolute",
+      "targets": [
+        "ALB.infrastructure.remote.job.is_remote_absolute"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.normalize_remote_path",
+      "targets": [
+        "ALB.infrastructure.remote.job.normalize_remote_path"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.safe_name",
+      "targets": [
+        "ALB.infrastructure.remote.job.safe_name"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.build_job_spec",
+      "targets": [
+        "ALB.infrastructure.remote.job.build_job_spec"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.powershell_array",
+      "targets": [
+        "ALB.infrastructure.remote.job.powershell_array"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.build_runner_content",
+      "targets": [
+        "ALB.infrastructure.remote.job.build_runner_content"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.expand_uploads",
+      "targets": [
+        "ALB.infrastructure.remote.job.expand_uploads"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.build_prepare_script",
+      "targets": [
+        "ALB.infrastructure.remote.job.build_prepare_script"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.build_launch_script",
+      "targets": [
+        "ALB.infrastructure.remote.job.build_launch_script"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.launch_config",
+      "targets": [
+        "ALB.infrastructure.remote.job.launch_config"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.monitor_args",
+      "targets": [
+        "ALB.infrastructure.remote.job.monitor_args"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.monitor_config",
+      "targets": [
+        "ALB.infrastructure.remote.job.monitor_config"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.parse_exit_code",
+      "targets": [
+        "ALB.infrastructure.remote.job.parse_exit_code"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.evaluate_condition",
+      "targets": [
+        "ALB.infrastructure.remote.job.evaluate_condition"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.wait_for_conditions",
+      "targets": [
+        "ALB.infrastructure.remote.job.wait_for_conditions"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.wait_for_launched_job",
+      "targets": [
+        "ALB.infrastructure.remote.job.wait_for_launched_job"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.deep_merge",
+      "targets": [
+        "ALB.infrastructure.remote.job.deep_merge"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.queue_item_config",
+      "targets": [
+        "ALB.infrastructure.remote.job.queue_item_config"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.queue_config",
+      "targets": [
+        "ALB.infrastructure.remote.job.queue_config"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.build_parser",
+      "targets": [
+        "ALB.infrastructure.remote.job.build_parser"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.job.main",
+      "targets": [
+        "ALB.infrastructure.remote.job.main"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.remote_stdout",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.remote_stdout"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.parse_json_output",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.parse_json_output"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.split_lines",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.split_lines"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.ps_common",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.ps_common"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.query_remote_time",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.query_remote_time"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.query_task",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.query_task"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.query_processes",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.query_processes"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.query_pid_process",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.query_pid_process"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.query_file_info",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.query_file_info"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.query_json_file",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.query_json_file"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.query_file_text",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.query_file_text"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.query_text_tail",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.query_text_tail"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.query_directory_files",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.query_directory_files"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.parse_named_path",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.parse_named_path"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.progress_from_metadata",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.progress_from_metadata"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.solver_settings_from_metadata",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.solver_settings_from_metadata"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.state_from_snapshot",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.state_from_snapshot"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.query_job",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.query_job"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.format_duration",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.format_duration"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.summarize",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.summarize"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.build_parser",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.build_parser"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.monitor.main",
+      "targets": [
+        "ALB.infrastructure.remote.monitor.main"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.transport.RemoteConnection",
+      "targets": [
+        "ALB.infrastructure.remote.transport.RemoteConnection"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.transport.configure_stdio",
+      "targets": [
+        "ALB.infrastructure.remote.transport.configure_stdio"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.transport.ps_quote",
+      "targets": [
+        "ALB.infrastructure.remote.transport.ps_quote"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.transport.remote_path",
+      "targets": [
+        "ALB.infrastructure.remote.transport.remote_path"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.transport.encode_powershell",
+      "targets": [
+        "ALB.infrastructure.remote.transport.encode_powershell"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.transport.quote_executable",
+      "targets": [
+        "ALB.infrastructure.remote.transport.quote_executable"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.transport.powershell_encoded_command",
+      "targets": [
+        "ALB.infrastructure.remote.transport.powershell_encoded_command"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.transport.powershell_file_command",
+      "targets": [
+        "ALB.infrastructure.remote.transport.powershell_file_command"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.transport.run_remote_powershell",
+      "targets": [
+        "ALB.infrastructure.remote.transport.run_remote_powershell"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.remote.transport.run_scp",
+      "targets": [
+        "ALB.infrastructure.remote.transport.run_scp"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.results.BaseResult",
+      "targets": [
+        "ALB.contracts.results.ResultBundle"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.results.DataFrameResult",
+      "targets": [
+        "ALB.contracts.result_tree.DataFrameResult"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.results.NpyResult",
+      "targets": [
+        "ALB.contracts.result_tree.NpyResult"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.results.RossRotorResult",
+      "targets": [
+        "ALB.contracts.result_tree.RossRotorResult"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.results.SaveTreeNode",
+      "targets": [
+        "ALB.contracts.result_tree.SaveTreeNode"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.BaseExcitation",
+      "targets": [
+        "ALB.dynamics.rotor.BaseExcitation"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.ConstantExcitation",
+      "targets": [
+        "ALB.dynamics.rotor.ConstantExcitation"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.StaicLoad",
+      "targets": [
+        "ALB.dynamics.rotor.StaticLoad"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.Gravity",
+      "targets": [
+        "ALB.dynamics.rotor.Gravity"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.UnbalancedExcitation",
+      "targets": [
+        "ALB.dynamics.rotor.UnbalancedExcitation"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.SingleRotor",
+      "targets": [
+        "ALB.dynamics.rotor.SingleRotor"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.RossRotor",
+      "targets": [
+        "ALB.dynamics.rotor.RossRotor"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.RossRotorSimlarityCheck",
+      "targets": [
+        "ALB.dynamics.rotor.RossRotorSimilarityCheck"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.get_node_displacement",
+      "targets": [
+        "ALB.dynamics.rotor.get_node_displacement"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.RotorPostprocessor",
+      "targets": [
+        "ALB.dynamics.rotor.RotorPostprocessor"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.calc_ea",
+      "targets": [
+        "ALB.dynamics.rotor.calc_ea"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.calc_h",
+      "targets": [
+        "ALB.dynamics.rotor.calc_h"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.lld_intergral",
+      "targets": [
+        "ALB.dynamics.rotor.lld_integral"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.ShaftElement",
+      "targets": [
+        "ALB.dynamics.rotor.ShaftElement"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.rotor0",
+      "targets": [
+        "ALB.dynamics.rotor.rotor0"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.rotor.location_mapping_matrix",
+      "targets": [
+        "ALB.dynamics.rotor.location_mapping_matrix"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.servovalve.BaseValve",
+      "targets": [
+        "ALB.control.valve.BaseValve"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.servovalve.ServoValve2",
+      "targets": [
+        "ALB.control.valve.ServoValve2"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.servovalve.moog_servovalve",
+      "targets": [
+        "ALB.control.valve.moog_servovalve"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.servovalve.moog_2nd_servovalve",
+      "targets": [
+        "ALB.control.valve.moog_2nd_servovalve"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.servovalve.moog_servovalve_with_delay",
+      "targets": [
+        "ALB.control.valve.moog_servovalve_with_delay"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.servovalve.static_sv",
+      "targets": [
+        "ALB.control.valve.static_sv"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.servovalve.limit_signal",
+      "targets": [
+        "ALB.control.valve.limit_signal"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.TaskConfigFactory",
+      "targets": [
+        "ALB.workflows.alb.TaskConfigFactory"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.task_alb_capacity",
+      "targets": [
+        "ALB.workflows.alb.task_alb_capacity"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.task_albf_capacity",
+      "targets": [
+        "ALB.workflows.alb.task_albf_capacity"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.task_albnn_capacity",
+      "targets": [
+        "ALB.workflows.alb.task_albnn_capacity"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.task_alb_dynamic",
+      "targets": [
+        "ALB.workflows.alb.task_alb_dynamic"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.task_albnn_dynamic",
+      "targets": [
+        "ALB.workflows.alb.task_albnn_dynamic"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.task_albf_dynamic",
+      "targets": [
+        "ALB.workflows.alb.task_albf_dynamic"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.task_alb_rotor_couple",
+      "targets": [
+        "ALB.workflows.alb.task_alb_rotor_couple"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.task_albf_rotor_couple",
+      "targets": [
+        "ALB.workflows.alb.task_albf_rotor_couple"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.task_albnn_rotor_couple",
+      "targets": [
+        "ALB.workflows.alb.task_albnn_rotor_couple"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.couple_task",
+      "targets": [
+        "ALB.workflows.alb.couple_task"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.static_task",
+      "targets": [
+        "ALB.workflows.alb.static_task"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.task.dynamic_task",
+      "targets": [
+        "ALB.workflows.alb.dynamic_task"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.ThermalFilmGrid",
+      "targets": [
+        "ALB.physics.thermal.solver.ThermalFilmGrid"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.wrap_pad_collection_with_thermal",
+      "targets": [
+        "ALB.physics.thermal.solver.wrap_pad_collection_with_thermal"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.ViscosityFilmNode",
+      "targets": [
+        "ALB.physics.thermal.solver.ViscosityFilmNode"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.ViscosityFilmElem",
+      "targets": [
+        "ALB.physics.thermal.solver.ViscosityFilmElem"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.ViscositySkfemNewtonFilm",
+      "targets": [
+        "ALB.physics.thermal.solver.ViscositySkfemNewtonFilm"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.NodimViscositySkfemNewtonFilm",
+      "targets": [
+        "ALB.physics.thermal.solver.NodimViscositySkfemNewtonFilm"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.SkfemThermalModel",
+      "targets": [
+        "ALB.physics.thermal.solver.SkfemThermalModel"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.SkfemThermalModelNondim",
+      "targets": [
+        "ALB.physics.thermal.solver.SkfemThermalModelNondim"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.ThermalPostProcess",
+      "targets": [
+        "ALB.physics.thermal.solver.ThermalPostProcess"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.NodimThermalHydroBearing",
+      "targets": [
+        "ALB.physics.thermal.solver.NodimThermalHydroBearing"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.thermal.ThermalHydroBearing",
+      "targets": [
+        "ALB.physics.thermal.solver.ThermalHydroBearing"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.ParameterHub",
+      "targets": [
+        "ALB.config.parameters.ParameterHub"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.FFT",
+      "targets": [
+        "ALB.dynamics.identification.FFT"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.recognize_z",
+      "targets": [
+        "ALB.dynamics.identification.recognize_z"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.recognize_kc",
+      "targets": [
+        "ALB.dynamics.identification.recognize_kc"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.EmailSender",
+      "targets": [
+        "ALB.infrastructure.notification.SmtpNotifier"
+      ],
+      "status": "renamed",
+      "rationale": "Private SMTP defaults were removed; inject SmtpConfig or environment values."
+    },
+    {
+      "source": "ALB.tool.itercouple",
+      "targets": [
+        "ALB.workflows.execution.iter_parameter_combinations"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.get_main_model_from_filmsystem",
+      "targets": [
+        "ALB.physics.film.model_utils.get_primary_film_model"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.create_latex_symbol",
+      "targets": [],
+      "status": "removed",
+      "rationale": "Removed as an unused presentation helper outside the numerical runtime."
+    },
+    {
+      "source": "ALB.tool.Partition",
+      "targets": [
+        "ALB.workflows.doe.partition_intervals"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.Representative",
+      "targets": [
+        "ALB.workflows.doe.sample_interval_representatives"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.Rearrange",
+      "targets": [
+        "ALB.workflows.doe.shuffle_columns"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.ParameterArray",
+      "targets": [
+        "ALB.workflows.doe.latin_hypercube_samples"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.DoE",
+      "targets": [
+        "ALB.workflows.doe.DesignOfExperiments"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.DoELHS",
+      "targets": [
+        "ALB.workflows.doe.LatinHypercubeDesign"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.UnzipToTask",
+      "targets": [
+        "ALB.workflows.execution.UnpackTask"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.MultiTask",
+      "targets": [
+        "ALB.workflows.execution.MultiTask"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.chstack",
+      "targets": [
+        "ALB.core.numerics.arrays.horizontal_stack_nonempty"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.cvstack",
+      "targets": [
+        "ALB.core.numerics.arrays.vertical_stack_nonempty"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.autoname",
+      "targets": [
+        "ALB.workflows.naming.build_parameter_name"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.BearingFilmMeshConfig",
+      "targets": [
+        "ALB.physics.film.mesh_export.BearingFilmMeshConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.StructuredHexMesh",
+      "targets": [
+        "ALB.physics.film.mesh_export.StructuredHexMesh"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.film_thickness_distribution",
+      "targets": [
+        "ALB.physics.film.mesh_export.film_thickness_distribution"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.build_bearing_film_mesh",
+      "targets": [
+        "ALB.physics.film.mesh_export.build_bearing_film_mesh"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.write_nastran_bdf",
+      "targets": [
+        "ALB.physics.film.mesh_export.write_nastran_bdf"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.plot_mesh_preview",
+      "targets": [
+        "ALB.physics.film.mesh_export.plot_mesh_preview"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.parse_bearing_film_mesh_args",
+      "targets": [
+        "tools.diagnostics.export_bearing_film_mesh.parse_arguments"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.bearing_film_nastran_export_main",
+      "targets": [
+        "tools.diagnostics.export_bearing_film_mesh.main"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.namevalue",
+      "targets": [
+        "ALB.workflows.naming.parse_parameter_name"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.read_json5",
+      "targets": [
+        "ALB.infrastructure.config_io.read_json5"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.read_share",
+      "targets": [
+        "ALB.infrastructure.config_io.read_shared_config"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.read_json5_with_share",
+      "targets": [
+        "ALB.infrastructure.config_io.read_json5_with_shared"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.ConfigArgfy",
+      "targets": [
+        "ALB.workflows.configuration.ConfigurationSweep"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.continue_task",
+      "targets": [
+        "ALB.workflows.configuration.pending_task_directories"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.read_configs",
+      "targets": [
+        "ALB.infrastructure.config_io.read_config_directories"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.get_config_value",
+      "targets": [
+        "ALB.infrastructure.config_io.get_config_values"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.get",
+      "targets": [],
+      "status": "removed",
+      "rationale": "Removed as a one-line default-selection helper; use an explicit expression."
+    },
+    {
+      "source": "ALB.tool.listdir",
+      "targets": [
+        "ALB.infrastructure.config_io.list_directories"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.pearson_similarity",
+      "targets": [
+        "ALB.dynamics.identification.pearson_similarity"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.cal_bode_best",
+      "targets": [
+        "ALB.dynamics.identification.cal_bode_best"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.fft_data",
+      "targets": [
+        "ALB.dynamics.identification.fft_data"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.excel_to_csv",
+      "targets": [
+        "ALB.infrastructure.config_io.excel_to_csv"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.get_modal_reduction",
+      "targets": [
+        "ALB.control.reduction.conservative_modal_reduction"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.tool.calculate_moi_complex",
+      "targets": [
+        "ALB.control.reduction.modal_observability_indices"
+      ],
+      "status": "renamed",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.config.TrainingConfigError",
+      "targets": [
+        "ALB.surrogate.training.config.TrainingConfigError"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.config.TrainingConfig",
+      "targets": [
+        "ALB.surrogate.training.config.TrainingConfig"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.config.runtime_overrides",
+      "targets": [
+        "ALB.surrogate.training.config.runtime_overrides"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.data.valid_mask",
+      "targets": [
+        "ALB.surrogate.training.data.valid_mask"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.data.load_frame",
+      "targets": [
+        "ALB.surrogate.training.data.load_frame"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.data.train_validation_frames",
+      "targets": [
+        "ALB.surrogate.training.data.train_validation_frames"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.losses.huber_values",
+      "targets": [
+        "ALB.surrogate.training.losses.huber_values"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.losses.sample_loss_values",
+      "targets": [
+        "ALB.surrogate.training.losses.sample_loss_values"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.losses.weighted_mean",
+      "targets": [
+        "ALB.surrogate.training.losses.weighted_mean"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.losses.force_measure",
+      "targets": [
+        "ALB.surrogate.training.losses.force_measure"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.losses.force_bin_ids",
+      "targets": [
+        "ALB.surrogate.training.losses.force_bin_ids"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.losses.loss_weights",
+      "targets": [
+        "ALB.surrogate.training.losses.loss_weights"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.reports.is_cartesian_force_schema",
+      "targets": [
+        "ALB.surrogate.training.reports.is_cartesian_force_schema"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.reports.regression_metrics",
+      "targets": [
+        "ALB.surrogate.training.reports.regression_metrics"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.reports.write_json",
+      "targets": [
+        "ALB.surrogate.training.reports.write_json"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.reports.write_loss_history",
+      "targets": [
+        "ALB.surrogate.training.reports.write_loss_history"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.reports.write_loss_curve",
+      "targets": [
+        "ALB.surrogate.training.reports.write_loss_curve"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.reports.write_validation_predictions",
+      "targets": [
+        "ALB.surrogate.training.reports.write_validation_predictions"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.runs.TrainingResult",
+      "targets": [
+        "ALB.surrogate.training.runs.TrainingResult"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.runs.FitResult",
+      "targets": [
+        "ALB.surrogate.training.runs.FitResult"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.runs.TrainingRun",
+      "targets": [
+        "ALB.surrogate.training.runs.TrainingRun"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.runs.AlbnnMlpTrainer",
+      "targets": [
+        "ALB.surrogate.training.runs.AlbnnMlpTrainer"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.runs.AlbnnExpertTrainer",
+      "targets": [
+        "ALB.surrogate.training.runs.AlbnnExpertTrainer"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.runs.AlbnnResidualTrainer",
+      "targets": [
+        "ALB.surrogate.training.runs.AlbnnResidualTrainer"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.transforms.ColumnTransformError",
+      "targets": [
+        "ALB.surrogate.training.transforms.ColumnTransformError"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.transforms.MidpointMinMaxScaler",
+      "targets": [
+        "ALB.surrogate.training.transforms.MidpointMinMaxScaler"
+      ],
+      "status": "migrated",
+      "rationale": null
+    },
+    {
+      "source": "ALB.train.transforms.ColumnTransformPipeline",
+      "targets": [
+        "ALB.surrogate.training.transforms.ColumnTransformPipeline"
+      ],
+      "status": "migrated",
+      "rationale": null
+    }
+  ],
+  "important_imports": [
+    {
+      "old": "from ALB import ALB",
+      "new": "from ALB.systems.alb import ALB"
+    },
+    {
+      "old": "from ALB import HydConfig",
+      "new": "from ALB.config import HydConfig"
+    },
+    {
+      "old": "from ALB.results import SaveTreeNode",
+      "new": "from ALB.contracts.result_tree import SaveTreeNode"
+    },
+    {
+      "old": "from ALB.remote import job",
+      "new": "from ALB.infrastructure.remote import job"
+    },
+    {
+      "old": "from ALB.train import TrainingConfig",
+      "new": "from ALB.surrogate.training import TrainingConfig"
+    },
+    {
+      "old": "from ALB.rotor import StaicLoad",
+      "new": "from ALB.dynamics.rotor import StaticLoad"
+    }
+  ],
+  "resource_mappings": [
+    {
+      "source": "ALB/data/alb_harmonic_linear_gamma1_50hz.json",
+      "target": "ALB/systems/alb/data/alb_harmonic_linear_gamma1_50hz.json"
+    }
+  ],
+  "intentional_incompatibilities": [
+    "ALB.nn pickle objects are not a 0.2 runtime compatibility surface.",
+    "Direct result-tree filesystem methods were removed; inject ArtifactWriterProtocol.",
+    "BearingForceTrack pickle save/load was removed in favor of ResultBundle artifacts.",
+    "The misspelled StaicLoad symbol was replaced by StaticLoad."
+  ]
+}
