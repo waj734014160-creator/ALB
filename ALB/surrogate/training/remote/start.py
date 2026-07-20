@@ -7,12 +7,12 @@ import argparse
 import tempfile
 from pathlib import Path, PureWindowsPath
 
-from .transport import configure_stdio
-from .transport import powershell_file_command
-from .transport import ps_quote
-from .transport import remote_path
-from .transport import run_remote_powershell
-from .transport import run_scp
+from ALB.infrastructure.remote.transport import configure_stdio
+from ALB.infrastructure.remote.transport import powershell_file_command
+from ALB.infrastructure.remote.transport import ps_quote
+from ALB.infrastructure.remote.transport import remote_path
+from ALB.infrastructure.remote.transport import run_remote_powershell
+from ALB.infrastructure.remote.transport import run_scp
 
 
 DEFAULT_HOST = "10.182.216.22"

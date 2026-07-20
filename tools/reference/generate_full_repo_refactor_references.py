@@ -93,8 +93,8 @@ from ALB.surrogate.inference import (
     c4_canonicalize_albnn_frame,
 )
 from ALB.physics.hydraulics import NodimCSOrifice
-from ALB.remote import job as remote_job
-from ALB.remote.transport import (
+from ALB.infrastructure.remote import job as remote_job
+from ALB.infrastructure.remote.transport import (
     encode_powershell,
     powershell_encoded_command,
     ps_quote,

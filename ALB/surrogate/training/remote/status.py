@@ -8,18 +8,18 @@ import json
 import re
 from typing import Any
 
-from . import monitor
-from .common import extract_json
-from .common import parse_iso
-from .defaults import DEFAULT_HOST
-from .defaults import DEFAULT_KEY
-from .defaults import DEFAULT_MODEL
-from .defaults import DEFAULT_ROOT
-from .defaults import DEFAULT_TASK
-from .defaults import DEFAULT_USER
-from .transport import configure_stdio
-from .transport import remote_path
-from .transport import run_remote_powershell
+from ALB.infrastructure.remote import monitor
+from ALB.infrastructure.remote.common import extract_json
+from ALB.infrastructure.remote.common import parse_iso
+from ALB.infrastructure.remote.defaults import DEFAULT_HOST
+from ALB.infrastructure.remote.defaults import DEFAULT_KEY
+from ALB.infrastructure.remote.defaults import DEFAULT_MODEL
+from ALB.infrastructure.remote.defaults import DEFAULT_ROOT
+from ALB.infrastructure.remote.defaults import DEFAULT_TASK
+from ALB.infrastructure.remote.defaults import DEFAULT_USER
+from ALB.infrastructure.remote.transport import configure_stdio
+from ALB.infrastructure.remote.transport import remote_path
+from ALB.infrastructure.remote.transport import run_remote_powershell
 
 
 def remote_stdout(args: argparse.Namespace, script: str, *, required: bool = False) -> str:

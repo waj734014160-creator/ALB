@@ -15,21 +15,21 @@ import sys
 import time
 from typing import Any
 
-from .albnn_start import DEFAULT_REMOTE_PYTHON
-from .albnn_start import DEFAULT_WORK
-from .common import parse_iso
-from .defaults import DEFAULT_HOST
-from .defaults import DEFAULT_KEY
-from .defaults import DEFAULT_ROOT
-from .defaults import DEFAULT_USER
-from .albnn_status import latest_epoch
-from .albnn_status import parse_json_text
-from .albnn_status import parse_key_values
-from .albnn_status import query_remote
-from .transport import configure_stdio
-from .transport import ps_quote
-from .transport import remote_path
-from .transport import run_remote_powershell
+from .start import DEFAULT_REMOTE_PYTHON
+from .start import DEFAULT_WORK
+from .status import latest_epoch
+from .status import parse_json_text
+from .status import parse_key_values
+from .status import query_remote
+from ALB.infrastructure.remote.common import parse_iso
+from ALB.infrastructure.remote.defaults import DEFAULT_HOST
+from ALB.infrastructure.remote.defaults import DEFAULT_KEY
+from ALB.infrastructure.remote.defaults import DEFAULT_ROOT
+from ALB.infrastructure.remote.defaults import DEFAULT_USER
+from ALB.infrastructure.remote.transport import configure_stdio
+from ALB.infrastructure.remote.transport import ps_quote
+from ALB.infrastructure.remote.transport import remote_path
+from ALB.infrastructure.remote.transport import run_remote_powershell
 
 
 DEFAULT_CURRENT_TASK = "ALB_TrainForce5Sin10_20260509"
@@ -582,7 +582,7 @@ def _start_command_prefix() -> list[str]:
     script = _legacy_start_script_from_argv()
     if script is not None:
         return [sys.executable, str(script)]
-    return [sys.executable, "-m", "ALB.remote.albnn_start"]
+    return [sys.executable, "-m", "ALB.surrogate.training.remote.start"]
 
 
 def launch_command(
