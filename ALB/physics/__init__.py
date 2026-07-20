@@ -12,7 +12,7 @@ _EXPORTS = {
         "NodimHydrostaticBearing",
     ),
     "MultiPad": ("ALB.physics.bearing", "MultiPad"),
-    "GasBearing": ("ALB.gas", "GasBearing"),
+    "GasBearing": ("ALB.physics.gas", "GasBearing"),
     "CSOrifice": ("ALB.physics.hydraulics", "CSOrifice"),
     "NodimCSOrifice": ("ALB.physics.hydraulics", "NodimCSOrifice"),
     "ThermalHydroBearing": ("ALB.thermal", "ThermalHydroBearing"),

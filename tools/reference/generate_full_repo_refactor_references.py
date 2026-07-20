@@ -76,7 +76,7 @@ from ALB.config import (
 )
 from ALB.controller import PID
 from ALB.couple import RsRotorBearingCouple
-from ALB.gas import GasBearing
+from ALB.physics.gas import GasBearing
 from ALB.core.numerics.iteration import gauss_seidel_iteration_film
 from ALB.harmonic_linear import alb_harmonic_linear
 from ALB.core.numerics.dynamic import calc_fe_dx, calc_ke_dx

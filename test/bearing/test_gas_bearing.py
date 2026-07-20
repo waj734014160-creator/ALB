@@ -8,7 +8,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from ALB.config import GasConfig
-from ALB.gas import GasBearing
+from ALB.physics.gas import GasBearing
 
 
 class TestGasBearing(unittest.TestCase):
