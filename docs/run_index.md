@@ -9,6 +9,7 @@
 - 更新时机：运行编号规则、项目前缀、当前状态归属、路径族或归档指针规则发生变化时。
 - 事实来源 / 相关文档：
   `docs/daily_maintenance/daily_doc_update_index.md`,
+  `docs/current_state.md`,
   `docs/file_classification.md`,
   `../SURROGATE_TRAIN/docs/file_classification.md`,
   `../SURROGATE_TRAIN/docs/current_runtime_status.md`。
@@ -18,6 +19,8 @@
 ```text
 ../SURROGATE_TRAIN/docs/current_runtime_status.md
 ```
+
+`ALB_MAIN/docs/current_state.md` 记录 ALB_MAIN 当前开发阶段、包级工作重点、已确认验证、风险和近期下一步。它不是 run locator，也不替代 `SURROGATE_TRAIN` 的实时运行状态文档。
 
 ## 运行编号规则
 
@@ -56,7 +59,13 @@ A0001_remote_helper_reference_v1_20260517
 
 ## 当前状态规则
 
-agent 在启动、恢复、监控或归档活跃工作之前，应先读取当前状态文档：
+涉及 ALB_MAIN 当前包开发或迁移工作时，应先读取：
+
+```text
+docs/current_state.md
+```
+
+agent 在启动、恢复、监控或归档 SURROGATE_TRAIN 活跃工作之前，应先读取：
 
 ```text
 ../SURROGATE_TRAIN/docs/current_runtime_status.md

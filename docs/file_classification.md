@@ -8,7 +8,8 @@
 - 禁止更新：实时运行状态、模型进度、最新指标和详细运行历史。
 - 更新节奏：当主要文件组、归档类别或清理策略变化时更新。
 - 事实来源 / 相关文档：
-  `docs/daily_maintenance/daily_doc_update_index.md`。
+  `docs/daily_maintenance/daily_doc_update_index.md`,
+  `docs/current_state.md`。
 
 本文档记录当前项目文件面向的主要需求、代表目录/文件、建议处理方式和风险点。它只用于建立分类清单和后续整理建议；不移动文件、不修改 import、不清理训练产物。
 
@@ -28,7 +29,7 @@
 | 任务和批处理入口 | `task/`, `ALB/task.py` | 保留现有入口；后续再区分可复用工作流和一次性脚本。 | 部分脚本使用本地绝对路径，并会把任务文件复制到输出目录。 |
 | 运行脚本和实验 | `run/`, `run/validation/`, `run/JKW/` | 保留可复现脚本；将生成的子目录标为产物。 | 部分脚本面向论文/演示，可能写入 `run/_*` 目录。 |
 | 远程 ALBNN 工具 | `ALB/remote/`, `test/remote/`, `refs/remote_albnn_*_reference_v1.json` | 保留为远程 helper 的稳定实现和回归基线。 | 兼容入口在兄弟项目 `SURROGATE_TRAIN/run/remote/`；不要恢复重复实现。 |
-| run 与 current-status 规则 | `docs/run_index.md`, `../SURROGATE_TRAIN/docs/current_runtime_status.md` | `docs/run_index.md` 维护可复用 run 编号/路径规则；拥有项目的 current-status 文档维护活跃 run 定位状态。 | 不把 Markdown 当数据库解析；不主动回填历史 run，除非要复用、审计或归档。 |
+| 项目状态、run 与 current-status 规则 | `docs/current_state.md`, `docs/run_index.md`, `../SURROGATE_TRAIN/docs/current_runtime_status.md` | `docs/current_state.md` 维护 ALB_MAIN 当前项目状态；`docs/run_index.md` 维护可复用 run 编号/路径规则；拥有运行的项目由自己的 current-status 文档维护活跃 run 定位状态。 | 不把项目状态文档当历史日志或 run 数据库；不主动回填历史 run，除非要复用、审计或归档。 |
 | pytest 和工程验证 | `test/*.py`, `test/bearing/`, `test/config/`, `test/thermal/` | 先在文档中区分回归、单元、集成、验证和诊断目的。 | `test/` 同时包含 notebook、GUI、日志和图片，不能简单视为纯 pytest 目录。 |
 | 历史数据处理和 notebook | `data_process/`, `learning_note/`, `test/**/*.ipynb` | 作为研究历史保留；后续可迁移到 `notebooks/` 或 `experiments/notebooks/`。 | 许多 notebook 可能包含嵌入输出和硬编码本地路径。 |
 | 文档和约定 | `docs/`, `AGENTS.md`, `README.md` | 保留并持续改进；文档作为项目组织的第一层。 | 旧文档可能存在编码问题，复用前需要审查。 |
@@ -64,7 +65,7 @@
 
 ## 输出和产物
 
-实验输出、运行日志、队列状态快照和训练配置默认属于兄弟项目 `SURROGATE_TRAIN`，除非它们是正式的 `ALB` 包回归 fixture。工作区全局 run 规则由 `ALB_MAIN/docs/run_index.md` 维护，活跃 run 定位状态由拥有项目的 current-status 文档维护。
+实验输出、运行日志、队列状态快照和训练配置默认属于兄弟项目 `SURROGATE_TRAIN`，除非它们是正式的 `ALB` 包回归 fixture。ALB_MAIN 当前项目状态由 `ALB_MAIN/docs/current_state.md` 维护；工作区全局 run 规则由 `ALB_MAIN/docs/run_index.md` 维护；活跃 run 定位状态由拥有运行的项目通过自己的 current-status 文档维护。
 
 未来 run 应使用项目编号前缀和放置策略：配置放在拥有子项目下，结果产物放在该子项目的 `outputs` 下，日志路径保留在负责工具实际写入的位置，短期非活跃归档放在该子项目的 `outputs/archive`。日志是原始证据，不另外统一维护成单独树。
 

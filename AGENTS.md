@@ -45,6 +45,7 @@ Spend time on thinking; you do not need to use the commentary channel to report 
 ## 文档语言
 
 - 面向人类用户阅读的规定类、概览类、维护类、审计类和操作手册类文档应使用中文。包括但不限于 `docs/alb_package_overview.md`、`docs/daily_summary_log.md`、`docs/file_classification.md`、`docs/project_overview.md`、`docs/remote_workstation_connection.md`、`docs/run_index.md`，以及兄弟项目中的同类维护文档。
+- `docs/current_state.md` 是 ALB_MAIN 当前状况的首要入口，也必须使用中文维护。
 - 源码中的代码注释、docstring、实现说明、嵌入源码的 CLI help 文本和生成脚本注释必须保持英文，以兼容编码和工具链。
 - 当维护类人类可读文档已经部分使用英文时，后续编辑应把被触及段落转向中文，而不是继续增加英文规则正文。
 
@@ -58,17 +59,19 @@ Spend time on thinking; you do not need to use the commentary channel to report 
 
 维护项目文档前，先阅读 `docs/daily_maintenance/daily_doc_update_index.md`。它是集中式文档角色索引。然后阅读目标文档本地的 `文档角色` 区块，只编辑该角色允许的内容。
 
-如果集中索引和目标文档冲突，停止并报告冲突。实时运行状态属于 `../SURROGATE_TRAIN/docs/current_runtime_status.md`；每日耐久 ALBNN 历史属于 `../SURROGATE_TRAIN/docs/albnn_training_log.md`；稳定远程机制属于 `docs/remote_workstation_connection.md`。
+如果集中索引和目标文档冲突，停止并报告冲突。ALB_MAIN 当前开发阶段、已确认基线、验证状态、风险和近期下一步属于 `docs/current_state.md`；SURROGATE_TRAIN 实时运行状态属于 `../SURROGATE_TRAIN/docs/current_runtime_status.md`；每日耐久 ALBNN 历史属于 `../SURROGATE_TRAIN/docs/albnn_training_log.md`；稳定远程机制属于 `docs/remote_workstation_connection.md`。
+
+`docs/current_state.md` 是可随当前事实重写的项目状态入口，不是完整历史日志。只在 ALB_MAIN 的开发阶段、工作重点、验证结论、风险或下一步发生实质变化时更新；旧状态应压缩为结论，不持续堆叠时间线。不得把兄弟项目的训练 tick、远程 PID、loss、ETA 或论文任务进度写入其中。
 
 ## Run 与当前状态定位
 
-使用 `docs/run_index.md` 获取工作区级 run 编号和路径规则。广泛搜索项目文件前，先使用拥有项目的 current-status 文档作为 agent 面向活跃工作的首要定位入口。对 SURROGATE_TRAIN 来说，该文件是 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。对论文任务和 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task` 下的活跃计算来说，该文件是 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md`。
+使用 `docs/run_index.md` 获取工作区级 run 编号和路径规则。新对话涉及 ALB_MAIN 当前项目状态、正在进行的包重构或后续迁移时，先读取 `docs/current_state.md`，再按其中的证据指针检查实际 Git、测试和代码状态。广泛搜索其它项目文件前，先使用拥有项目的 current-status 文档作为 agent 面向活跃工作的首要定位入口。对 SURROGATE_TRAIN 来说，该文件是 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。对论文任务和 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task` 下的活跃计算来说，该文件是 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md`。
 
 活跃 run 区块应保持足够结构化，能够定位 config、outputs、相关日志指针、远程任务名、最新进度、当前问题和下一步。日志不通过单一全局布局统一管理；详细原始证据保留在 artifacts 中，已完成 run 的耐久历史属于对应的时间顺序 log。
 
 ## 文件、路径与命名约束
 
-- `AGENTS.md` 保存稳定代理执行规则；`docs/file_classification.md` 保存文件归属和清理策略；`docs/run_index.md` 保存 run 编号、路径族和 current-status 归属。涉及文件管理时先查这些文档，不要只凭当前打开目录判断。
+- `AGENTS.md` 保存稳定代理执行规则；`docs/current_state.md` 保存 ALB_MAIN 当前项目状态；`docs/file_classification.md` 保存文件归属和清理策略；`docs/run_index.md` 保存 run 编号、路径族和 current-status 归属。涉及文件管理时先查这些文档，不要只凭当前打开目录判断。
 - 新建、迁移或复制文件前，先检查目标任务已有命名方式和目录结构。除非用户明确要求重构目录，不要把数据、脚本、日志、note、图件平铺混放在同一目录。
 - `ALB_MAIN` 仓库只放稳定包代码、项目文档、回归参考、测试和工程验证资产。论文任务的计算脚本、任务日志和绘图数据默认不放入 `ALB_MAIN`。
 - `F:/BaiduSyncdisk/博士论文/PAPER_WORK` 的论文任务脚本、远程配置、图目录、数据目录和自查表规则由 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` 维护；进入该工作区前先读该文件。

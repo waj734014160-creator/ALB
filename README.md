@@ -13,6 +13,7 @@
 首读文档：
 
 - `docs/project_overview.md`：项目边界、目录职责和首读顺序。
+- `docs/current_state.md`：ALB_MAIN 当前开发阶段、验证状态、风险和近期下一步。
 - `docs/alb_package_overview.md`：`ALB/` 模块图和公共接口组。
 - `docs/alb_albnn_quickstart.md`：快速构建默认 ALB、加载 ALBNN packaged model 的用户手册。
 - `docs/remote_workstation_connection.md`：稳定远程工作站连接和长任务操作说明。

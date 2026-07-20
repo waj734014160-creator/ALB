@@ -22,7 +22,7 @@
 ## 文档语言规则
 
 - 面向人类用户阅读的规定类、概览类、维护类、审计类和操作手册类文档使用中文。
-- 适用文件包括但不限于 `docs/alb_package_overview.md`、`docs/daily_summary_log.md`、`docs/file_classification.md`、`docs/project_overview.md`、`docs/remote_workstation_connection.md`、`docs/run_index.md`，以及兄弟项目中的同类维护文档。
+- 适用文件包括但不限于 `docs/current_state.md`、`docs/alb_package_overview.md`、`docs/daily_summary_log.md`、`docs/file_classification.md`、`docs/project_overview.md`、`docs/remote_workstation_connection.md`、`docs/run_index.md`，以及兄弟项目中的同类维护文档。
 - 源码中的代码注释、docstring、实现说明、嵌入代码的 CLI help 和生成脚本注释必须继续使用英文，以兼容不同编码方式和开发工具链。
 - 文档内的路径、命令、API 名称、参数名、错误文本和日志字段可以保留英文原文。
 - 若旧维护文档仍有英文正文，后续维护时应优先把被触及的段落改为中文，避免继续扩展英文规则正文。
@@ -54,7 +54,7 @@
 
 | 文件 | 角色 | 检查触发条件 |
 | --- | --- | --- |
-| `ALB_MAIN/AGENTS.md` | 稳定代理策略 | 代理策略、源码修改边界、文件/路径命名约束、包概览或远程操作规则变化。 |
+| `ALB_MAIN/AGENTS.md` | 稳定代理策略 | 代理策略、源码修改边界、ALB_MAIN 当前状态入口、文件/路径命名约束、包概览或远程操作规则变化。 |
 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` | PAPER_WORK 稳定代理策略 | 论文任务脚本、远程配置、图目录、数据目录、current-status 或证据保留规则变化。 |
 | `SURROGATE_TRAIN/AGENTS.md` | 稳定训练项目代理策略 | 本地/远程启动边界、文档频率、训练源码归属或文档角色策略变化。 |
 | `ARTIFACTS_ARCHIVE/docs/file_classification.md` | 归档文件归属策略 | 归档结构或保留策略变化。 |
@@ -85,6 +85,7 @@
 | `SURROGATE_TRAIN/outputs/local_train_logs/` | 本地训练 stdout/stderr 和启动 metadata。 |
 | `SURROGATE_TRAIN/outputs/remote_monitor_logs/` | 远程采样 monitor 状态。 |
 | `SURROGATE_TRAIN/outputs/queue_logs/` | 远程训练队列状态和同步日志尾部。 |
+| `ALB_MAIN/docs/current_state.md` | ALB_MAIN 当前开发阶段、基线、验证状态、风险、下一步和证据指针。 |
 | `ALB_MAIN/docs/run_index.md` | 人类可读的工作区全局 run 编号和路径策略。 |
 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` | 论文任务文件管理、路径命名和证据保留规则。 |
 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md` | 论文任务当前状态、最新输出路径、检查命令和下一步。 |
