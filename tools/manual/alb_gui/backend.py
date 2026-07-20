@@ -10,7 +10,7 @@ from typing import Any, Callable
 
 import numpy as np
 
-from ALB.alb import alb2, alb2_static
+from ALB.systems.alb import alb2, alb2_static
 from ALB.config import ALBConfig
 from ALB.dynamics.orbit import EllipseTrack, orbitime, test_bearing_orbit_parallel
 

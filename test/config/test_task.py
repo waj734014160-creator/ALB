@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ALB.alb import ALB, alb2, alb2_fuzzy
+from ALB.systems.alb import ALB, alb2, alb2_fuzzy
 from ALB.physics.bearing import MultiPad, four_pads_bearing
 from ALB.config import ALBConfig, FPBConfig, build_thermal_config
 from ALB.control.valve import moog_servovalve

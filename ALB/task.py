@@ -6,7 +6,8 @@ from pathlib import Path
 
 import numpy as np
 
-from ALB.alb import alb2, alb2_fuzzy, alb2_static, nn_agent
+from ALB.systems.alb import alb2, alb2_fuzzy, alb2_static
+from ALB.systems.alb.assembly import nn_agent
 from ALB.physics.bearing import MultiPad, StaticPosition, four_pads_bearing
 from ALB.config import (
     ALBConfig,

@@ -2157,7 +2157,8 @@ class Cq2SigLogMinMaxScaler:
 class ALBNet:
     """Legacy dimensional ALB neural force wrapper.
 
-    ``ALB.alb.nn_agent`` uses this wrapper through ``alb_agent_nn`` when a
+    ``ALB.systems.alb.assembly.nn_agent`` uses this wrapper through
+    ``alb_agent_nn`` when a
     complete ALB shell should keep its servo/controller wiring but replace the
     pad force core with an older ALBNet-style neural model.
     """

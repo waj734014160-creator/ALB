@@ -29,7 +29,7 @@ if str(REPO_ROOT) not in sys.path:
 import ALB  # noqa: E402
 from ALB import StepContext  # noqa: E402
 from ALB import alb_harmonic_linear  # noqa: E402
-from ALB.alb import ALBLinearAgent  # noqa: E402
+from ALB.systems.alb import ALBLinearAgent  # noqa: E402
 from ALB.core import Signal, TimeIterDt  # noqa: E402
 from ALB.dynamics.coupling import RsRotorBearingCouple  # noqa: E402
 from ALB.results import DataFrameResult, SaveTreeNode  # noqa: E402
@@ -39,7 +39,7 @@ from ALB.surrogate.training.transforms import MidpointMinMaxScaler  # noqa: E402
 REFERENCE_STEM = "interface_contract_reference_v1"
 EXPECTED_BASELINE_COMMIT = "24ea190becf19c6f0e33e3c05686c0052dfdbedd"
 LEGACY_IMPORT_SURFACE = {
-    "ALB.alb": ["ALB", "ALBBuilder", "ALBLinearAgent", "ALBNNAgent"],
+    "ALB.systems.alb": ["ALB", "ALBBuilder", "ALBLinearAgent", "ALBNNAgent"],
     "ALB.core.fem": [
         "BaseCSystem",
         "BaseSimpleModel",

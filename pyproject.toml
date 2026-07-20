@@ -64,7 +64,7 @@ alb-migrate-surrogate = "ALB.surrogate.cli:main"
 include = ["ALB", "ALB.*"]
 
 [tool.setuptools.package-data]
-ALB = ["data/*.json"]
+"ALB.systems.alb" = ["data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

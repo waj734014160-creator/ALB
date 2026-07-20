@@ -64,7 +64,7 @@ hiddenimports = [
     "scipy.sparse",
     "scipy.sparse.linalg",
     "tqdm",
-    "ALB.alb",
+    "ALB.systems.alb",
     "ALB.base",
     "ALB.physics.bearing",
     "ALB.boundary",

@@ -157,7 +157,7 @@ def test_film_failure_uses_injected_notifier_without_infrastructure_import():
 
 
 def test_classification_namespaces_preserve_implementation_identity():
-    from ALB.alb import ALB
+    from ALB.systems.alb import ALB
     from ALB.physics.bearing import HydrostaticBearing
     from ALB.control.pid import PID
     from ALB.control import PID as CategorizedPID

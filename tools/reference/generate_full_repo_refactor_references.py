@@ -53,7 +53,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from ALB.alb import nodim_alb
+from ALB.systems.alb import alb_harmonic_linear, nodim_alb
 from ALB import StepContext
 from ALB.core.fem import _assemble_matrixs, _assemble_rights
 from ALB.physics.bearing import (
@@ -79,7 +79,6 @@ from ALB.control.pid import PID
 from ALB.dynamics.coupling import RsRotorBearingCouple
 from ALB.physics.gas import GasBearing
 from ALB.core.numerics.iteration import gauss_seidel_iteration_film
-from ALB.harmonic_linear import alb_harmonic_linear
 from ALB.core.numerics.dynamic import calc_fe_dx, calc_ke_dx
 from ALB.core.numerics.static import calc_fe, calc_fe_vf, calc_ke
 from ALB.core.fem.mesh import create_rect, create_serend_2d

@@ -212,7 +212,9 @@ class ALBHarmonicCoefficients:
 def _load_builtin_payload() -> dict[str, Any]:
     """Load the packaged documented coefficient and runtime contract."""
 
-    resource = resources.files("ALB").joinpath(BUILTIN_COEFFICIENT_RESOURCE)
+    resource = resources.files("ALB.systems.alb").joinpath(
+        BUILTIN_COEFFICIENT_RESOURCE
+    )
     with resource.open("r", encoding="utf-8") as stream:
         return json.load(stream)
 

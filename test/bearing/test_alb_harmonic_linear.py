@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from ALB import StepContext
-from ALB.harmonic_linear import (
+from ALB.systems.alb.harmonic import (
     ALBHarmonicCoefficients,
     ALBHarmonicLinear,
     alb_harmonic_linear,

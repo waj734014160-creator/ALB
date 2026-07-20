@@ -10,7 +10,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ALB.alb import ALB, ALBBuilder
+from ALB.systems.alb import ALB, ALBBuilder
 from ALB.core import TimeIterDt
 from ALB.physics.bearing import HydrostaticBearing, four_pads_bearings
 from ALB.config import (

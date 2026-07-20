@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from ALB.alb import ALB, NodimALB, nodim_alb
+from ALB.systems.alb import ALB, NodimALB, nodim_alb
 from ALB.physics.bearing import (
     HydrostaticBearing,
     NodimHydrostaticBearing,

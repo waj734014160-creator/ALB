@@ -236,7 +236,7 @@ class TestAlbGuiBackend(unittest.TestCase):
         self.assertEqual(len(result.pad_status), 4)
 
     def test_static_gui_backend_matches_script_style_result(self):
-        from ALB.alb import alb2_static
+        from ALB.systems.alb import alb2_static
 
         config = make_small_test_config(thermal=False)
         gui_result = run_static_calculation(config)
@@ -267,7 +267,7 @@ class TestAlbGuiBackend(unittest.TestCase):
         self.assertIsNone(script_temperature)
 
     def test_parallel_orbit_matches_serial_orbit_nonthermal(self):
-        from ALB.alb import alb2
+        from ALB.systems.alb import alb2
         from ALB.dynamics.orbit import (
             EllipseTrack,
             orbitime,
@@ -341,7 +341,7 @@ class TestAlbGuiBackend(unittest.TestCase):
         )
 
     def test_dynamic_gui_backend_matches_script_style_result(self):
-        from ALB.alb import alb2
+        from ALB.systems.alb import alb2
         from ALB.dynamics.orbit import EllipseTrack, orbitime, test_bearing_orbit
 
         config = make_small_test_config(thermal=False)

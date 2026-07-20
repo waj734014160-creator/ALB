@@ -4,13 +4,13 @@ from importlib import import_module
 
 
 _EXPORTS = {
-    "ALB": ("ALB.alb", "ALB"),
-    "NodimALB": ("ALB.alb", "NodimALB"),
-    "alb2": ("ALB.alb", "alb2"),
-    "nodim_alb": ("ALB.alb", "nodim_alb"),
-    "ALBHarmonicCoefficients": ("ALB.harmonic_linear", "ALBHarmonicCoefficients"),
-    "ALBHarmonicLinear": ("ALB.harmonic_linear", "ALBHarmonicLinear"),
-    "alb_harmonic_linear": ("ALB.harmonic_linear", "alb_harmonic_linear"),
+    "ALB": ("ALB.systems.alb", "ALB"),
+    "NodimALB": ("ALB.systems.alb", "NodimALB"),
+    "alb2": ("ALB.systems.alb", "alb2"),
+    "nodim_alb": ("ALB.systems.alb", "nodim_alb"),
+    "ALBHarmonicCoefficients": ("ALB.systems.alb", "ALBHarmonicCoefficients"),
+    "ALBHarmonicLinear": ("ALB.systems.alb", "ALBHarmonicLinear"),
+    "alb_harmonic_linear": ("ALB.systems.alb", "alb_harmonic_linear"),
 }
 
 
