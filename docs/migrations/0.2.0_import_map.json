@@ -1022,7 +1022,7 @@
     {
       "source": "ALB.config.ConfigData",
       "targets": [
-        "ALB.config._models.ConfigData"
+        "ALB.config.common.ConfigData"
       ],
       "status": "migrated",
       "rationale": null
@@ -1030,7 +1030,7 @@
     {
       "source": "ALB.config.ResolvedTimeGrid",
       "targets": [
-        "ALB.config._models.ResolvedTimeGrid"
+        "ALB.config.common.ResolvedTimeGrid"
       ],
       "status": "migrated",
       "rationale": null
@@ -1038,7 +1038,7 @@
     {
       "source": "ALB.config.TimeGridConfig",
       "targets": [
-        "ALB.config._models.TimeGridConfig"
+        "ALB.config.common.TimeGridConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1046,7 +1046,7 @@
     {
       "source": "ALB.config.HydConfig",
       "targets": [
-        "ALB.config._models.HydConfig"
+        "ALB.config.film.HydConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1054,7 +1054,7 @@
     {
       "source": "ALB.config.GasConfig",
       "targets": [
-        "ALB.config._models.GasConfig"
+        "ALB.config.gas.GasConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1062,7 +1062,7 @@
     {
       "source": "ALB.config.TankConfig",
       "targets": [
-        "ALB.config._models.TankConfig"
+        "ALB.config.hydraulics.TankConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1070,7 +1070,7 @@
     {
       "source": "ALB.config.OrificeConfig",
       "targets": [
-        "ALB.config._models.OrificeConfig"
+        "ALB.config.hydraulics.OrificeConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1078,7 +1078,7 @@
     {
       "source": "ALB.config.ServoConfig",
       "targets": [
-        "ALB.config._models.ServoConfig"
+        "ALB.config.control.ServoConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1086,7 +1086,7 @@
     {
       "source": "ALB.config.Moog2ndServoConfig",
       "targets": [
-        "ALB.config._models.Moog2ndServoConfig"
+        "ALB.config.control.Moog2ndServoConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1094,7 +1094,7 @@
     {
       "source": "ALB.config.PIDConfig",
       "targets": [
-        "ALB.config._models.PIDConfig"
+        "ALB.config.control.PIDConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1102,7 +1102,7 @@
     {
       "source": "ALB.config.LQGConfig",
       "targets": [
-        "ALB.config._models.LQGConfig"
+        "ALB.config.control.LQGConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1110,7 +1110,7 @@
     {
       "source": "ALB.config.ThermalConfig",
       "targets": [
-        "ALB.config._models.ThermalConfig"
+        "ALB.config.thermal.ThermalConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1118,7 +1118,7 @@
     {
       "source": "ALB.config.build_thermal_config",
       "targets": [
-        "ALB.config._models.build_thermal_config"
+        "ALB.config.thermal.build_thermal_config"
       ],
       "status": "migrated",
       "rationale": null
@@ -1126,7 +1126,7 @@
     {
       "source": "ALB.config.FPBConfig",
       "targets": [
-        "ALB.config._models.FPBConfig"
+        "ALB.config.film.FPBConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1134,7 +1134,7 @@
     {
       "source": "ALB.config.FuzzyPIDConfig",
       "targets": [
-        "ALB.config._models.FuzzyPIDConfig"
+        "ALB.config.control.FuzzyPIDConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1142,7 +1142,7 @@
     {
       "source": "ALB.config.ALBConfig",
       "targets": [
-        "ALB.config._models.ALBConfig"
+        "ALB.config.system.ALBConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1150,7 +1150,7 @@
     {
       "source": "ALB.config.NodimPadConfig",
       "targets": [
-        "ALB.config._models.NodimPadConfig"
+        "ALB.config.film.NodimPadConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1158,7 +1158,7 @@
     {
       "source": "ALB.config.NodimOrificeConfig",
       "targets": [
-        "ALB.config._models.NodimOrificeConfig"
+        "ALB.config.hydraulics.NodimOrificeConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1166,7 +1166,7 @@
     {
       "source": "ALB.config.NodimALBConfig",
       "targets": [
-        "ALB.config._models.NodimALBConfig"
+        "ALB.config.system.NodimALBConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1174,7 +1174,7 @@
     {
       "source": "ALB.config.ALBNetConfig",
       "targets": [
-        "ALB.config._models.ALBNetConfig"
+        "ALB.config.surrogate.ALBNetConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1792,7 +1792,7 @@
       "targets": [
         "ALB.core.numerics.iteration.gauss_seidel_iteration_film"
       ],
-      "status": "renamed",
+      "status": "migrated",
       "rationale": null
     },
     {
@@ -1800,7 +1800,7 @@
       "targets": [
         "ALB.core.numerics.iteration.gauss_seidel_iteration_matrix"
       ],
-      "status": "renamed",
+      "status": "migrated",
       "rationale": null
     },
     {
@@ -4044,7 +4044,7 @@
     {
       "source": "ALB.tool.parse_bearing_film_mesh_args",
       "targets": [
-        "tools.diagnostics.export_bearing_film_mesh.parse_arguments"
+        "ALB.physics.film.mesh_export.build_parser"
       ],
       "status": "renamed",
       "rationale": null
@@ -4398,6 +4398,626 @@
       ],
       "status": "migrated",
       "rationale": null
+    }
+  ],
+  "public_alias_mappings": [
+    {
+      "source": "ALB.base.BaseSimpleModel",
+      "targets": [
+        "ALB.core.component.BaseSimpleModel"
+      ],
+      "status": "migrated_public_alias",
+      "rationale": "Public re-export or constant used by declared external consumers."
+    },
+    {
+      "source": "ALB.config.CsoArgs",
+      "targets": [
+        "ALB.config.hydraulics.CsoArgs"
+      ],
+      "status": "migrated_public_alias",
+      "rationale": "Public re-export or constant used by declared external consumers."
+    },
+    {
+      "source": "ALB.nn.ALBNN_BASE_INPUT_COLS",
+      "targets": [
+        "ALB.surrogate.features.ALBNN_BASE_INPUT_COLS"
+      ],
+      "status": "migrated_public_alias",
+      "rationale": "Public re-export or constant used by declared external consumers."
+    },
+    {
+      "source": "ALB.nn.ALBNN_FEATURE_SETS",
+      "targets": [
+        "ALB.surrogate.features.ALBNN_FEATURE_SETS"
+      ],
+      "status": "migrated_public_alias",
+      "rationale": "Public re-export or constant used by declared external consumers."
+    },
+    {
+      "source": "ALB.nn.ALBNN_OUTPUT_COLS",
+      "targets": [
+        "ALB.surrogate.features.ALBNN_OUTPUT_COLS"
+      ],
+      "status": "migrated_public_alias",
+      "rationale": "Public re-export or constant used by declared external consumers."
+    },
+    {
+      "source": "ALB.nn.ALBNN_POLAR_FORCE_OUTPUT_COLS",
+      "targets": [
+        "ALB.surrogate.features.ALBNN_POLAR_FORCE_OUTPUT_COLS"
+      ],
+      "status": "migrated_public_alias",
+      "rationale": "Public re-export or constant used by declared external consumers."
+    },
+    {
+      "source": "ALB.thermal.ThermalConfig",
+      "targets": [
+        "ALB.config.thermal.ThermalConfig"
+      ],
+      "status": "migrated_public_alias",
+      "rationale": "Public re-export or constant used by declared external consumers."
+    },
+    {
+      "source": "ALB.train.AlbnnMlpTrainer",
+      "targets": [
+        "ALB.surrogate.training.AlbnnMlpTrainer"
+      ],
+      "status": "migrated_public_alias",
+      "rationale": "Public re-export or constant used by declared external consumers."
+    },
+    {
+      "source": "ALB.train.TrainingConfig",
+      "targets": [
+        "ALB.surrogate.training.TrainingConfig"
+      ],
+      "status": "migrated_public_alias",
+      "rationale": "Public re-export or constant used by declared external consumers."
+    }
+  ],
+  "root_export_mappings": [
+    {
+      "source": "ALB.ComponentBase",
+      "legacy_provider": "ALB.core.ComponentBase",
+      "targets": [
+        "ALB.core.component.ComponentBase"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.BearingComponentBase",
+      "legacy_provider": "ALB.core.BearingComponentBase",
+      "targets": [
+        "ALB.core.component.BearingComponentBase"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.BearingProtocol",
+      "legacy_provider": "ALB.contracts.BearingProtocol",
+      "targets": [
+        "ALB.contracts.bearing.BearingProtocol"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.BearingCoefficientProtocol",
+      "legacy_provider": "ALB.contracts.BearingCoefficientProtocol",
+      "targets": [
+        "ALB.contracts.bearing.BearingCoefficientProtocol"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ControllerProtocol",
+      "legacy_provider": "ALB.contracts.ControllerProtocol",
+      "targets": [
+        "ALB.contracts.control.ControllerProtocol"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ServoValveProtocol",
+      "legacy_provider": "ALB.contracts.ServoValveProtocol",
+      "targets": [
+        "ALB.contracts.control.ServoValveProtocol"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.RotorProtocol",
+      "legacy_provider": "ALB.contracts.RotorProtocol",
+      "targets": [
+        "ALB.contracts.dynamics.RotorProtocol"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.TimeGridProtocol",
+      "legacy_provider": "ALB.contracts.TimeGridProtocol",
+      "targets": [
+        "ALB.contracts.model.TimeGridProtocol"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.NotifierProtocol",
+      "legacy_provider": "ALB.contracts.NotifierProtocol",
+      "targets": [
+        "ALB.contracts.notification.NotifierProtocol"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ConvergenceStatus",
+      "legacy_provider": "ALB.contracts.ConvergenceStatus",
+      "targets": [
+        "ALB.ConvergenceStatus"
+      ],
+      "status": "retained_root_contract"
+    },
+    {
+      "source": "ALB.BearingDecoratorBase",
+      "legacy_provider": "ALB.adapters.BearingDecoratorBase",
+      "targets": [
+        "ALB.physics.bearing.decorators.BearingDecoratorBase"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.LegacyBearingAdapter",
+      "legacy_provider": "ALB.adapters.LegacyBearingAdapter",
+      "targets": [
+        "ALB.physics.bearing.decorators.LegacyBearingAdapter"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ALB",
+      "legacy_provider": "ALB.alb.ALB",
+      "targets": [
+        "ALB.systems.alb.assembly.ALB"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.NodimALB",
+      "legacy_provider": "ALB.alb.NodimALB",
+      "targets": [
+        "ALB.systems.alb.assembly.NodimALB"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.alb2",
+      "legacy_provider": "ALB.alb.alb2",
+      "targets": [
+        "ALB.systems.alb.assembly.alb2"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.alb2_fuzzy",
+      "legacy_provider": "ALB.alb.alb2_fuzzy",
+      "targets": [
+        "ALB.systems.alb.assembly.alb2_fuzzy"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.alb2_static",
+      "legacy_provider": "ALB.alb.alb2_static",
+      "targets": [
+        "ALB.systems.alb.assembly.alb2_static"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.nodim_alb",
+      "legacy_provider": "ALB.alb.nodim_alb",
+      "targets": [
+        "ALB.systems.alb.assembly.nodim_alb"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ALBHarmonicCoefficients",
+      "legacy_provider": "ALB.harmonic_linear.ALBHarmonicCoefficients",
+      "targets": [
+        "ALB.systems.alb.harmonic.ALBHarmonicCoefficients"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ALBHarmonicLinear",
+      "legacy_provider": "ALB.harmonic_linear.ALBHarmonicLinear",
+      "targets": [
+        "ALB.systems.alb.harmonic.ALBHarmonicLinear"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.alb_harmonic_linear",
+      "legacy_provider": "ALB.harmonic_linear.alb_harmonic_linear",
+      "targets": [
+        "ALB.systems.alb.harmonic.alb_harmonic_linear"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.load_builtin_alb_harmonic_coefficients",
+      "legacy_provider": "ALB.harmonic_linear.load_builtin_alb_harmonic_coefficients",
+      "targets": [
+        "ALB.systems.alb.harmonic.load_builtin_alb_harmonic_coefficients"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.HydrostaticBearing",
+      "legacy_provider": "ALB.bearing.HydrostaticBearing",
+      "targets": [
+        "ALB.physics.bearing.solver.HydrostaticBearing"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.NodimHydrostaticBearing",
+      "legacy_provider": "ALB.bearing.NodimHydrostaticBearing",
+      "targets": [
+        "ALB.physics.bearing.solver.NodimHydrostaticBearing"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.MultiPad",
+      "legacy_provider": "ALB.bearing.MultiPad",
+      "targets": [
+        "ALB.physics.bearing.solver.MultiPad"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.StaticPosition",
+      "legacy_provider": "ALB.bearing.StaticPosition",
+      "targets": [
+        "ALB.physics.bearing.solver.StaticPosition"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.four_pads_bearing",
+      "legacy_provider": "ALB.bearing.four_pads_bearing",
+      "targets": [
+        "ALB.physics.bearing.solver.four_pads_bearing"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.four_pads_bearings",
+      "legacy_provider": "ALB.bearing.four_pads_bearings",
+      "targets": [
+        "ALB.physics.bearing.solver.four_pads_bearings"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.nodim_four_pads_bearing",
+      "legacy_provider": "ALB.bearing.nodim_four_pads_bearing",
+      "targets": [
+        "ALB.physics.bearing.solver.nodim_four_pads_bearing"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.nodim_four_pads_bearings",
+      "legacy_provider": "ALB.bearing.nodim_four_pads_bearings",
+      "targets": [
+        "ALB.physics.bearing.solver.nodim_four_pads_bearings"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.TiltingPadHydrodynamicPad",
+      "legacy_provider": "ALB.bearing.TiltingPadHydrodynamicPad",
+      "targets": [
+        "ALB.physics.bearing.solver.TiltingPadHydrodynamicPad"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.tilting_pads_bearing",
+      "legacy_provider": "ALB.bearing.tilting_pads_bearing",
+      "targets": [
+        "ALB.physics.bearing.solver.tilting_pads_bearing"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.tilting_pads_bearings",
+      "legacy_provider": "ALB.bearing.tilting_pads_bearings",
+      "targets": [
+        "ALB.physics.bearing.solver.tilting_pads_bearings"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.solve_tilting_pad_equilibrium",
+      "legacy_provider": "ALB.bearing.solve_tilting_pad_equilibrium",
+      "targets": [
+        "ALB.physics.bearing.solver.solve_tilting_pad_equilibrium"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.get_pad_pressure_fields",
+      "legacy_provider": "ALB.bearing.get_pad_pressure_fields",
+      "targets": [
+        "ALB.physics.bearing.solver.get_pad_pressure_fields"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ALBConfig",
+      "legacy_provider": "ALB.config.ALBConfig",
+      "targets": [
+        "ALB.config.system.ALBConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.NodimALBConfig",
+      "legacy_provider": "ALB.config.NodimALBConfig",
+      "targets": [
+        "ALB.config.system.NodimALBConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.NodimPadConfig",
+      "legacy_provider": "ALB.config.NodimPadConfig",
+      "targets": [
+        "ALB.config.film.NodimPadConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.NodimOrificeConfig",
+      "legacy_provider": "ALB.config.NodimOrificeConfig",
+      "targets": [
+        "ALB.config.hydraulics.NodimOrificeConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.FPBConfig",
+      "legacy_provider": "ALB.config.FPBConfig",
+      "targets": [
+        "ALB.config.film.FPBConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.FuzzyPIDConfig",
+      "legacy_provider": "ALB.config.FuzzyPIDConfig",
+      "targets": [
+        "ALB.config.control.FuzzyPIDConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.LQGConfig",
+      "legacy_provider": "ALB.config.LQGConfig",
+      "targets": [
+        "ALB.config.control.LQGConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.HydConfig",
+      "legacy_provider": "ALB.config.HydConfig",
+      "targets": [
+        "ALB.config.film.HydConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.GasConfig",
+      "legacy_provider": "ALB.config.GasConfig",
+      "targets": [
+        "ALB.config.gas.GasConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.TimeGridConfig",
+      "legacy_provider": "ALB.config.TimeGridConfig",
+      "targets": [
+        "ALB.config.common.TimeGridConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ResolvedTimeGrid",
+      "legacy_provider": "ALB.config.ResolvedTimeGrid",
+      "targets": [
+        "ALB.config.common.ResolvedTimeGrid"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.TaskConfigFactory",
+      "legacy_provider": "ALB.task.TaskConfigFactory",
+      "targets": [
+        "ALB.workflows.alb.TaskConfigFactory"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.AdaptiveDampConfig",
+      "legacy_provider": "ALB.damping.AdaptiveDampConfig",
+      "targets": [
+        "ALB.core.numerics.damping.AdaptiveDampConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.AdaptiveDampController",
+      "legacy_provider": "ALB.damping.AdaptiveDampController",
+      "targets": [
+        "ALB.core.numerics.damping.AdaptiveDampController"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.PIDConfig",
+      "legacy_provider": "ALB.config.PIDConfig",
+      "targets": [
+        "ALB.config.control.PIDConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ServoConfig",
+      "legacy_provider": "ALB.config.ServoConfig",
+      "targets": [
+        "ALB.config.control.ServoConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.Moog2ndServoConfig",
+      "legacy_provider": "ALB.config.Moog2ndServoConfig",
+      "targets": [
+        "ALB.config.control.Moog2ndServoConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.GasBearing",
+      "legacy_provider": "ALB.gas.GasBearing",
+      "targets": [
+        "ALB.physics.gas.solver.GasBearing"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.FuzzyPID",
+      "legacy_provider": "ALB.controller.FuzzyPID",
+      "targets": [
+        "ALB.control.controllers.FuzzyPID"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.PID",
+      "legacy_provider": "ALB.controller.PID",
+      "targets": [
+        "ALB.control.controllers.PID"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ThermalConfig",
+      "legacy_provider": "ALB.thermal.ThermalConfig",
+      "targets": [
+        "ALB.config.thermal.ThermalConfig"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.SkfemThermalModel",
+      "legacy_provider": "ALB.thermal.SkfemThermalModel",
+      "targets": [
+        "ALB.physics.thermal.solver.SkfemThermalModel"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.SkfemThermalModelNondim",
+      "legacy_provider": "ALB.thermal.SkfemThermalModelNondim",
+      "targets": [
+        "ALB.physics.thermal.solver.SkfemThermalModelNondim"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ThermalHydroBearing",
+      "legacy_provider": "ALB.thermal.ThermalHydroBearing",
+      "targets": [
+        "ALB.physics.thermal.solver.ThermalHydroBearing"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.NodimThermalHydroBearing",
+      "legacy_provider": "ALB.thermal.NodimThermalHydroBearing",
+      "targets": [
+        "ALB.physics.thermal.solver.NodimThermalHydroBearing"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ThermalNondimScales",
+      "legacy_provider": "ALB.nondim.ThermalNondimScales",
+      "targets": [
+        "ALB.physics.thermal.scales.ThermalNondimScales"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.FilmNondimScales",
+      "legacy_provider": "ALB.nondim.FilmNondimScales",
+      "targets": [
+        "ALB.physics.thermal.scales.FilmNondimScales"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.build_thermal_config",
+      "legacy_provider": "ALB.config.build_thermal_config",
+      "targets": [
+        "ALB.config.thermal.build_thermal_config"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.NodimCSOrifice",
+      "legacy_provider": "ALB.orifice.NodimCSOrifice",
+      "targets": [
+        "ALB.physics.hydraulics.orifice.NodimCSOrifice"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.NodimNewtonFilm",
+      "legacy_provider": "ALB.film.NodimNewtonFilm",
+      "targets": [
+        "ALB.physics.film.solver.NodimNewtonFilm"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ALBNN",
+      "legacy_provider": "ALB.nn.ALBNN",
+      "targets": [
+        "ALB.surrogate.inference.ALBNN"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.ALBNNC4Canonical",
+      "legacy_provider": "ALB.nn.ALBNNC4Canonical",
+      "targets": [
+        "ALB.surrogate.inference.ALBNNC4Canonical"
+      ],
+      "status": "migrated_root_export"
+    },
+    {
+      "source": "ALB.albnn",
+      "legacy_provider": "ALB.nn.albnn",
+      "targets": [
+        "ALB.surrogate.inference.albnn"
+      ],
+      "status": "migrated_root_export"
     }
   ],
   "important_imports": [

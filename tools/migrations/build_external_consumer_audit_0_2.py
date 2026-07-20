@@ -96,7 +96,11 @@ MODULE_TARGETS: dict[str, list[str]] = {
     "ALB.orbit": ["ALB.dynamics.identification", "ALB.dynamics.orbit"],
     "ALB.orifice": ["ALB.physics.hydraulics.orifice"],
     "ALB.remote": ["ALB.infrastructure.remote", "ALB.surrogate.training.remote"],
-    "ALB.results": ["ALB.contracts.results", "ALB.infrastructure.persistence"],
+    "ALB.results": [
+        "ALB.contracts.result_tree",
+        "ALB.contracts.results",
+        "ALB.infrastructure.persistence",
+    ],
     "ALB.servovalve": ["ALB.control.valve"],
     "ALB.thermal": ["ALB.config.thermal", "ALB.physics.thermal"],
     "ALB.tool": [

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+import hashlib
 import json
 from pathlib import Path
 
@@ -17,6 +19,40 @@ from tools.reference.generate_full_repo_refactor_references import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_DIR = REPO_ROOT / "refs" / "full_repo_refactor_v1"
+REFERENCE_SCHEMA = "alb.full-repo-refactor-reference.v1"
+REFERENCE_SEED = 20260720
+
+
+def _array_digest(value: np.ndarray) -> str:
+    return hashlib.sha256(np.ascontiguousarray(value).view(np.uint8)).hexdigest()
+
+
+def _assert_metadata(domain, expected, actual):
+    expected_metadata = {
+        key: value
+        for key, value in expected.items()
+        if key not in {"schema", "domain", "baseline_commit", "seed", "arrays"}
+    }
+    actual_metadata = deepcopy(actual)
+    if actual_metadata.get("seed") == expected["seed"] and "seed" not in expected_metadata:
+        actual_metadata.pop("seed")
+
+    if domain == "dynamics_coupling":
+        assert expected_metadata.pop("legacy_output_advances_state") is True
+        assert actual_metadata.pop("legacy_output_advances_state") is False
+    if domain == "remote_persistence":
+        expected_remote = expected_metadata.pop("remote")
+        actual_remote = actual_metadata.pop("remote")
+        assert actual_remote["runner_content"].replace(
+            "ALB.infrastructure.remote.job", "ALB.remote.job"
+        ) == expected_remote["runner_content"]
+        actual_remote = dict(actual_remote)
+        expected_remote = dict(expected_remote)
+        actual_remote.pop("runner_content")
+        expected_remote.pop("runner_content")
+        assert actual_remote == expected_remote
+
+    assert actual_metadata == expected_metadata
 
 
 @pytest.fixture(scope="session")
@@ -35,15 +71,22 @@ def test_domain_arrays_match_reference_exactly(domain, replayed_cases):
     )
     with np.load(REFERENCE_DIR / f"{domain}.npz") as reference:
         actual = replayed_cases[domain].arrays
+        assert metadata["schema"] == REFERENCE_SCHEMA
+        assert metadata["domain"] == domain
         assert metadata["baseline_commit"] == EXPECTED_BASELINE_COMMIT
+        assert metadata["seed"] == REFERENCE_SEED
+        _assert_metadata(domain, metadata, replayed_cases[domain].metadata)
         assert set(actual) == set(reference.files) == set(metadata["arrays"])
         for key in reference.files:
             actual_array = np.asarray(actual[key])
+            reference_array = np.asarray(reference[key])
             assert list(actual_array.shape) == metadata["arrays"][key]["shape"]
             assert str(actual_array.dtype) == metadata["arrays"][key]["dtype"]
+            assert _array_digest(reference_array) == metadata["arrays"][key]["sha256"]
+            assert _array_digest(actual_array) == metadata["arrays"][key]["sha256"]
             np.testing.assert_array_equal(
                 actual_array,
-                reference[key],
+                reference_array,
                 err_msg=f"{domain}:{key}",
             )
 

@@ -3,12 +3,12 @@ import contextlib
 import io
 import json
 import os
-import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
 import numpy as np
+import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -69,6 +69,10 @@ class _FakePad:
 
 @unittest.skipUnless(_paper_config_available(), "paper config directory is unavailable")
 class TestAlbGuiConfig(unittest.TestCase):
+    @pytest.fixture(autouse=True)
+    def _set_tmp_path(self, tmp_path):
+        self.tmp_path = tmp_path
+
     def test_paper_defaults_map_required_fields(self):
         config, message = load_paper_gui_config()
 
@@ -105,10 +109,9 @@ class TestAlbGuiConfig(unittest.TestCase):
         config["thermal"]["settings"]["max_delta_t"] = np.inf
         config.setdefault("pid", {})["dt"] = 123.0
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = Path(tmpdir) / "config.json"
-            save_runtime_config(config, path)
-            loaded = load_runtime_config(path)
+        path = self.tmp_path / "config.json"
+        save_runtime_config(config, path)
+        loaded = load_runtime_config(path)
 
         self.assertEqual(loaded["bearing"]["c"], config["bearing"]["c"])
         self.assertTrue(np.isinf(loaded["thermal"]["settings"]["max_delta_t"]))
@@ -121,13 +124,12 @@ class TestAlbGuiConfig(unittest.TestCase):
         for key in ("mode", "cycles", "points_per_cycle", "dt", "steps"):
             config["dynamic"].pop(key, None)
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = Path(tmpdir) / "legacy.json"
-            path.write_text(
-                json.dumps(config, ensure_ascii=False),
-                encoding="utf-8",
-            )
-            loaded = load_runtime_config(path)
+        path = self.tmp_path / "legacy.json"
+        path.write_text(
+            json.dumps(config, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        loaded = load_runtime_config(path)
 
         self.assertEqual(loaded["version"], 2)
         self.assertEqual(loaded["dynamic"]["mode"], "cycle_points")
@@ -408,6 +410,10 @@ class TestAlbGuiBackend(unittest.TestCase):
 
 @unittest.skipUnless(_paper_config_available(), "paper config directory is unavailable")
 class TestAlbGuiWindow(unittest.TestCase):
+    @pytest.fixture(autouse=True)
+    def _set_tmp_path(self, tmp_path):
+        self.tmp_path = tmp_path
+
     def test_window_constructs_offscreen_and_saves(self):
         app = _qt_app()
         if app is None:
@@ -415,17 +421,16 @@ class TestAlbGuiWindow(unittest.TestCase):
 
         from tools.manual.alb_gui.window import AlbGuiWindow
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            runtime_path = Path(tmpdir) / "config.json"
-            window = AlbGuiWindow(
-                config=make_small_test_config(thermal=False),
-                runtime_path=runtime_path,
-                prefer_runtime=False,
-            )
-            window._save_current_config()
-            self.assertTrue(runtime_path.is_file())
-            window.close()
-            app.processEvents()
+        runtime_path = self.tmp_path / "config.json"
+        window = AlbGuiWindow(
+            config=make_small_test_config(thermal=False),
+            runtime_path=runtime_path,
+            prefer_runtime=False,
+        )
+        window._save_current_config()
+        self.assertTrue(runtime_path.is_file())
+        window.close()
+        app.processEvents()
 
     def test_parameter_panel_round_trip_and_change_signal(self):
         app = _qt_app()

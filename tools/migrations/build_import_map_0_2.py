@@ -103,6 +103,31 @@ MODULE_OVERRIDES: dict[str, list[str]] = {
 }
 
 SYMBOL_OVERRIDES = {
+    "ALB.base.BaseSimpleModel": ["ALB.core.component.BaseSimpleModel"],
+    "ALB.config.ConfigData": ["ALB.config.common.ConfigData"],
+    "ALB.config.ResolvedTimeGrid": ["ALB.config.common.ResolvedTimeGrid"],
+    "ALB.config.TimeGridConfig": ["ALB.config.common.TimeGridConfig"],
+    "ALB.config.HydConfig": ["ALB.config.film.HydConfig"],
+    "ALB.config.FPBConfig": ["ALB.config.film.FPBConfig"],
+    "ALB.config.NodimPadConfig": ["ALB.config.film.NodimPadConfig"],
+    "ALB.config.GasConfig": ["ALB.config.gas.GasConfig"],
+    "ALB.config.TankConfig": ["ALB.config.hydraulics.TankConfig"],
+    "ALB.config.OrificeConfig": ["ALB.config.hydraulics.OrificeConfig"],
+    "ALB.config.NodimOrificeConfig": [
+        "ALB.config.hydraulics.NodimOrificeConfig"
+    ],
+    "ALB.config.ServoConfig": ["ALB.config.control.ServoConfig"],
+    "ALB.config.Moog2ndServoConfig": ["ALB.config.control.Moog2ndServoConfig"],
+    "ALB.config.PIDConfig": ["ALB.config.control.PIDConfig"],
+    "ALB.config.LQGConfig": ["ALB.config.control.LQGConfig"],
+    "ALB.config.FuzzyPIDConfig": ["ALB.config.control.FuzzyPIDConfig"],
+    "ALB.config.ThermalConfig": ["ALB.config.thermal.ThermalConfig"],
+    "ALB.config.build_thermal_config": [
+        "ALB.config.thermal.build_thermal_config"
+    ],
+    "ALB.config.ALBConfig": ["ALB.config.system.ALBConfig"],
+    "ALB.config.NodimALBConfig": ["ALB.config.system.NodimALBConfig"],
+    "ALB.config.ALBNetConfig": ["ALB.config.surrogate.ALBNetConfig"],
     "ALB.gauss.gauss_seidel_iteration_film": [
         "ALB.core.numerics.iteration.gauss_seidel_iteration_film"
     ],
@@ -134,7 +159,7 @@ SYMBOL_OVERRIDES = {
     "ALB.tool.cvstack": ["ALB.core.numerics.arrays.vertical_stack_nonempty"],
     "ALB.tool.autoname": ["ALB.workflows.naming.build_parameter_name"],
     "ALB.tool.parse_bearing_film_mesh_args": [
-        "tools.diagnostics.export_bearing_film_mesh.parse_arguments"
+        "ALB.physics.film.mesh_export.build_parser"
     ],
     "ALB.tool.bearing_film_nastran_export_main": [
         "tools.diagnostics.export_bearing_film_mesh.main"
@@ -159,6 +184,46 @@ SYMBOL_OVERRIDES = {
     "ALB.tool.calculate_moi_complex": [
         "ALB.control.reduction.modal_observability_indices"
     ],
+}
+
+PUBLIC_ALIAS_OVERRIDES = {
+    "ALB.base.BaseSimpleModel": ["ALB.core.component.BaseSimpleModel"],
+    "ALB.config.CsoArgs": ["ALB.config.hydraulics.CsoArgs"],
+    "ALB.nn.ALBNN_BASE_INPUT_COLS": [
+        "ALB.surrogate.features.ALBNN_BASE_INPUT_COLS"
+    ],
+    "ALB.nn.ALBNN_FEATURE_SETS": ["ALB.surrogate.features.ALBNN_FEATURE_SETS"],
+    "ALB.nn.ALBNN_OUTPUT_COLS": ["ALB.surrogate.features.ALBNN_OUTPUT_COLS"],
+    "ALB.nn.ALBNN_POLAR_FORCE_OUTPUT_COLS": [
+        "ALB.surrogate.features.ALBNN_POLAR_FORCE_OUTPUT_COLS"
+    ],
+    "ALB.thermal.ThermalConfig": ["ALB.config.thermal.ThermalConfig"],
+    "ALB.train.AlbnnMlpTrainer": [
+        "ALB.surrogate.training.AlbnnMlpTrainer"
+    ],
+    "ALB.train.TrainingConfig": ["ALB.surrogate.training.TrainingConfig"],
+}
+
+ROOT_EXPORT_OVERRIDES = {
+    "ComponentBase": ["ALB.core.component.ComponentBase"],
+    "BearingComponentBase": ["ALB.core.component.BearingComponentBase"],
+    "BearingProtocol": ["ALB.contracts.bearing.BearingProtocol"],
+    "BearingCoefficientProtocol": [
+        "ALB.contracts.bearing.BearingCoefficientProtocol"
+    ],
+    "ControllerProtocol": ["ALB.contracts.control.ControllerProtocol"],
+    "ServoValveProtocol": ["ALB.contracts.control.ServoValveProtocol"],
+    "RotorProtocol": ["ALB.contracts.dynamics.RotorProtocol"],
+    "TimeGridProtocol": ["ALB.contracts.model.TimeGridProtocol"],
+    "NotifierProtocol": ["ALB.contracts.notification.NotifierProtocol"],
+    "ConvergenceStatus": ["ALB.ConvergenceStatus"],
+    "BearingDecoratorBase": [
+        "ALB.physics.bearing.decorators.BearingDecoratorBase"
+    ],
+    "LegacyBearingAdapter": [
+        "ALB.physics.bearing.decorators.LegacyBearingAdapter"
+    ],
+    "ThermalConfig": ["ALB.config.thermal.ThermalConfig"],
 }
 
 REMOVAL_RATIONALES = {
@@ -207,6 +272,18 @@ def _public_definitions(source: str) -> list[str]:
             if not node.name.startswith("_"):
                 names.append(node.name)
     return names
+
+
+def _literal_assignment(source: str, variable: str) -> Any:
+    """Return one top-level literal assignment from a Python source document."""
+
+    tree = ast.parse(source.lstrip("\ufeff"))
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if any(isinstance(target, ast.Name) and target.id == variable for target in node.targets):
+            return ast.literal_eval(node.value)
+    raise KeyError(f"Literal assignment {variable!r} was not found")
 
 
 def _symbol_index(modules: dict[str, Path]) -> dict[str, list[str]]:
@@ -268,9 +345,15 @@ def build_map() -> dict[str, Any]:
                 {
                     "source": source_symbol,
                     "targets": sorted(set(candidates)),
-                    "status": "renamed"
-                    if source_symbol in SYMBOL_OVERRIDES
-                    else ("migrated" if candidates else "removed"),
+                    "status": (
+                        "renamed"
+                        if candidates
+                        and any(
+                            candidate.rsplit(".", 1)[-1] != name
+                            for candidate in candidates
+                        )
+                        else ("migrated" if candidates else "removed")
+                    ),
                     "rationale": (
                         "Private SMTP defaults were removed; inject SmtpConfig or environment values."
                         if source_symbol == "ALB.tool.EmailSender"
@@ -278,6 +361,43 @@ def build_map() -> dict[str, Any]:
                     ),
                 }
             )
+
+    symbol_lookup = {item["source"]: item for item in symbols}
+    public_aliases = [
+        {
+            "source": source,
+            "targets": targets,
+            "status": "migrated_public_alias",
+            "rationale": "Public re-export or constant used by declared external consumers.",
+        }
+        for source, targets in sorted(PUBLIC_ALIAS_OVERRIDES.items())
+    ]
+    alias_lookup = {item["source"]: item for item in public_aliases}
+
+    baseline_root_source = _git("show", f"{BASELINE_TAG}:ALB/__init__.py")
+    baseline_root_exports = _literal_assignment(baseline_root_source, "_EXPORTS")
+    root_exports = []
+    for name, provider in baseline_root_exports.items():
+        provider_module, provider_name = provider
+        provider_symbol = f"{provider_module}.{provider_name}"
+        targets = ROOT_EXPORT_OVERRIDES.get(name)
+        if targets is None:
+            mapping = symbol_lookup.get(provider_symbol) or alias_lookup.get(provider_symbol)
+            targets = [] if mapping is None else mapping["targets"]
+        if not targets:
+            raise KeyError(
+                f"No 0.2 target for baseline root export ALB.{name} via {provider_symbol}"
+            )
+        root_exports.append(
+            {
+                "source": f"ALB.{name}",
+                "legacy_provider": provider_symbol,
+                "targets": sorted(set(targets)),
+                "status": "retained_root_contract"
+                if f"ALB.{name}" in targets
+                else "migrated_root_export",
+            }
+        )
 
     return {
         "schema": "alb.import-migration-map.v1",
@@ -301,6 +421,8 @@ def build_map() -> dict[str, Any]:
         },
         "module_mappings": modules,
         "symbol_mappings": symbols,
+        "public_alias_mappings": public_aliases,
+        "root_export_mappings": root_exports,
         "important_imports": IMPORTANT_IMPORTS,
         "resource_mappings": [
             {

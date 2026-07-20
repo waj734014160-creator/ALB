@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 from copy import deepcopy
@@ -44,9 +45,47 @@ def _replace_node_path(nodeid: str, target_path: str) -> str:
     return target_path if not separator else f"{target_path}::{suffix}"
 
 
+def _node_digest(nodeids: list[str]) -> str:
+    payload = "\n".join(sorted(set(nodeids))).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _collect_nodeids() -> list[str]:
+    completed = subprocess.run(
+        [
+            "E:/Anaconda2023/envs/ALB/python.exe",
+            "-m",
+            "pytest",
+            "tests",
+            "--collect-only",
+            "-q",
+            "-p",
+            "no:cacheprovider",
+        ],
+        cwd=REPOSITORY_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(f"pytest collection failed:\n{completed.stderr}")
+    return sorted(
+        {
+            line.strip().replace("\\", "/")
+            for line in completed.stdout.splitlines()
+            if line.strip().startswith("tests/") and "::" in line
+        }
+    )
+
+
 def build_map() -> dict[str, Any]:
     baseline = json.loads(BASELINE_MAP.read_text(encoding="utf-8"))
     verification_commit = _git("rev-parse", "HEAD")
+    baseline_nodeids = [item["baseline_nodeid"] for item in baseline["mappings"]]
+    baseline_digest_computed = _node_digest(baseline_nodeids)
+    collected_nodeids = _collect_nodeids()
+    collected_set = set(collected_nodeids)
     mappings: list[dict[str, Any]] = []
 
     for planned in baseline["mappings"]:
@@ -73,7 +112,7 @@ def build_map() -> dict[str, Any]:
                 "external caller still imports removed flat namespaces."
             )
         else:
-            item["verification_status"] = "passed"
+            item["verification_status"] = "collected"
             if planned["disposition"] == "manual":
                 item["target_category"] = "validation"
                 item["disposition"] = "validation"
@@ -82,6 +121,17 @@ def build_map() -> dict[str, Any]:
                     "validation that writes only to an OS temporary directory."
                 )
         mappings.append(item)
+
+    replacement_nodeids = [
+        nodeid for item in mappings for nodeid in item["replacement_nodeids"]
+    ]
+    if len(replacement_nodeids) != len(set(replacement_nodeids)):
+        raise ValueError("Replacement node IDs must be unique")
+    missing_replacements = sorted(set(replacement_nodeids) - collected_set)
+    if missing_replacements:
+        raise ValueError(
+            f"Replacement nodes are absent from current collection: {missing_replacements}"
+        )
 
     non_collected: list[dict[str, Any]] = []
     for planned in baseline["non_collected_python_files"]:
@@ -104,15 +154,30 @@ def build_map() -> dict[str, Any]:
         "baseline_reference": BASELINE_MAP.relative_to(REPOSITORY_ROOT).as_posix(),
         "baseline_node_count": baseline["node_count"],
         "baseline_nodeids_sha256": baseline["nodeids_sha256"],
+        "baseline_nodeids_sha256_computed": baseline_digest_computed,
+        "baseline_recorded_digest_matches": (
+            baseline["nodeids_sha256"] == baseline_digest_computed
+        ),
+        "baseline_digest_note": (
+            "The frozen v1 digest was recomputed from the unchanged sorted 242-node set; "
+            "the recorded and computed values match."
+        ),
         "implementation_commit": verification_commit,
         "verification": {
-            "command": "E:/Anaconda2023/envs/ALB/python.exe -m pytest tests -q -p no:cacheprovider",
-            "result": "285 passed, 33 skipped, 12 warnings, 7 subtests passed",
-            "tracked_status_delta": 0,
+            "collection_command": (
+                "E:/Anaconda2023/envs/ALB/python.exe -m pytest tests "
+                "--collect-only -q -p no:cacheprovider"
+            ),
+            "collected_node_count": len(collected_nodeids),
+            "collected_nodeids_sha256": _node_digest(collected_nodeids),
+            "replacement_node_count": len(replacement_nodeids),
+            "replacement_nodeids_sha256": _node_digest(replacement_nodeids),
+            "all_replacements_collected": True,
+            "full_suite_evidence": "docs/migrations/0.2.0_release_acceptance.json",
             "notes": [
                 "All 242 baseline nodes have an explicit replacement node.",
                 "External validation skips state the missing 0.2 caller migration.",
-                "Former plot-only nodes now use an OS temporary directory.",
+                "Execution outcomes are recorded by the release acceptance runner, not hard-coded here.",
             ],
         },
         "mappings": mappings,

@@ -1,5 +1,4 @@
 import copy
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -9,6 +8,7 @@ from matplotlib.collections import QuadMesh
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 
 from ALB.systems.alb import ALB, ALBBuilder
 from ALB.core import TimeIterDt
@@ -64,12 +64,9 @@ def _make_bearing_and_thermal(coupling="full", pressure_backend="skfem"):
 
 
 class TestThermalHydroBearing(unittest.TestCase):
-    def setUp(self):
-        self._temporary_directory = tempfile.TemporaryDirectory()
-        self.artifact_dir = Path(self._temporary_directory.name)
-
-    def tearDown(self):
-        self._temporary_directory.cleanup()
+    @pytest.fixture(autouse=True)
+    def _set_artifact_dir(self, tmp_path):
+        self.artifact_dir = tmp_path
 
     def _run_and_check(self, coupling):
         cfg, pad, tcfg, model = _make_bearing_and_thermal(coupling)
@@ -479,13 +476,12 @@ class TestThermalHydroBearing(unittest.TestCase):
         self.assertEqual(len(ax.lines), 1)
         plt.close(fig)
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            save_dir = post.save(Path(tmpdir) / "thermal_postprocess")
-            self.assertTrue((save_dir / "pressure_field.csv").exists())
-            self.assertTrue((save_dir / "temperature_field.csv").exists())
-            self.assertTrue((save_dir / "viscosity_field.csv").exists())
-            self.assertTrue((save_dir / "thermal_fields.npz").exists())
-            self.assertTrue((save_dir / "summary.json").exists())
+        save_dir = post.save(self.artifact_dir / "thermal_postprocess")
+        self.assertTrue((save_dir / "pressure_field.csv").exists())
+        self.assertTrue((save_dir / "temperature_field.csv").exists())
+        self.assertTrue((save_dir / "viscosity_field.csv").exists())
+        self.assertTrue((save_dir / "thermal_fields.npz").exists())
+        self.assertTrue((save_dir / "summary.json").exists())
 
     def test_orifice_plots(self):
         """Generate pressure / temperature / viscosity contour plots with orifices."""
@@ -660,12 +656,9 @@ class TestThermalHydroBearing(unittest.TestCase):
 
 
 class TestALBThermal(unittest.TestCase):
-    def setUp(self):
-        self._temporary_directory = tempfile.TemporaryDirectory()
-        self.artifact_dir = Path(self._temporary_directory.name)
-
-    def tearDown(self):
-        self._temporary_directory.cleanup()
+    @pytest.fixture(autouse=True)
+    def _set_artifact_dir(self, tmp_path):
+        self.artifact_dir = tmp_path
 
     """Test ThermalHydroBearing wrapped around a full ALB system's pads."""
 

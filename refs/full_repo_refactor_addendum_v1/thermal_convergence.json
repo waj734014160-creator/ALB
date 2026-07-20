@@ -1,0 +1,577 @@
+{
+  "arrays": {
+    "direct_converged": {
+      "dtype": "bool",
+      "sha256": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+      "shape": [
+        1
+      ]
+    },
+    "direct_force": {
+      "dtype": "float64",
+      "sha256": "0dffbd91c116d7ad7323063bcc14168af193e329754e1c9dc6234506859fdb46",
+      "shape": [
+        2
+      ]
+    },
+    "direct_input_displacement": {
+      "dtype": "float64",
+      "sha256": "294e233b476e1912598343094bfbdffcd135347406f2900fbdc0deb3c066c17f",
+      "shape": [
+        2
+      ]
+    },
+    "direct_input_velocity": {
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+      "shape": [
+        2
+      ]
+    },
+    "direct_iterations": {
+      "dtype": "int64",
+      "sha256": "35be322d094f9d154a8aba4733b8497f180353bd7ae7b0a15f90b586b549f28b",
+      "shape": [
+        1
+      ]
+    },
+    "direct_outer_rel_error_history": {
+      "dtype": "float64",
+      "sha256": "9c64672c2cb48294a8459fe86126759e64052be469f3f792acd48012b374b36b",
+      "shape": [
+        3
+      ]
+    },
+    "direct_outer_relax_history": {
+      "dtype": "float64",
+      "sha256": "da54f1e7f0820574363e6035330900fe62ec012234c87e3809c7b5499ca2f434",
+      "shape": [
+        3
+      ]
+    },
+    "direct_pressure_field": {
+      "dtype": "float64",
+      "sha256": "97accc5ad945bc664527485c33f008645ab8a5ee1b1efb8e60c117b6b606072e",
+      "shape": [
+        8,
+        6
+      ]
+    },
+    "direct_pressure_residual_history": {
+      "dtype": "float64",
+      "sha256": "27fed1aad48684ad6c94d5fb040142bc5ecfa9ef99c472c47eb3b142221d907f",
+      "shape": [
+        24
+      ]
+    },
+    "direct_pressure_residual_offsets": {
+      "dtype": "int64",
+      "sha256": "df952c039aeaacef087333a64460e10ee7957d221ce873f33f8a44126f1dc412",
+      "shape": [
+        5
+      ]
+    },
+    "direct_temperature_field": {
+      "dtype": "float64",
+      "sha256": "eb5662bc00258062aac7919198fb284aa7709435ab5329dae073c505195f7e9b",
+      "shape": [
+        8,
+        6
+      ]
+    },
+    "direct_viscosity_field": {
+      "dtype": "float64",
+      "sha256": "203fd9b15c1b48bb82a7f12d85922de74c54de64bd3275a03d275c09d867eea4",
+      "shape": [
+        48
+      ]
+    },
+    "newton_converged": {
+      "dtype": "bool",
+      "sha256": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+      "shape": [
+        1
+      ]
+    },
+    "newton_final_residual": {
+      "dtype": "float64",
+      "sha256": "505c6575d6b30a0a55f2c6555c3fd3f7ba98180f145ee2f9dca8a0986740dd11",
+      "shape": [
+        1
+      ]
+    },
+    "newton_force": {
+      "dtype": "float64",
+      "sha256": "8c86939ed4242cd02f07bc62699c39890dcd71faf86246b341530cec933eae9f",
+      "shape": [
+        2
+      ]
+    },
+    "newton_inner_residual_history": {
+      "dtype": "float64",
+      "sha256": "fd6328f53f7dcedca6d06150097e0b693523a90715e82b215bea64d37de5499c",
+      "shape": [
+        16
+      ]
+    },
+    "newton_inner_residual_offsets": {
+      "dtype": "int64",
+      "sha256": "3bee2bd09ddd815270daa2cfb492998763f14a31aeb548c2e81b49c1502fd0d4",
+      "shape": [
+        5
+      ]
+    },
+    "newton_input_displacement": {
+      "dtype": "float64",
+      "sha256": "edf7ee2e9aa408e59a444a46bd1e5f3a510c5b7ea9fa2c2f1f503a2b192932c1",
+      "shape": [
+        2
+      ]
+    },
+    "newton_input_velocity": {
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+      "shape": [
+        2
+      ]
+    },
+    "newton_iterations": {
+      "dtype": "int64",
+      "sha256": "a111f275cc2e7588000001d300a31e76336d15b9d314cd1a1d8f3d3556975eed",
+      "shape": [
+        1
+      ]
+    },
+    "newton_line_search_steps": {
+      "dtype": "int64",
+      "sha256": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+      "shape": [
+        1
+      ]
+    },
+    "newton_outer_rel_error_history": {
+      "dtype": "float64",
+      "sha256": "05da3d05c2563b40716dac2fe1cb220e8a9f6fb44ba91c82b25be96389afda4b",
+      "shape": [
+        3
+      ]
+    },
+    "newton_outer_relax_history": {
+      "dtype": "float64",
+      "sha256": "da54f1e7f0820574363e6035330900fe62ec012234c87e3809c7b5499ca2f434",
+      "shape": [
+        3
+      ]
+    },
+    "newton_pressure_field": {
+      "dtype": "float64",
+      "sha256": "0f53906e686bd55f4cc80a41ead5a96da62e6aa1e7ebb5e2026ee2acf879f194",
+      "shape": [
+        12,
+        8
+      ]
+    },
+    "newton_pressure_residual_history": {
+      "dtype": "float64",
+      "sha256": "e403c7a9664f8cc90cb6ed476de0a46ba31078033524f65c849bb13b9acc7bc3",
+      "shape": [
+        24
+      ]
+    },
+    "newton_pressure_residual_offsets": {
+      "dtype": "int64",
+      "sha256": "df952c039aeaacef087333a64460e10ee7957d221ce873f33f8a44126f1dc412",
+      "shape": [
+        5
+      ]
+    },
+    "newton_temperature_field": {
+      "dtype": "float64",
+      "sha256": "b04caf498eda259e54b710cf7250e96056f52a69364cdeb15b9e9fdeaedbe246",
+      "shape": [
+        12,
+        8
+      ]
+    },
+    "newton_viscosity_field": {
+      "dtype": "float64",
+      "sha256": "da4171a3d6287c8689ddd5b2a2ac5647a525487684070c5c4ef2e8d3679dbb2f",
+      "shape": [
+        96
+      ]
+    },
+    "transient_before_step_indices": {
+      "dtype": "int64",
+      "sha256": "0c730b69905c5ef7a4ca5269f72365400bde2dd2c04eaf9bbb3d1c4a265a0131",
+      "shape": [
+        2
+      ]
+    },
+    "transient_before_temperature": {
+      "dtype": "float64",
+      "sha256": "7d2c092ea753dadc4552187cba8123d74b15d91bd3e554f7454215e0f702448f",
+      "shape": [
+        2,
+        24
+      ]
+    },
+    "transient_candidate_temperature": {
+      "dtype": "float64",
+      "sha256": "8cdb6100f52fea6dff14fe8b5143cad6adfc3b04a73bc34f123438f27c389419",
+      "shape": [
+        3,
+        24
+      ]
+    },
+    "transient_commit_flags": {
+      "dtype": "bool",
+      "sha256": "75c8fd04ad916aec3e3d5cb76a452b116b3d4d0912a0a485e9fb8e3d240e210c",
+      "shape": [
+        3
+      ]
+    },
+    "transient_committed_temperature": {
+      "dtype": "float64",
+      "sha256": "8cdb6100f52fea6dff14fe8b5143cad6adfc3b04a73bc34f123438f27c389419",
+      "shape": [
+        3,
+        24
+      ]
+    },
+    "transient_force": {
+      "dtype": "float64",
+      "sha256": "b2e90360dd100469773ac12be9a0f0ae98f3b0b7679f8b26146c9eeee0e92ed9",
+      "shape": [
+        3,
+        2
+      ]
+    },
+    "transient_outer_rel_error_history": {
+      "dtype": "float64",
+      "sha256": "67169086d5deb9eb8ac20da14c993e51aff4967d501708c252c8f83be5dc73e4",
+      "shape": [
+        9
+      ]
+    },
+    "transient_outer_relax_history": {
+      "dtype": "float64",
+      "sha256": "f1d17c7cd6f7266aca9c513ce6b0e50e6281f5edf2204515e5885ad88f38ccb1",
+      "shape": [
+        9
+      ]
+    },
+    "transient_positions": {
+      "dtype": "float64",
+      "sha256": "791fd2bd4c640003b47a267d9a1102160e770d64b8910c41b4de6a38dba813e9",
+      "shape": [
+        3,
+        2
+      ]
+    },
+    "transient_pressure_residual_history": {
+      "dtype": "float64",
+      "sha256": "d722b38c3affe7a8630d52d5a293a0205b67abdbb0c2cedbba05ab98fb426c4e",
+      "shape": [
+        91
+      ]
+    },
+    "transient_pressure_residual_offsets": {
+      "dtype": "int64",
+      "sha256": "ea8b3e589100e59d5e6fbff8161a551f9f5be0fec1d7f11853f080de0c48a894",
+      "shape": [
+        13
+      ]
+    },
+    "transient_velocities": {
+      "dtype": "float64",
+      "sha256": "835d41188c15c1c921ac2942675b24a5e01bdec2dc67f955ec39ab2ac8825479",
+      "shape": [
+        3,
+        2
+      ]
+    }
+  },
+  "cases": {
+    "direct": {
+      "hyd_config": {
+        "adaptive_damp": null,
+        "angle": 30.0,
+        "c": 8e-05,
+        "coe": true,
+        "damp": 0.8,
+        "dxt": 0,
+        "dyt": 0,
+        "e": 0.2,
+        "err": 0.001,
+        "error_set": 1e-08,
+        "freq": 50,
+        "gdamp": 1.2,
+        "iter_method": "newton",
+        "l": 0.08,
+        "lx": 360,
+        "lz": 2,
+        "max_iter": 40,
+        "miu": 0.0195,
+        "ngauss": 50,
+        "node_link": null,
+        "nx": 7,
+        "nz": 5,
+        "p_set": 0,
+        "path": "",
+        "ps": 7000000.0,
+        "r": 0.04,
+        "reynold": true,
+        "rho": 872,
+        "save_h": false,
+        "save_p": false,
+        "vf": 1,
+        "vib": false,
+        "x0": 0
+      },
+      "newton_diagnostics": {
+        "applicable": false
+      },
+      "solver_used": "direct",
+      "thermal_config": {
+        "adaptive_damp": null,
+        "args_nodim": false,
+        "axial_side_bc": "inflow_fixed",
+        "axial_side_t": null,
+        "beta": 0.03,
+        "beta_nondim": null,
+        "coupling": "full",
+        "cp_lub": 2000.0,
+        "delta_t_scale": 30.0,
+        "dt": null,
+        "flow_rate_factor": 1.0,
+        "heat_partition": 0.9,
+        "heat_partition_steps": null,
+        "iter_method": "direct",
+        "k_lub": 0.0,
+        "max_delta_t": 80.0,
+        "max_iter": 12,
+        "miu0": null,
+        "miu_max": 1.0,
+        "miu_min": 0.0001,
+        "miu_update": "linear",
+        "miu_update_max_ratio": null,
+        "pressure_backend": "skfem",
+        "relax": 0.6,
+        "supg": true,
+        "t_in": 40.0,
+        "t_ref": null,
+        "t_ref_nondim": null,
+        "t_supply": null,
+        "thermal_newton_damp": 1.0,
+        "thermal_newton_line_search": false,
+        "thermal_newton_max_iter": 30,
+        "thermal_newton_min_damp": 0.001,
+        "thermal_newton_tol": null,
+        "tol": 0.03,
+        "transient_enabled": false
+      },
+      "thermal_state_keys": [
+        "adaptive_damp_enabled",
+        "converged",
+        "iterations",
+        "newton_iterations",
+        "newton_line_search_steps",
+        "newton_residual",
+        "relax",
+        "relax_history",
+        "solver_used",
+        "t_eff",
+        "viscosity",
+        "viscosity_field"
+      ]
+    },
+    "newton": {
+      "hyd_config": {
+        "adaptive_damp": null,
+        "angle": 30.0,
+        "c": 8e-05,
+        "coe": true,
+        "damp": 0.8,
+        "dxt": 0,
+        "dyt": 0,
+        "e": 0.25,
+        "err": 0.001,
+        "error_set": 1e-08,
+        "freq": 50,
+        "gdamp": 1.2,
+        "iter_method": "newton",
+        "l": 0.06,
+        "lx": 360,
+        "lz": 2,
+        "max_iter": 120,
+        "miu": 0.0195,
+        "ngauss": 50,
+        "node_link": null,
+        "nx": 11,
+        "nz": 7,
+        "p_set": 0,
+        "path": "",
+        "ps": 7000000.0,
+        "r": 0.04,
+        "reynold": true,
+        "rho": 872,
+        "save_h": false,
+        "save_p": false,
+        "vf": 1,
+        "vib": false,
+        "x0": 0
+      },
+      "newton_diagnostics": {
+        "applicable": true
+      },
+      "solver_used": "newton",
+      "thermal_config": {
+        "adaptive_damp": null,
+        "args_nodim": false,
+        "axial_side_bc": "inflow_fixed",
+        "axial_side_t": null,
+        "beta": 0.03,
+        "beta_nondim": null,
+        "coupling": "full",
+        "cp_lub": 2000.0,
+        "delta_t_scale": null,
+        "dt": null,
+        "flow_rate_factor": 1.0,
+        "heat_partition": 0.9,
+        "heat_partition_steps": null,
+        "iter_method": "newton",
+        "k_lub": 0.0,
+        "max_delta_t": 80.0,
+        "max_iter": 6,
+        "miu0": null,
+        "miu_max": 1.0,
+        "miu_min": 0.0001,
+        "miu_update": "linear",
+        "miu_update_max_ratio": null,
+        "pressure_backend": "skfem",
+        "relax": 0.6,
+        "supg": true,
+        "t_in": 40.0,
+        "t_ref": null,
+        "t_ref_nondim": null,
+        "t_supply": null,
+        "thermal_newton_damp": 1.0,
+        "thermal_newton_line_search": false,
+        "thermal_newton_max_iter": 12,
+        "thermal_newton_min_damp": 0.001,
+        "thermal_newton_tol": 1e-05,
+        "tol": 0.05,
+        "transient_enabled": false
+      },
+      "thermal_state_keys": [
+        "adaptive_damp_enabled",
+        "converged",
+        "iterations",
+        "newton_iterations",
+        "newton_line_search_steps",
+        "newton_residual",
+        "relax",
+        "relax_history",
+        "solver_used",
+        "t_eff",
+        "viscosity",
+        "viscosity_field"
+      ]
+    },
+    "transient": {
+      "first_before_state": null,
+      "hyd_config": {
+        "adaptive_damp": null,
+        "angle": 15.0,
+        "c": 8e-05,
+        "coe": true,
+        "damp": 0.6,
+        "dxt": 0,
+        "dyt": 0,
+        "e": 0.15,
+        "err": 0.001,
+        "error_set": 1e-08,
+        "freq": 50,
+        "gdamp": 1.2,
+        "iter_method": "newton",
+        "l": 0.08,
+        "lx": 360,
+        "lz": 2,
+        "max_iter": 30,
+        "miu": 0.0195,
+        "ngauss": 50,
+        "node_link": null,
+        "nx": 5,
+        "nz": 3,
+        "p_set": 0,
+        "path": "",
+        "ps": 7000000.0,
+        "r": 0.04,
+        "reynold": true,
+        "rho": 872,
+        "save_h": false,
+        "save_p": false,
+        "vf": 1,
+        "vib": false,
+        "x0": 0
+      },
+      "newton_diagnostics": {
+        "applicable": false
+      },
+      "step_count": 3,
+      "thermal_config": {
+        "adaptive_damp": null,
+        "args_nodim": false,
+        "axial_side_bc": "inflow_fixed",
+        "axial_side_t": null,
+        "beta": 0.03,
+        "beta_nondim": null,
+        "coupling": "full",
+        "cp_lub": 2000.0,
+        "delta_t_scale": null,
+        "dt": 0.005,
+        "flow_rate_factor": 1.0,
+        "heat_partition": 0.9,
+        "heat_partition_steps": null,
+        "iter_method": "direct",
+        "k_lub": 0.0,
+        "max_delta_t": 80.0,
+        "max_iter": 8,
+        "miu0": null,
+        "miu_max": 1.0,
+        "miu_min": 0.0001,
+        "miu_update": "linear",
+        "miu_update_max_ratio": null,
+        "pressure_backend": "skfem",
+        "relax": 0.5,
+        "supg": true,
+        "t_in": 40.0,
+        "t_ref": null,
+        "t_ref_nondim": null,
+        "t_supply": null,
+        "thermal_newton_damp": 1.0,
+        "thermal_newton_line_search": false,
+        "thermal_newton_max_iter": 30,
+        "thermal_newton_min_damp": 0.001,
+        "thermal_newton_tol": null,
+        "tol": 0.03,
+        "transient_enabled": true
+      }
+    }
+  },
+  "environment": {
+    "numpy": "1.24.3",
+    "python": "3.10.17",
+    "scikit-fem": "12.0.1",
+    "scipy": "1.10.1"
+  },
+  "schema": "alb.full-repo-refactor-thermal-addendum.v1",
+  "seed": 20260720,
+  "source": {
+    "alb_file": "ALB/__init__.py",
+    "commit": "a4b2be1abc2efdea0d49e49cf4996ec48fb531c2",
+    "generator": "generate_thermal_convergence_addendum_v1.py",
+    "generator_sha256": "098af182b60a48912c1510cdb66a37189ffa3cc3fa503ae0c4d703c9dc9c38eb",
+    "tag": "pre-full-repo-refactor-20260720"
+  }
+}

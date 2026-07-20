@@ -1,7 +1,7 @@
 {
   "schema": "alb.build-acceptance.v1",
   "version": "0.2.0",
-  "candidate_commit": "4d303248074331c4ef1076c056cdf9e851943727",
+  "candidate_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
   "wheel": {
     "path": "dist/re_alb-0.2.0-py3-none-any.whl",
     "size_bytes": 293544,
@@ -31,6 +31,7 @@
   },
   "isolated_install": {
     "root": "outputs/wheel_smoke/installed_4d30324",
+    "dependency_path": "outputs/.devtools",
     "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
     "version": "0.2.0",
     "root_exports": [
@@ -71,6 +72,133 @@
       "ALBHarmonicLinear"
     ]
   },
+  "extra_smokes": {
+    "core": {
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl",
+      "returncode": 0,
+      "python": "3.10.17",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "resolved": [
+        "ALB.contracts.ResultBundle",
+        "ALB.core.StepCommitLedger"
+      ],
+      "dependency_versions": {
+        "numpy": "1.24.3",
+        "scipy": "1.10.1",
+        "pandas": "2.1.1",
+        "numba": "0.58.1",
+        "tqdm": "4.66.1"
+      }
+    },
+    "film": {
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[film]",
+      "returncode": 0,
+      "python": "3.10.17",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "resolved": [
+        "ALB.physics.film.SkfemNewtonFilm"
+      ],
+      "dependency_versions": {
+        "matplotlib": "3.10.0",
+        "scikit-fem": "12.0.1"
+      }
+    },
+    "control": {
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[control]",
+      "returncode": 0,
+      "python": "3.10.17",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "resolved": [
+        "ALB.control.FuzzyPID",
+        "ALB.control.PID"
+      ],
+      "dependency_versions": {
+        "control": "0.10.2",
+        "matplotlib": "3.10.0",
+        "scikit-fuzzy": "0.5.0"
+      }
+    },
+    "dynamics": {
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[dynamics]",
+      "returncode": 0,
+      "python": "3.10.17",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "resolved": [
+        "ALB.dynamics.RossRotor"
+      ],
+      "dependency_versions": {
+        "matplotlib": "3.10.0",
+        "ross-rotordynamics": "1.4.2"
+      }
+    },
+    "surrogate": {
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[surrogate]",
+      "returncode": 0,
+      "python": "3.10.17",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "resolved": [
+        "ALB.surrogate.Net",
+        "ALB.surrogate.training.TrainingConfig"
+      ],
+      "dependency_versions": {
+        "matplotlib": "3.10.0",
+        "scikit-learn": "1.6.1",
+        "torch": "2.11.0+cu128"
+      }
+    },
+    "io": {
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[io]",
+      "returncode": 0,
+      "python": "3.10.17",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "resolved": [
+        "ALB.infrastructure.config_io.read_json5"
+      ],
+      "dependency_versions": {
+        "json5": "0.9.6"
+      }
+    },
+    "all": {
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[all]",
+      "returncode": 0,
+      "python": "3.10.17",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "resolved": [
+        "ALB.infrastructure.DirectoryArtifactWriter",
+        "ALB.systems.alb.ALBHarmonicLinear"
+      ],
+      "dependency_versions": {
+        "control": "0.10.2",
+        "json5": "0.9.6",
+        "matplotlib": "3.10.0",
+        "ross-rotordynamics": "1.4.2",
+        "scikit-fem": "12.0.1",
+        "scikit-fuzzy": "0.5.0",
+        "scikit-learn": "1.6.1",
+        "torch": "2.11.0+cu128"
+      }
+    },
+    "test": {
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[test]",
+      "returncode": 0,
+      "python": "3.10.17",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "resolved": [
+        "ALB.contracts.ComputationalBlock",
+        "build",
+        "importlinter",
+        "mypy",
+        "pytest"
+      ],
+      "dependency_versions": {
+        "build": "1.5.0",
+        "import-linter": "2.13",
+        "mypy": "2.3.0",
+        "pytest": "9.0.3"
+      }
+    }
+  },
+  "extra_smoke_scope": "Eight independent subprocess imports from the isolated wheel target; dependency versions come from the validated host environment. This is an import smoke, not an independent dependency-resolver installation.",
   "cli_help": {
     "alb-migrate-config": {
       "module": "ALB.config.cli",

@@ -1,0 +1,354 @@
+{
+  "schema": "alb.release-acceptance.v1",
+  "version": "0.2.0",
+  "candidate_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+  "pytest": {
+    "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -m pytest tests -q -p no:cacheprovider -p tools.validation.release_pytest_plugin --basetemp=G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\pytest_tmp",
+    "returncode": 0,
+    "summary": {
+      "passed": 293,
+      "skipped": 33,
+      "warnings": 12,
+      "subtests_passed": 7
+    },
+    "summary_tail": [
+      "..............s...........s............................................. [ 22%]",
+      "...........................................s....ss...................... [ 44%]",
+      "...................................................................... [ 65%]",
+      "............s.....ssss.........................................ssss [ 86%]",
+      "sssssssssssssssssss..........................                            [100%]",
+      "============================== warnings summary ===============================",
+      "tests/integration/config/test_task.py::TestPaperTaskConfigBuild::test_paper_albfuzzy12_builds_fuzzy_alb_instance",
+      "  E:\\Anaconda2023\\envs\\ALB\\lib\\site-packages\\skfuzzy\\membership\\generatemf.py:83: RuntimeWarning: invalid value encountered in divide",
+      "    return np.exp(-((x - mean)**2.) / (2 * sigma**2.))",
+      "",
+      "tests/regression/bearing/test_nodim_alb_equivalence.py: 11 warnings",
+      "  E:\\Anaconda2023\\envs\\ALB\\lib\\site-packages\\scipy\\optimize\\_minpack_py.py:178: RuntimeWarning: The iteration is not making good progress, as measured by the ",
+      "    improvement from the last ten iterations.",
+      "    warnings.warn(msg, RuntimeWarning)",
+      "",
+      "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
+      "293 passed, 33 skipped, 12 warnings, 7 subtests passed in 99.60s (0:01:39)",
+      ""
+    ],
+    "skipped": [
+      {
+        "nodeid": "tests/integration/remote/test_remote_tools.py::test_start_wrapper_dry_run_matches_reference",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN wrapper still imports the removed ALB 0.1 remote namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/integration/remote/test_remote_tools.py::test_compat_wrappers_help",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN wrappers require the 0.2 import-map migration",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_fixed_point_reference_snapshot_matches_pre_change_results_exactly",
+        "when": "call",
+        "outcome": "skipped",
+        "reason": "Skipped: S0011 external fixtures are not available: [WindowsPath('F:/BaiduSyncdisk/博士论文/task/PAPER/config/alb12.json5')]",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_direct_then_newton_reports_s0011_sample_30_without_false_convergence",
+        "when": "call",
+        "outcome": "skipped",
+        "reason": "Skipped: S0011 external fixtures are not available: [WindowsPath('F:/BaiduSyncdisk/博士论文/task/PAPER/config/alb12.json5')]",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_direct_then_newton_does_not_false_converge_s0011_sample_162946",
+        "when": "call",
+        "outcome": "skipped",
+        "reason": "Skipped: S0011 external fixtures are not available: [WindowsPath('F:/BaiduSyncdisk/博士论文/task/PAPER/config/alb12.json5')]",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/test_albnn_input_compat.py::test_m0031_c4_wrapper_matches_manual_rotation_on_ten_validation_samples",
+        "when": "call",
+        "outcome": "skipped",
+        "reason": "Skipped: M0031 C4 integration artifacts are not available: [WindowsPath('G:/ALB_PROJECTS/ALB_MAIN/SURROGATE_TRAIN/models/M0031_s8b_s0011_allvalid_base12_mlp_minmax01_gelu_adamw_p1000_20260609/best_albnn.pth'), WindowsPath('G:/ALB_PROJECTS/ALB_MAIN/SURROGATE_TRAIN/models/M0031_s8b_s0011_allvalid_base12_mlp_minmax01_gelu_adamw_p1000_20260609/scaler_X.pkl'), WindowsPath('G:/ALB_PROJECTS/ALB_MAIN/SURROGATE_TRAIN/models/M0031_s8b_s0011_allvalid_base12_mlp_minmax01_gelu_adamw_p1000_20260609/scaler_y.pkl'), WindowsPath('G:/ALB_PROJECTS/ALB_MAIN/SURROGATE_TRAIN/models/M0031_s8b_s0011_allvalid_base12_mlp_minmax01_gelu_adamw_p1000_20260609/metadata.json'), WindowsPath('G:/ALB_PROJECTS/ALB_MAIN/SURROGATE_TRAIN/data/albnn_master_dataset_20260521/filtered/s8b_s0011_valid171984_train137587_valid34397_20260609/validation_s8b_s0011_allvalid_base12_20260609.csv')]",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/train/test_alb_train_config.py::test_config_cli_epochs_equals_override_writes_resolved_config",
+        "when": "call",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN trainer still imports ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/train/test_alb_train_config.py::test_config_cli_unsupported_legacy_override_fails_fast",
+        "when": "call",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN trainer still imports ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/train/test_alb_train_config.py::test_dry_run_config_without_config_fails_before_legacy_training",
+        "when": "call",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN trainer still imports ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/train/test_alb_train_config.py::test_legacy_device_without_config_fails_before_training",
+        "when": "call",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN trainer still imports ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_alb_train_wrapper_failfast.py::test_expert_config_branch_fails_fast_before_placeholder_training",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN training wrappers still import ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_alb_train_wrapper_failfast.py::test_residual_config_branch_fails_fast_before_placeholder_training",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN training wrappers still import ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_alb_train_wrapper_failfast.py::test_expert_config_epoch_abbreviation_is_rejected",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN training wrappers still import ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_alb_train_wrapper_failfast.py::test_residual_config_epoch_abbreviation_is_rejected",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN training wrappers still import ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_alb_train_wrapper_failfast.py::test_expert_dry_run_config_without_config_fails_before_legacy_training",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN training wrappers still import ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_alb_train_wrapper_failfast.py::test_expert_legacy_device_without_config_fails_before_training",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN training wrappers still import ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_alb_train_wrapper_failfast.py::test_residual_dry_run_config_without_config_fails_before_legacy_training",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN training wrappers still import ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_alb_train_wrapper_failfast.py::test_residual_legacy_device_without_config_fails_before_training",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN training wrappers still import ALB.nn",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_evaluate_albnn_input_samples.py::test_resume_output_must_match_input_prefix",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN evaluator still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_evaluate_albnn_input_samples.py::test_resume_output_detects_input_value_mismatch_without_ids",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: read-only SURROGATE_TRAIN evaluator still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_validation_import_ignores_param_scan_run_first_on_sys_path",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_nondim_thermal_field_case_uses_thermal_config_input",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_nondim_pressure_field_matches_dimensional_scaling",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_zero_heat_partition_gives_zero_nondim_temperature_rise",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_dimensional_and_nondim_parameter_sets_match_viscosity_field_evolution",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_extract_last_cycle_excludes_repeated_endpoint",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_three_case_configs_match_refactor_intent",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_three_cases_run_on_short_orbit",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_viscosity_skfem_degenerates_to_skfem_when_miu_ratio_is_one",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_case_bearing_uses_fixed_zero_opening_without_control",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_requested_orbit_matches_user_spec_and_is_valid",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_short_kc_identification_returns_finite_coefficients_for_three_cases",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_validation_dependency_ignores_param_scan_run_first_on_sys_path",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      }
+    ],
+    "known_newton_skip": {
+      "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_fixed_point_reference_snapshot_matches_pre_change_results_exactly",
+      "when": "call",
+      "outcome": "skipped",
+      "reason": "Skipped: S0011 external fixtures are not available: [WindowsPath('F:/BaiduSyncdisk/博士论文/task/PAPER/config/alb12.json5')]",
+      "report_type": "TestReport"
+    }
+  },
+  "mypy": {
+    "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -m mypy ALB/contracts ALB/core --config-file pyproject.toml --no-incremental --cache-dir G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\mypy_cache",
+    "returncode": 0,
+    "version": "2.3.0",
+    "stdout": "Success: no issues found in 19 source files",
+    "stderr": ""
+  },
+  "worktree": {
+    "tracked_status_before": [
+      "M AGENTS.md",
+      " M README.md",
+      " M docs/alb_albnn_quickstart.md",
+      " M docs/alb_package_overview.md",
+      " M docs/current_state.md",
+      " M docs/file_classification.md",
+      " M docs/interface_architecture.md",
+      " M docs/migrations/0.2.0_build_acceptance.json",
+      " M docs/migrations/0.2.0_external_consumer_audit.json",
+      " M docs/migrations/0.2.0_external_consumer_audit.md",
+      " M docs/migrations/0.2.0_import_map.json",
+      " M docs/migrations/0.2.0_test_map.json",
+      " M docs/project_overview.md",
+      " M docs/remote_workstation_connection.md",
+      " M test/bearing/_thermal_plots/alb_thermal_4pads.png",
+      " M test/bearing/_thermal_plots/orifice_thermal_comparison.png",
+      " M tests/integration/config/test_task.py",
+      " M tests/integration/test_alb_gui_tool.py",
+      " M tests/regression/test_full_repo_refactor_references.py",
+      " M tests/validation/bearing/test_gas_bearing.py",
+      " M tests/validation/bearing/test_thermal_wrapper.py",
+      " M tests/validation/test_build_acceptance_report.py",
+      " M tests/validation/test_import_boundaries.py",
+      " M tests/validation/test_import_migration_map.py",
+      " M tests/validation/test_test_node_migration_map.py",
+      " M tools/migrations/build_external_consumer_audit_0_2.py",
+      " M tools/migrations/build_import_map_0_2.py",
+      " M tools/migrations/build_test_map_0_2.py",
+      " M tools/validation/validate_wheel_0_2.py"
+    ],
+    "tracked_status_after": [
+      "M AGENTS.md",
+      " M README.md",
+      " M docs/alb_albnn_quickstart.md",
+      " M docs/alb_package_overview.md",
+      " M docs/current_state.md",
+      " M docs/file_classification.md",
+      " M docs/interface_architecture.md",
+      " M docs/migrations/0.2.0_build_acceptance.json",
+      " M docs/migrations/0.2.0_external_consumer_audit.json",
+      " M docs/migrations/0.2.0_external_consumer_audit.md",
+      " M docs/migrations/0.2.0_import_map.json",
+      " M docs/migrations/0.2.0_test_map.json",
+      " M docs/project_overview.md",
+      " M docs/remote_workstation_connection.md",
+      " M test/bearing/_thermal_plots/alb_thermal_4pads.png",
+      " M test/bearing/_thermal_plots/orifice_thermal_comparison.png",
+      " M tests/integration/config/test_task.py",
+      " M tests/integration/test_alb_gui_tool.py",
+      " M tests/regression/test_full_repo_refactor_references.py",
+      " M tests/validation/bearing/test_gas_bearing.py",
+      " M tests/validation/bearing/test_thermal_wrapper.py",
+      " M tests/validation/test_build_acceptance_report.py",
+      " M tests/validation/test_import_boundaries.py",
+      " M tests/validation/test_import_migration_map.py",
+      " M tests/validation/test_test_node_migration_map.py",
+      " M tools/migrations/build_external_consumer_audit_0_2.py",
+      " M tools/migrations/build_import_map_0_2.py",
+      " M tools/migrations/build_test_map_0_2.py",
+      " M tools/validation/validate_wheel_0_2.py"
+    ],
+    "before_sha256": "2d9614a7e386526060cf390986f04e98dd5146d420c81b293f5d975979fdfd25",
+    "after_sha256": "2d9614a7e386526060cf390986f04e98dd5146d420c81b293f5d975979fdfd25",
+    "tracked_status_delta": 0
+  },
+  "references": {
+    "full_repo_refactor_v1_unchanged_from_tag": true,
+    "thermal_addendum": "refs/full_repo_refactor_addendum_v1"
+  },
+  "overall_status": "passed"
+}

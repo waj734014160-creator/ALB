@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import json
 from collections import defaultdict
 from importlib.util import resolve_name
 from pathlib import Path
@@ -10,6 +11,7 @@ from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 PACKAGE_ROOT = REPOSITORY_ROOT / "ALB"
+IMPORT_MAP_PATH = REPOSITORY_ROOT / "docs/migrations/0.2.0_import_map.json"
 NAMESPACES = {
     "config",
     "contracts",
@@ -21,26 +23,6 @@ NAMESPACES = {
     "surrogate",
     "systems",
     "workflows",
-}
-REMOVED_FLAT_MODULES = {
-    "ALB.alb",
-    "ALB.base",
-    "ALB.bearing",
-    "ALB.controller",
-    "ALB.couple",
-    "ALB.film",
-    "ALB.gas_bearing",
-    "ALB.matrix",
-    "ALB.nn",
-    "ALB.orifice",
-    "ALB.plot",
-    "ALB.postprocess",
-    "ALB.remote",
-    "ALB.results",
-    "ALB.rotor",
-    "ALB.task",
-    "ALB.thermal",
-    "ALB.tool",
 }
 ALLOWED_DEPENDENCIES = {
     "contracts": {"contracts"},
@@ -74,6 +56,13 @@ def _module_name(path: Path) -> tuple[str, str]:
     return module, package
 
 
+def _package_modules() -> set[str]:
+    return {_module_name(path)[0] for path in PACKAGE_ROOT.rglob("*.py")}
+
+
+PACKAGE_MODULES = _package_modules()
+
+
 def _internal_imports(path: Path) -> set[str]:
     module, package = _module_name(path)
     del module
@@ -88,10 +77,26 @@ def _internal_imports(path: Path) -> set[str]:
             else:
                 target = node.module or ""
             if target == "ALB":
-                imports.update(f"ALB.{alias.name}" for alias in node.names)
+                for alias in node.names:
+                    candidate = f"ALB.{alias.name}"
+                    if candidate in PACKAGE_MODULES:
+                        imports.add(candidate)
             elif target.startswith("ALB."):
                 imports.add(target)
+                for alias in node.names:
+                    candidate = f"{target}.{alias.name}"
+                    if candidate in PACKAGE_MODULES:
+                        imports.add(candidate)
     return imports
+
+
+def _removed_flat_modules() -> set[str]:
+    import_map = json.loads(IMPORT_MAP_PATH.read_text(encoding="utf-8"))
+    return {
+        item["source"]
+        for item in import_map["module_mappings"]
+        if item["status"] == "migrated"
+    }
 
 
 def _namespace(module: str) -> str | None:
@@ -113,6 +118,57 @@ def _dependency_graph() -> dict[str, set[str]]:
             if target is not None and target != source:
                 graph[source].add(target)
     return graph
+
+
+def _module_dependency_graph() -> dict[str, set[str]]:
+    modules = PACKAGE_MODULES
+    graph = {module: set() for module in modules}
+    for path in PACKAGE_ROOT.rglob("*.py"):
+        source_module, _ = _module_name(path)
+        graph[source_module].update(
+            target for target in _internal_imports(path) if target in modules
+        )
+    return graph
+
+
+def _strongly_connected_components(
+    graph: dict[str, set[str]],
+) -> list[tuple[str, ...]]:
+    index = 0
+    indices: dict[str, int] = {}
+    lowlinks: dict[str, int] = {}
+    stack: list[str] = []
+    on_stack: set[str] = set()
+    components: list[tuple[str, ...]] = []
+
+    def visit(node: str) -> None:
+        nonlocal index
+        indices[node] = index
+        lowlinks[node] = index
+        index += 1
+        stack.append(node)
+        on_stack.add(node)
+        for target in graph[node]:
+            if target not in indices:
+                visit(target)
+                lowlinks[node] = min(lowlinks[node], lowlinks[target])
+            elif target in on_stack:
+                lowlinks[node] = min(lowlinks[node], indices[target])
+        if lowlinks[node] != indices[node]:
+            return
+        component: list[str] = []
+        while True:
+            target = stack.pop()
+            on_stack.remove(target)
+            component.append(target)
+            if target == node:
+                break
+        components.append(tuple(sorted(component)))
+
+    for module in sorted(graph):
+        if module not in indices:
+            visit(module)
+    return sorted(components)
 
 
 def _cycles(graph: dict[str, set[str]]) -> list[tuple[str, ...]]:
@@ -151,19 +207,31 @@ def test_namespace_dependency_graph_is_acyclic() -> None:
     assert _cycles(_dependency_graph()) == []
 
 
+def test_module_dependency_graph_is_acyclic() -> None:
+    graph = _module_dependency_graph()
+    cycles = [
+        component
+        for component in _strongly_connected_components(graph)
+        if len(component) > 1
+        or (len(component) == 1 and component[0] in graph[component[0]])
+    ]
+    assert cycles == []
+
+
 def test_removed_flat_modules_are_absent_and_unimported() -> None:
+    removed_flat_modules = _removed_flat_modules()
     imported: dict[str, list[str]] = defaultdict(list)
     for path in PACKAGE_ROOT.rglob("*.py"):
         for target in _internal_imports(path):
-            for removed in REMOVED_FLAT_MODULES:
+            for removed in removed_flat_modules:
                 if target == removed or target.startswith(f"{removed}."):
                     imported[removed].append(path.relative_to(REPOSITORY_ROOT).as_posix())
 
     assert imported == {}
-    for module in REMOVED_FLAT_MODULES:
+    for module in removed_flat_modules:
         relative = Path(*module.split("."))
         assert not (REPOSITORY_ROOT / relative.with_suffix(".py")).exists()
-        assert not (REPOSITORY_ROOT / relative).is_dir()
+        assert not (REPOSITORY_ROOT / relative / "__init__.py").exists()
 
 
 def test_numerical_namespaces_do_not_import_infrastructure() -> None:

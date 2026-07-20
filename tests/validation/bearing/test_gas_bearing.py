@@ -1,9 +1,9 @@
 import unittest
-import tempfile
 from pathlib import Path
 
 import matplotlib
 import numpy as np
+import pytest
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -13,12 +13,9 @@ from ALB.physics.gas import GasBearing
 
 
 class TestGasBearing(unittest.TestCase):
-    def setUp(self):
-        self._temporary_directory = tempfile.TemporaryDirectory()
-        self.artifact_dir = Path(self._temporary_directory.name)
-
-    def tearDown(self):
-        self._temporary_directory.cleanup()
+    @pytest.fixture(autouse=True)
+    def _set_artifact_dir(self, tmp_path):
+        self.artifact_dir = tmp_path
 
     @staticmethod
     def _save_pressure_cloud(bearing: GasBearing, save_path: Path):

@@ -1,10 +1,10 @@
 # -- coding: utf-8 --
 import importlib.util
-import tempfile
 import unittest
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from ALB.systems.alb import ALB, alb2, alb2_fuzzy
 from ALB.physics.bearing import MultiPad, four_pads_bearing
@@ -44,6 +44,10 @@ split_imports = _load_split_imports()
 
 
 class TestPaperTaskConfigBuild(unittest.TestCase):
+    @pytest.fixture(autouse=True)
+    def _set_tmp_path(self, tmp_path):
+        self.tmp_path = tmp_path
+
     @classmethod
     def setUpClass(cls):
         repo_root = Path(__file__).resolve().parents[3]
@@ -77,22 +81,21 @@ class TestPaperTaskConfigBuild(unittest.TestCase):
         )
 
     def test_empty_local_config_dir_does_not_shadow_param_scan(self):
-        with tempfile.TemporaryDirectory() as workspace:
-            workspace_root = Path(workspace)
-            repo_root = workspace_root / "ALB_MAIN"
-            local_config_dir = repo_root / "task" / "PAPER" / "config"
-            sibling_config_dir = (
-                workspace_root / "PARAM_SCAN" / "task" / "PAPER" / "config"
-            )
-            local_config_dir.mkdir(parents=True)
-            sibling_config_dir.mkdir(parents=True)
-            for file_name in PAPER_CONFIG_REQUIRED_FILES:
-                (sibling_config_dir / file_name).write_text("{}", encoding="utf-8")
+        workspace_root = self.tmp_path
+        repo_root = workspace_root / "ALB_MAIN"
+        local_config_dir = repo_root / "task" / "PAPER" / "config"
+        sibling_config_dir = (
+            workspace_root / "PARAM_SCAN" / "task" / "PAPER" / "config"
+        )
+        local_config_dir.mkdir(parents=True)
+        sibling_config_dir.mkdir(parents=True)
+        for file_name in PAPER_CONFIG_REQUIRED_FILES:
+            (sibling_config_dir / file_name).write_text("{}", encoding="utf-8")
 
-            selected = split_imports.select_paper_config_dir(
-                repo_root,
-                PAPER_CONFIG_REQUIRED_FILES,
-            )
+        selected = split_imports.select_paper_config_dir(
+            repo_root,
+            PAPER_CONFIG_REQUIRED_FILES,
+        )
 
         self.assertEqual(selected, sibling_config_dir)
 

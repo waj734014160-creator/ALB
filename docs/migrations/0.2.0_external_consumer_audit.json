@@ -9,8 +9,8 @@
       "root": "G:/ALB_PROJECTS/SURROGATE_TRAIN",
       "declared_count": 23,
       "counts": {
-        "direct": 19,
-        "context": 4
+        "context": 4,
+        "direct": 19
       },
       "entries": [
         {
@@ -787,8 +787,8 @@
       "root": "F:/BaiduSyncdisk/博士论文/PAPER_WORK",
       "declared_count": 27,
       "counts": {
-        "direct": 25,
-        "transitive": 2
+        "transitive": 2,
+        "direct": 25
       },
       "entries": [
         {
@@ -1267,6 +1267,7 @@
             "ALB.config.surrogate",
             "ALB.config.system",
             "ALB.config.thermal",
+            "ALB.contracts.result_tree",
             "ALB.contracts.results",
             "ALB.infrastructure.persistence",
             "ALB.physics.bearing",

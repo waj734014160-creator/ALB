@@ -24,5 +24,25 @@ def test_wheel_metadata_cli_and_namespace_smokes_passed() -> None:
     assert len(report["wheel"]["sha256"]) == 64
     assert all(not present for present in report["isolated_install"]["removed_specs"].values())
     assert len(report["isolated_install"]["namespace_smoke"]) == 11
+    assert set(report["extra_smokes"]) == {
+        "core",
+        "film",
+        "control",
+        "dynamics",
+        "surrogate",
+        "io",
+        "all",
+        "test",
+    }
+    assert all(item["returncode"] == 0 for item in report["extra_smokes"].values())
+    assert all(
+        Path(item["alb_file"]).resolve().is_relative_to(
+            REPOSITORY_ROOT / report["isolated_install"]["root"]
+        )
+        for item in report["extra_smokes"].values()
+    )
+    assert all(
+        item["dependency_versions"] for item in report["extra_smokes"].values()
+    )
     assert all(item["returncode"] == 0 for item in report["cli_help"].values())
     assert all(item["usage"].startswith("usage:") for item in report["cli_help"].values())
