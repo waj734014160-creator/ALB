@@ -8,7 +8,7 @@ from scipy.sparse.linalg import spsolve
 from skfem import Basis, BilinearForm, ElementTriP1, LinearForm, MeshTri, asm, enforce
 from skfem.helpers import dot, grad
 
-from ALB.adapters import BearingDecoratorBase
+from ALB.physics.bearing.decorators import BearingDecoratorBase
 from ALB.core.fem.base import BasePostProcess
 from ALB.config import ThermalConfig, build_thermal_config  # noqa: F401  re-exported
 from ALB.core.numerics.damping import AdaptiveDampController

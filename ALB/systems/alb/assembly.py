@@ -25,7 +25,7 @@ from ALB.config import (
 )
 from ALB.control.controllers import FuzzyPID, PID
 from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
-from ALB.results import DataFrameResult, SaveTreeNode
+from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve, moog_servovalve, static_sv
 from ALB.physics.thermal import (
     NodimThermalHydroBearing,

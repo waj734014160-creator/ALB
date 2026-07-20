@@ -2,7 +2,7 @@
 import copy
 from typing import Union
 
-# from ALB.logger import logger
+# from ALB.infrastructure.logging import logger
 import control as cl
 import numpy as np
 import pandas as pd
@@ -11,7 +11,7 @@ from ALB.core.component import BaseSystem
 from ALB.core.validation import limit_signal as _limit_signal
 from .state_space import BaseLti, TSDlti
 
-# from ALB.logger import logger
+# from ALB.infrastructure.logging import logger
 
 
 class BaseValve(BaseSystem):

@@ -14,7 +14,7 @@ from scipy.linalg import block_diag, pinv, schur
 from ALB.core.component import BaseSimpleModel
 from ALB.config import FuzzyPIDConfig, LQGConfig, PIDConfig
 from ALB.core.validation import limit_signal
-from ALB.results import DataFrameResult, SaveTreeNode
+from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
 from .valve import moog_servovalve
 
 

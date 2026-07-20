@@ -6,12 +6,9 @@ import itertools
 import multiprocessing as mp
 import os.path
 import random
-import smtplib
 import typing
 import warnings
 from dataclasses import dataclass
-from email.header import Header
-from email.mime.text import MIMEText
 from operator import itemgetter
 from pathlib import Path
 
@@ -218,38 +215,6 @@ def recognize_kc(t, freq, uxy0, fxy0, uxy1, fxy1, tr=None, **kwargs):
     f = np.array([f0[1], f1[1]]).T
     h = f.dot(np.linalg.inv(z))
     return {"h": h, "k": h.real, "c": h.imag / 2 / np.pi / freq}
-
-
-class EmailSender:
-    def __init__(
-        self,
-        sender="21b902051@stu.hit.edu.cn",
-        receiver="734014160@qq.com",
-        smtpserver="smtp.hit.edu.cn",
-        username="21b902051@stu.hit.edu.cn",
-        password="a7TAVIwpZr7cYkac",
-    ):
-        self.sender = sender
-        self.receiver = receiver
-        self.subject = None
-        self.body = None
-        self.smtpserver = smtpserver
-        self.username = username
-        self.password = password
-
-    def send(self, sub, body):
-        # Email content
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = Header(sub, "utf-8")
-        msg["From"] = self.sender
-        msg["To"] = self.receiver
-        # Send email
-        smtp = smtplib.SMTP()
-        smtp.connect(self.smtpserver)
-        smtp.login(self.username, self.password)
-        smtp.sendmail(self.sender, self.receiver, msg.as_string())
-        smtp.quit()
-        print("send email success")
 
 
 def itercouple(**kwargs):

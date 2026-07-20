@@ -7,7 +7,7 @@ import scipy.linalg
 from scipy import signal as ss
 
 from ALB.core.component import BaseSimpleModel
-from ALB.results import DataFrameResult, SaveTreeNode
+from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
 
 
 def _history_to_frame(history):

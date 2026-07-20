@@ -13,8 +13,8 @@ from ALB.core.component import BaseSimpleModel
 from ALB.core.events import Signal
 from ALB.core.fem.base import BasePostProcess
 
-# from ALB.logger import logger
-from ALB.results import RossRotorResult, SaveTreeNode
+# from ALB.infrastructure.logging import logger
+from ALB.infrastructure.persistence import RossRotorResult, SaveTreeNode
 from ALB.tool import pearson_similarity
 
 _intpoint = np.array(

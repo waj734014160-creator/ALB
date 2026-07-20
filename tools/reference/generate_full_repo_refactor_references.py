@@ -17,6 +17,8 @@ import os
 import pickle
 import platform
 import random
+import sys
+import types
 import statistics
 import subprocess
 import sys
@@ -98,7 +100,7 @@ from ALB.remote.transport import (
     ps_quote,
     remote_path,
 )
-from ALB.results import DataFrameResult, NpyResult, SaveTreeNode
+from ALB.infrastructure.persistence import DataFrameResult, NpyResult, SaveTreeNode
 from ALB.dynamics.rotor import RossRotor
 from ALB.control.valve import moog_2nd_servovalve
 from ALB.config import ThermalConfig
@@ -1080,7 +1082,22 @@ def _remote_persistence_case() -> CaseData:
     child_a = SaveTreeNode("frames", DataFrameResult({"history": frame}))
     child_b = SaveTreeNode("arrays", NpyResult({"state": array}))
     tree = SaveTreeNode("bundle", DataFrameResult({}), [child_a, child_b])
-    serialized = pickle.dumps(tree, protocol=pickle.HIGHEST_PROTOCOL)
+    # Preserve the frozen pre-0.2 pickle payload only as regression evidence.
+    # This local alias does not restore ALB.results as an importable runtime API.
+    legacy_module_name = "ALB.results"
+    legacy_module = types.ModuleType(legacy_module_name)
+    legacy_classes = (DataFrameResult, NpyResult, SaveTreeNode)
+    original_modules = {cls: cls.__module__ for cls in legacy_classes}
+    try:
+        for cls in legacy_classes:
+            cls.__module__ = legacy_module_name
+            setattr(legacy_module, cls.__name__, cls)
+        sys.modules[legacy_module_name] = legacy_module
+        serialized = pickle.dumps(tree, protocol=pickle.HIGHEST_PROTOCOL)
+    finally:
+        sys.modules.pop(legacy_module_name, None)
+        for cls, module_name in original_modules.items():
+            cls.__module__ = module_name
     arrays = {
         "persistence_frame": frame.to_numpy(dtype=float),
         "persistence_array": array,

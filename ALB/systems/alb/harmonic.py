@@ -21,7 +21,7 @@ import pandas as pd
 from ALB.config import Moog2ndServoConfig, PIDConfig
 from ALB.control.pid import PID
 from ALB.core import BearingComponentBase
-from ALB.results import DataFrameResult, SaveTreeNode
+from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve
 
 

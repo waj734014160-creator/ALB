@@ -9,7 +9,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from ALB.config import TimeGridConfig
-from ALB.results import SaveTreeNode
+from ALB.infrastructure.persistence import SaveTreeNode
 from ALB.tool import recognize_kc
 
 

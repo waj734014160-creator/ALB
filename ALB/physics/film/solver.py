@@ -48,7 +48,7 @@ from ALB.core.numerics.iteration import (
 # from .logger import delogger, logger
 from ALB.core.numerics.static import calc_fe, calc_fe_vf, calc_ke
 from ALB.core.fem.mesh import Mesh
-from ALB.results import DataFrameResult, NpyResult, SaveTreeNode
+from ALB.infrastructure.persistence import DataFrameResult, NpyResult, SaveTreeNode
 
 __all__ = [
     "NodimFilmModel",

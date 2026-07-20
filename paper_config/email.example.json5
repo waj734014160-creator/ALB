@@ -1,0 +1,10 @@
+{
+  // Copy this file outside version control and inject secrets through environment variables.
+  host: "smtp.example.org",
+  port: 587,
+  sender: "alb-notifier@example.org",
+  recipients: ["operator@example.org"],
+  username_env: "ALB_SMTP_USERNAME",
+  password_env: "ALB_SMTP_PASSWORD",
+  starttls: true,
+}

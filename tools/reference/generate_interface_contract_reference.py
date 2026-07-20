@@ -32,7 +32,7 @@ from ALB import alb_harmonic_linear  # noqa: E402
 from ALB.systems.alb import ALBLinearAgent  # noqa: E402
 from ALB.core import Signal, TimeIterDt  # noqa: E402
 from ALB.dynamics.coupling import RsRotorBearingCouple  # noqa: E402
-from ALB.results import DataFrameResult, SaveTreeNode  # noqa: E402
+from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode  # noqa: E402
 from ALB.surrogate.training.transforms import MidpointMinMaxScaler  # noqa: E402
 
 
@@ -51,8 +51,8 @@ LEGACY_IMPORT_SURFACE = {
     "ALB.config": ["CsoArgs", "PIDConfig", "ThermalConfig", "TimeGridConfig"],
     "ALB.surrogate": ["ALBNN", "ALBNet", "Net", "albnn"],
     "ALB.physics.hydraulics": ["CSOrifice", "CsoArgs", "NodimCSOrifice"],
-    "ALB.results": ["DataFrameResult", "SaveTreeNode"],
-    "ALB.tool": ["EmailSender", "get_main_model_from_filmsystem"],
+    "ALB.infrastructure.persistence": ["DataFrameResult", "SaveTreeNode"],
+    "ALB.infrastructure.notification": ["SmtpNotifier"],
 }
 
 
