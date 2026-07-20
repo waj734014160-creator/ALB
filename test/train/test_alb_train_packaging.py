@@ -1,5 +1,5 @@
 # coding: utf-8
-"""Focused tests for ALB.train packaging and report lifecycle behavior."""
+"""Focused tests for surrogate training packaging and report lifecycle."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ALB.train import AlbnnMlpTrainer
-from ALB.train import TrainingConfig
-from ALB.train import TrainingConfigError
-from ALB.train.reports import write_validation_predictions
-from ALB.train.runs import PACKAGED_ARTIFACT_NAMES
+from ALB.surrogate.training import AlbnnMlpTrainer
+from ALB.surrogate.training import TrainingConfig
+from ALB.surrogate.training import TrainingConfigError
+from ALB.surrogate.training.reports import write_validation_predictions
+from ALB.surrogate.training.runs import PACKAGED_ARTIFACT_NAMES
 
 
 BASE_INPUT_COLS = [

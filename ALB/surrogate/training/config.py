@@ -229,7 +229,7 @@ def _resolve(config: dict[str, Any], *, config_dir: Path | None) -> dict[str, An
     model_kind = str(resolved["model"].get("kind", "")).lower()
     if model_kind != "albnn_mlp":
         raise TrainingConfigError(
-            "ALB.train.AlbnnMlpTrainer only supports model.kind='albnn_mlp'; "
+            "ALB.surrogate.training.AlbnnMlpTrainer only supports model.kind='albnn_mlp'; "
             f"got {resolved['model'].get('kind')!r}"
         )
     data = resolved["data"]

@@ -1,5 +1,5 @@
 # coding: utf-8
-"""Focused contract tests for ALB.train transform pipelines and scalers."""
+"""Focused contract tests for surrogate transform pipelines and scalers."""
 
 from __future__ import annotations
 
@@ -8,8 +8,11 @@ import pandas as pd
 import pytest
 import torch
 
-from ALB.nn import SelectiveMinMaxScaler
-from ALB.train.transforms import ColumnTransformError, ColumnTransformPipeline
+from ALB.surrogate.scalers import SelectiveMinMaxScaler
+from ALB.surrogate.training.transforms import (
+    ColumnTransformError,
+    ColumnTransformPipeline,
+)
 
 
 def _evs_frame() -> pd.DataFrame:

@@ -83,7 +83,7 @@ from ALB.harmonic_linear import alb_harmonic_linear
 from ALB.core.numerics.dynamic import calc_fe_dx, calc_ke_dx
 from ALB.core.numerics.static import calc_fe, calc_fe_vf, calc_ke
 from ALB.core.fem.mesh import create_rect, create_serend_2d
-from ALB.nn import (
+from ALB.surrogate.inference import (
     ALBNN,
     ALBNNC4Canonical,
     ALBNN_BASE_INPUT_COLS,
@@ -104,8 +104,8 @@ from ALB.dynamics.rotor import RossRotor
 from ALB.control.valve import moog_2nd_servovalve
 from ALB.config import ThermalConfig
 from ALB.physics.thermal import ThermalHydroBearing
-from ALB.train.losses import sample_loss_values, weighted_mean
-from ALB.train.transforms import MidpointMinMaxScaler
+from ALB.surrogate.training.losses import sample_loss_values, weighted_mean
+from ALB.surrogate.training.transforms import MidpointMinMaxScaler
 from ALB.core import Signal, TimeIterDt
 
 

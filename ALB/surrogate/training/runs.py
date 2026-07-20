@@ -15,7 +15,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
 
-from ALB.nn import Net
+from ALB.surrogate.networks import Net
 
 from .config import TrainingConfig
 from .config import TrainingConfigError
@@ -233,13 +233,13 @@ class AlbnnMlpTrainer(TrainingRun):
         target_output = str(data_cfg.get("target_output", "cartesian")).lower()
         if target_output != "cartesian":
             raise TrainingConfigError(
-                "ALB.train generic MLP currently supports only "
+                "ALB.surrogate.training generic MLP currently supports only "
                 "data.target_output='cartesian' with target_cols=['fx', 'fy']; "
                 f"got target_output={data_cfg.get('target_output')!r}"
             )
         if list(data_cfg.get("target_cols", [])) != ["fx", "fy"]:
             raise TrainingConfigError(
-                "ALB.train generic MLP currently supports only direct Cartesian "
+                "ALB.surrogate.training generic MLP supports only direct Cartesian "
                 "target_cols=['fx', 'fy']"
             )
 
@@ -511,7 +511,7 @@ class AlbnnResidualTrainer(AlbnnMlpTrainer):
 
 
 def _save_checkpoint(net: Net, path: Path, architecture: list[int]) -> None:
-    """Save a checkpoint compatible with ``ALB.nn.net_from_checkpoint``."""
+    """Save a checkpoint compatible with ``ALB.surrogate.networks.net_from_checkpoint``."""
     torch.save(
         {
             "model_state_dict": net.state_dict(),

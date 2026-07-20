@@ -58,6 +58,7 @@ test = [
 
 [project.scripts]
 alb-migrate-config = "ALB.config.cli:main"
+alb-migrate-surrogate = "ALB.surrogate.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["ALB", "ALB.*"]

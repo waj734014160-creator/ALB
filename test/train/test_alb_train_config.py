@@ -15,16 +15,16 @@ import pandas as pd
 import pytest
 import torch
 
-from ALB.train import AlbnnMlpTrainer
-from ALB.train import ColumnTransformPipeline
-from ALB.train import TrainingConfig
-from ALB.train.config import TrainingConfigError
-from ALB.train.data import load_frame
-from ALB.train.data import valid_mask
-from ALB.train.config import runtime_overrides
-from ALB.train.losses import huber_values
-from ALB.train.transforms import ColumnTransformError
-from ALB.nn import albnn
+from ALB.surrogate.inference import albnn
+from ALB.surrogate.training import AlbnnMlpTrainer
+from ALB.surrogate.training import ColumnTransformPipeline
+from ALB.surrogate.training import TrainingConfig
+from ALB.surrogate.training.config import TrainingConfigError
+from ALB.surrogate.training.data import load_frame
+from ALB.surrogate.training.data import valid_mask
+from ALB.surrogate.training.config import runtime_overrides
+from ALB.surrogate.training.losses import huber_values
+from ALB.surrogate.training.transforms import ColumnTransformError
 
 
 BASE_INPUT_COLS = [

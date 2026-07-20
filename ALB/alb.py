@@ -33,7 +33,7 @@ from ALB.physics.thermal import (
 )
 
 if TYPE_CHECKING:
-    from ALB.nn import ALBNet
+    from ALB.surrogate.inference import ALBNet
 
 _NODIM_ALB_FORBIDDEN_PAD_KWARGS = {"miu", "c", "r", "l", "ps", "rho", "w", "w_rad"}
 _NODIM_ALB_LEGACY_REQUIRED_KEYS = [
@@ -1382,7 +1382,7 @@ def nn_agent(alb, albnet_config) -> ALB:
     :param albnet_config: Configuration for the ALB neural network.
     :return: A new ALB object with the NN agent.
     """
-    from ALB.nn import alb_agent_nn
+    from ALB.surrogate.inference import alb_agent_nn
 
     alb = copy.deepcopy(alb)
     nn = alb_agent_nn(albnet_config)

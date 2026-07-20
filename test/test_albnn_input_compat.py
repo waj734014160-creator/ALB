@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 import torch
 
-from ALB.nn import (
+from ALB.surrogate.inference import (
     ALBNN,
     ALBNNC4Canonical,
     ALBNN_BASE_INPUT_COLS,

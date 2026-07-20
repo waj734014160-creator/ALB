@@ -33,7 +33,7 @@ from ALB.alb import ALBLinearAgent  # noqa: E402
 from ALB.core import Signal, TimeIterDt  # noqa: E402
 from ALB.dynamics.coupling import RsRotorBearingCouple  # noqa: E402
 from ALB.results import DataFrameResult, SaveTreeNode  # noqa: E402
-from ALB.train.transforms import MidpointMinMaxScaler  # noqa: E402
+from ALB.surrogate.training.transforms import MidpointMinMaxScaler  # noqa: E402
 
 
 REFERENCE_STEM = "interface_contract_reference_v1"
@@ -49,7 +49,7 @@ LEGACY_IMPORT_SURFACE = {
         "TimeIterDt",
     ],
     "ALB.config": ["CsoArgs", "PIDConfig", "ThermalConfig", "TimeGridConfig"],
-    "ALB.nn": ["ALBNN", "ALBNet", "Net", "albnn", "albnn_augment_frame"],
+    "ALB.surrogate": ["ALBNN", "ALBNet", "Net", "albnn"],
     "ALB.physics.hydraulics": ["CSOrifice", "CsoArgs", "NodimCSOrifice"],
     "ALB.results": ["DataFrameResult", "SaveTreeNode"],
     "ALB.tool": ["EmailSender", "get_main_model_from_filmsystem"],

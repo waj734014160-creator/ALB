@@ -2287,7 +2287,7 @@ def mlp_train(
 ):
     """Train a small MLP with early stopping and save the best checkpoint.
 
-    New ALBNN training workflows should prefer ``ALB.train`` or the
+    New ALBNN training workflows should prefer ``ALB.surrogate.training`` or the
     ``SURROGATE_TRAIN`` CLIs. This helper remains for lightweight scripts that
     already prepare tensors and optimizer objects themselves.
     """
@@ -2387,7 +2387,7 @@ class ThermalALBNet:
 
     Typical usage::
 
-        from ALB.nn import thermal_albnet
+        from ALB.surrogate.inference import thermal_albnet
 
         net = thermal_albnet(config)
         net.input(uxy, uxyt, sxy, freq=50.0, beta=0.03, t_in=40.0, ps=3e6)

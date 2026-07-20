@@ -114,7 +114,7 @@ class ColumnTransformPipeline:
     The pipeline follows a simple rule: each step updates existing columns or
     appends derived columns, and the final frame column order becomes the model
     feature contract.  ``feature_names_in_`` and ``feature_names_out_`` mimic
-    sklearn scaler attributes used by :mod:`ALB.nn` packaged inference.
+    sklearn scaler attributes used by :mod:`ALB.surrogate.inference`.
     """
 
     def __init__(
