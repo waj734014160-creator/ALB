@@ -489,6 +489,8 @@ class GasSkfemNewtonFilm(SkfemNewtonFilm):
 class GasBearing(FilmSystem):
     """Gas bearing system with Newton iteration and scikit-fem assembly."""
 
+    unit_system = "dimensional"
+
     def __init__(self, gas_config: GasConfig = GasConfig()):
         if gas_config.thermal_enabled:
             raise NotImplementedError(

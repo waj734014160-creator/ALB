@@ -24,7 +24,7 @@
 
 | 需求类型 | 代表路径 | 建议处理 | 风险说明 |
 | --- | --- | --- | --- |
-| 稳定库代码 | `ALB/`, `pyproject.toml` | 保持原位，并用文档说明模块职责。 | 移动文件会牵涉 import 重写和大范围测试。 |
+| 稳定库代码 | `ALB/`, `pyproject.toml` | 新代码按 `contracts/core/adapters/physics/control/dynamics/systems/surrogate` 分类；旧实现路径保留兼容。 | 移动大型实现会牵涉 import、pickle 和外部脚本，应按物理域逐步迁移。 |
 | 任务和批处理入口 | `task/`, `ALB/task.py` | 保留现有入口；后续再区分可复用工作流和一次性脚本。 | 部分脚本使用本地绝对路径，并会把任务文件复制到输出目录。 |
 | 运行脚本和实验 | `run/`, `run/validation/`, `run/JKW/` | 保留可复现脚本；将生成的子目录标为产物。 | 部分脚本面向论文/演示，可能写入 `run/_*` 目录。 |
 | 远程 ALBNN 工具 | `ALB/remote/`, `test/remote/`, `refs/remote_albnn_*_reference_v1.json` | 保留为远程 helper 的稳定实现和回归基线。 | 兼容入口在兄弟项目 `SURROGATE_TRAIN/run/remote/`；不要恢复重复实现。 |
@@ -45,7 +45,9 @@
 
 | 区域 | 文件 | 目的 |
 | --- | --- | --- |
-| 数值基础 | `base.py`, `mesh.py`, `boundary.py`, `gauss.py`, `matrix/` | 基础模型、节点/单元管理、网格生成、边界处理、矩阵组装和迭代求解。 |
+| 结构协议与核心模板 | `contracts/`, `core/`, `adapters/`, `base.py` | 窄领域协议、生命周期/事件/时间模板、验证、兼容 adapter；`base.py` 保留旧 import 和有限元基础类型。 |
+| 分类 namespace | `physics/`, `control/`, `dynamics/`, `systems/`, `surrogate/` | 新代码的职责入口；通过 lazy export 指向当前兼容实现。 |
+| 数值基础 | `mesh.py`, `boundary.py`, `gauss.py`, `matrix/` | 节点/单元管理、网格生成、边界处理、矩阵组装和迭代求解。 |
 | 油膜和轴承模型 | `film.py`, `bearing.py`, `orifice.py`, `gas.py` | Reynolds 油膜求解、静压/气体轴承、多瓦组装、节流孔和供油流量模型。 |
 | ALB 系统和控制 | `alb.py`, `controller.py`, `servovalve.py`, `lti.py` | ALB 装配、PID/fuzzy/LQG 相关控制、伺服阀模型和状态空间工具。 |
 | 热模型和无量纲模型 | `thermal.py`, `nondim.py` | 热流体耦合、黏温耦合、无量纲尺度和包装求解器。 |

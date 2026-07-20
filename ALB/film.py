@@ -20,8 +20,6 @@ from skfem import (
 )
 from skfem.helpers import grad
 
-from ALB.tool import EmailSender
-
 from . import boundary
 from .base import (
     BaseBoundary,
@@ -1711,6 +1709,7 @@ class FilmSystem(BaseSystem):
         self._output = FilmOutput(film_model)
         self.node_link = args.get("node_link", None)
         self.max_iter = args.get("max_iter", 30)
+        self.notifier = args.get("notifier")
         self._temp_res = {}
         self._result = pd.DataFrame()
         self.final_iter = 0
@@ -1809,9 +1808,13 @@ class FilmSystem(BaseSystem):
             ex = ux / self.main_model.args["c"]
             ey = uy / self.main_model.args["c"]
         if np.sqrt(ex**2 + ey**2) > 1:
-            em = EmailSender()
-            em.send("Calculation error", "Input eccentricity is greater than 1.")
-            raise Exception("ex^2 + ey^2 must be less than 1")
+            message = "Input eccentricity is greater than 1."
+            if self.notifier is not None:
+                notify = getattr(self.notifier, "notify", None)
+                if notify is None:
+                    raise TypeError("notifier must implement notify(message, subject=None)")
+                notify(message, subject="Calculation error")
+            raise ValueError("ex^2 + ey^2 must be less than 1")
         # Apply eccentricity to the active thickness model.
         if hasattr(self, "thickness"):
             thickness = self.thickness

@@ -13,8 +13,9 @@ from scipy.linalg import block_diag, pinv, schur
 
 from ALB.base import BaseSimpleModel
 from ALB.config import FuzzyPIDConfig, LQGConfig, PIDConfig
+from ALB.core.validation import limit_signal
 from ALB.results import DataFrameResult, SaveTreeNode
-from ALB.servovalve import limit_signal, moog_servovalve
+from ALB.servovalve import moog_servovalve
 
 
 class PID(BaseSimpleModel):

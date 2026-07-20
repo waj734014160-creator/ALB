@@ -53,6 +53,8 @@ class ALB(BaseCSystem):
     Active Lubricated Bearing (ALB) System
     """
 
+    unit_system = "dimensional"
+
     def __init__(
         self,
         pads: Iterable,
@@ -360,6 +362,8 @@ class ALBSV(ALB):
 
 class NodimALB(ALB):
     """ALB assembled from nondimensional pads and driven by nondimensional states."""
+
+    unit_system = "nondimensional"
 
     def __init__(
         self,

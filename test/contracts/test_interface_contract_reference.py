@@ -20,6 +20,21 @@ GENERATOR_PATH = (
     REPO_ROOT / "tools" / "reference" / "generate_interface_contract_reference.py"
 )
 
+NEW_PUBLIC_EXPORT_TARGETS = {
+    "BearingCoefficientProtocol": ("ALB.contracts", "BearingCoefficientProtocol"),
+    "BearingComponentBase": ("ALB.core", "BearingComponentBase"),
+    "BearingDecoratorBase": ("ALB.adapters", "BearingDecoratorBase"),
+    "BearingProtocol": ("ALB.contracts", "BearingProtocol"),
+    "ComponentBase": ("ALB.core", "ComponentBase"),
+    "ControllerProtocol": ("ALB.contracts", "ControllerProtocol"),
+    "ConvergenceStatus": ("ALB.contracts", "ConvergenceStatus"),
+    "LegacyBearingAdapter": ("ALB.adapters", "LegacyBearingAdapter"),
+    "NotifierProtocol": ("ALB.contracts", "NotifierProtocol"),
+    "RotorProtocol": ("ALB.contracts", "RotorProtocol"),
+    "ServoValveProtocol": ("ALB.contracts", "ServoValveProtocol"),
+    "TimeGridProtocol": ("ALB.contracts", "TimeGridProtocol"),
+}
+
 
 def _load_generator():
     """Load the reference functions without making tools a runtime package."""
@@ -47,13 +62,21 @@ def test_public_and_legacy_import_contract_matches_reference():
     )
 
     export_map = ALB.__dict__["_EXPORTS"]
-    assert sorted(export_map) == metadata["public_exports"]
-    actual_targets = {
+    assert set(metadata["public_exports"]).issubset(export_map)
+    baseline_targets = {
         name: {"module": export_map[name][0], "attribute": export_map[name][1]}
-        for name in sorted(export_map)
+        for name in metadata["public_exports"]
     }
-    assert actual_targets == metadata["public_export_targets"]
-    assert sorted(ALB.__all__) == metadata["legacy___all__"]
+    assert baseline_targets == metadata["public_export_targets"]
+    actual_new_targets = {name: export_map[name] for name in NEW_PUBLIC_EXPORT_TARGETS}
+    assert actual_new_targets == NEW_PUBLIC_EXPORT_TARGETS
+    assert set(export_map) == set(metadata["public_exports"]) | set(
+        NEW_PUBLIC_EXPORT_TARGETS
+    )
+    assert ALB.__all__ == list(export_map)
+    assert sorted(
+        set(metadata["public_exports"]) - set(metadata["legacy___all__"])
+    ) == metadata["known_export_drift"]
     assert metadata["known_export_drift"] == [
         "FilmNondimScales",
         "build_thermal_config",

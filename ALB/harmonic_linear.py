@@ -18,9 +18,9 @@ from typing import Any, Mapping
 import numpy as np
 import pandas as pd
 
-from ALB.base import BaseSimpleModel
 from ALB.config import Moog2ndServoConfig, PIDConfig
 from ALB.controller import PID
+from ALB.core import BearingComponentBase
 from ALB.results import DataFrameResult, SaveTreeNode
 from ALB.servovalve import moog_2nd_servovalve
 
@@ -223,7 +223,7 @@ def load_builtin_alb_harmonic_coefficients() -> ALBHarmonicCoefficients:
     return ALBHarmonicCoefficients.from_dict(_load_builtin_payload())
 
 
-class ALBHarmonicLinear(BaseSimpleModel):
+class ALBHarmonicLinear(BearingComponentBase):
     r"""Standard bearing-interface wrapper for harmonic linear ALB coefficients.
 
     The returned force follows

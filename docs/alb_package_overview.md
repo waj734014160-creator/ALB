@@ -10,7 +10,7 @@
 - 事实来源 / 相关文档：
   `docs/daily_maintenance/daily_doc_update_index.md`。
 
-本文档是 `ALB_MAIN` 中 `ALB/` Python package 的首次阅读导览。它只描述模块职责和主要公共接口，不改变 package 布局或 import 路径。
+本文档是 `ALB_MAIN` 中 `ALB/` Python package 的首次阅读导览。接口定义、依赖方向和迁移规则详见 `docs/interface_architecture.md`。
 
 ## 中英文术语对照
 
@@ -35,6 +35,7 @@
 
 | 接口分组 | 主要入口 | 用途 |
 | --- | --- | --- |
+| 通用模板与领域协议 | `ComponentBase`, `BearingComponentBase`, `BearingProtocol`, `BearingCoefficientProtocol`, `ControllerProtocol`, `ServoValveProtocol`, `RotorProtocol`, `TimeGridProtocol`, `NotifierProtocol`, `ConvergenceStatus`, `BearingDecoratorBase`, `LegacyBearingAdapter` | 用小型模板复用生命周期/事件/结果，用窄 Protocol 定义各领域语义，并通过 adapter 兼容旧轴承。 |
 | ALB 系统 | `ALB`, `NodimALB`, `alb2`, `alb2_static`, `alb2_fuzzy`, `nodim_alb`, `ALBHarmonicCoefficients`, `ALBHarmonicLinear`, `alb_harmonic_linear` | 从配置对象构建有量纲或无量纲 active lubricated bearing 系统；也可加载方程推导的单频 `K/C/G_xv`，构建具有标准轴承接口的窄带线性 ALB。 |
 | 配置契约 | `ALBConfig`, `NodimALBConfig`, `ServoConfig`, `Moog2ndServoConfig`, `FPBConfig`, `NodimPadConfig`, `OrificeConfig`, `NodimOrificeConfig`, `PIDConfig`, `FuzzyPIDConfig`, `LQGConfig`, `ThermalConfig`, `TimeGridConfig`, `ResolvedTimeGrid`, `GasConfig`, `ALBNetConfig` | builder、task 和 surrogate wrapper 使用的 dataclass-style 配置对象；时间网格由独立配置解析为唯一的 `dt/steps`。 |
 | 轴承与油膜模型 | `HydrostaticBearing`, `NodimHydrostaticBearing`, `MultiPad`, `four_pads_bearing`, `four_pads_bearings`, `NodimNewtonFilm`, `GasBearing` | 油膜、气膜、静压瓦块和多瓦块轴承模型。 |
@@ -51,10 +52,12 @@
 | 区域 | 文件 | 说明 |
 | --- | --- | --- |
 | Package export | `__init__.py` | lazy 顶层 export。把模块 API 提升为 package 公共 API 时需要同步更新。 |
+| 接口与核心模板 | `contracts/`, `core/`, `adapters/` | 轴承/转子/控制器/伺服阀/时间/通知协议，生命周期与事件模板，单位制/输出验证，以及旧轴承 adapter。 |
+| 分类 namespace | `physics/`, `control/`, `dynamics/`, `systems/`, `surrogate/` | 面向新代码的职责入口；当前通过 lazy export 指向旧实现文件，使实现可渐进迁移。 |
 | 系统装配 | `alb.py` | ALB / NodimALB 类、builder、线性和神经网络核心替换 agent。 |
 | 谐波线性轴承 | `harmonic_linear.py`, `data/alb_harmonic_linear_gamma1_50hz.json` | 方程推导系数的数据契约、PD/二阶 Moog 状态、复阀芯力时域重建和 `RsRotorBearingCouple` 标准轴承接口；内置 JSON 是 `γ=1`、50 Hz、热惯性严格基态结果。 |
 | 配置 | `config.py` | film、gas、thermal、时间网格、ALB、servovalve、PID 和 ALBNN workflow 的 dataclass 配置契约。 |
-| 数值基础 | `base.py`, `mesh.py`, `boundary.py`, `gauss.py`, `matrix/` | 节点 / 单元抽象、网格生成、边界装配和底层矩阵 / 迭代工具。 |
+| 数值基础 | `base.py`, `mesh.py`, `boundary.py`, `gauss.py`, `matrix/` | `base.py` 保留有限元基础类型和旧核心 import facade；其余模块负责节点 / 单元抽象、网格生成、边界装配和底层矩阵 / 迭代工具。 |
 | 油膜与轴承求解 | `film.py`, `bearing.py`, `orifice.py`, `gas.py`, `damping.py` | Reynolds 油膜求解、静压 / 气体轴承、节流孔流量、多瓦块装配和自适应 damping。 |
 | 热模型与无量纲代码 | `thermal.py`, `nondim.py` | 热网格、粘温耦合油膜、热求解器和尺度对象。 |
 | 控制与动力学 | `controller.py`, `servovalve.py`, `lti.py`, `rotor.py`, `orbit.py`, `couple.py` | 控制器、伺服阀、状态空间工具、转子模型、轨道定义和耦合系统。 |
@@ -65,6 +68,9 @@
 
 ## 接口注意事项
 
+- 新代码优先从 `ALB.contracts` 获取结构协议，从 `ALB.core` 获取通用模板；不要新增具有统一 `input/output/solve` 含义的万能基类。
+- 标准轴承必须声明 `unit_system`，实现 `node_link`、`signal`、`init()`、`input(uxy, uxyt, t)`、`output()["force"]`、`calc_is_finished()`、`results` 和 `save()`。`RsRotorBearingCouple` 是有量纲边界，会拒绝显式无量纲轴承；旧对象可用 `LegacyBearingAdapter` 补齐元数据。
+- `ALB.physics`、`ALB.control`、`ALB.dynamics`、`ALB.systems` 和 `ALB.surrogate` 是推荐分类入口；旧模块路径继续用于兼容外部脚本和 pickle。
 - 构建 ALB 系统时，优先使用配置对象，不要使用随意拼接的字典。
 - `alb_harmonic_linear(node_link, dt=...)` 返回可直接传给 `RsRotorBearingCouple` 的 `ALBHarmonicLinear`。它提供 `node_link`、`signal`、`init()`、`input(uxy, uxyt, t)`、`output()["force"]` 和 `save()`；公开方程推导的 `K`、`C`、复 `G_xv`，并用 `fdxv` 兼容旧 `ALBLinearAgent` 命名。内部使用 `kp=0.3, kd=0.5` 的 PD 与默认 166 Hz、`zeta=0.7` 二阶 Moog 伺服阀，不直接输入阀芯谐波。复 `G_xv` 的虚部通过指定涡动频率下的精确采样相位恒等式重建，不通过轨迹差分生成系数。该对象是 50 Hz 附近的窄带局部模型，不应当作全频流体状态模型。
 - 新代码和文档中，粘度使用 `miu`，无量纲轴承参数使用 `lambda_value`。

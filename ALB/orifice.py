@@ -1,6 +1,5 @@
 ﻿# coding: utf-8
 import os.path
-from collections import namedtuple
 
 import numpy as np
 import pandas as pd
@@ -8,6 +7,7 @@ from scipy.optimize import fsolve
 from scipy.sparse import coo_matrix
 
 from ALB.base import BaseSimpleModel, BaseSimpleModels
+from ALB.config import CsoArgs
 
 # from ALB.logger import logger
 from ALB.results import DataFrameResult, SaveTreeNode
@@ -892,11 +892,6 @@ def solve_q(cq0, cq1_h2, cq2, pn, xv, ps, q_leak, init=None):
     return ans
 
 
-CsoArgs = namedtuple(
-    "CsoArgs",
-    ["d", "l", "q_leak", "w", "cd"],
-    defaults=[0.002, 0.02, 1e-5, 4.9153e-5, 0.6],
-)
 csorifice_args = CsoArgs()
 
 

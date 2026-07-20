@@ -28,9 +28,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
-from ALB.controller import limit_signal
-
-
 # Canonical 12-column input contract for the current thermal ALBNN workflow.
 # Columns are ordered because trained scalers and checkpoints are order-sensitive.
 ALBNN_BASE_INPUT_COLS = [

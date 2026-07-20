@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from ALB.base import BaseSystem
+from ALB.core.validation import limit_signal as _limit_signal
 from ALB.lti import BaseLti, TSDlti
 
 # from ALB.logger import logger
@@ -221,9 +222,4 @@ def limit_signal(uv: Union[float, np.ndarray], up=1, down=-1):
     :param down: lower limit, default is -1
     :return: limited signal
     """
-    uv = np.array(uv)
-    up = np.ones_like(uv) * up
-    down = np.ones_like(uv) * down
-    uv = np.where(uv > up, up, uv)
-    uv = np.where(uv < down, down, uv)
-    return uv
+    return _limit_signal(uv, up=up, down=down)

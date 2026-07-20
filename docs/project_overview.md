@@ -10,7 +10,9 @@
 - 事实来源 / 相关文档：
   `AGENTS.md`,
   `docs/daily_maintenance/daily_doc_update_index.md`,
+  `docs/current_state.md`,
   `docs/alb_package_overview.md`,
+  `docs/interface_architecture.md`,
   `docs/alb_albnn_quickstart.md`,
   `docs/file_classification.md`,
   `docs/run_index.md`。
@@ -37,11 +39,13 @@
 
 1. `AGENTS.md`：确认环境、代码约定、文档边界和远程操作边界。
 2. `docs/daily_maintenance/daily_doc_update_index.md`：维护文档前先读，用于确认目标文档角色。
-3. `docs/alb_package_overview.md`：修改 `ALB/` 包模块或公共接口前先读。
-4. `docs/alb_albnn_quickstart.md`：只想快速构建默认 ALB 或加载 ALBNN packaged model 时先读。
-5. `docs/file_classification.md`：整理文件、判断归档/清理风险时先读。
-6. `docs/run_index.md`：需要 run 编号、路径或 current-status 边界时先读。
-7. `docs/remote_workstation_connection.md`：需要远程连接、Task Scheduler、SSH、runner 或 monitor 规则时先读。
+3. `docs/current_state.md`：了解 ALB_MAIN 当前开发阶段、验证状态、风险和近期下一步时先读。
+4. `docs/alb_package_overview.md`：修改 `ALB/` 包模块或公共接口前先读。
+5. `docs/interface_architecture.md`：定义新接口、移动模块或接入轴承/转子/控制器前先读。
+6. `docs/alb_albnn_quickstart.md`：只想快速构建默认 ALB 或加载 ALBNN packaged model 时先读。
+7. `docs/file_classification.md`：整理文件、判断归档/清理风险时先读。
+8. `docs/run_index.md`：需要 run 编号、路径或 current-status 边界时先读。
+9. `docs/remote_workstation_connection.md`：需要远程连接、Task Scheduler、SSH、runner 或 monitor 规则时先读。
 
 与 ALBNN 训练相关的活跃状态和历史，应转向：
 

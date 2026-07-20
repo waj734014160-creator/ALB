@@ -5,6 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from ALB.base import BaseCSystem, BaseSystem
+from ALB.core.validation import require_unit_system, validate_bearing_output
 from ALB.rotor import Gravity, StaicLoad
 
 from .results import DataFrameResult, SaveTreeNode
@@ -60,6 +61,8 @@ class RsRotorBearingCouple(BaseCSystem):
         super().__init__()
         self.rotor = rotor
         self.bearings = list(bearings)
+        for bearing in self.bearings:
+            self._validate_bearing(bearing)
         self.signal.children = [bearing.signal for bearing in self.bearings]
         self.signal.add_child(self.rotor.signal)
         self.forces = []
@@ -84,9 +87,24 @@ class RsRotorBearingCouple(BaseCSystem):
         return self._result
 
     def add_bearing(self, bearing):
+        self._validate_bearing(bearing)
         self.bearings.append(bearing)
         self.signal.children.append(bearing.signal)
         bearing.signal.father = self.signal
+
+    @staticmethod
+    def _validate_bearing(bearing):
+        """Validate the minimum dimensional bearing integration contract."""
+
+        for attribute in ("node_link", "signal", "init", "input", "output", "save"):
+            if not hasattr(bearing, attribute):
+                raise TypeError(f"bearing must provide '{attribute}'")
+        require_unit_system(
+            bearing,
+            "dimensional",
+            allow_unspecified=True,
+            component_name="rotor-coupled bearing",
+        )
 
     def init(self, **kwargs):
         self.rotor.init()
@@ -114,7 +132,7 @@ class RsRotorBearingCouple(BaseCSystem):
             rp_uxy = self._rp["uxy"][num]
             rp_uxyt = self._rp["uxyt"][num]
             bearing.input(uxy=rp_uxy, uxyt=rp_uxyt, t=0)
-            self._forcef0.append(bearing.output()["force"])
+            self._forcef0.append(validate_bearing_output(bearing.output()))
         self._forcef0 = np.array(self._forcef0)
         self._forcen0 = cvstack([np.array(self._forceu0), np.array(self._forcef0)])
         self._nt = 0
@@ -203,7 +221,7 @@ class RsRotorBearingCouple(BaseCSystem):
         self._forcef1 = []
         for num, bearing in enumerate(self.bearings):
             bearing.input(uxy=uxy_n1[num], uxyt=uxyt_n1[num], t=ts)
-            self._forcef1.append(bearing.output()["force"])
+            self._forcef1.append(validate_bearing_output(bearing.output()))
         self._forcef1 = np.array(self._forcef1)
 
         self._forcen0 = cvstack((self._forceu0, self._forcef0))

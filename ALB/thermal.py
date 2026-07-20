@@ -8,7 +8,8 @@ from scipy.sparse.linalg import spsolve
 from skfem import Basis, BilinearForm, ElementTriP1, LinearForm, MeshTri, asm, enforce
 from skfem.helpers import dot, grad
 
-from ALB.base import BaseCSystem, BasePostProcess
+from ALB.adapters import BearingDecoratorBase
+from ALB.base import BasePostProcess
 from ALB.config import ThermalConfig, build_thermal_config  # noqa: F401  re-exported
 from ALB.damping import AdaptiveDampController
 from ALB.film import (
@@ -2113,7 +2114,7 @@ class ThermalPostProcess(BasePostProcess):
 # ---------------------------------------------------------------------------
 
 
-class NodimThermalHydroBearing(BaseCSystem):
+class NodimThermalHydroBearing(BearingDecoratorBase):
     """Thermal-hydro bearing wrapper consuming nondimensional inputs/outputs.
 
     This is the *base* (nondimensional) implementation of the thermal-pressure
@@ -2130,10 +2131,10 @@ class NodimThermalHydroBearing(BaseCSystem):
     for the spatially varying viscosity.
     """
 
+    unit_system = "nondimensional"
+
     def __init__(self, bearing, thermal_config: Optional[ThermalConfig] = None):
-        super().__init__()
-        self.bearing = bearing
-        self.signal.children = [bearing.signal]
+        super().__init__(bearing)
         cfg = (
             thermal_config
             if thermal_config is not None
@@ -3130,6 +3131,8 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
     delegated to the nondimensional core inherited from
     :class:`NodimThermalHydroBearing`.
     """
+
+    unit_system = "dimensional"
 
     # ------------------------------------------------------------------
     # Validation: accept dimensional inputs only

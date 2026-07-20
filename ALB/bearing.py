@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from ALB.base import BaseCSystem, ElemManager, MatrixProcess, NodeManager
 from ALB.config import FPBConfig, HydConfig
+from ALB.core.validation import get_unit_system
 from ALB.film import (
     FilmBoundary,
     FilmModel,
@@ -261,6 +262,10 @@ def _create_gauss_model(
 
 
 class HydrostaticBearing(FilmSystem):
+    """Dimensional single-pad hydrostatic bearing."""
+
+    unit_system = "dimensional"
+
     def __init__(self, hyd_config: HydConfig = HydConfig(), **kwargs):
         """
         :param hyd_config: HydConfig, bearing parameters
@@ -394,6 +399,8 @@ class NodimHydrostaticBearing(FilmSystem):
     ``x0`` and ``lx`` are public angle inputs in degrees, matching ``HydConfig``.
     """
 
+    unit_system = "nondimensional"
+
     def __init__(
         self,
         lambda_value,
@@ -499,17 +506,29 @@ class MultiPad(BaseCSystem):
         """
         :param bearings: List of bearings, [HydroStaticBearing]
         """
+        if len(bearings) == 0:
+            raise ValueError("MultiPad requires at least one bearing")
         super().__init__()
-        self.bearings = bearings
+        self.bearings = tuple(bearings)
         self.signal.children = [b.signal for b in self.bearings]
-        if hasattr(self.bearings[0], "node_link"):
-            self.node_link = self.bearings[0].node_link
-        else:
-            self.node_link = None
+        unit_systems = {get_unit_system(bearing) for bearing in self.bearings}
+        if len(unit_systems) != 1:
+            raise ValueError("All MultiPad bearings must use the same unit_system")
+        self.unit_system = unit_systems.pop()
+        node_links = {getattr(bearing, "node_link", None) for bearing in self.bearings}
+        if len(node_links) != 1:
+            raise ValueError("All MultiPad bearings must use the same node_link")
+        self.node_link = node_links.pop()
         self.dyc = []
         self.result = pd.DataFrame(columns=["t", "fx", "fy"])
         self.t = None
         self.force = None
+
+    @property
+    def results(self):
+        """Return the aggregate multi-pad force history."""
+
+        return self.result
 
     def solve(self):
         for bearing in self.bearings:
@@ -546,10 +565,10 @@ class MultiPad(BaseCSystem):
         for bearing in self.bearings:
             ops.append(bearing.output(**kwargs))
         forces = [op["force"] for op in ops]
-        frictions = [op["friction"] for op in ops]
+        frictions = [op.get("friction", 0.0) for op in ops]
         force = np.sum(forces, axis=0)
         frictions = np.sum(frictions, axis=0)
-        op = ops[0]
+        op = dict(ops[0])
         op["force"] = force
         op["friction"] = frictions
         logging.info("Total load of multi-pad bearing is: {}".format(force))
