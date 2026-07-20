@@ -1,0 +1,130 @@
+{
+  "schema": "alb.full-repo-refactor-performance-comparison.v1",
+  "candidate_commit": "e402d26df7704e93a87a6d84ae66a7df9f6c721b",
+  "baseline": "G:\\ALB_PROJECTS\\ALB_MAIN\\refs\\full_repo_refactor_v1\\performance_baseline.json",
+  "max_regression": 0.15,
+  "benchmarks": [
+    {
+      "case": "film",
+      "domain_reference": "film",
+      "exact_reference_passed": true,
+      "samples_seconds": [
+        0.007088963333323288,
+        0.007125719999506449,
+        0.006815190000149111,
+        0.006626120000146329,
+        0.007271143333249104,
+        0.006853523333362924,
+        0.0067682466673431915
+      ],
+      "work_units_per_sample": 30,
+      "median_seconds": 0.006853523333362924,
+      "mad_seconds": 0.0002274033332165951,
+      "p25_seconds": 0.006791718333746151,
+      "p75_seconds": 0.007107341666414868,
+      "baseline_median_seconds": 0.00766385333360328,
+      "candidate_to_baseline_ratio": 0.8942659827938844,
+      "max_allowed_ratio": 1.15,
+      "status": "passed"
+    },
+    {
+      "case": "thermal",
+      "domain_reference": "thermal",
+      "exact_reference_passed": true,
+      "samples_seconds": [
+        0.1111482199979946,
+        0.10732994000427425,
+        0.10820068000466562,
+        0.11082395999692381,
+        0.1059700799989514,
+        0.10775766000151635,
+        0.10442686000023968
+      ],
+      "work_units_per_sample": 5,
+      "median_seconds": 0.10775766000151635,
+      "mad_seconds": 0.0017875800025649452,
+      "p25_seconds": 0.10665001000161282,
+      "p75_seconds": 0.10951232000079472,
+      "baseline_median_seconds": 0.1182310200005304,
+      "candidate_to_baseline_ratio": 0.9114161410519247,
+      "max_allowed_ratio": 1.15,
+      "status": "passed"
+    },
+    {
+      "case": "alb",
+      "domain_reference": "systems_alb_harmonic",
+      "exact_reference_passed": true,
+      "samples_seconds": [
+        0.13500767999939853,
+        0.12597091499919771,
+        0.12455448500113561,
+        0.1264160199993057,
+        0.12687509999959729,
+        0.1260217350005405,
+        0.12977241500047967
+      ],
+      "work_units_per_sample": 20,
+      "median_seconds": 0.1264160199993057,
+      "mad_seconds": 0.0004590800002915729,
+      "p25_seconds": 0.12599632499986912,
+      "p75_seconds": 0.1283237575000385,
+      "baseline_median_seconds": 0.138950954999018,
+      "candidate_to_baseline_ratio": 0.9097887812300328,
+      "max_allowed_ratio": 1.15,
+      "status": "passed"
+    },
+    {
+      "case": "albnn",
+      "domain_reference": "surrogate_training",
+      "exact_reference_passed": true,
+      "samples_seconds": [
+        0.005020250999950804,
+        0.004920948999933898,
+        0.004886444000003393,
+        0.004853019500005757,
+        0.0048266285000136125,
+        0.004894018999912078,
+        0.0048182744999940045,
+        0.004659300499915844,
+        0.004964456500019878,
+        0.004751642000046559,
+        0.004856656500051031
+      ],
+      "work_units_per_sample": 200,
+      "median_seconds": 0.004856656500051031,
+      "mad_seconds": 3.838200005702643e-05,
+      "p25_seconds": 0.0048224515000038085,
+      "p75_seconds": 0.004907483999922988,
+      "baseline_median_seconds": 0.005379482499993173,
+      "candidate_to_baseline_ratio": 0.9028110975465008,
+      "max_allowed_ratio": 1.15,
+      "status": "passed"
+    },
+    {
+      "case": "coupling",
+      "domain_reference": "dynamics_coupling",
+      "exact_reference_passed": true,
+      "samples_seconds": [
+        0.07389856000081636,
+        0.07481032999930903,
+        0.07476877500012051,
+        0.07277723000006517,
+        0.07507007500098553,
+        0.07482920500042382,
+        0.07551665499922819,
+        0.07369066500104964,
+        0.07398320499924012
+      ],
+      "work_units_per_sample": 20,
+      "median_seconds": 0.07476877500012051,
+      "mad_seconds": 0.0007478799991076784,
+      "p25_seconds": 0.07389856000081636,
+      "p75_seconds": 0.07482920500042382,
+      "baseline_median_seconds": 0.07828855000116164,
+      "candidate_to_baseline_ratio": 0.9550409989584824,
+      "max_allowed_ratio": 1.15,
+      "status": "passed"
+    }
+  ],
+  "overall_status": "passed"
+}
