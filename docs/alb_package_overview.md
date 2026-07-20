@@ -35,7 +35,7 @@
 
 | 接口分组 | 主要入口 | 用途 |
 | --- | --- | --- |
-| ALB 系统 | `ALB`, `NodimALB`, `alb2`, `alb2_static`, `alb2_fuzzy`, `nodim_alb` | 从配置对象构建有量纲或无量纲 active lubricated bearing 系统。 |
+| ALB 系统 | `ALB`, `NodimALB`, `alb2`, `alb2_static`, `alb2_fuzzy`, `nodim_alb`, `ALBHarmonicCoefficients`, `ALBHarmonicLinear`, `alb_harmonic_linear` | 从配置对象构建有量纲或无量纲 active lubricated bearing 系统；也可加载方程推导的单频 `K/C/G_xv`，构建具有标准轴承接口的窄带线性 ALB。 |
 | 配置契约 | `ALBConfig`, `NodimALBConfig`, `ServoConfig`, `Moog2ndServoConfig`, `FPBConfig`, `NodimPadConfig`, `OrificeConfig`, `NodimOrificeConfig`, `PIDConfig`, `FuzzyPIDConfig`, `LQGConfig`, `ThermalConfig`, `TimeGridConfig`, `ResolvedTimeGrid`, `GasConfig`, `ALBNetConfig` | builder、task 和 surrogate wrapper 使用的 dataclass-style 配置对象；时间网格由独立配置解析为唯一的 `dt/steps`。 |
 | 轴承与油膜模型 | `HydrostaticBearing`, `NodimHydrostaticBearing`, `MultiPad`, `four_pads_bearing`, `four_pads_bearings`, `NodimNewtonFilm`, `GasBearing` | 油膜、气膜、静压瓦块和多瓦块轴承模型。 |
 | 热模型与无量纲 helper | `ThermalHydroBearing`, `NodimThermalHydroBearing`, `SkfemThermalModel`, `SkfemThermalModelNondim`, `ThermalNondimScales`, `FilmNondimScales` | 热-流体耦合，以及有量纲 / 无量纲尺度转换。 |
@@ -52,6 +52,7 @@
 | --- | --- | --- |
 | Package export | `__init__.py` | lazy 顶层 export。把模块 API 提升为 package 公共 API 时需要同步更新。 |
 | 系统装配 | `alb.py` | ALB / NodimALB 类、builder、线性和神经网络核心替换 agent。 |
+| 谐波线性轴承 | `harmonic_linear.py`, `data/alb_harmonic_linear_gamma1_50hz.json` | 方程推导系数的数据契约、PD/二阶 Moog 状态、复阀芯力时域重建和 `RsRotorBearingCouple` 标准轴承接口；内置 JSON 是 `γ=1`、50 Hz、热惯性严格基态结果。 |
 | 配置 | `config.py` | film、gas、thermal、时间网格、ALB、servovalve、PID 和 ALBNN workflow 的 dataclass 配置契约。 |
 | 数值基础 | `base.py`, `mesh.py`, `boundary.py`, `gauss.py`, `matrix/` | 节点 / 单元抽象、网格生成、边界装配和底层矩阵 / 迭代工具。 |
 | 油膜与轴承求解 | `film.py`, `bearing.py`, `orifice.py`, `gas.py`, `damping.py` | Reynolds 油膜求解、静压 / 气体轴承、节流孔流量、多瓦块装配和自适应 damping。 |
@@ -65,6 +66,7 @@
 ## 接口注意事项
 
 - 构建 ALB 系统时，优先使用配置对象，不要使用随意拼接的字典。
+- `alb_harmonic_linear(node_link, dt=...)` 返回可直接传给 `RsRotorBearingCouple` 的 `ALBHarmonicLinear`。它提供 `node_link`、`signal`、`init()`、`input(uxy, uxyt, t)`、`output()["force"]` 和 `save()`；公开方程推导的 `K`、`C`、复 `G_xv`，并用 `fdxv` 兼容旧 `ALBLinearAgent` 命名。内部使用 `kp=0.3, kd=0.5` 的 PD 与默认 166 Hz、`zeta=0.7` 二阶 Moog 伺服阀，不直接输入阀芯谐波。复 `G_xv` 的虚部通过指定涡动频率下的精确采样相位恒等式重建，不通过轨迹差分生成系数。该对象是 50 Hz 附近的窄带局部模型，不应当作全频流体状态模型。
 - 新代码和文档中，粘度使用 `miu`，无量纲轴承参数使用 `lambda_value`。
 - `ALBConfig.servo` 和 `NodimALBConfig.servo` 默认使用 `moog_2nd`，对应 `ALB.servovalve.moog_2nd_servovalve` 的单二阶伺服阀；当前默认参数为 `tw=9.587647174210562e-4`、`zeta=0.7`，即固有频率约 `166 Hz`。`ServoConfig` 类本身保留 legacy `moog` 默认参数，`ALBConfig` / `NodimALBConfig` 通过继承自 `ServoConfig` 的 `Moog2ndServoConfig` 作为默认 `servo_config`；flat config 工厂不根据 `servo` 字符串路由切换嵌套配置，因此使用旧 `moog` 时应显式提供对应 `tw`、`zeta` 和 `tp3`，或直接传入 `ServoConfig`。旧 `moog` 仍保留为二阶 Moog 环节串联 `tp3` 一阶环节的 legacy 三阶模型，`static` 仍为静态阀。
 - `ThermalConfig.iter_method` 控制热非线性迭代方式：默认 `direct` 保持旧直接迭代行为；`newton` 在每个压力步固定压力场后对 `miu(T)` 代入的热方程做分离式 Newton 子迭代；`direct_then_newton` 仅在旧直接迭代未收敛时用末态触发 Newton fallback。瞬态热模型当前只允许 `direct`，其他组合在配置阶段报错。`coupling` 自动转为小写且只接受 `full|half`；deprecated 的 `flow_rate_factor` 仅允许无作用值 `1.0`。`k_lub` 是 W/(m·K) 的三维导热率，装配时使用局部 `k_lub*h`；默认 `k_lub=0.0`，空间对流稳定由 SUPG 独立提供。`miu_update="log"` 与 `heat_partition_steps` 可显式启用粘度对数松弛和热分配 continuation。未收敛的稳态初场或瞬态步不会写入历史温度。热 wrapper 输出求解器诊断，以及 `q_orifice_total_nondim`、`q_orifice_total_vol`；兼容字段 `q_orifice_total` 固定为 m³/s。

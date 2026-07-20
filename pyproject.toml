@@ -10,3 +10,6 @@ requires-python = ">=3.9"
 
 [tool.setuptools.packages.find]
 include = ["ALB", "ALB.*"]
+
+[tool.setuptools.package-data]
+ALB = ["data/*.json"]

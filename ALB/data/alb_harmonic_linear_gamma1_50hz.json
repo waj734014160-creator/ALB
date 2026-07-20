@@ -1,0 +1,91 @@
+{
+  "schema": "alb.harmonic-linear.v1",
+  "name": "strict_thermal_gamma1_50hz_20260720",
+  "coefficient_source": "Equation-based fixed-active-set harmonic linearization with thermal inertia; no finite differences or trajectory fitting.",
+  "linearization": {
+    "shaft_frequency_hz": 50.0,
+    "whirl_ratio": 1.0,
+    "clearance_m": 0.00012,
+    "equilibrium_position_m": [
+      0.00001,
+      -0.00006
+    ],
+    "base_spool_nondim": [
+      -0.08838834764831843,
+      -0.12374368670764582
+    ],
+    "static_force_N": [
+      781.6023432072263,
+      1236.666886761912
+    ],
+    "K_N_per_m": [
+      [
+        28066715.427182626,
+        29624168.815326825
+      ],
+      [
+        -12704067.042943228,
+        31053856.354789402
+      ]
+    ],
+    "C_N_s_per_m": [
+      [
+        105200.65820263891,
+        -5879.102211752668
+      ],
+      [
+        -5769.431434154346,
+        169958.72239473028
+      ]
+    ],
+    "G_xv_N_per_nondim": {
+      "real": [
+        [
+          -3651.9775787216195,
+          4309.075030234182
+        ],
+        [
+          -4024.9620501062736,
+          -5018.458138200031
+        ]
+      ],
+      "imag": [
+        [
+          -23.742428877644738,
+          4.5551942647333705
+        ],
+        [
+          -31.757209387066922,
+          -4.984324344442072
+        ]
+      ]
+    }
+  },
+  "recommended_runtime": {
+    "dt_s": 0.00125,
+    "warmup_steps": 64,
+    "controller": {
+      "type": "PD",
+      "kp": 0.3,
+      "ki": 0.0,
+      "kd": 0.5,
+      "frequency_hz": 50.0,
+      "sensor_angles_deg": [
+        45.0,
+        135.0
+      ]
+    },
+    "servovalve": {
+      "model": "moog_2nd",
+      "natural_frequency_hz": 166.0,
+      "tw_s": 0.0009587647174210562,
+      "zeta": 0.7,
+      "delay_s": 0.0
+    }
+  },
+  "applicability": {
+    "force_convention": "F = F0 - K*(x-x0) - C*xdot + Re(G_xv)*dxv + Im(G_xv)*(xv_dot/Omega_w)",
+    "frequency_scope": "Narrowband local model at 50 Hz whirl frequency.",
+    "cavitation_scope": "Strict-base fixed active set for coefficient generation."
+  }
+}

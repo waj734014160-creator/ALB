@@ -1,0 +1,328 @@
+{
+  "definition": "delta_F_linear(t) = -K delta_x(t) - C delta_xdot(t) + Re{G_xv(Omega_w) xhat_v exp(i Omega_w t)}",
+  "coefficient_source": "continuous equation-based fixed-active-set harmonic linearization",
+  "coefficient_derivation_uses_trajectory_differences": false,
+  "comparison_source": "full nonlinear ALB thermal-inertia trajectory",
+  "spool_source": "recorded project PD -> second-order Moog response; no direct spool harmonic",
+  "spool_phasor_use": "The final-cycle first harmonic is an input representation only; it is not used to identify K, C, or dF/dxv.",
+  "validation_amplitude_um": 5.0,
+  "clearance_m": 0.00011999999999999999,
+  "controller": {
+    "type": "PD",
+    "kp": 0.3,
+    "ki": 0.0,
+    "kd": 0.5,
+    "sensor_angles_deg": [
+      45.0,
+      135.0
+    ],
+    "frequency_hz_for_nondimensional_derivative": 50.0
+  },
+  "servovalve": {
+    "model": "project second-order Moog core",
+    "natural_frequency_hz": 166.0,
+    "zeta": 0.7,
+    "unit_dc_gain": true
+  },
+  "strict_base_warmup": {
+    "forward": {
+      "expected_static_command": [
+        -0.08838834764831845,
+        -0.12374368670764582
+      ],
+      "final_controller_command": [
+        -0.08838834764831845,
+        -0.12374368670764582
+      ],
+      "final_spool": [
+        -0.08838834764831843,
+        -0.12374368670764578
+      ],
+      "base_spool": [
+        -0.08838834764831843,
+        -0.12374368670764582
+      ],
+      "warmup_error": [
+        0.0,
+        4.163336342344337e-17
+      ],
+      "warmup_steps": 64,
+      "warmup_duration_s": 0.08
+    },
+    "reverse": {
+      "expected_static_command": [
+        -0.08838834764831845,
+        -0.12374368670764582
+      ],
+      "final_controller_command": [
+        -0.08838834764831845,
+        -0.12374368670764582
+      ],
+      "final_spool": [
+        -0.08838834764831843,
+        -0.12374368670764578
+      ],
+      "base_spool": [
+        -0.08838834764831843,
+        -0.12374368670764582
+      ],
+      "warmup_error": [
+        0.0,
+        4.163336342344337e-17
+      ],
+      "warmup_steps": 64,
+      "warmup_duration_s": 0.08
+    }
+  },
+  "direct_spool_harmonic_imposed": false,
+  "points_per_direction": 16,
+  "whirl_ratio_definition": "gamma = Omega_w / Omega_r",
+  "whirl_ratio": 1.0,
+  "shaft_rotation_frequency_hz": 50.0,
+  "whirl_frequency_hz": 50.0,
+  "whirl_omega_rad_s": 314.1592653589793,
+  "K_N_per_m": [
+    [
+      28066715.427182626,
+      29624168.815326825
+    ],
+    [
+      -12704067.042943228,
+      31053856.354789402
+    ]
+  ],
+  "C_N_s_per_m": [
+    [
+      105200.65820263891,
+      -5879.102211752668
+    ],
+    [
+      -5769.431434154346,
+      169958.72239473028
+    ]
+  ],
+  "dF_dxv_N_per_nondim": {
+    "real": [
+      [
+        -3651.9775787216195,
+        4309.075030234182
+      ],
+      [
+        -4024.9620501062736,
+        -5018.458138200031
+      ]
+    ],
+    "imag": [
+      [
+        -23.742428877644738,
+        4.5551942647333705
+      ],
+      [
+        -31.757209387066922,
+        -4.984324344442072
+      ]
+    ]
+  },
+  "pd_servovalve_first_harmonic_audit": {
+    "forward": {
+      "mean_delta_spool_nondim": [
+        6.329030181884132e-18,
+        4.354426975244907e-17
+      ],
+      "first_harmonic_delta_spool_nondim": {
+        "real": [
+          0.024370136751577096,
+          -0.008416971188350874
+        ],
+        "imag": [
+          -0.008416971188350855,
+          -0.024370136751577127
+        ],
+        "magnitude": [
+          0.025782726180062825,
+          0.025782726180062863
+        ],
+        "phase_deg": [
+          -19.05391670862156,
+          -109.05391670862159
+        ]
+      },
+      "first_harmonic_force_N": {
+        "real": [
+          -125.35738201770562,
+          -56.237426204145
+        ],
+        "imag": [
+          -74.89110487645657,
+          155.44652609873924
+        ],
+        "magnitude": [
+          146.02448704224028,
+          165.3065957009359
+        ],
+        "phase_deg": [
+          -149.14502774794192,
+          109.88910471073771
+        ]
+      },
+      "first_harmonic_reconstruction_relative_l2": 2.3237151421399677e-15
+    },
+    "reverse": {
+      "mean_delta_spool_nondim": [
+        6.247715018947719e-18,
+        5.000882520589389e-17
+      ],
+      "first_harmonic_delta_spool_nondim": {
+        "real": [
+          0.008416971188350855,
+          -0.024370136751577096
+        ],
+        "imag": [
+          0.024370136751577114,
+          0.008416971188350861
+        ],
+        "magnitude": [
+          0.025782726180062842,
+          0.02578272618006283
+        ],
+        "phase_deg": [
+          70.94608329137844,
+          160.94608329137841
+        ]
+      },
+      "first_harmonic_force_N": {
+        "real": [
+          -135.21107252053721,
+          89.2384019500615
+        ],
+        "imag": [
+          -53.04068267618227,
+          -140.47492399071774
+        ],
+        "magnitude": [
+          145.24237725577697,
+          166.42324553018025
+        ],
+        "phase_deg": [
+          -158.58088538684135,
+          -57.57375004552332
+        ]
+      },
+      "first_harmonic_reconstruction_relative_l2": 2.3863334012880446e-15
+    }
+  },
+  "pd_servovalve_chain_audit": {
+    "forward": {
+      "pd_sequence_relative_l2": 3.894188707134192e-15,
+      "pd_sequence_maximum_abs_error": 1.6132928326584306e-16,
+      "controller_command_first_harmonic": {
+        "real": [
+          0.02605002797128557,
+          0.002661316868822305
+        ],
+        "imag": [
+          0.0026613168688222446,
+          -0.026050027971285594
+        ],
+        "magnitude": [
+          0.026185617517657255,
+          0.026185617517657283
+        ],
+        "phase_deg": [
+          5.833200453770703,
+          -84.16679954622917
+        ]
+      },
+      "controller_command_harmonic_relative_l2": 5.348348134670803e-15,
+      "measured_discrete_valve_transfer": {
+        "real": 0.8931814448344355,
+        "imag": -0.41435694603882256,
+        "magnitude": 0.9846140219025674,
+        "phase_deg": -24.887117162392332
+      },
+      "valve_channel_consistency_relative_max": 1.3113325771403988e-15,
+      "continuous_valve_transfer": {
+        "real": 0.9051103996854145,
+        "imag": -0.4197550624339286,
+        "magnitude": 0.9977069449781345,
+        "phase_deg": -24.880039564449003
+      },
+      "discrete_vs_continuous_valve_relative_difference": 0.01329809977350567
+    },
+    "reverse": {
+      "pd_sequence_relative_l2": 3.359320683180531e-15,
+      "pd_sequence_maximum_abs_error": 1.8041124150158794e-16,
+      "controller_command_first_harmonic": {
+        "real": [
+          -0.0026613168688222953,
+          -0.026050027971285573
+        ],
+        "imag": [
+          0.02605002797128561,
+          -0.002661316868822274
+        ],
+        "magnitude": [
+          0.0261856175176573,
+          0.02618561751765726
+        ],
+        "phase_deg": [
+          95.8332004537708,
+          -174.16679954622924
+        ]
+      },
+      "controller_command_harmonic_relative_l2": 4.814005317035184e-15,
+      "measured_discrete_valve_transfer": {
+        "real": 0.8931814448344346,
+        "imag": -0.41435694603882245,
+        "magnitude": 0.9846140219025665,
+        "phase_deg": -24.887117162392347
+      },
+      "valve_channel_consistency_relative_max": 5.88609770554506e-16,
+      "continuous_valve_transfer": {
+        "real": 0.9051103996854145,
+        "imag": -0.4197550624339286,
+        "magnitude": 0.9977069449781345,
+        "phase_deg": -24.880039564449003
+      },
+      "discrete_vs_continuous_valve_relative_difference": 0.013298099773506551
+    }
+  },
+  "metrics": {
+    "forward": {
+      "fx_relative_l2": 0.11066163056171358,
+      "fy_relative_l2": 0.16314188507767527,
+      "vector_relative_l2": 0.14890864790806677,
+      "without_spool_vector_relative_l2": 0.4636063368835676,
+      "maximum_force_error_N": 72.67312780870441
+    },
+    "reverse": {
+      "fx_relative_l2": 0.19260914634261797,
+      "fy_relative_l2": 0.3034167671725167,
+      "vector_relative_l2": 0.2606675483164598,
+      "without_spool_vector_relative_l2": 0.3986003184521738,
+      "maximum_force_error_N": 190.2843167639946
+    }
+  },
+  "nonlinear_trajectory_diagnostics": {
+    "forward": {
+      "final_cycle": 3,
+      "cycle_repeat_relative_l2": 5.608271200641705e-07,
+      "maximum_final_cycle_merit_l2": 7.510675794060351e-11,
+      "maximum_final_cycle_iterations": 9,
+      "all_final_cycle_steps_converged": true,
+      "controller_saturated": false,
+      "servovalve_saturated": false
+    },
+    "reverse": {
+      "final_cycle": 3,
+      "cycle_repeat_relative_l2": 9.09881903851834e-07,
+      "maximum_final_cycle_merit_l2": 7.616236802732883e-11,
+      "maximum_final_cycle_iterations": 11,
+      "all_final_cycle_steps_converged": true,
+      "controller_saturated": false,
+      "servovalve_saturated": false
+    }
+  },
+  "nonlinear_validation_runtime_s": 529.4778052000038,
+  "nonlinear_validation_model": "full nonlinear transient ALB NCP with thermal inertia"
+}
