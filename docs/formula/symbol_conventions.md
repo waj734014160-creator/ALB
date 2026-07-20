@@ -33,10 +33,20 @@
 
 - 所有供油孔模型继承 `BaseOrifice` 或提供同形接口。
 - 供油孔信息统一通过 `flow_info(model=None)` 提供，不再使用 `thermal_flow_info`。
+- 固定参考流量尺度为
+  $Q_w=p_sc^3/(12\mu_0l_r)$，单位 m$^3$/s；面内通量尺度为
+  $Q_f=Q_w/(l_rR)$，单位 m$^2$/s。代码中使用 `ThermalNondimScales.qf`；
+  `flow_scale` 仅为只读兼容别名。
+- 单孔体积流量严格按 $Q_i=q_{n,i}Q_w$ 换算，不另设 `Qvol0`。
 - `flow_info` 返回字典，包含三类信息：
   - `structure`: 供油孔结构参数，如位置、供油压力、流量系数、几何参数。
-  - `flow_params`: 流量计算参数和施加节点信息，如节点号、无量纲流量、体积流量。
-  - `flow`: 热模型点源使用的简化三元组列表 `(x_dim, z_dim, q_vol)`。
+  - `flow_params`: 每个条目明确包含 `position_nondim`、`position_dim`、
+    `q_nondim`、`q_vol` 和同一个 `qw`。
+  - `flow`: 有量纲兼容三元组列表 `(x_dim, z_dim, q_vol)`；无量纲热核不得消费该字段。
+- 无量纲热核只接收 `(position_nondim, q_nondim)`，并按
+  `K[j,j] += q_nondim`、`f[j] += q_nondim*T_supply_nondim` 装配点源。
+- 热结果字段 `q_orifice_total_nondim` 表示无量纲总流量，
+  `q_orifice_total_vol` 和兼容字段 `q_orifice_total` 均表示 m$^3$/s。
 
 ## 非润滑物理符号例外
 

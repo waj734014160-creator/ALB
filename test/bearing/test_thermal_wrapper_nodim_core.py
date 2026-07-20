@@ -209,3 +209,110 @@ def test_thermal_collection_wrapper_dispatches_by_pad_unit_mode():
 
     with pytest.raises(TypeError, match="args_nodim"):
         wrap_pad_collection_with_thermal([HydrostaticBearing(cfg)], _thermal_config(True))
+
+
+def test_dimensional_miu0_override_rebuilds_reference_lambda():
+    cfg = HydConfig(
+        miu=0.0195,
+        c=80e-6,
+        r=0.04,
+        l=0.08,
+        ps=3e6,
+        rho=872.0,
+        freq=50.0,
+        nx=5,
+        nz=3,
+    )
+    miu0 = 0.027
+    thermal_config = _thermal_config(False)
+    thermal_config.miu0 = miu0
+    model = ThermalHydroBearing(HydrostaticBearing(cfg), thermal_config)
+
+    omega = cfg.w * 2.0 * np.pi / 60.0
+    expected = 1.5 * miu0 * omega * cfg.l**2 / (cfg.ps * cfg.c**2)
+    assert model.bearing.main_model.args["miu0"] == pytest.approx(miu0)
+    assert model.bearing.main_model.args["lambda0"] == pytest.approx(expected)
+    assert model.bearing.main_model.args["lambda"] == pytest.approx(expected)
+    scales = model.thermal_model.build_mesh(model.bearing.main_model)["scales"]
+    expected_qw = cfg.ps * cfg.c**3 / (12.0 * miu0 * scales.lr)
+    assert scales.qw == pytest.approx(expected_qw)
+    assert scales.qf == pytest.approx(expected_qw / (scales.lr * cfg.r))
+
+
+def test_direct_nondim_lambda_is_authoritative_and_miu0_conflict_fails():
+    cfg = HydConfig(nx=5, nz=3)
+    lambda0 = 7.25
+    pad = NodimHydrostaticBearing(
+        lambda_value=lambda0,
+        lr=cfg.l / (2.0 * cfg.r),
+        x0=cfg.x0,
+        lx=cfg.lx,
+        lz=cfg.lz,
+        nx=cfg.nx,
+        nz=cfg.nz,
+        miu=cfg.miu,
+        c=cfg.c,
+        r=cfg.r,
+        l=cfg.l,
+        ps=cfg.ps,
+        rho=cfg.rho,
+        w=cfg.w,
+    )
+    model = NodimThermalHydroBearing(pad, _thermal_config(True))
+    scales = model.thermal_model.build_mesh(model.bearing.main_model)["scales"]
+    assert scales.lambda0 == pytest.approx(lambda0)
+
+    pad_with_reference = NodimHydrostaticBearing(
+        lambda_value=lambda0,
+        lr=cfg.l / (2.0 * cfg.r),
+        x0=cfg.x0,
+        lx=cfg.lx,
+        lz=cfg.lz,
+        nx=cfg.nx,
+        nz=cfg.nz,
+        miu=cfg.miu,
+        c=cfg.c,
+        r=cfg.r,
+        l=cfg.l,
+        ps=cfg.ps,
+        rho=cfg.rho,
+        w=cfg.w,
+    )
+    conflicting = _thermal_config(True)
+    conflicting.miu0 = cfg.miu * 1.1
+    with pytest.raises(ValueError, match="conflicts with the physical reference"):
+        NodimThermalHydroBearing(pad_with_reference, conflicting)
+
+
+def test_nonconverged_transient_solve_retains_previous_temperature_state():
+    model = object.__new__(NodimThermalHydroBearing)
+    model.config = ThermalConfig(
+        args_nodim=True,
+        transient_enabled=True,
+        dt=0.01,
+        iter_method="direct",
+    )
+    previous = np.array([40.0, 41.0], dtype=float)
+    model._temperature_prev = previous.copy()
+    model._solve_coupled = lambda *args, **kwargs: {
+        "thermal_converged": False,
+        "temperature": np.array([80.0, 80.0]),
+    }
+
+    with pytest.raises(RuntimeError, match="previous state was retained"):
+        model.output(nodim=True)
+    np.testing.assert_array_equal(model._temperature_prev, previous)
+
+
+def test_nonconverged_steady_initialization_does_not_commit_state():
+    model = object.__new__(NodimThermalHydroBearing)
+    previous = np.array([39.0, 39.5], dtype=float)
+    model._temperature_prev = previous.copy()
+    model._solve_coupled = lambda *args, **kwargs: {
+        "thermal_converged": False,
+        "temperature": np.array([80.0, 80.0]),
+    }
+
+    with pytest.raises(RuntimeError, match="state was not updated"):
+        model.initialize_thermal_state()
+    np.testing.assert_array_equal(model._temperature_prev, previous)

@@ -1,0 +1,35 @@
+{
+  "name": "task_time_config_reference_v1",
+  "purpose": "Exact legacy paper_config time-resolution baseline captured before the time factory refactor.",
+  "baseline_commit": "2ad6fd5a5598a2024d1e29f41dd8c4c029b0768a",
+  "generated_at_utc": "2026-07-15T15:50:08.3546714Z",
+  "python_version": "3.10.17",
+  "source_files": [
+    "paper_config/share.json5",
+    "paper_config/time_iter.json5",
+    "paper_config/alb12.json5",
+    "paper_config/rotor.json5"
+  ],
+  "legacy_inputs": {
+    "freq": 50,
+    "n": 8,
+    "pt": 500,
+    "stored_dt": 4e-05
+  },
+  "resolved": {
+    "mode": "cycle_points",
+    "freq": 50.0,
+    "cycles": 8,
+    "points_per_cycle": 500,
+    "dt": 4e-05,
+    "steps": 4000,
+    "end_time": 0.16,
+    "samples_per_revolution": 500.0
+  },
+  "merged_contract": {
+    "alb_dt": 4e-05,
+    "alb_freq": 50,
+    "rotor_dt": 4e-05,
+    "rotor_freq": 50
+  }
+}

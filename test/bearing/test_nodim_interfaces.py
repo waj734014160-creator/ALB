@@ -120,6 +120,22 @@ class TestNodimInterfaces(unittest.TestCase):
         self.assertTrue(np.all(np.isfinite(out["force"])))
         self.assertTrue(np.isfinite(out["friction"]))
         self.assertIsNotNone(orifice.qn)
+        info = orifice.flow_info(bearing.main_model)
+        self.assertEqual(len(info["flow_params"]), 1)
+        item = info["flow_params"][0]
+        self.assertTrue(
+            {
+                "position_nondim",
+                "position_dim",
+                "q_nondim",
+                "q_vol",
+                "qw",
+            }.issubset(item)
+        )
+        np.testing.assert_allclose(item["q_vol"], item["q_nondim"] * item["qw"])
+        np.testing.assert_allclose(
+            info["flow"][0], (*item["position_dim"], item["q_vol"])
+        )
 
     def test_nodim_alb_factory_smoke(self):
         cfg = NodimALBConfig(

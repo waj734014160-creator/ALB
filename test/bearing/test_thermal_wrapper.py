@@ -406,11 +406,31 @@ class TestThermalHydroBearing(unittest.TestCase):
         self.assertIn("q_orifice_total", out_orifice)
         q_total = out_orifice["q_orifice_total"]
         self.assertGreater(q_total, 0.0, "Orifice total flow should be positive")
-        public_info = []
+        public_nondim = []
+        public_vol = []
         for simple_model in pad.simple_models:
             self.assertTrue(hasattr(simple_model, "flow_info"))
-            public_info.extend(simple_model.flow_info(pad.main_model)["flow"])
-        np.testing.assert_allclose(model._collect_orifice_info(), public_info)
+            info = simple_model.flow_info(pad.main_model)
+            for item, legacy in zip(info["flow_params"], info["flow"]):
+                self.assertIn("position_nondim", item)
+                self.assertIn("position_dim", item)
+                self.assertIn("q_nondim", item)
+                self.assertIn("q_vol", item)
+                self.assertIn("qw", item)
+                np.testing.assert_allclose(
+                    item["q_vol"], item["q_nondim"] * item["qw"]
+                )
+                np.testing.assert_allclose(legacy[:2], item["position_dim"])
+                np.testing.assert_allclose(legacy[2], item["q_vol"])
+                public_nondim.append((*item["position_nondim"], item["q_nondim"]))
+                public_vol.append(item["q_vol"])
+        np.testing.assert_allclose(model._collect_orifice_info(), public_nondim)
+        np.testing.assert_allclose(q_total, sum(abs(value) for value in public_vol))
+        np.testing.assert_allclose(
+            out_orifice["q_orifice_total_nondim"],
+            sum(abs(item[2]) for item in public_nondim),
+        )
+        self.assertEqual(q_total, out_orifice["q_orifice_total_vol"])
 
         # With extra cooling flow, T_eff should typically be lower
         t_no = out_no_orifice["t_eff"]

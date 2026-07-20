@@ -1,6 +1,7 @@
 # -- coding: utf-8 --
 import contextlib
 import io
+import json
 import os
 import tempfile
 import unittest
@@ -25,6 +26,7 @@ from tools.manual.alb_gui.config_io import (
     load_paper_gui_config,
     load_runtime_config,
     make_small_test_config,
+    resolve_gui_time_grid,
     save_runtime_config,
 )
 from tools.manual.alb_gui.fields import (
@@ -81,6 +83,10 @@ class TestAlbGuiConfig(unittest.TestCase):
         self.assertIn("settings", config["thermal"])
         self.assertEqual(config["dynamic"]["n"], 8)
         self.assertEqual(config["dynamic"]["pt"], 500)
+        self.assertEqual(config["dynamic"]["mode"], "cycle_points")
+        self.assertEqual(config["dynamic"]["cycles"], 8)
+        self.assertEqual(config["dynamic"]["points_per_cycle"], 500)
+        self.assertEqual(config["dynamic"]["steps"], 4000)
         self.assertNotIn("dt", config["pid"])
 
         flat = build_flat_alb_config(config)
@@ -108,6 +114,58 @@ class TestAlbGuiConfig(unittest.TestCase):
         self.assertTrue(np.isinf(loaded["thermal"]["settings"]["max_delta_t"]))
         self.assertEqual(loaded["dynamic"]["repeat"], config["dynamic"]["repeat"])
         self.assertNotIn("dt", loaded["pid"])
+
+    def test_legacy_runtime_time_schema_is_migrated_in_memory(self):
+        config, _ = load_paper_gui_config()
+        config["version"] = 1
+        for key in ("mode", "cycles", "points_per_cycle", "dt", "steps"):
+            config["dynamic"].pop(key, None)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "legacy.json"
+            path.write_text(
+                json.dumps(config, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            loaded = load_runtime_config(path)
+
+        self.assertEqual(loaded["version"], 2)
+        self.assertEqual(loaded["dynamic"]["mode"], "cycle_points")
+        self.assertEqual(loaded["dynamic"]["cycles"], 8)
+        self.assertEqual(loaded["dynamic"]["points_per_cycle"], 500)
+        self.assertEqual(loaded["dynamic"]["dt"], 4e-5)
+        self.assertEqual(loaded["dynamic"]["steps"], 4000)
+
+    def test_fixed_dt_gui_config_preserves_dt_with_partial_revolution(self):
+        config, _ = load_paper_gui_config()
+        config["dynamic"].update(
+            {
+                "mode": "fixed_dt",
+                "dt": 4e-5,
+                "steps": 401,
+            }
+        )
+
+        resolved = resolve_gui_time_grid(config)
+        flat = build_flat_alb_config(config, dynamic=True)
+
+        self.assertEqual(resolved.mode, "fixed_dt")
+        self.assertEqual(resolved.steps, 401)
+        self.assertNotEqual(resolved.steps % resolved.points_per_cycle, 0)
+        self.assertEqual(flat["dt"], 4e-5)
+
+    def test_bearing_frequency_is_the_single_gui_time_grid_authority(self):
+        config, _ = load_paper_gui_config()
+        config["bearing"]["freq"] = 40.0
+        config["dynamic"]["freq"] = 50.0
+
+        resolved = resolve_gui_time_grid(config)
+        flat = build_flat_alb_config(config, dynamic=True)
+
+        self.assertEqual(resolved.freq, 40.0)
+        self.assertEqual(resolved.dt, 1.0 / (40.0 * 500.0))
+        self.assertEqual(flat["freq"], 40.0)
+        self.assertEqual(flat["dt"], resolved.dt)
 
     def test_static_flat_config_forces_fixed_journal_control(self):
         config, _ = load_paper_gui_config()

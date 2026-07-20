@@ -390,6 +390,18 @@ def test_dimensional_csorifice_stores_nondim_coefficients():
     np.testing.assert_allclose(cq0, expected_cq0, rtol=1e-14, atol=1e-14)
     np.testing.assert_allclose(cq1, expected_cq1, rtol=1e-14, atol=1e-14)
     np.testing.assert_allclose(cq2, expected_cq2, rtol=1e-14, atol=1e-14)
+    info = orifice.flow_info(orifice.model)
+    assert len(info["flow_params"]) == len(info["flow"])
+    for item, legacy in zip(info["flow_params"], info["flow"]):
+        assert {
+            "position_nondim",
+            "position_dim",
+            "q_nondim",
+            "q_vol",
+            "qw",
+        }.issubset(item)
+        np.testing.assert_allclose(item["q_vol"], item["q_nondim"] * item["qw"])
+        np.testing.assert_allclose(legacy, (*item["position_dim"], item["q_vol"]))
 
 
 def test_thermal_no_orifice_flow():

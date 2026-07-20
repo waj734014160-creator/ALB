@@ -36,7 +36,7 @@
 | 接口分组 | 主要入口 | 用途 |
 | --- | --- | --- |
 | ALB 系统 | `ALB`, `NodimALB`, `alb2`, `alb2_static`, `alb2_fuzzy`, `nodim_alb` | 从配置对象构建有量纲或无量纲 active lubricated bearing 系统。 |
-| 配置契约 | `ALBConfig`, `NodimALBConfig`, `ServoConfig`, `Moog2ndServoConfig`, `FPBConfig`, `NodimPadConfig`, `OrificeConfig`, `NodimOrificeConfig`, `PIDConfig`, `FuzzyPIDConfig`, `LQGConfig`, `ThermalConfig`, `GasConfig`, `ALBNetConfig` | builder、task 和 surrogate wrapper 使用的 dataclass-style 配置对象。 |
+| 配置契约 | `ALBConfig`, `NodimALBConfig`, `ServoConfig`, `Moog2ndServoConfig`, `FPBConfig`, `NodimPadConfig`, `OrificeConfig`, `NodimOrificeConfig`, `PIDConfig`, `FuzzyPIDConfig`, `LQGConfig`, `ThermalConfig`, `TimeGridConfig`, `ResolvedTimeGrid`, `GasConfig`, `ALBNetConfig` | builder、task 和 surrogate wrapper 使用的 dataclass-style 配置对象；时间网格由独立配置解析为唯一的 `dt/steps`。 |
 | 轴承与油膜模型 | `HydrostaticBearing`, `NodimHydrostaticBearing`, `MultiPad`, `four_pads_bearing`, `four_pads_bearings`, `NodimNewtonFilm`, `GasBearing` | 油膜、气膜、静压瓦块和多瓦块轴承模型。 |
 | 热模型与无量纲 helper | `ThermalHydroBearing`, `NodimThermalHydroBearing`, `SkfemThermalModel`, `SkfemThermalModelNondim`, `ThermalNondimScales`, `FilmNondimScales` | 热-流体耦合，以及有量纲 / 无量纲尺度转换。 |
 | 控制器与阀 | `PID`, `FuzzyPID`, `ALB.controller.ALBLQGController`, `ALB.orifice.CSOrifice`, `NodimCSOrifice`, `ALB.servovalve.moog_2nd_servovalve`, `ALB.servovalve.moog_servovalve`, `ALB.servovalve.static_sv` | ALB 装配中使用的控制器、伺服阀和节流孔组件；LQG 输出默认限制在 `[-1, 1]`，也可通过 `LQGConfig` 设置标量或逐通道上下限。 |
@@ -44,7 +44,7 @@
 | ALBNN surrogate 支持 | `ALBNN`, `ALBNNC4Canonical`, `ALB.nn.ALBNNForceExpert`, `ALB.nn.ALBNet`, `albnn`, `ALB.nn.thermal_albnet`, `ALB.alb.ALBNNAgent`, `ALB.alb.FakeOf` | 打包神经网络力模型，以及用于本地验证和下游仿真的 ALB shell 替换组件。 |
 | 训练核心 | `ALB.train.TrainingConfig`, `ALB.train.ColumnTransformPipeline`, `ALB.train.AlbnnMlpTrainer` | 配置驱动的 surrogate 训练核心。项目 CLI 保留在 `SURROGATE_TRAIN/run/train`，稳定数据变换、scaler、loss、report 和 trainer 生命周期放在 package 中复用。 |
 | 远程操作 helper | `ALB.remote.job`, `ALB.remote.albnn_start`, `ALB.remote.albnn_status`, `ALB.remote.albnn_queue`, `ALB.remote.monitor`, `ALB.remote.transport` | 稳定的 SSH、PowerShell 7、Task Scheduler、launch、queue 和 monitor helper，供 `SURROGATE_TRAIN/run/remote` wrapper 使用；`ALB.remote.transport` 集中提供 encoded command 和 runner-file 命令构造。 |
-| 任务与结果 | `ALB.task.*`, `DataFrameResult`, `SaveTreeNode`, `read_json5`, `recognize_kc` | 可复用批处理入口、结果存储 helper、配置读取和信号分析工具。 |
+| 任务与结果 | `ALB.task.TaskConfigFactory`, `ALB.task.*`, `DataFrameResult`, `SaveTreeNode`, `read_json5`, `recognize_kc` | 统一时间配置工厂、可复用批处理入口、结果存储 helper、配置读取和信号分析工具。 |
 
 ## 模块地图
 
@@ -52,7 +52,7 @@
 | --- | --- | --- |
 | Package export | `__init__.py` | lazy 顶层 export。把模块 API 提升为 package 公共 API 时需要同步更新。 |
 | 系统装配 | `alb.py` | ALB / NodimALB 类、builder、线性和神经网络核心替换 agent。 |
-| 配置 | `config.py` | film、gas、thermal、ALB、servovalve、PID 和 ALBNN workflow 的 dataclass 配置契约。 |
+| 配置 | `config.py` | film、gas、thermal、时间网格、ALB、servovalve、PID 和 ALBNN workflow 的 dataclass 配置契约。 |
 | 数值基础 | `base.py`, `mesh.py`, `boundary.py`, `gauss.py`, `matrix/` | 节点 / 单元抽象、网格生成、边界装配和底层矩阵 / 迭代工具。 |
 | 油膜与轴承求解 | `film.py`, `bearing.py`, `orifice.py`, `gas.py`, `damping.py` | Reynolds 油膜求解、静压 / 气体轴承、节流孔流量、多瓦块装配和自适应 damping。 |
 | 热模型与无量纲代码 | `thermal.py`, `nondim.py` | 热网格、粘温耦合油膜、热求解器和尺度对象。 |
@@ -67,8 +67,10 @@
 - 构建 ALB 系统时，优先使用配置对象，不要使用随意拼接的字典。
 - 新代码和文档中，粘度使用 `miu`，无量纲轴承参数使用 `lambda_value`。
 - `ALBConfig.servo` 和 `NodimALBConfig.servo` 默认使用 `moog_2nd`，对应 `ALB.servovalve.moog_2nd_servovalve` 的单二阶伺服阀；当前默认参数为 `tw=9.587647174210562e-4`、`zeta=0.7`，即固有频率约 `166 Hz`。`ServoConfig` 类本身保留 legacy `moog` 默认参数，`ALBConfig` / `NodimALBConfig` 通过继承自 `ServoConfig` 的 `Moog2ndServoConfig` 作为默认 `servo_config`；flat config 工厂不根据 `servo` 字符串路由切换嵌套配置，因此使用旧 `moog` 时应显式提供对应 `tw`、`zeta` 和 `tp3`，或直接传入 `ServoConfig`。旧 `moog` 仍保留为二阶 Moog 环节串联 `tp3` 一阶环节的 legacy 三阶模型，`static` 仍为静态阀。
-- `ThermalConfig.iter_method` 控制热非线性迭代方式：默认 `direct` 保持旧直接迭代行为；`newton` 在每个压力步固定压力场后对 `miu(T)` 代入的热方程做分离式 Newton 子迭代；`direct_then_newton` 仅在旧直接迭代未收敛时用末态触发 Newton fallback。Newton 默认关闭 line search 以避免重复装配 Jacobian 的高成本；默认和论文热计算使用 `k_lub=0.0` 并开启 SUPG，避免把物理导热扩散当作主稳定来源；若需要显式导热扩散，可在配置中设置 `k_lub>0`。`miu_update="log"` 与 `heat_partition_steps` 可显式启用粘度对数松弛和热分配 continuation。热 wrapper 输出 `thermal_solver_used`、`thermal_newton_iterations`、`thermal_newton_residual` 和 `thermal_newton_line_search_steps` 作为诊断字段。
+- `ThermalConfig.iter_method` 控制热非线性迭代方式：默认 `direct` 保持旧直接迭代行为；`newton` 在每个压力步固定压力场后对 `miu(T)` 代入的热方程做分离式 Newton 子迭代；`direct_then_newton` 仅在旧直接迭代未收敛时用末态触发 Newton fallback。瞬态热模型当前只允许 `direct`，其他组合在配置阶段报错。`coupling` 自动转为小写且只接受 `full|half`；deprecated 的 `flow_rate_factor` 仅允许无作用值 `1.0`。`k_lub` 是 W/(m·K) 的三维导热率，装配时使用局部 `k_lub*h`；默认 `k_lub=0.0`，空间对流稳定由 SUPG 独立提供。`miu_update="log"` 与 `heat_partition_steps` 可显式启用粘度对数松弛和热分配 continuation。未收敛的稳态初场或瞬态步不会写入历史温度。热 wrapper 输出求解器诊断，以及 `q_orifice_total_nondim`、`q_orifice_total_vol`；兼容字段 `q_orifice_total` 固定为 m³/s。
 - 热包装的数值核心以无量纲实现为准：`NodimThermalHydroBearing` 直接接受无量纲 pad/config；`ThermalHydroBearing` 只保留有量纲 public API 和默认有量纲输出，内部把有量纲 film 参数转换为 `NodimViscositySkfemNewtonFilm` 并使用 `SkfemThermalModelNondim`。`wrap_pad_collection_with_thermal` 会按 pad 的 `args_nodim` 单位制选择对应 wrapper，且要求 `ThermalConfig.args_nodim` 与 pad 单位制一致。
+- `ThermalNondimScales.qf` 是面内通量尺度 $Q_f=p_sc^3/(12\mu_0l_r^2R)$，单位 m²/s；只读 `flow_scale` 保留为兼容别名。供油孔体积流量尺度为 $Q_w=Q_fl_rR$，单位 m³/s，且 `q_vol=q_nondim*Qw`。`flow_info()` 明确同时返回有量纲与无量纲位置/流量，热核只消费 `position_nondim` 和 `q_nondim`。
+- `TimeGridConfig.resolve()` 支持两种互斥模式：`cycle_points` 由 `freq+cycles+points_per_cycle` 推导 `dt/steps`；`fixed_dt` 保留 `freq+dt+steps`，并严格要求每转采样数 $1/(freq\,dt)$ 为正整数。缺少 `mode` 且存在旧 `n/pt` 时按 `cycle_points` 兼容解析。`TaskConfigFactory` 从 `share.json5` 读取唯一共享转速 `freq`，从 `time_iter.json5` 解析时间网格，并只在内存中把 `dt/freq` 注入 task、GUI、ALB、控制器、热模型和转子配置；不会回写 `share.json5`。旧 `read_share(recover=True)` 仅返回内存结果并发出弃用警告。
 - 当前 thermal surrogate workflow 中，`ALB.nn` 期望 12 个基础 ALBNN 输入：
   `ex, ey, vx, vy, sx, sy, lambda_value, beta_nondim, lr, cq0, cq1, cq2`，
   输出为 `fx, fy`。

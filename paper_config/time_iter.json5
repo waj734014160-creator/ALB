@@ -1,7 +1,10 @@
 {
+  // cycle_points derives dt and steps from physical speed and sampling density.
+  // fixed_dt instead accepts: mode, freq, dt, and steps.
   share_name: [
     'freq',
-    'n',
-    'pt'
-  ]
+  ],
+  mode: 'cycle_points',
+  cycles: 8,
+  points_per_cycle: 500,
 }

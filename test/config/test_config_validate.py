@@ -1,7 +1,7 @@
 # -- coding: utf-8 --
 import unittest
 
-from ALB.config import ALBConfig, HydConfig
+from ALB.config import ALBConfig, HydConfig, ThermalConfig
 
 
 class TestHydConfigValidation(unittest.TestCase):
@@ -38,6 +38,32 @@ class TestALBConfigValidation(unittest.TestCase):
     def test_alb_config_invalid_servo(self):
         with self.assertRaises(ValueError):
             ALBConfig.from_dict({"servo": "BAD"})
+
+
+class TestThermalConfigValidation(unittest.TestCase):
+    def test_coupling_is_normalized_and_strict(self):
+        self.assertEqual(ThermalConfig(coupling="FULL").coupling, "full")
+        with self.assertRaisesRegex(ValueError, "coupling"):
+            ThermalConfig(coupling="typo")
+
+    def test_transient_requires_direct_iteration(self):
+        for method in ("newton", "direct_then_newton"):
+            with self.subTest(method=method):
+                with self.assertRaisesRegex(ValueError, "require iter_method='direct'"):
+                    ThermalConfig(transient_enabled=True, iter_method=method)
+
+    def test_deprecated_flow_rate_factor_is_a_strict_no_op(self):
+        self.assertEqual(ThermalConfig().flow_rate_factor, 1.0)
+        with self.assertRaisesRegex(ValueError, "deprecated"):
+            ThermalConfig(flow_rate_factor=1.01)
+
+    def test_physical_thermal_reference_values_are_positive(self):
+        with self.assertRaisesRegex(ValueError, "k_lub"):
+            ThermalConfig(k_lub=-0.1)
+        with self.assertRaisesRegex(ValueError, "cp_lub"):
+            ThermalConfig(cp_lub=0.0)
+        with self.assertRaisesRegex(ValueError, "miu0"):
+            ThermalConfig(miu0=0.0)
 
 
 if __name__ == "__main__":

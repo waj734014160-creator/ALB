@@ -14,7 +14,7 @@ from ALB.alb import alb2, alb2_static
 from ALB.config import ALBConfig
 from ALB.orbit import EllipseTrack, orbitime, test_bearing_orbit_parallel
 
-from .config_io import build_flat_alb_config
+from .config_io import build_flat_alb_config, resolve_gui_time_grid
 from .fields import FieldMap, pressure_map_from_pads, temperature_map_from_pads
 
 ProgressCallback = Callable[[int, str], None]
@@ -140,10 +140,10 @@ def run_dynamic_calculation(
     model = alb2(alb_config)
     model.init()
     dyn = config.get("dynamic", {})
-    freq = float(dyn.get("freq", config.get("bearing", {}).get("freq", 50.0)))
-    n_cycles = int(dyn.get("n", 1))
-    points_per_cycle = int(dyn.get("pt", 20))
-    time_iter = orbitime(freq, n_cycles, points_per_cycle)
+    resolved_time = resolve_gui_time_grid(config)
+    freq = resolved_time.freq
+    points_per_cycle = resolved_time.points_per_cycle
+    time_iter = orbitime(**resolved_time.to_time_config())
     track = EllipseTrack(
         a=float(dyn.get("a", 1e-5)),
         b=float(dyn.get("b", 1e-5)),

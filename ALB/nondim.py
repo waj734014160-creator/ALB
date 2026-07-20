@@ -143,7 +143,13 @@ class FilmNondimScales:
 
 @dataclass(frozen=True)
 class ThermalNondimScales:
-    """Reference scales used by the nondimensional thermo-hydro solver."""
+    """Reference scales used by the nondimensional thermo-hydro solver.
+
+    ``qf`` is the depth-integrated film-flux scale in m2/s.  The corresponding
+    volumetric-flow scale is ``qw = qf * lr * r`` in m3/s.  Keeping both names
+    explicit prevents point-source volumetric flow from being confused with an
+    in-plane film flux.
+    """
 
     c: float
     r: float
@@ -158,20 +164,29 @@ class ThermalNondimScales:
     t_supply: float
     heat_partition: float = 1.0
     delta_t_scale: Optional[float] = None
+    lambda0_value: Optional[float] = None
 
     @classmethod
     def from_model_config(cls, model, config, miu0: Optional[float] = None):
         """Build the thermal scales from a film model and a :class:`ThermalConfig`."""
+        input_args = getattr(model, "_input_args", {})
         omega = float(model.args["w"]) * 2.0 * np.pi / 60.0
         rho = float(
-            getattr(model, "_input_args", {}).get("rho", model.args.get("rho", 872.0))
+            input_args.get("rho", model.args.get("rho", 872.0))
         )
+        reference_miu = (
+            miu0
+            if miu0 is not None
+            else model.args.get("miu0", input_args.get("miu", model.args.get("miu")))
+        )
+        if reference_miu is None:
+            raise ValueError("A physical reference viscosity is required for thermal scaling")
         return cls(
             c=float(model.args["c"]),
             r=float(model.args["r"]),
             l=float(model.args["l"]),
             ps=float(model.args["ps"]),
-            miu0=float(miu0 if miu0 is not None else model._input_args["miu"]),
+            miu0=float(reference_miu),
             rho=rho,
             cp=float(config.cp_lub),
             omega=omega,
@@ -182,6 +197,9 @@ class ThermalNondimScales:
             ),
             heat_partition=float(config.heat_partition),
             delta_t_scale=getattr(config, "delta_t_scale", None),
+            lambda0_value=float(
+                model.args.get("lambda0", model.args.get("lambda"))
+            ),
         )
 
     @property
@@ -190,6 +208,8 @@ class ThermalNondimScales:
 
     @property
     def lambda0(self) -> float:
+        if self.lambda0_value is not None:
+            return float(self.lambda0_value)
         return 1.5 * self.miu0 * self.omega * self.l**2 / (self.ps * self.c**2)
 
     @property
@@ -218,8 +238,19 @@ class ThermalNondimScales:
         return (self.t_ref - self.t_supply) / self.delta_t
 
     @property
-    def flow_scale(self) -> float:
+    def qf(self) -> float:
+        """Return the in-plane film-flux scale ``Q_f`` in m2/s."""
         return self.ps * self.c**3 / (12.0 * self.miu0 * self.lr**2 * self.r)
+
+    @property
+    def qw(self) -> float:
+        """Return the volumetric-flow scale ``Q_w`` in m3/s."""
+        return self.qf * self.lr * self.r
+
+    @property
+    def flow_scale(self) -> float:
+        """Compatibility alias for :attr:`qf`; new code must use ``qf``."""
+        return self.qf
 
     def temperature_to_nondim(self, temperature, t_supply: float):
         return (np.asarray(temperature, dtype=float) - float(t_supply)) / self.delta_t
@@ -244,16 +275,16 @@ class ThermalNondimScales:
         return (
             np.asarray(phi, dtype=float)
             * self.r
-            / (self.rho * self.cp * self.flow_scale * self.delta_t)
+            / (self.rho * self.cp * self.qf * self.delta_t)
         )
 
     def heat_source_from_nondim(self, phi_bar):
         return np.asarray(phi_bar, dtype=float) * (
-            self.rho * self.cp * self.flow_scale * self.delta_t / self.r
+            self.rho * self.cp * self.qf * self.delta_t / self.r
         )
 
     def flux_to_nondim(self, q):
-        return np.asarray(q, dtype=float) / self.flow_scale
+        return np.asarray(q, dtype=float) / self.qf
 
     def flux_from_nondim(self, q_bar):
-        return np.asarray(q_bar, dtype=float) * self.flow_scale
+        return np.asarray(q_bar, dtype=float) * self.qf

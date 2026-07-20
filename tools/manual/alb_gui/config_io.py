@@ -11,7 +11,7 @@ from typing import Any, Dict, Iterable, Tuple
 
 import numpy as np
 
-from ALB.tool import read_json5_with_share
+from ALB.config import ResolvedTimeGrid, TimeGridConfig
 
 
 def _app_root() -> Path:
@@ -107,10 +107,70 @@ def _restore_special_values(value: Any) -> Any:
 
 
 def _read_paper_files(config_dir: Path) -> Dict[str, dict]:
-    return {
-        key: read_json5_with_share(str(config_dir / file_name))
+    # Import lazily so lightweight GUI config utilities do not eagerly import
+    # the complete task execution module during application startup.
+    from ALB.task import TaskConfigFactory
+
+    factory = TaskConfigFactory(config_dir)
+    configs = {
+        key: factory.read_config(file_name)
         for key, file_name in PAPER_CONFIG_FILES.items()
+        if key != "time"
     }
+    configs["time"] = factory.resolved_time_grid.to_dict()
+    return configs
+
+
+def resolve_gui_time_grid(config: dict) -> ResolvedTimeGrid:
+    """Resolve canonical time values from current or legacy GUI runtime data."""
+
+    dynamic = config.get("dynamic", {})
+    freq = config.get("bearing", {}).get("freq", dynamic.get("freq"))
+    mode = dynamic.get("mode")
+    if mode == "fixed_dt":
+        payload = {
+            "mode": mode,
+            "freq": freq,
+            "dt": dynamic.get("dt"),
+            "steps": dynamic.get("steps"),
+        }
+    else:
+        payload = {
+            "mode": "cycle_points",
+            "freq": freq,
+            "cycles": dynamic.get("n", dynamic.get("cycles")),
+            "points_per_cycle": dynamic.get(
+                "pt", dynamic.get("points_per_cycle")
+            ),
+        }
+    return TimeGridConfig.from_dict(payload).resolve()
+
+
+def _migrate_gui_time_schema(config: dict) -> dict:
+    """Upgrade legacy GUI ``n``/``pt`` runtime data without losing UI aliases."""
+
+    migrated = copy.deepcopy(config)
+    resolved = resolve_gui_time_grid(migrated)
+    dynamic = migrated.setdefault("dynamic", {})
+    dynamic.update(
+        {
+            "mode": resolved.mode,
+            "freq": resolved.freq,
+            "cycles": resolved.cycles,
+            "points_per_cycle": resolved.points_per_cycle,
+            "dt": resolved.dt,
+            "steps": resolved.steps,
+            "pt": resolved.points_per_cycle,
+        }
+    )
+    if resolved.mode == "cycle_points":
+        dynamic["n"] = int(resolved.cycles)
+    else:
+        # The current GUI exposes an integer cycle widget.  Keep a display-only
+        # alias while fixed_dt remains authoritative for actual calculations.
+        dynamic.setdefault("n", max(1, int(math.ceil(float(resolved.cycles)))))
+    migrated["version"] = 2
+    return migrated
 
 
 def _copy_section(data: dict, keys: Iterable[str]) -> dict:
@@ -127,8 +187,8 @@ def paper_configs_to_gui_config(configs: Dict[str, dict], config_dir: Path) -> d
     rec = configs["recognition"]
     thermal_payload = copy.deepcopy(alb.get("thermal", hb.get("thermal", {})))
 
-    return {
-        "version": 1,
+    config = {
+        "version": 2,
         "source_config_dir": str(config_dir),
         "source_files": {
             key: str(config_dir / file_name)
@@ -213,8 +273,17 @@ def paper_configs_to_gui_config(configs: Dict[str, dict], config_dir: Path) -> d
             "f0": track.get("f0", 0.0),
             "freq": track.get("freq", alb.get("freq", 50.0)),
             "vf": track.get("vf", alb.get("vf", 1.0)),
-            "n": time_cfg.get("n", 1),
-            "pt": time_cfg.get("pt", 20),
+            "mode": time_cfg["mode"],
+            "cycles": time_cfg["cycles"],
+            "points_per_cycle": time_cfg["points_per_cycle"],
+            "dt": time_cfg["dt"],
+            "steps": time_cfg["steps"],
+            "n": (
+                int(time_cfg["cycles"])
+                if time_cfg["mode"] == "cycle_points"
+                else max(1, int(math.ceil(float(time_cfg["cycles"]))))
+            ),
+            "pt": time_cfg["points_per_cycle"],
             "repeat": rec.get("repeat", alb.get("repeat", 0)),
             "tr_start": 0.0,
             "tr_end": 1.0,
@@ -227,6 +296,7 @@ def paper_configs_to_gui_config(configs: Dict[str, dict], config_dir: Path) -> d
             "recognition": copy.deepcopy(rec),
         },
     }
+    return _migrate_gui_time_schema(config)
 
 
 def load_paper_gui_config(config_dir: Path | str | None = None) -> Tuple[dict, str]:
@@ -252,7 +322,7 @@ def load_runtime_config(path: Path | str = RUNTIME_CONFIG_PATH) -> dict:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     data = _restore_special_values(data)
     data.get("pid", {}).pop("dt", None)
-    return data
+    return _migrate_gui_time_schema(data)
 
 
 def save_runtime_config(
@@ -261,6 +331,7 @@ def save_runtime_config(
     """Persist the GUI runtime config as strict UTF-8 JSON."""
 
     target = Path(path)
+    config = _migrate_gui_time_schema(config)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
         json.dumps(_json_safe(config), ensure_ascii=False, indent=2, allow_nan=False)
@@ -301,24 +372,18 @@ def build_flat_alb_config(config: dict, *, dynamic: bool = False) -> dict:
         flat["kd"] = 0.0
         flat["servo"] = "static"
 
-    dyn = config.get("dynamic", {})
-    freq = float(dyn.get("freq", flat.get("freq", 50.0)))
-    pt = int(dyn.get("pt", 20))
-    if freq <= 0.0 or pt <= 0:
-        raise ValueError("dynamic freq and pt must be > 0 to derive dt")
-    derived_dt = 1.0 / (freq * pt)
-    flat["dt"] = derived_dt
+    resolved_time = resolve_gui_time_grid(config)
+    flat["dt"] = resolved_time.dt
 
     thermal = copy.deepcopy(config.get("thermal", {}))
     flat["thermal_enabled"] = bool(thermal.get("enabled", False))
     flat["thermal"] = copy.deepcopy(thermal.get("settings", {}))
     if dynamic and flat["thermal_enabled"]:
-        flat["thermal"]["dt"] = derived_dt
+        flat["thermal"]["dt"] = resolved_time.dt
         flat["thermal"]["transient_enabled"] = True
 
-    dyn_freq = config.get("dynamic", {}).get("freq")
-    if dynamic and dyn_freq is not None:
-        flat["freq"] = dyn_freq
+    if dynamic:
+        flat["freq"] = resolved_time.freq
 
     if "source_config_dir" in config:
         flat["_source_config_dir"] = config["source_config_dir"]
@@ -377,4 +442,4 @@ def make_small_test_config(*, thermal: bool = False) -> dict:
             "tr_end": 1.0,
         }
     )
-    return cfg
+    return _migrate_gui_time_schema(cfg)

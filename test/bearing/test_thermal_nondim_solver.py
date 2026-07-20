@@ -1,5 +1,7 @@
 import numpy as np
 import pytest
+from skfem import MeshTri
+from scipy.sparse import eye
 
 from ALB.bearing import HydrostaticBearing, NodimHydrostaticBearing
 from ALB.config import HydConfig
@@ -93,6 +95,122 @@ def test_thermal_nondim_scales_round_trip_temperature_and_viscosity():
     viscosity = np.array([0.02, 0.03, 0.04])
     viscosity_bar = scales.viscosity_to_nondim(viscosity)
     np.testing.assert_allclose(scales.viscosity_from_nondim(viscosity_bar), viscosity)
+
+
+def test_thermal_flow_scales_distinguish_film_flux_and_volumetric_flow():
+    scales = ThermalNondimScales(
+        c=80e-6,
+        r=0.04,
+        l=0.08,
+        ps=3e6,
+        miu0=0.0195,
+        rho=872.0,
+        cp=2000.0,
+        omega=100.0,
+        beta=0.03,
+        t_ref=40.0,
+        t_supply=40.0,
+    )
+
+    expected_qw = scales.ps * scales.c**3 / (12.0 * scales.miu0 * scales.lr)
+    np.testing.assert_allclose(scales.qw, expected_qw, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(
+        scales.qw, scales.qf * scales.lr * scales.r, rtol=0.0, atol=0.0
+    )
+    assert scales.flow_scale == scales.qf
+
+
+def test_local_conductivity_uses_film_thickness_and_supg_accepts_arrays():
+    config = ThermalConfig(args_nodim=True, k_lub=0.13)
+    solver = SkfemThermalModelNondim(config)
+    scales = ThermalNondimScales(
+        c=80e-6,
+        r=0.04,
+        l=0.08,
+        ps=3e6,
+        miu0=0.0195,
+        rho=872.0,
+        cp=2000.0,
+        omega=100.0,
+        beta=0.03,
+        t_ref=40.0,
+        t_supply=40.0,
+    )
+    h_bar = np.array([0.5, 1.0, 1.5, 2.0], dtype=float)
+    diff_x, diff_z = solver._nondim_diffusion_coefficients(h_bar, scales)
+    expected_x = config.k_lub * scales.c * h_bar / (
+        scales.rho * scales.cp * scales.qf * scales.r
+    )
+    np.testing.assert_allclose(diff_x, expected_x, rtol=1e-15, atol=0.0)
+    np.testing.assert_allclose(diff_z, expected_x / scales.lr**2, rtol=1e-15)
+
+    mesh = MeshTri.init_tensor(np.array([0.0, 1.0]), np.array([0.0, 1.0]))
+    tau = solver._calc_nondim_supg_tau_nodal(
+        mesh,
+        diff_x,
+        diff_z,
+        np.full(mesh.p.shape[1], 0.3),
+        np.full(mesh.p.shape[1], -0.1),
+    )
+    assert tau.shape == (mesh.p.shape[1],)
+    assert np.all(np.isfinite(tau))
+
+
+def test_nondim_orifice_source_has_order_one_local_cooling_strength():
+    solver = SkfemThermalModelNondim(ThermalConfig(args_nodim=True))
+    mesh = MeshTri.init_tensor(np.array([0.0, 1.0]), np.array([0.0, 1.0]))
+    K = eye(mesh.p.shape[1], format="csr")
+    f = np.ones(mesh.p.shape[1], dtype=float)
+    orifice = [(1.0, 1.0, 1.0)]
+
+    K_with_orifice, f_with_orifice = solver._apply_nondim_orifice_sources(
+        K, f, mesh, 0.0, orifice
+    )
+    node_index = int(
+        np.argmin((mesh.p[0] - 1.0) ** 2 + (mesh.p[1] - 1.0) ** 2)
+    )
+    temperature = np.linalg.solve(K_with_orifice.toarray(), f_with_orifice)
+
+    assert K_with_orifice[node_index, node_index] == pytest.approx(2.0)
+    assert temperature[node_index] == pytest.approx(0.5)
+    np.testing.assert_allclose(
+        np.delete(temperature, node_index),
+        np.ones(mesh.p.shape[1] - 1),
+    )
+
+
+def test_runtime_config_rejects_ambiguous_or_unsupported_thermal_modes():
+    with pytest.raises(ValueError, match="coupling must be one of"):
+        SkfemThermalModelNondim(
+            ThermalConfig(args_nodim=True, coupling="unsupported")
+        )
+    with pytest.raises(ValueError, match="flow_rate_factor is deprecated"):
+        SkfemThermalModelNondim(
+            ThermalConfig(args_nodim=True, flow_rate_factor=2.0)
+        )
+    with pytest.raises(ValueError, match="require iter_method='direct'"):
+        SkfemThermalModelNondim(
+            ThermalConfig(
+                args_nodim=True,
+                transient_enabled=True,
+                dt=0.01,
+                iter_method="newton",
+            )
+        )
+
+    config = ThermalConfig(args_nodim=True, coupling="FULL")
+    SkfemThermalModelNondim(config)
+    assert config.coupling == "full"
+
+
+def test_nondim_solver_with_nonzero_conductivity_assembles_local_coefficients():
+    _, _, _, model = make_small_thermal_bearing(k_lub=0.13)
+
+    out = model.output(calc=True, nodim=True)
+
+    assert out["thermal_converged"]
+    assert np.all(np.isfinite(out["temperature"]))
+    assert float(np.max(out["temperature"])) > model.config.t_in
 
 
 def test_nondim_beta_matches_dimensional_viscosity_update():

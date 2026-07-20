@@ -70,6 +70,21 @@ _PRESSURE_BACKEND_ERROR = (
 )
 
 
+def _validate_thermal_runtime_config(config: ThermalConfig) -> None:
+    """Normalize and validate thermal options required by the solver runtime."""
+    config.coupling = str(config.coupling).lower()
+    if config.coupling not in {"full", "half"}:
+        raise ValueError("coupling must be one of: 'full', 'half'")
+    if not np.isclose(float(config.flow_rate_factor), 1.0, rtol=0.0, atol=0.0):
+        raise ValueError(
+            "flow_rate_factor is deprecated and has no effect; only 1.0 is allowed"
+        )
+    if config.transient_enabled and config.iter_method != "direct":
+        raise ValueError(
+            "Transient thermal solves currently require iter_method='direct'"
+        )
+
+
 def _transform_film_args(input_args: Dict[str, float]):
     return film_args_trans(*(input_args[key] for key in _FILM_MODEL_PARAM_KEYS))
 
@@ -344,10 +359,11 @@ def _source_form(v, w):
 def _advection_diffusion_form(u, v, w):
     """Advection-diffusion bilinear form for the energy equation.
 
-    Weak form of:  rho*cv*(qx*dT/dx + qz*dT/dz) = k*laplacian(T) + Phi
+    Weak form of: rho*cv*(qx*dT/dx + qz*dT/dz)
+                  = div(k_lub*h*grad(T)) + Phi
 
     After moving convection to the LHS:
-        k*dot(grad(u), grad(v)) + rho*cv*(qx*du/dx + qz*du/dz)*v
+        k_lub*h*dot(grad(u), grad(v)) + rho*cv*(qx*du/dx + qz*du/dz)*v
     """
     diffusion = w.k * dot(grad(u), grad(v))
     convection = w.rho_cv * (w.qx * grad(u)[0] + w.qz * grad(u)[1]) * v
@@ -414,6 +430,7 @@ class SkfemThermalModel:
     """
 
     def __init__(self, config: ThermalConfig):
+        _validate_thermal_runtime_config(config)
         self.config = config
 
     @staticmethod
@@ -519,11 +536,39 @@ class SkfemThermalModel:
             item[2] for item in orifice_data
         )
 
-    def _assemble_energy_system(self, basis, rho_cv, qx_nodal, qz_nodal, phi_nodal):
+    def _orifice_flow_diagnostics(self, model, orifice_data: Optional[list]):
+        """Return dimensional and nondimensional totals for dimensional sources."""
+        total_vol, net_vol = self._orifice_flow_totals(orifice_data)
+        args = model.args
+        input_args = getattr(model, "_input_args", {})
+        miu0 = float(
+            self.config.miu0
+            if self.config.miu0 is not None
+            else args.get("miu0", input_args.get("miu", args.get("miu")))
+        )
+        lr = float(args["lr"])
+        qw = float(args["ps"]) * float(args["c"]) ** 3 / (12.0 * miu0 * lr)
+        return {
+            "q_orifice_total": total_vol,
+            "q_orifice_net": net_vol,
+            "q_orifice_total_vol": total_vol,
+            "q_orifice_net_vol": net_vol,
+            "q_orifice_total_nondim": total_vol / qw if qw else 0.0,
+            "q_orifice_net_nondim": net_vol / qw if qw else 0.0,
+        }
+
+    def _conductivity_2d_nodal(self, h_nodal: np.ndarray) -> np.ndarray:
+        """Return depth-integrated conductivity ``k_lub * h`` in W/K."""
+        return float(self.config.k_lub) * np.asarray(h_nodal, dtype=float)
+
+    def _assemble_energy_system(
+        self, basis, rho_cv, h_nodal, qx_nodal, qz_nodal, phi_nodal
+    ):
+        k_2d = self._conductivity_2d_nodal(h_nodal)
         K = asm(
             _advection_diffusion_form,
             basis,
-            k=self.config.k_lub,
+            k=basis.interpolate(k_2d),
             rho_cv=rho_cv,
             qx=basis.interpolate(qx_nodal),
             qz=basis.interpolate(qz_nodal),
@@ -556,7 +601,18 @@ class SkfemThermalModel:
         )
         return K, f
 
-    def _apply_supg(self, K, f, mesh, basis, rho_cv, qx_nodal, qz_nodal, phi_nodal):
+    def _apply_supg(
+        self,
+        K,
+        f,
+        mesh,
+        basis,
+        rho_cv,
+        h_nodal,
+        qx_nodal,
+        qz_nodal,
+        phi_nodal,
+    ):
         if not self.config.supg:
             return K, f
         tx_arr = mesh.p[0]
@@ -573,7 +629,7 @@ class SkfemThermalModel:
             else 1.0
         )
         h_elem = np.sqrt(dx_mesh**2 + dz_mesh**2)
-        alpha_diff = self.config.k_lub / (rho_cv + 1e-30)
+        alpha_diff = self._conductivity_2d_nodal(h_nodal) / (rho_cv + 1e-30)
         pe_h = q_mag * h_elem / (2.0 * alpha_diff + 1e-30)
         pe_safe = np.clip(pe_h, 1e-10, 500.0)
         xi = 1.0 / np.tanh(pe_safe) - 1.0 / pe_safe
@@ -699,7 +755,9 @@ class SkfemThermalModel:
         dviscosity_dt = np.where(active, -self.config.beta * viscosity, 0.0)
         return viscosity, dviscosity_dt
 
-    def _calc_supg_tau_nodal(self, mesh, rho_cv, qx_nodal, qz_nodal):
+    def _calc_supg_tau_nodal(
+        self, mesh, rho_cv, h_nodal, qx_nodal, qz_nodal
+    ):
         tx_arr = mesh.p[0]
         tz_arr = mesh.p[1]
         q_mag = np.sqrt(qx_nodal**2 + qz_nodal**2)
@@ -714,7 +772,7 @@ class SkfemThermalModel:
             else 1.0
         )
         h_elem = np.sqrt(dx_mesh**2 + dz_mesh**2)
-        alpha_diff = self.config.k_lub / (rho_cv + 1e-30)
+        alpha_diff = self._conductivity_2d_nodal(h_nodal) / (rho_cv + 1e-30)
         pe_h = q_mag * h_elem / (2.0 * alpha_diff + 1e-30)
         pe_safe = np.clip(pe_h, 1e-10, 500.0)
         xi = 1.0 / np.tanh(pe_safe) - 1.0 / pe_safe
@@ -831,7 +889,7 @@ class SkfemThermalModel:
             if self.config.t_supply is not None
             else self.config.t_in
         )
-        q_orifice_total, q_orifice_net = self._orifice_flow_totals(orifice_data)
+        orifice_diagnostics = self._orifice_flow_diagnostics(model, orifice_data)
         rho_cv = mesh_data["rho"] * self.config.cp_lub
         miu0_value = float(
             miu0
@@ -860,7 +918,9 @@ class SkfemThermalModel:
             mesh_data, initial_miu, initial_dmiu
         )
         tau_nodal = (
-            self._calc_supg_tau_nodal(mesh, rho_cv, initial_qx, initial_qz)
+            self._calc_supg_tau_nodal(
+                mesh, rho_cv, mesh_data["h_nodal"], initial_qx, initial_qz
+            )
             if self.config.supg
             else None
         )
@@ -883,7 +943,12 @@ class SkfemThermalModel:
                 )
             )
             K, f = self._assemble_energy_system(
-                basis, rho_cv, qx_nodal, qz_nodal, phi_nodal
+                basis,
+                rho_cv,
+                mesh_data["h_nodal"],
+                qx_nodal,
+                qz_nodal,
+                phi_nodal,
             )
             if transient:
                 K, f = self._apply_transient_term(
@@ -1019,8 +1084,7 @@ class SkfemThermalModel:
             "mesh": mesh,
             "n_film_nodes": grid["n_film_nodes"],
             "grid": grid,
-            "q_orifice_total": q_orifice_total,
-            "q_orifice_net": q_orifice_net,
+            **orifice_diagnostics,
             "newton_converged": bool(converged),
             "newton_iterations": int(iterations),
             "newton_residual": float(residual_norm),
@@ -1045,7 +1109,7 @@ class SkfemThermalModel:
         Governing equation (with constant c_v):
 
             rho * c_v * (qx * dT/dx + qz * dT/dz)
-                = k * laplacian(T) + mu*U^2/h
+                = div(k_lub*h*grad(T)) + mu*U^2/h
                   + h^3/(12*mu) * [(dp/dx)^2 + (dp/dz)^2]
 
         where the in-plane volume fluxes are:
@@ -1068,11 +1132,16 @@ class SkfemThermalModel:
             if self.config.t_supply is not None
             else self.config.t_in
         )
-        q_orifice_total, q_orifice_net = self._orifice_flow_totals(orifice_data)
+        orifice_diagnostics = self._orifice_flow_diagnostics(model, orifice_data)
 
         rho_cv = mesh_data["rho"] * self.config.cp_lub
         K, f = self._assemble_energy_system(
-            basis, rho_cv, qx_nodal, qz_nodal, phi_nodal
+            basis,
+            rho_cv,
+            mesh_data["h_nodal"],
+            qx_nodal,
+            qz_nodal,
+            phi_nodal,
         )
 
         if transient:
@@ -1081,7 +1150,15 @@ class SkfemThermalModel:
             )
 
         K, f = self._apply_supg(
-            K, f, mesh, basis, rho_cv, qx_nodal, qz_nodal, phi_nodal
+            K,
+            f,
+            mesh,
+            basis,
+            rho_cv,
+            mesh_data["h_nodal"],
+            qx_nodal,
+            qz_nodal,
+            phi_nodal,
         )
         inlet_nodes, dirichlet_nodes = self._boundary_nodes(mesh, qz_nodal)
         K, f = self._apply_orifice_sources(K, f, mesh, rho_cv, t_supply, orifice_data)
@@ -1102,8 +1179,7 @@ class SkfemThermalModel:
             "mesh": mesh,
             "n_film_nodes": grid["n_film_nodes"],
             "grid": grid,
-            "q_orifice_total": q_orifice_total,
-            "q_orifice_net": q_orifice_net,
+            **orifice_diagnostics,
         }
 
 
@@ -1129,6 +1205,29 @@ def _nondim_supg_load_form(v, w):
 
 class SkfemThermalModelNondim(SkfemThermalModel):
     """Steady thermal model assembled in nondimensional coordinates and fields."""
+
+    @staticmethod
+    def _apply_nondim_orifice_sources(
+        K,
+        f,
+        mesh,
+        t_supply_nondim: float,
+        orifice_data: Optional[list],
+    ):
+        """Apply explicit nondimensional point-source flow to the thermal system."""
+        if not orifice_data:
+            return K, f
+        tx = mesh.p[0]
+        tz = mesh.p[1]
+        K = K.tolil()
+        for ox, oz, q_nondim in orifice_data:
+            if q_nondim <= 0.0:
+                continue
+            dist2 = (tx - ox) ** 2 + (tz - oz) ** 2
+            node_index = int(np.argmin(dist2))
+            K[node_index, node_index] += float(q_nondim)
+            f[node_index] += float(q_nondim) * float(t_supply_nondim)
+        return K.tocsr(), f
 
     def build_mesh(self, model, grid: Optional[ThermalFilmGrid] = None):
         if grid is None:
@@ -1192,6 +1291,37 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         )
         return conv_x, conv_z, phi_bar, dconv_x_dt, dconv_z_dt, dphi_dt
 
+    @staticmethod
+    def _nondim_orifice_flow_diagnostics(
+        orifice_data: Optional[list], scales: ThermalNondimScales
+    ) -> Dict[str, float]:
+        """Return diagnostics while the point-source input stays nondimensional."""
+        if orifice_data:
+            total_nondim = float(sum(abs(item[2]) for item in orifice_data))
+            net_nondim = float(sum(item[2] for item in orifice_data))
+        else:
+            total_nondim = 0.0
+            net_nondim = 0.0
+        total_vol = total_nondim * scales.qw
+        net_vol = net_nondim * scales.qw
+        return {
+            "q_orifice_total": total_vol,
+            "q_orifice_net": net_vol,
+            "q_orifice_total_vol": total_vol,
+            "q_orifice_net_vol": net_vol,
+            "q_orifice_total_nondim": total_nondim,
+            "q_orifice_net_nondim": net_nondim,
+        }
+
+    def _nondim_diffusion_coefficients(
+        self, h_bar: np.ndarray, scales: ThermalNondimScales
+    ):
+        """Return local nondimensional diffusion coefficients for ``k_lub*h``."""
+        rho_cv = scales.rho * scales.cp
+        k_2d = self._conductivity_2d_nodal(scales.c * np.asarray(h_bar, dtype=float))
+        diff_x = k_2d / (rho_cv * scales.qf * scales.r + 1e-30)
+        return diff_x, diff_x / (scales.lr**2)
+
     def _calc_nondim_supg_tau_nodal(self, mesh, diff_x, diff_z, conv_x, conv_z):
         tx_arr = mesh.p[0]
         tz_arr = mesh.p[1]
@@ -1207,7 +1337,7 @@ class SkfemThermalModelNondim(SkfemThermalModel):
             else 1.0
         )
         h_elem = np.sqrt(dx_mesh**2 + dz_mesh**2)
-        alpha_nd = max(diff_x, diff_z, 1e-30)
+        alpha_nd = np.maximum(np.maximum(diff_x, diff_z), 1e-30)
         pe_h = q_mag * h_elem / (2.0 * alpha_nd + 1e-30)
         pe_safe = np.clip(pe_h, 1e-10, 500.0)
         xi = 1.0 / np.tanh(pe_safe) - 1.0 / pe_safe
@@ -1255,7 +1385,7 @@ class SkfemThermalModelNondim(SkfemThermalModel):
                 "temperature_prev size must match the thermal mesh node count"
             )
         t_prev_bar = scales.temperature_to_nondim(t_prev, t_supply)
-        storage_over_dt = h_bar * scales.c * scales.r / (scales.flow_scale * dt)
+        storage_over_dt = h_bar * scales.c * scales.r / (scales.qf * dt)
         interp_mass = basis.interpolate(storage_over_dt)
         interp_t_prev = basis.interpolate(t_prev_bar)
         K += asm(_transient_mass_form, basis, rho_cv_h_over_dt=interp_mass)
@@ -1308,15 +1438,12 @@ class SkfemThermalModelNondim(SkfemThermalModel):
                 temperature_bar = np.zeros(basis.N, dtype=float)
         temperature_bar = np.clip(temperature_bar, lower, upper)
 
-        q_orifice_total = 0.0
-        q_orifice_net = 0.0
-        if orifice_data:
-            q_orifice_total = sum(abs(item[2]) for item in orifice_data)
-            q_orifice_net = sum(item[2] for item in orifice_data)
-
-        rho_cv = scales.rho * scales.cp
-        diff_x = self.config.k_lub / (rho_cv * scales.flow_scale * scales.r + 1e-30)
-        diff_z = diff_x / (scales.lr**2)
+        orifice_diagnostics = self._nondim_orifice_flow_diagnostics(
+            orifice_data, scales
+        )
+        diff_x, diff_z = self._nondim_diffusion_coefficients(
+            mesh_data["h_nodal"], scales
+        )
 
         _, initial_miu_bar, initial_dmiu = (
             self._nondim_viscosity_from_temperature_with_derivative(
@@ -1379,19 +1506,6 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         all_nodes = np.arange(basis.N, dtype=int)
         free_nodes = np.setdiff1d(all_nodes, dirichlet_nodes, assume_unique=False)
 
-        def apply_orifice(K, f):
-            if not orifice_data:
-                return K, f
-            K = K.tolil()
-            for ox, oz, q_bar in orifice_data:
-                if q_bar <= 0:
-                    continue
-                dist2 = (tx - ox) ** 2 + (tz - oz) ** 2
-                j = int(np.argmin(dist2))
-                K[j, j] += float(q_bar)
-                f[j] += 0.0
-            return K.tocsr(), f
-
         def residual_system(current_bar, *, include_jacobian: bool):
             miu_nodal, miu_bar, dmiu_bar_dt = (
                 self._nondim_viscosity_from_temperature_with_derivative(
@@ -1406,8 +1520,8 @@ class SkfemThermalModelNondim(SkfemThermalModel):
             K = asm(
                 _nondim_advection_diffusion_form,
                 basis,
-                diff_x=diff_x,
-                diff_z=diff_z,
+                diff_x=basis.interpolate(diff_x),
+                diff_z=basis.interpolate(diff_z),
                 qx=basis.interpolate(conv_x),
                 qz=basis.interpolate(conv_z),
             )
@@ -1422,7 +1536,9 @@ class SkfemThermalModelNondim(SkfemThermalModel):
                 tau_nodal=tau_nodal,
                 nondim=True,
             )
-            K, f = apply_orifice(K, f)
+            K, f = self._apply_nondim_orifice_sources(
+                K, f, mesh, 0.0, orifice_data
+            )
             if include_jacobian:
                 J_extra = asm(
                     _nondim_temperature_flux_source_jacobian_form,
@@ -1546,8 +1662,7 @@ class SkfemThermalModelNondim(SkfemThermalModel):
             "mesh": mesh,
             "n_film_nodes": mesh_data["grid"]["n_film_nodes"],
             "grid": mesh_data["grid"],
-            "q_orifice_total": q_orifice_total,
-            "q_orifice_net": q_orifice_net,
+            **orifice_diagnostics,
             "qx_nondim": conv_x,
             "qz_nondim": qz_bar,
             "heat_source_nondim": phi_bar,
@@ -1600,20 +1715,15 @@ class SkfemThermalModelNondim(SkfemThermalModel):
             + h_bar**3 / miu_bar * (scales.lr**2 * dp_dx_bar**2 + dp_dz_bar**2)
         )
 
-        q_orifice_total = 0.0
-        q_orifice_net = 0.0
-        if orifice_data:
-            q_orifice_total = sum(abs(item[2]) for item in orifice_data)
-            q_orifice_net = sum(item[2] for item in orifice_data)
-
-        rho_cv = scales.rho * scales.cp
-        diff_x = self.config.k_lub / (rho_cv * scales.flow_scale * scales.r + 1e-30)
-        diff_z = diff_x / (scales.lr**2)
+        orifice_diagnostics = self._nondim_orifice_flow_diagnostics(
+            orifice_data, scales
+        )
+        diff_x, diff_z = self._nondim_diffusion_coefficients(h_bar, scales)
         K = asm(
             _nondim_advection_diffusion_form,
             basis,
-            diff_x=diff_x,
-            diff_z=diff_z,
+            diff_x=basis.interpolate(diff_x),
+            diff_z=basis.interpolate(diff_z),
             qx=basis.interpolate(conv_x),
             qz=basis.interpolate(conv_z),
         )
@@ -1634,7 +1744,7 @@ class SkfemThermalModelNondim(SkfemThermalModel):
                 else 1.0
             )
             h_elem = np.sqrt(dx_mesh**2 + dz_mesh**2)
-            alpha_nd = max(diff_x, diff_z, 1e-30)
+            alpha_nd = np.maximum(np.maximum(diff_x, diff_z), 1e-30)
             pe_h = q_mag * h_elem / (2.0 * alpha_nd + 1e-30)
             pe_safe = np.clip(pe_h, 1e-10, 500.0)
             xi = 1.0 / np.tanh(pe_safe) - 1.0 / pe_safe
@@ -1665,19 +1775,9 @@ class SkfemThermalModelNondim(SkfemThermalModel):
                 K, f, basis, h_bar, scales, temperature_prev, t_supply
             )
 
-        if orifice_data:
-            K = K.tolil()
-            tx = mesh.p[0]
-            tz = mesh.p[1]
-            t_supply_bar = 0.0
-            for ox, oz, q_bar in orifice_data:
-                if q_bar <= 0:
-                    continue
-                dist2 = (tx - ox) ** 2 + (tz - oz) ** 2
-                j = int(np.argmin(dist2))
-                K[j, j] += float(q_bar)
-                f[j] += float(q_bar) * t_supply_bar
-            K = K.tocsr()
+        K, f = self._apply_nondim_orifice_sources(
+            K, f, mesh, 0.0, orifice_data
+        )
 
         side_temp = (
             self.config.axial_side_t
@@ -1734,8 +1834,7 @@ class SkfemThermalModelNondim(SkfemThermalModel):
             "mesh": mesh,
             "n_film_nodes": mesh_data["grid"]["n_film_nodes"],
             "grid": mesh_data["grid"],
-            "q_orifice_total": q_orifice_total,
-            "q_orifice_net": q_orifice_net,
+            **orifice_diagnostics,
             "qx_nondim": qx_bar,
             "qz_nondim": qz_bar,
             "heat_source_nondim": phi_bar,
@@ -2040,15 +2139,26 @@ class NodimThermalHydroBearing(BaseCSystem):
             if thermal_config is not None
             else ThermalConfig(args_nodim=True)
         )
+        _validate_thermal_runtime_config(cfg)
         self._validate_inputs(bearing, cfg)
         self.config = cfg
 
         model = self.bearing.main_model
-        miu0 = float(
-            getattr(model, "_input_args", {}).get(
-                "miu", model.args.get("miu0", model.args.get("miu", 1.0))
-            )
+        input_args = getattr(model, "_input_args", {})
+        attached_miu0 = input_args.get(
+            "miu", model.args.get("miu0", model.args.get("miu"))
         )
+        miu0 = float(1.0 if attached_miu0 is None else attached_miu0)
+        if (
+            cfg.args_nodim
+            and cfg.miu0 is not None
+            and attached_miu0 is not None
+            and not np.isclose(float(cfg.miu0), miu0, rtol=1e-12, atol=1e-15)
+        ):
+            raise ValueError(
+                "ThermalConfig.miu0 conflicts with the physical reference viscosity "
+                "attached to the nondimensional film model"
+            )
         self._miu0 = miu0 if self.config.miu0 is None else float(self.config.miu0)
         self._t_ref = (
             self.config.t_in if self.config.t_ref is None else float(self.config.t_ref)
@@ -2119,7 +2229,7 @@ class NodimThermalHydroBearing(BaseCSystem):
             lz=z_lim[1] - z_lim[0],
             nx=old_model.args["nx"],
             nz=old_model.args["nz"],
-            miu=old_model.args.get("miu0", old_model.args.get("miu", 1.0)),
+            miu=self._miu0,
             c=old_model.args.get("c", 1.0),
             r=old_model.args.get("r", 1.0),
             l=old_model.args.get("l", 2.0 * old_model.args["lr"]),
@@ -2132,6 +2242,7 @@ class NodimThermalHydroBearing(BaseCSystem):
             xct=old_model.args.get("xct", 0.0),
             yct=old_model.args.get("yct", 0.0),
             angle_unit="rad",
+            input_args=getattr(old_model, "_input_args", {}),
             reynold=old_model.args.get("reynold", True),
             error_set=getattr(old_model, "_error_set", 1e-7),
             damp=getattr(old_model, "_damp", 0.8),
@@ -2411,11 +2522,12 @@ class NodimThermalHydroBearing(BaseCSystem):
         return fields
 
     def _collect_orifice_info(self):
-        """Scan bearing.simple_models for orifices and return dimensional flow data.
+        """Return explicit nondimensional point-source data from bearing orifices.
 
-        Returns a list of (x_dim, z_dim, Q_vol) tuples where:
-        - x_dim, z_dim: orifice position in metres
-        - Q_vol: volumetric flow rate in m³/s (positive = injection)
+        The nondimensional thermal core consumes ``(x_bar, z_bar, q_bar)``.
+        Legacy ``flow`` tuples are intentionally ignored because their
+        dimensional coordinates and volumetric flow are ambiguous at this
+        boundary.
 
         Returns an empty list if no orifices are present.
         """
@@ -2423,7 +2535,29 @@ class NodimThermalHydroBearing(BaseCSystem):
         result = []
         for sm in self.bearing.simple_models:
             if hasattr(sm, "flow_info"):
-                result.extend(sm.flow_info(model)["flow"])
+                info = sm.flow_info(model)
+                for item in info.get("flow_params", []):
+                    required = {"position_nondim", "q_nondim"}
+                    missing = required.difference(item)
+                    if missing:
+                        raise ValueError(
+                            "Orifice flow_info is missing explicit thermal fields: "
+                            + ", ".join(sorted(missing))
+                        )
+                    position = np.asarray(
+                        item["position_nondim"], dtype=float
+                    ).reshape(-1)
+                    if position.size != 2:
+                        raise ValueError(
+                            "position_nondim must contain exactly two values"
+                        )
+                    result.append(
+                        (
+                            float(position[0]),
+                            float(position[1]),
+                            float(item["q_nondim"]),
+                        )
+                    )
 
         return result
 
@@ -2641,6 +2775,10 @@ class NodimThermalHydroBearing(BaseCSystem):
                 "temperature_z": temperature_z,
                 "viscosity_field": miu_field.copy(),
                 "q_orifice_total": thermal.get("q_orifice_total", 0.0),
+                "q_orifice_total_vol": thermal.get("q_orifice_total_vol", 0.0),
+                "q_orifice_total_nondim": thermal.get(
+                    "q_orifice_total_nondim", 0.0
+                ),
                 "thermal_transient": bool(transient),
             }
         )
@@ -2933,6 +3071,11 @@ class NodimThermalHydroBearing(BaseCSystem):
         result = self._solve_coupled(
             *args, transient=False, temperature_prev=None, **kwargs
         )
+        if not bool(result.get("thermal_converged", False)):
+            raise RuntimeError(
+                "Steady thermal initialization did not converge; "
+                "transient state was not updated"
+            )
         self._temperature_prev = np.asarray(result["temperature"], dtype=float).copy()
         return result
 
@@ -2958,6 +3101,10 @@ class NodimThermalHydroBearing(BaseCSystem):
             temperature_prev=self._temperature_prev,
             **kwargs,
         )
+        if not bool(result.get("thermal_converged", False)):
+            raise RuntimeError(
+                "Transient thermal step did not converge; previous state was retained"
+            )
         self._temperature_prev = np.asarray(result["temperature"], dtype=float).copy()
         return result
 
@@ -3018,12 +3165,13 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
 
         save_switch = getattr(old_model, "save_switch", {"p": False, "h": False})
         input_args = self._current_film_input_args(old_model)
+        input_args["miu"] = float(self._miu0)
         input_args, nd_args = _transform_film_args(input_args)
         x_lim = nd_args["x_lim"]
         z_lim = nd_args["z_lim"]
         new_model = NodimViscositySkfemNewtonFilm(
             lambda_value=nd_args["lambda"],
-            lambda0=old_model.args.get("lambda0", nd_args.get("lambda0")),
+            lambda0=nd_args["lambda0"],
             lr=nd_args["lr"],
             x0=x_lim[0],
             lx=x_lim[1] - x_lim[0],

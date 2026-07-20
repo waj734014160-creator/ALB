@@ -38,12 +38,50 @@ def _get_node(model, position):
     return add_node
 
 
+def _physical_flow_reference(model):
+    """Return ``(Qw, r, l/2)`` from a film model's physical reference data.
+
+    ``Qw`` is the volumetric-flow scale used by the Reynolds equation,
+    ``ps*c**3/(12*miu0*lr)``.  Nondimensional film models retain these physical
+    scale values in ``args`` or ``_input_args``; unit-scale models naturally
+    return their unit-reference equivalent.
+    """
+    model = get_main_model_from_filmsystem(model)
+    args = model.args
+    input_args = getattr(model, "_input_args", {})
+    physical_values = {}
+    for name in ("ps", "c", "r", "l"):
+        value = input_args.get(name)
+        if value is None:
+            value = args.get(name)
+        if value is None:
+            raise ValueError(
+                f"A physical '{name}' reference is required for flow scaling"
+            )
+        physical_values[name] = float(value)
+    ps = physical_values["ps"]
+    c = physical_values["c"]
+    r = physical_values["r"]
+    l = physical_values["l"]
+    miu0_value = args.get("miu0")
+    if miu0_value is None:
+        miu0_value = input_args.get("miu", args.get("miu"))
+    if miu0_value is None:
+        raise ValueError("A physical reference viscosity is required for flow scaling")
+    miu0 = float(miu0_value)
+    lr = float(args.get("lr", l / (2.0 * r)))
+    qw = ps * c**3 / (12.0 * miu0 * lr)
+    return qw, r, l / 2.0
+
+
 class BaseOrifice(BaseSimpleModel):
     """Base interface for oil-supply orifice models.
 
     ``flow_info`` is the public data contract used by the thermal model.  It
-    returns a dictionary split into structure parameters, flow parameters, and
-    dimensional point-source data consumed by the thermal source assembler.
+    returns a dictionary split into structure parameters, explicit flow
+    parameters, and a legacy dimensional tuple list.  Every ``flow_params``
+    item provides ``position_nondim``, ``position_dim``, ``q_nondim``,
+    ``q_vol``, and ``qw``.  Thermal solvers consume the explicit fields only.
     """
 
     def flow_info(self, model=None):
@@ -98,7 +136,9 @@ class Orifice(BaseOrifice):
             lr = self._model.args["lr"]
             ps = self._model.args["ps"]
             c = self._model.args["c"]
-            miu = self._model.args["miu"]
+            miu = self._model.args.get("miu0")
+            if miu is None:
+                miu = self._model.args["miu"]
             f1 = 12 * miu * lr / ps / c**3
             self._f1 = f1
         else:
@@ -269,22 +309,23 @@ class Orifice(BaseOrifice):
         if model is None:
             return {"structure": structure, "flow_params": [], "flow": []}
         model = get_main_model_from_filmsystem(model)
-        r = model.args["r"]
-        l_half = model.args["l"] / 2.0
+        qw, r, l_half = _physical_flow_reference(model)
         pos_nd = self._add_node.coords
-        nq = getattr(self, "nq", 0.0) or 0.0
-        f1 = self._f1 if self._f1 not in (None, 0) else None
-        if f1 is None:
-            self._model = model
-            f1 = self.f1
-        q_vol = float(nq) / f1 if f1 else 0.0
-        position_dim = (pos_nd[0] * r, pos_nd[1] * l_half)
+        q_nondim = float(getattr(self, "nq", 0.0) or 0.0)
+        q_vol = q_nondim * qw
+        position_nondim = (float(pos_nd[0]), float(pos_nd[1]))
+        position_dim = (
+            position_nondim[0] * r,
+            position_nondim[1] * l_half,
+        )
         flow_params = [
             {
                 "node": self._add_node.number,
+                "position_nondim": position_nondim,
                 "position_dim": position_dim,
-                "nq": float(nq),
+                "q_nondim": q_nondim,
                 "q_vol": q_vol,
+                "qw": qw,
             }
         ]
         return {
@@ -578,31 +619,31 @@ class NodimCSOrifice(BaseOrifice):
         if model is None:
             return {"structure": structure, "flow_params": [], "flow": []}
         model = get_main_model_from_filmsystem(model)
-        r = model.args["r"]
-        l_half = model.args["l"] / 2.0
-        qw = self.qw if self.qw else 0.0
-        args_nodim = bool(model.args.get("args_nodim", False))
+        qw, r, l_half = _physical_flow_reference(model)
         flow = []
         flow_params = []
         for idx, node in enumerate(self.node):
-            q_vol = 0.0
-            if self.qn is not None and idx < len(self.qn):
-                q_vol = float(self.qn[idx]) * qw
+            q_nondim = (
+                float(self.qn[idx])
+                if self.qn is not None and idx < len(self.qn)
+                else 0.0
+            )
+            q_vol = q_nondim * qw
             pos_nd = node.coords
-            if args_nodim:
-                position = (float(pos_nd[0]), float(pos_nd[1]))
-            else:
-                position = (float(pos_nd[0] * r), float(pos_nd[1] * l_half))
-            flow.append((position[0], position[1], q_vol))
+            position_nondim = (float(pos_nd[0]), float(pos_nd[1]))
+            position_dim = (
+                position_nondim[0] * r,
+                position_nondim[1] * l_half,
+            )
+            flow.append((position_dim[0], position_dim[1], q_vol))
             flow_params.append(
                 {
                     "node": node.number,
-                    "position": position,
-                    "position_units": "nondim" if args_nodim else "dimensional",
-                    "q_nondim": float(self.qn[idx])
-                    if self.qn is not None and idx < len(self.qn)
-                    else 0.0,
+                    "position_nondim": position_nondim,
+                    "position_dim": position_dim,
+                    "q_nondim": q_nondim,
                     "q_vol": q_vol,
+                    "qw": qw,
                 }
             )
         return {"structure": structure, "flow_params": flow_params, "flow": flow}
@@ -614,7 +655,7 @@ class CSOrifice(NodimCSOrifice):
     The input geometry in ``CsoArgs`` is dimensional, but ``cq0``, ``cq1`` and
     ``cq2`` are stored in the same nondimensional form used by
     ``NodimCSOrifice``.  With ``p = ps * p_bar`` and
-    ``q = qw * q_bar``, where ``qw = ps * c**3 / (12 * miu * lr)``, the legacy
+    ``q = qw * q_bar``, where ``qw = ps * c**3 / (12 * miu0 * lr)``, the legacy
     dimensional valve / pipe coefficients are scaled into CQ here before the
     shared nondimensional nonlinear equations are solved.
     """
@@ -642,7 +683,9 @@ class CSOrifice(NodimCSOrifice):
 
     def _calc_qw(self):
         margs = self.model.args
-        miu = margs["miu"]
+        miu = margs.get("miu0")
+        if miu is None:
+            miu = margs["miu"]
         qw = margs["ps"] * margs["c"] ** 3 / 12 / miu / margs["lr"]
         self.qw = qw
         return qw
@@ -676,8 +719,9 @@ class CSOrifice(NodimCSOrifice):
         self.cq2 = cq2
         return cq2
 
-    def _node_pressure_for_equations(self, pn):
-        return pn
+    # The inherited node-pressure conversion is already the required identity.
+    # def _node_pressure_for_equations(self, pn):
+    #     return pn
 
     def _supply_pressure_for_equations(self):
         return self.ps / self.model.args["ps"]
@@ -691,11 +735,13 @@ class CSOrifice(NodimCSOrifice):
     def _result_pressure_scale(self):
         return self.pr / self.model.args["ps"]
 
-    def _flow_to_model_units(self, q, qw, model):
-        return q
-
-    def _flow_derivative_to_model_units(self, qdp, qw, model):
-        return qdp
+    # The inherited flow conversions are identities because the shared
+    # nonlinear equations and Reynolds matrix both consume nondimensional flow.
+    # def _flow_to_model_units(self, q, qw, model):
+    #     return q
+    #
+    # def _flow_derivative_to_model_units(self, qdp, qw, model):
+    #     return qdp
 
 
 def _as_numeric_vector(value, name):
@@ -854,6 +900,8 @@ CsoArgs = namedtuple(
 csorifice_args = CsoArgs()
 
 
+# Legacy reference only: HybirdOrifice is superseded by the shared CSOrifice
+# formulation above.  Keep this commented implementation for historical audit.
 # class HybirdOrifice(Orifice):
 #
 #     def __init__(self, pressure, position, l, d, w, q_leak=0):

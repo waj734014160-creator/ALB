@@ -1,36 +1,143 @@
 ﻿# coding: utf-8
+import copy
 import os
 import pickle
+from pathlib import Path
 
 import numpy as np
 
 from ALB.alb import alb2, alb2_fuzzy, alb2_static, nn_agent
 from ALB.bearing import MultiPad, StaticPosition, four_pads_bearing
-from ALB.config import ALBConfig, ALBNetConfig, FPBConfig, ThermalConfig
+from ALB.config import (
+    ALBConfig,
+    ALBNetConfig,
+    FPBConfig,
+    ResolvedTimeGrid,
+    ThermalConfig,
+    TimeGridConfig,
+)
 from ALB.couple import RsRotorBearingCouple
 from ALB.orbit import EllipseTrack, orbitime, test_bearing_orbit
 from ALB.rotor import rotor0
 from ALB.thermal import wrap_pad_collection_with_thermal
-from ALB.tool import read_json5_with_share, read_share
+from ALB.tool import read_json5, read_json5_with_share
+
+
+class TaskConfigFactory:
+    """Load one task directory and inject a single resolved physical time grid.
+
+    The factory reads ``share.json5`` and ``time_iter.json5`` once during
+    construction.  Child JSON5 files are merged against the resulting in-memory
+    shared dictionary, so derived ``dt`` values never need to be persisted.
+    """
+
+    def __init__(self, config_dir):
+        self.config_dir = Path(config_dir)
+        self.share_path = self.config_dir / "share.json5"
+        self.time_path = self.config_dir / "time_iter.json5"
+        self._raw_share = read_json5(str(self.share_path))
+        if self.time_path.is_file():
+            self._raw_time = read_json5(str(self.time_path))
+            time_payload = self._merge_time_share(self._raw_time, self._raw_share)
+        else:
+            self._raw_time = None
+            time_payload = dict(self._raw_share)
+        self.resolved_time_grid = TimeGridConfig.from_dict(time_payload).resolve()
+        self._share = self._build_resolved_share(
+            self._raw_share, self.resolved_time_grid
+        )
+
+    @staticmethod
+    def _merge_time_share(time_data: dict, share_data: dict) -> dict:
+        """Merge only the values requested by a time config's share contract."""
+
+        payload = dict(time_data)
+        share_keys = payload.pop("share_name", [])
+        if not isinstance(share_keys, list):
+            share_keys = [share_keys]
+        for key in share_keys:
+            if key not in share_data:
+                raise KeyError(
+                    f"Parameter '{key}' requested by 'time_iter.json5' not found "
+                    "in share data."
+                )
+            payload[key] = share_data[key]
+        return payload
+
+    @staticmethod
+    def _build_resolved_share(
+        share_data: dict, resolved: ResolvedTimeGrid
+    ) -> dict:
+        """Return a private shared dictionary containing canonical time values."""
+
+        shared = dict(share_data)
+        shared.update(
+            {
+                "mode": resolved.mode,
+                "freq": resolved.freq,
+                "dt": resolved.dt,
+                "steps": resolved.steps,
+                "cycles": resolved.cycles,
+                "points_per_cycle": resolved.points_per_cycle,
+                "pt": resolved.points_per_cycle,
+            }
+        )
+        if resolved.mode == "cycle_points":
+            shared["n"] = int(resolved.cycles)
+        else:
+            shared.pop("n", None)
+        return shared
+
+    @property
+    def share_config(self) -> dict:
+        """Return a detached copy of the resolved in-memory shared values."""
+
+        return copy.deepcopy(self._share)
+
+    def read_config(self, file_name) -> dict:
+        """Read one child config and merge the factory's resolved shared values."""
+
+        path = Path(file_name)
+        if not path.is_absolute():
+            path = self.config_dir / path
+        data = read_json5_with_share(
+            str(path), share_dict=copy.deepcopy(self._share)
+        )
+        if "freq" in data:
+            data["freq"] = self.resolved_time_grid.freq
+        if "dt" in data:
+            data["dt"] = self.resolved_time_grid.dt
+        thermal = data.get("thermal")
+        if isinstance(thermal, dict):
+            thermal["dt"] = self.resolved_time_grid.dt
+        thermal_config = data.get("thermal_config")
+        if isinstance(thermal_config, dict):
+            thermal_config["dt"] = self.resolved_time_grid.dt
+        standalone_thermal_keys = {"t_in", "cp_lub", "transient_enabled"}
+        if standalone_thermal_keys.issubset(data):
+            data["dt"] = self.resolved_time_grid.dt
+        return data
+
+    def time_iter(self):
+        """Build a time iterator that preserves the resolved ``dt`` exactly."""
+
+        return orbitime(**self.resolved_time_grid.to_time_config())
 
 
 def task_alb_capacity(config_dir, save_dir=None, save_name="result"):
     # calculate the static equilibrium trajectory under different static loads
     print(config_dir)
 
-    share_config = os.path.join(config_dir, "share.json5")
-    read_share(share_config, recover=True)
+    config_factory = TaskConfigFactory(config_dir)
 
     if save_dir is None:
         save_dir = os.path.join(config_dir, save_name)
 
-    alb_config = os.path.join(config_dir, "alb12.json5")
-    alb_config = read_json5_with_share(alb_config)
+    alb_config = config_factory.read_config("alb12.json5")
     alb_config = ALBConfig.from_dict(alb_config)
 
     alb = alb2_static(alb_config)
-    sp_config = os.path.join(config_dir, "static_position.json5")
-    sp_config = read_json5_with_share(sp_config)
+    sp_config = config_factory.read_config("static_position.json5")
 
     sp = StaticPosition(alb, **sp_config)
     wys = np.linspace(-0.1, -1, 10)
@@ -43,19 +150,16 @@ def task_albf_capacity(config_dir, save_dir=None, save_name="result"):
     # calculate the static equilibrium trajectory under different static loads, fuzzy control
     print(config_dir)
 
-    share_config = os.path.join(config_dir, "share.json5")
-    read_share(share_config, recover=True)
+    config_factory = TaskConfigFactory(config_dir)
 
     if save_dir is None:
         save_dir = os.path.join(config_dir, save_name)
-    alb_config = os.path.join(config_dir, "albfuzzy12.json5")
-    alb_config = read_json5_with_share(alb_config)
+    alb_config = config_factory.read_config("albfuzzy12.json5")
     alb_config["servo"] = "static"
     alb_config = ALBConfig.from_dict(alb_config, "FuzzyPID")
 
     alb = alb2_fuzzy(alb_config)
-    sp_config = os.path.join(config_dir, "static_position.json5")
-    sp_config = read_json5_with_share(sp_config)
+    sp_config = config_factory.read_config("static_position.json5")
 
     sp = StaticPosition(alb, **sp_config)
     wys = np.linspace(-0.1, -1, 10)
@@ -68,24 +172,20 @@ def task_albnn_capacity(config_dir, save_dir=None, save_name="result"):
     # calculate the static equilibrium trajectory under different static loads, neural network control
     print(config_dir)
 
-    share_config = os.path.join(config_dir, "share.json5")
-    read_share(share_config, recover=True)
+    config_factory = TaskConfigFactory(config_dir)
 
     if save_dir is None:
         save_dir = os.path.join(config_dir, save_name)
 
-    alb_config = os.path.join(config_dir, "alb12.json5")
-    alb_config = read_json5_with_share(alb_config)
+    alb_config = config_factory.read_config("alb12.json5")
     alb_config = ALBConfig.from_dict(alb_config)
 
     alb = alb2_static(alb_config)
-    nn_config = os.path.join(config_dir, "nn_agent.json5")
-    nn_config = read_json5_with_share(nn_config)
+    nn_config = config_factory.read_config("nn_agent.json5")
     nn_config = ALBNetConfig.from_dict(nn_config)
     alb = nn_agent(alb, nn_config)
 
-    sp_config = os.path.join(config_dir, "static_position.json5")
-    sp_config = read_json5_with_share(sp_config)
+    sp_config = config_factory.read_config("static_position.json5")
 
     sp = StaticPosition(alb, **sp_config)
     wys = np.linspace(-0.1, -1, 10)
@@ -97,27 +197,20 @@ def task_albnn_capacity(config_dir, save_dir=None, save_name="result"):
 def task_alb_dynamic(config_dir, save_dir=None, save_name="result", save_alb=False):
     # calculate the dynamic response under a certain orbit, and save the bearing forces and the trajectory of the rotor center; if save_alb is True, also save the ALB model
     print(config_dir)
-    share_config = os.path.join(config_dir, "share.json5")
-    read_share(share_config, recover=True)
+    config_factory = TaskConfigFactory(config_dir)
 
     if save_dir is None:
         save_dir = config_dir
-    et_config = os.path.join(config_dir, "et.json5")
-    et_config = read_json5_with_share(et_config)
+    et_config = config_factory.read_config("et.json5")
+    ti = config_factory.time_iter()
 
-    time_config = os.path.join(config_dir, "time_iter.json5")
-    time_config = read_json5_with_share(time_config)
-    ti = orbitime(**time_config)
-
-    alb_config = os.path.join(config_dir, "alb12.json5")
-    alb_config = read_json5_with_share(alb_config)
+    alb_config = config_factory.read_config("alb12.json5")
     alb_config = ALBConfig.from_dict(alb_config)
     alb = alb2(alb_config)
 
     et = EllipseTrack(**et_config)
 
-    tbo_config = os.path.join(config_dir, "tbo.json5")
-    tbo_config = read_json5_with_share(tbo_config)
+    tbo_config = config_factory.read_config("tbo.json5")
     tbo = test_bearing_orbit(ti, alb, et, **tbo_config)
     save_data = {
         "bft": tbo["bft"].bearing_forces,
@@ -140,32 +233,24 @@ def task_albnn_dynamic(config_dir, save_dir=None, save_name="result", save_alb=F
     # calculate the dynamic response under a certain orbit, and save the bearing forces and the trajectory of the rotor center;
     # if save_alb is True, also save the ALB model, neural network control
     print(config_dir)
-    share_config = os.path.join(config_dir, "share.json5")
-    read_share(share_config, recover=True)
+    config_factory = TaskConfigFactory(config_dir)
 
     if save_dir is None:
         save_dir = config_dir
-    et_config = os.path.join(config_dir, "et.json5")
-    et_config = read_json5_with_share(et_config)
+    et_config = config_factory.read_config("et.json5")
+    ti = config_factory.time_iter()
 
-    time_config = os.path.join(config_dir, "time_iter.json5")
-    time_config = read_json5_with_share(time_config)
-    ti = orbitime(**time_config)
-
-    alb_config = os.path.join(config_dir, "alb12.json5")
-    alb_config = read_json5_with_share(alb_config)
+    alb_config = config_factory.read_config("alb12.json5")
     alb_config = ALBConfig.from_dict(alb_config)
     alb = alb2(alb_config)
 
-    nn_config = os.path.join(config_dir, "nn_agent.json5")
-    nn_config = read_json5_with_share(nn_config)
+    nn_config = config_factory.read_config("nn_agent.json5")
     nn_config = ALBNetConfig.from_dict(nn_config)
     alb = nn_agent(alb, nn_config)
 
     et = EllipseTrack(**et_config)
 
-    tbo_config = os.path.join(config_dir, "tbo.json5")
-    tbo_config = read_json5_with_share(tbo_config)
+    tbo_config = config_factory.read_config("tbo.json5")
     tbo = test_bearing_orbit(ti, alb, et, **tbo_config)
     save_data = {
         "bft": tbo["bft"].bearing_forces,
@@ -189,25 +274,18 @@ def task_albf_dynamic(config_dir, save_dir=None, save_name="result"):
     print(config_dir)
     if save_dir is None:
         save_dir = config_dir
-    share_config = os.path.join(config_dir, "share.json5")
-    read_share(share_config, recover=True)
+    config_factory = TaskConfigFactory(config_dir)
 
-    et_config = os.path.join(config_dir, "et.json5")
-    et_config = read_json5_with_share(et_config)
+    et_config = config_factory.read_config("et.json5")
+    ti = config_factory.time_iter()
 
-    time_config = os.path.join(config_dir, "time_iter.json5")
-    time_config = read_json5_with_share(time_config)
-    ti = orbitime(**time_config)
-
-    alb_config = os.path.join(config_dir, "albfuzzy12.json5")
-    alb_config = read_json5_with_share(alb_config)
+    alb_config = config_factory.read_config("albfuzzy12.json5")
     alb_config = ALBConfig.from_dict(alb_config, "FuzzyPID")
     alb = alb2_fuzzy(alb_config)
 
     et = EllipseTrack(**et_config)
 
-    tbo_config = os.path.join(config_dir, "tbo.json5")
-    tbo_config = read_json5_with_share(tbo_config)
+    tbo_config = config_factory.read_config("tbo.json5")
     tbo = test_bearing_orbit(ti, alb, et, **tbo_config)
     save_data = {
         "bft": tbo["bft"].bearing_forces,
@@ -228,15 +306,10 @@ def task_alb_rotor_couple(config_dir, save_dir=None, bearing="alb", save_name="r
     print(config_dir)
     if save_dir is None:
         save_dir = config_dir
-    share_config = os.path.join(config_dir, "share.json5")
-    read_share(share_config, recover=True)
+    config_factory = TaskConfigFactory(config_dir)
+    ti = config_factory.time_iter()
 
-    time_config = os.path.join(config_dir, "time_iter.json5")
-    time_config = read_json5_with_share(time_config)
-    ti = orbitime(**time_config)
-
-    alb_config = os.path.join(config_dir, "alb12.json5")
-    alb_config = read_json5_with_share(alb_config)
+    alb_config = config_factory.read_config("alb12.json5")
     if bearing == "alb":
         alb_config = ALBConfig.from_dict(alb_config)
         alb = alb2(alb_config)
@@ -246,8 +319,7 @@ def task_alb_rotor_couple(config_dir, save_dir=None, bearing="alb", save_name="r
     else:
         raise ValueError("bearing must be alb or albf")
 
-    hb_config = os.path.join(config_dir, "hb34.json5")
-    hb_config = read_json5_with_share(hb_config)
+    hb_config = config_factory.read_config("hb34.json5")
     hb_config = FPBConfig.from_dict(hb_config)
     hb = four_pads_bearing(hb_config)
     hb_thermal_config = hb_config.thermal_config
@@ -263,14 +335,12 @@ def task_alb_rotor_couple(config_dir, save_dir=None, bearing="alb", save_name="r
             *wrap_pad_collection_with_thermal(list(hb.bearings), hb_thermal_config)
         )
 
-    rotor_config = os.path.join(config_dir, "rotor.json5")
-    rotor_config = read_json5_with_share(rotor_config)
+    rotor_config = config_factory.read_config("rotor.json5")
     rotor = rotor0(**rotor_config)
 
     rbc = RsRotorBearingCouple(rotor, ti, alb, hb)
 
-    ubf_config = os.path.join(config_dir, "unbalance_force.json5")
-    ubf_config = read_json5_with_share(ubf_config)
+    ubf_config = config_factory.read_config("unbalance_force.json5")
     rbc.add_unbalance(**ubf_config)
     rbc.add_gravity()
     rbc.solve()
@@ -282,20 +352,14 @@ def task_albf_rotor_couple(config_dir, save_dir=None, save_name="result"):
     print(config_dir)
     if save_dir is None:
         save_dir = config_dir
-    share_config = os.path.join(config_dir, "share.json5")
-    read_share(share_config, recover=True)
+    config_factory = TaskConfigFactory(config_dir)
+    ti = config_factory.time_iter()
 
-    time_config = os.path.join(config_dir, "time_iter.json5")
-    time_config = read_json5_with_share(time_config)
-    ti = orbitime(**time_config)
-
-    alb_config = os.path.join(config_dir, "albfuzzy12.json5")
-    alb_config = read_json5_with_share(alb_config)
+    alb_config = config_factory.read_config("albfuzzy12.json5")
     alb_config = ALBConfig.from_dict(alb_config, "FuzzyPID")
     alb = alb2_fuzzy(alb_config)
 
-    hb_config = os.path.join(config_dir, "hb34.json5")
-    hb_config = read_json5_with_share(hb_config)
+    hb_config = config_factory.read_config("hb34.json5")
     hb_config = FPBConfig.from_dict(hb_config)
     hb = four_pads_bearing(hb_config)
     hb_thermal_config = hb_config.thermal_config
@@ -311,14 +375,12 @@ def task_albf_rotor_couple(config_dir, save_dir=None, save_name="result"):
             *wrap_pad_collection_with_thermal(list(hb.bearings), hb_thermal_config)
         )
 
-    rotor_config = os.path.join(config_dir, "rotor.json5")
-    rotor_config = read_json5_with_share(rotor_config)
+    rotor_config = config_factory.read_config("rotor.json5")
     rotor = rotor0(**rotor_config)
 
     rbc = RsRotorBearingCouple(rotor, ti, alb, hb)
 
-    ubf_config = os.path.join(config_dir, "unbalance_force.json5")
-    ubf_config = read_json5_with_share(ubf_config)
+    ubf_config = config_factory.read_config("unbalance_force.json5")
     rbc.add_unbalance(**ubf_config)
     rbc.add_gravity()
     rbc.solve()
@@ -330,19 +392,13 @@ def task_albnn_rotor_couple(config_dir, save_dir=None, save_name="result"):
     print(config_dir)
     if save_dir is None:
         save_dir = config_dir
-    share_config = os.path.join(config_dir, "share.json5")
-    read_share(share_config, recover=True)
+    config_factory = TaskConfigFactory(config_dir)
+    ti = config_factory.time_iter()
 
-    time_config = os.path.join(config_dir, "time_iter.json5")
-    time_config = read_json5_with_share(time_config)
-    ti = orbitime(**time_config)
-
-    alb_config = os.path.join(config_dir, "alb12.json5")
-    alb_config = read_json5_with_share(alb_config)
+    alb_config = config_factory.read_config("alb12.json5")
     alb_config = ALBConfig.from_dict(alb_config)
     alb = alb2(alb_config)
-    nn_config = os.path.join(config_dir, "nn_agent.json5")
-    nn_config = read_json5_with_share(nn_config)
+    nn_config = config_factory.read_config("nn_agent.json5")
     nn_config = ALBNetConfig.from_dict(nn_config)
     alb = nn_agent(alb, nn_config)
 
@@ -353,14 +409,12 @@ def task_albnn_rotor_couple(config_dir, save_dir=None, save_name="result"):
     hb = nn_agent(alb, nn_config)
     hb.node_link = 34
 
-    rotor_config = os.path.join(config_dir, "rotor.json5")
-    rotor_config = read_json5_with_share(rotor_config)
+    rotor_config = config_factory.read_config("rotor.json5")
     rotor = rotor0(**rotor_config)
 
     rbc = RsRotorBearingCouple(rotor, ti, alb, hb)
 
-    ubf_config = os.path.join(config_dir, "unbalance_force.json5")
-    ubf_config = read_json5_with_share(ubf_config)
+    ubf_config = config_factory.read_config("unbalance_force.json5")
     rbc.add_unbalance(**ubf_config)
     rbc.add_gravity()
     rbc.solve()

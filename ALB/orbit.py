@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from ALB.config import TimeGridConfig
 from ALB.results import SaveTreeNode
 from ALB.tool import recognize_kc
 
@@ -361,18 +362,49 @@ def test_bearing_orbit_parallel(time_iter, bearing, et, **kwargs):
     return {"bft": bft0, "ibft": bft1, "hkc": hkc}
 
 
-def orbitime(freq, n, pt=20):
-    """
-    generate time iterator
-    :param freq: frequency
-    :param n: number of cycles
-    :param pt: points per cycle
-    :return: time iterator
-    """
-    from ALB.base import TimeIter
+def orbitime(
+    freq=None,
+    n=None,
+    pt=None,
+    *,
+    mode=None,
+    cycles=None,
+    points_per_cycle=None,
+    dt=None,
+    steps=None,
+):
+    """Build a time iterator from canonical or legacy orbit settings.
 
-    num = n * pt
-    dt = 1 / (freq * pt)
-    end = num * dt
-    return TimeIter(0, end, num)
+    The positional ``freq, n, pt`` contract remains available for legacy
+    callers.  Canonical callers select either ``cycle_points`` or ``fixed_dt``
+    through :class:`ALB.config.TimeGridConfig` fields.
+    """
+
+    from ALB.base import TimeIterDt
+
+    canonical_values = any(
+        value is not None
+        for value in (mode, cycles, points_per_cycle, dt, steps)
+    )
+    if canonical_values:
+        if n is not None or pt is not None:
+            raise ValueError(
+                "canonical time-grid fields cannot be combined with legacy n/pt"
+            )
+        config = TimeGridConfig(
+            mode=mode,
+            freq=freq,
+            cycles=cycles,
+            points_per_cycle=points_per_cycle,
+            dt=dt,
+            steps=steps,
+        )
+    else:
+        if n is None:
+            raise ValueError("legacy orbitime requires n")
+        config = TimeGridConfig.from_dict(
+            {"freq": freq, "n": n, "pt": 20 if pt is None else pt}
+        )
+    resolved = config.resolve()
+    return TimeIterDt(dt=resolved.dt, num=resolved.steps)
 

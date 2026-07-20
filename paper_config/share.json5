@@ -1,8 +1,5 @@
 {
     freq: 50,
-    n: 8,
-    pt: 500,
-    dt: 4e-05,
     e: 0.0,
     angle: 0,
     lx: 80,
@@ -108,7 +105,6 @@
         supg: true,
         pressure_backend: "skfem",
         transient_enabled: false,
-        dt: null,
     },
     alpha: 0.01,
     beta: 0.02,

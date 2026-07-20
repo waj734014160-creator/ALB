@@ -26,7 +26,7 @@ from scipy.linalg import eigh
 from scipy.ndimage import gaussian_filter1d
 from tqdm import tqdm
 
-from ALB.config import ConfigData
+from ALB.config import ConfigData, TimeGridConfig
 
 
 class ParameterHub:
@@ -936,19 +936,60 @@ def read_json5(file, **kwargs) -> dict:
 
 
 def read_share(file, recover=False):
+    """Return shared values with a resolved in-memory simulation time grid.
+
+    ``recover=True`` is retained for source compatibility but no longer writes
+    derived values back to ``share.json5``.  Canonical time settings are read
+    from an adjacent ``time_iter.json5`` when present; otherwise legacy
+    ``freq``/``n``/``pt`` values in the shared file are accepted.
     """
-    Abstract method to be implemented by subclasses.
-    :param file: the file path
-    :param recover: whether to recover the file
-    """
-    from ALB.orbit import orbitime
 
     share_config = read_json5(file)
-    ti = orbitime(freq=share_config["freq"], n=share_config["n"], pt=share_config["pt"])
-    share_config["dt"] = ti.dt
+    time_file = os.path.join(os.path.dirname(file), "time_iter.json5")
+    if os.path.exists(time_file):
+        time_config = read_json5(time_file)
+        share_keys = time_config.pop("share_name", [])
+        if not isinstance(share_keys, list):
+            share_keys = [share_keys]
+        for key in share_keys:
+            if key not in share_config:
+                raise KeyError(
+                    f"Parameter '{key}' requested by 'time_iter.json5' not found "
+                    "in share data."
+                )
+            time_config[key] = share_config[key]
+    else:
+        time_config = share_config
+
+    resolved = TimeGridConfig.from_dict(time_config).resolve()
+    share_config.update(
+        {
+            "mode": resolved.mode,
+            "freq": resolved.freq,
+            "dt": resolved.dt,
+            "steps": resolved.steps,
+            "cycles": resolved.cycles,
+            "points_per_cycle": resolved.points_per_cycle,
+            "pt": resolved.points_per_cycle,
+        }
+    )
+    if resolved.mode == "cycle_points":
+        share_config["n"] = int(resolved.cycles)
+    else:
+        share_config.pop("n", None)
+
     if recover:
-        with open(file, "w", encoding="utf-8") as f:
-            json5.dump(share_config, f, indent=4)
+        warnings.warn(
+            "read_share(recover=True) is deprecated; derived values are now "
+            "returned in memory and share.json5 is never rewritten",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    # Legacy write-back behavior is intentionally disabled and preserved here
+    # for migration context.  Runtime-derived dt must never mutate shared input.
+    # if recover:
+    #     with open(file, "w", encoding="utf-8") as f:
+    #         json5.dump(share_config, f, indent=4)
     return share_config
 
 
@@ -980,7 +1021,15 @@ def read_json5_with_share(file, share_dict=None, **kwargs):
         # Case 2: No dictionary provided, attempt to load 'share.json5' from disk
         share_file_path = os.path.join(os.path.dirname(file), share_file_name)
         if os.path.exists(share_file_path):
-            share_data = read_json5(share_file_path)
+            raw_share_data = read_json5(share_file_path)
+            time_file_path = os.path.join(os.path.dirname(file), "time_iter.json5")
+            has_legacy_time = all(
+                key in raw_share_data for key in ("freq", "n", "pt")
+            )
+            if os.path.exists(time_file_path) or has_legacy_time:
+                share_data = read_share(share_file_path)
+            else:
+                share_data = raw_share_data
 
     # Perform the merge if shared data exists and the file requests it via 'share_name'
     if share_data is not None and share_name in file_data:
