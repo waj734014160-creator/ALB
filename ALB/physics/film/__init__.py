@@ -1,5 +1,13 @@
 """Liquid-film Reynolds solvers."""
 
+from .mesh_export import (
+    BearingFilmMeshConfig,
+    StructuredHexMesh,
+    build_bearing_film_mesh,
+    film_thickness_distribution,
+    plot_mesh_preview,
+    write_nastran_bdf,
+)
 from .solver import (
     FilmBoundary,
     FilmModel,
@@ -19,6 +27,7 @@ from .solver import (
 )
 
 __all__ = [
+    "BearingFilmMeshConfig",
     "FilmBoundary",
     "FilmModel",
     "FilmOutput",
@@ -32,6 +41,11 @@ __all__ = [
     "RectFilmElem",
     "RectFilmNode",
     "SkfemNewtonFilm",
+    "StructuredHexMesh",
     "ThicknessModel",
+    "build_bearing_film_mesh",
     "film_args_trans",
+    "film_thickness_distribution",
+    "plot_mesh_preview",
+    "write_nastran_bdf",
 ]

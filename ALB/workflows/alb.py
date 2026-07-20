@@ -21,7 +21,10 @@ from ALB.dynamics.coupling import RsRotorBearingCouple
 from ALB.dynamics.orbit import EllipseTrack, orbitime, test_bearing_orbit
 from ALB.dynamics.rotor import rotor0
 from ALB.physics.thermal import wrap_pad_collection_with_thermal
-from ALB.tool import read_json5, read_json5_with_share
+from ALB.infrastructure.config_io import (
+    read_json5,
+    read_json5_with_shared as read_json5_with_share,
+)
 
 
 class TaskConfigFactory:
@@ -101,9 +104,7 @@ class TaskConfigFactory:
         path = Path(file_name)
         if not path.is_absolute():
             path = self.config_dir / path
-        data = read_json5_with_share(
-            str(path), share_dict=copy.deepcopy(self._share)
-        )
+        data = read_json5_with_share(str(path), shared=copy.deepcopy(self._share))
         if "freq" in data:
             data["freq"] = self.resolved_time_grid.freq
         if "dt" in data:

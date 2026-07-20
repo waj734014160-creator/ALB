@@ -130,7 +130,7 @@ class RossRotorResult(BaseResult):
             filename=os.path.join(path, self.name + ".html"),
             auto_open=False,
         )
-        self.rotor_result.save(os.path.join(path, "rotor_time_respone.toml"))
+        self.rotor_result.save(os.path.join(path, "rotor_time_response.toml"))
         res = DataFrameResult(
             {self.name + "_t": t, self.name + "_xout": xout, self.name + "_yout": yout}
         )

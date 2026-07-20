@@ -1,5 +1,6 @@
-"""Static, dynamic, and iterative numerical kernels."""
+"""Static, dynamic, iterative, and array numerical kernels."""
 
+from .arrays import horizontal_stack_nonempty, vertical_stack_nonempty
 from .damping import AdaptiveDampConfig, AdaptiveDampController
 from .dynamic import (
     calc_fe_dx,
@@ -32,4 +33,6 @@ __all__ = [
     "calc_ke_dy",
     "gauss_seidel_iteration_film",
     "gauss_seidel_iteration_matrix",
+    "horizontal_stack_nonempty",
+    "vertical_stack_nonempty",
 ]

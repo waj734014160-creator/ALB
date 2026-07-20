@@ -7,7 +7,9 @@ import numpy as np
 import pandas as pd
 import tqdm
 
-from ALB.tool import namevalue, read_json5, listdir
+from ALB.infrastructure.config_io import list_directories as listdir
+from ALB.infrastructure.config_io import read_json5
+from ALB.workflows.naming import parse_parameter_name as namevalue
 
 
 def read_pickles(save_path=None):
@@ -110,8 +112,8 @@ def dynamic(f_path, save_path):
     data.to_csv(save_path, index=False)
 
 
-def rotor_respone(f_path, save_path):
-    """Execute rotor_respone."""
+def rotor_response(f_path, save_path):
+    """Collect rotor-response outputs from a task directory."""
     data = pd.DataFrame(columns=['freq', 'kp', 'kd', 'uxy'])
     file_names = listdir(f_path)
     for fn in tqdm.tqdm(file_names, total=len(file_names)):

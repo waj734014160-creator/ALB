@@ -15,7 +15,7 @@ from ALB.core.fem.base import BasePostProcess
 
 # from ALB.infrastructure.logging import logger
 from ALB.infrastructure.persistence import RossRotorResult, SaveTreeNode
-from ALB.tool import pearson_similarity
+from ALB.workflows.identification import pearson_similarity
 
 _intpoint = np.array(
     [

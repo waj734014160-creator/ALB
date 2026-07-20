@@ -12,7 +12,7 @@ from ALB.config import CsoArgs
 
 # from ALB.infrastructure.logging import logger
 from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
-from ALB.tool import get_main_model_from_filmsystem
+from ALB.physics.film.model_utils import get_primary_film_model
 
 __all__ = [
     "BaseOrifice",
@@ -47,7 +47,7 @@ def _physical_flow_reference(model):
     scale values in ``args`` or ``_input_args``; unit-scale models naturally
     return their unit-reference equivalent.
     """
-    model = get_main_model_from_filmsystem(model)
+    model = get_primary_film_model(model)
     args = model.args
     input_args = getattr(model, "_input_args", {})
     physical_values = {}
@@ -166,7 +166,7 @@ class Orifice(BaseOrifice):
         """
         if self._add_node is None:
             self._get_node(model)
-        model = get_main_model_from_filmsystem(model)
+        model = get_primary_film_model(model)
         self._model = model
         q = self.add_q(model)
         qdp = self.add_qdp(model)
@@ -309,7 +309,7 @@ class Orifice(BaseOrifice):
             model = self._model
         if model is None:
             return {"structure": structure, "flow_params": [], "flow": []}
-        model = get_main_model_from_filmsystem(model)
+        model = get_primary_film_model(model)
         qw, r, l_half = _physical_flow_reference(model)
         pos_nd = self._add_node.coords
         q_nondim = float(getattr(self, "nq", 0.0) or 0.0)
@@ -420,7 +420,7 @@ class NodimCSOrifice(BaseOrifice):
         if self.node is None:
             self._get_node(model)
         self.h = np.array([self.node[n].h for n in range(len(self.node))])
-        model = get_main_model_from_filmsystem(model)
+        model = get_primary_film_model(model)
         self.model = model
         self._calc_cq()
         self.lr = model.args["lr"]
@@ -619,7 +619,7 @@ class NodimCSOrifice(BaseOrifice):
             model = self.model
         if model is None:
             return {"structure": structure, "flow_params": [], "flow": []}
-        model = get_main_model_from_filmsystem(model)
+        model = get_primary_film_model(model)
         qw, r, l_half = _physical_flow_reference(model)
         flow = []
         flow_params = []

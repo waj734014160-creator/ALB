@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from ALB.config import TimeGridConfig
 from ALB.infrastructure.persistence import SaveTreeNode
-from ALB.tool import recognize_kc
+from ALB.workflows.identification import recognize_kc
 
 
 class EllipseTrack:

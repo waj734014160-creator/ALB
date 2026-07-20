@@ -109,7 +109,7 @@ def _restore_special_values(value: Any) -> Any:
 def _read_paper_files(config_dir: Path) -> Dict[str, dict]:
     # Import lazily so lightweight GUI config utilities do not eagerly import
     # the complete task execution module during application startup.
-    from ALB.task import TaskConfigFactory
+    from ALB.workflows.alb import TaskConfigFactory
 
     factory = TaskConfigFactory(config_dir)
     configs = {

@@ -1,18 +1,14 @@
 from pathlib import Path
 
-import matplotlib
 import numpy as np
 
-from ALB.tool import (
+from ALB.physics.film.mesh_export import (
     BearingFilmMeshConfig,
     build_bearing_film_mesh,
     film_thickness_distribution,
     plot_mesh_preview,
     write_nastran_bdf,
 )
-
-# matplotlib.use("Agg")
-
 
 def test_bearing_film_mesh_export_and_preview(tmp_path: Path) -> None:
     config = BearingFilmMeshConfig(
@@ -58,12 +54,3 @@ def test_bearing_film_mesh_export_and_preview(tmp_path: Path) -> None:
     assert "CHEXA" in bdf_text
     assert "\n+," not in bdf_text
     assert preview_path.stat().st_size > 0
-    print(
-        f"Test passed: Nastran BDF and preview image successfully generated at {tmp_path}"
-    )
-
-
-if __name__ == "__main__":
-    test_bearing_film_mesh_export_and_preview(
-        Path("outputs") / "test_bearing_film_mesh"
-    )

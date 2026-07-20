@@ -9,11 +9,11 @@ import pytest
 
 from ALB.config import ALBConfig, TimeGridConfig
 from ALB.dynamics.orbit import orbitime
-from ALB.task import TaskConfigFactory
-from ALB.tool import read_json5, read_share
+from ALB.infrastructure.config_io import read_json5, read_shared_config
+from ALB.workflows.alb import TaskConfigFactory
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 PAPER_CONFIG = REPO_ROOT / "paper_config"
 REFERENCE = REPO_ROOT / "refs" / "task_time_config_reference_v1.json"
 
@@ -23,15 +23,16 @@ def _sha256(path: Path) -> str:
 
 
 def test_time_factory_public_exports():
-    from ALB import ResolvedTimeGrid, TaskConfigFactory as PublicFactory
-    from ALB import TimeGridConfig as PublicTimeGridConfig
+    from ALB.config import ResolvedTimeGrid
 
-    assert PublicTimeGridConfig is TimeGridConfig
-    assert PublicFactory is TaskConfigFactory
     resolved = TimeGridConfig(
         mode="cycle_points", freq=50, cycles=1, points_per_cycle=20
     ).resolve()
     assert ResolvedTimeGrid is type(resolved)
+    import ALB
+
+    assert not hasattr(ALB, "TimeGridConfig")
+    assert not hasattr(ALB, "TaskConfigFactory")
 
 
 def test_legacy_time_resolution_matches_pre_refactor_reference_exactly():
@@ -119,7 +120,7 @@ def test_time_grid_rejects_ambiguous_or_invalid_inputs(payload, error_type):
 
 
 def test_task_factory_reads_share_and_time_once():
-    from ALB import task as task_module
+    from ALB.workflows import alb as task_module
 
     original = task_module.read_json5
     paths = []
@@ -157,7 +158,7 @@ def test_factory_and_deprecated_recover_never_write_share(tmp_path):
 
     TaskConfigFactory(tmp_path)
     with pytest.warns(DeprecationWarning):
-        resolved_share = read_share(str(share), recover=True)
+        resolved_share = read_shared_config(share, recover=True)
 
     assert resolved_share["dt"] == 4e-5
     assert _sha256(share) == before_hash
@@ -168,7 +169,7 @@ def test_read_share_supports_legacy_schema_without_time_file(tmp_path):
     share = tmp_path / "share.json5"
     share.write_text("{freq: 40, n: 2, pt: 25, dt: 123.0}\n", encoding="utf-8")
 
-    resolved = read_share(str(share))
+    resolved = read_shared_config(share)
 
     assert resolved["mode"] == "cycle_points"
     assert resolved["dt"] == 0.001

@@ -14,7 +14,7 @@ from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
 
 # from ALB.infrastructure.logging import logger
 from .rotor import RossRotor, SingleRotor, UnbalancedExcitation
-from ALB.tool import cvstack
+from ALB.core.numerics.arrays import vertical_stack_nonempty
 
 
 class RotorBearingCouple(BaseSystem):
@@ -137,7 +137,9 @@ class RsRotorBearingCouple(BaseCSystem):
             bearing.input(uxy=rp_uxy, uxyt=rp_uxyt, t=0)
             self._forcef0.append(validate_bearing_output(bearing.output()))
         self._forcef0 = np.array(self._forcef0)
-        self._forcen0 = cvstack([np.array(self._forceu0), np.array(self._forcef0)])
+        self._forcen0 = vertical_stack_nonempty(
+            [np.array(self._forceu0), np.array(self._forcef0)]
+        )
         self._nt = 0
         self._last_output = None
         self._step_ledger = StepCommitLedger()
@@ -226,15 +228,15 @@ class RsRotorBearingCouple(BaseCSystem):
         self._ts = ts
         uxy_n1 = self._rp["uxy"]
         uxyt_n1 = self._rp["uxyt"]
-        self._forceu1 = cvstack([force(ts) for force in self.forces])
+        self._forceu1 = vertical_stack_nonempty([force(ts) for force in self.forces])
         self._forcef1 = []
         for num, bearing in enumerate(self.bearings):
             bearing.input(uxy=uxy_n1[num], uxyt=uxyt_n1[num], t=ts)
             self._forcef1.append(validate_bearing_output(bearing.output()))
         self._forcef1 = np.array(self._forcef1)
 
-        self._forcen0 = cvstack((self._forceu0, self._forcef0))
-        self._forcen1 = cvstack((self._forceu1, self._forcef1))
+        self._forcen0 = vertical_stack_nonempty((self._forceu0, self._forcef0))
+        self._forcen1 = vertical_stack_nonempty((self._forceu1, self._forcef1))
         self.rotor.input_force2node(
             ts, self._forcen1, self._fnode_links, force0=self._forcen0
         )

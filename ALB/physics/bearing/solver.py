@@ -40,7 +40,7 @@ from ALB.core.numerics.dynamic import (
 from ALB.core.numerics.static import calc_ke
 from ALB.physics.hydraulics import Orifice, Orifices
 from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
-from ALB.tool import ParameterHub
+from ALB.config.parameters import ParameterHub
 
 LOGGER = logging.getLogger("ALB.physics.bearing")
 

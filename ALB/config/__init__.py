@@ -1,6 +1,7 @@
 """Domain-grouped configuration contracts for ALB 0.2."""
 
 from .common import ConfigData, ResolvedTimeGrid, TimeGridConfig
+from .parameters import ParameterHub
 from .control import (
     FuzzyPIDConfig,
     LQGConfig,
@@ -30,6 +31,7 @@ __all__ = [
     "NodimOrificeConfig",
     "NodimPadConfig",
     "OrificeConfig",
+    "ParameterHub",
     "PIDConfig",
     "ResolvedTimeGrid",
     "ServoConfig",
