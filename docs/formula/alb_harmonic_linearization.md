@@ -7,7 +7,7 @@
 - 允许更新：控制方程、解析一阶展开、固定活动集规则、频域矩阵、量纲换算、稳定数值结果和实现映射。
 - 禁止更新：实时任务状态、训练进度、PID、ETA、临时日志堆叠和移动空化边界描述函数。
 - 更新节奏：控制方程、线性化定义、涡动频率比定义、数值工作点或正式系数变化时更新。
-- 事实来源 / 相关文档：`docs/formula/thermal_model.md`、`docs/formula/symbol_conventions.md`、`ALB/thermal.py`、`ALB/nondim.py`、`ALB/orifice.py` 和当前方程级解析验证结果。
+- 事实来源 / 相关文档：`docs/formula/thermal_model.md`、`docs/formula/symbol_conventions.md`、`ALB/physics/thermal/solver.py`、`ALB/physics/thermal/scales.py`、`ALB/physics/hydraulics/orifice.py` 和当前方程级解析验证结果。
 
 ## 1. 范围与最终口径
 
@@ -1234,11 +1234,11 @@ $$
 
 ### 10.1 与当前代码的关系
 
-- `ALB/thermal.py`：热残差、热容量、SUPG、供油冷源和温黏耦合的事实来源。
-- `ALB/nondim.py`：参考尺度和无量纲参数的事实来源。
-- `ALB/orifice.py`：`CSOrifice` 残差和阀芯输入契约的事实来源。
-- `ALB/harmonic_linear.py`：把正式 `K/C/G_{x_v}`、严格基态、PD 和二阶 Moog 状态包装为标准轴承接口；运行时不重新生成系数。
-- `ALB/data/alb_harmonic_linear_gamma1_50hz.json`：本文 `γ=1`、50 Hz、热惯性严格基态系数及推荐控制参数的可安装数据契约。
+- `ALB/physics/thermal/solver.py`：热残差、热容量、SUPG、供油冷源和温黏耦合的事实来源。
+- `ALB/physics/thermal/scales.py`：参考尺度和无量纲参数的事实来源。
+- `ALB/physics/hydraulics/orifice.py`：`CSOrifice` 残差和阀芯输入契约的事实来源。
+- `ALB/systems/alb/harmonic.py`：把正式 `K/C/G_{x_v}`、严格基态、PD 和二阶 Moog 状态包装为标准轴承接口；运行时不重新生成系数。
+- `ALB/systems/alb/data/alb_harmonic_linear_gamma1_50hz.json`：本文 `γ=1`、50 Hz、热惯性严格基态系数及推荐控制参数的可安装数据契约。
 - 压力模型：提供 Reynolds 离散、压力节点和载荷积分算子。
 - `tools/manual/run_alb_harmonic_kcg_validation.py`：规定轴颈轨迹，由项目 PD 控制器和二阶 Moog 伺服阀生成实际阀芯响应，再运行完整非线性瞬态 ALB；不直接输入阀芯谐波，也不生成线性系数。
 - `tools/manual/plot_alb_harmonic_time_response.py`：从实际 PD/伺服阀末周期提取阀芯一次谐波复幅值，并用正式 `K/C/G_{x_v}` 重建第 9.4 节三项线性力和对比图；不由轨迹反求系数。
@@ -1250,8 +1250,8 @@ $$
 公共工厂
 
 ```python
-from ALB import alb_harmonic_linear
-from ALB.couple import RsRotorBearingCouple
+from ALB.systems.alb import alb_harmonic_linear
+from ALB.dynamics.coupling import RsRotorBearingCouple
 
 # dt must equal the rotor-coupling time step.
 bearing = alb_harmonic_linear(node_link=12, dt=time_iter.dt)

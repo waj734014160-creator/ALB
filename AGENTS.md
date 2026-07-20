@@ -51,7 +51,7 @@ Spend time on thinking; you do not need to use the commentary channel to report 
 
 ## ALB 包定位
 
-修改 package module 或 public interface 前，先阅读 `docs/alb_package_overview.md`。该文档总结 `ALB/` 模块图、`ALB/__init__.py` 中的顶层 lazy exports，以及系统构建器、配置 dataclass、轴承/油膜模型、热/无量纲 helper、ALBNN surrogate、远程 helper、task/result 工具等主要接口组。
+修改 package module 或 public interface 前，先阅读 `docs/alb_package_overview.md`。该文档总结 `ALB/` 模块图、`ALB/__init__.py` 的受限顶层契约，以及 systems、config、physics、control、dynamics、surrogate、infrastructure 和 workflows 等显式 namespace 的公共接口组。
 
 新增 public API 时，同时更新模块 docstring/comment 和包概览。可复用数值代码应保留在 `ALB_MAIN/ALB`；`SURROGATE_TRAIN` 等兄弟项目应 import 这里的 ALB 包代码，不要复制。
 
@@ -85,7 +85,7 @@ Spend time on thinking; you do not need to use the commentary channel to report 
 
 远程工作站可通过 LAN 或 ZeroTier 上的 SSH 访问。详细连接检查、路径和长任务启动说明维护在 `docs/remote_workstation_connection.md`。
 
-论文远程计算脚本和配置的当前入口位于 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote`；通用 ALB 远程实现仍维护在 `ALB.remote` 和 `docs/remote_workstation_connection.md` 所述兼容 wrapper 中。
+论文远程计算脚本和配置的当前入口位于 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote`；通用 ALB 远程实现维护在 `ALB.infrastructure.remote`，ALBNN 专用 queue/start/status 实现维护在 `ALB.surrogate.training.remote`，兼容 wrapper 规则见 `docs/remote_workstation_connection.md`。
 
 启动远程 ALBNN training 时，默认启动 monitoring。优先使用 JSON queue wrapper，因为它会监督活跃任务，并把 status/log tails 同步到配置的输出路径；如果直接用 start wrapper 启动任务，应立即启动对应 queue monitor。
 两台远程计算工作站默认使用 PowerShell 7，且 `C:/Program Files/PowerShell/7` 已加入 Machine/User PATH。SSH encoded command 和交互短命令可调用 `pwsh`；Task Scheduler runner 默认优先使用 `C:/Program Files/PowerShell/7/pwsh.exe` 绝对路径，以避免服务环境或 WindowsApps alias 差异。

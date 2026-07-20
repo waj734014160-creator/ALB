@@ -8,7 +8,7 @@
   "baseline_nodeids_sha256_computed": "8a14c7e0a28ac4925d9ce3e9db983d4704143f1167267ba06d888a9f04d25541",
   "baseline_recorded_digest_matches": true,
   "baseline_digest_note": "The frozen v1 digest was recomputed from the unchanged sorted 242-node set; the recorded and computed values match.",
-  "implementation_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+  "implementation_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
   "verification": {
     "collection_command": "E:/Anaconda2023/envs/ALB/python.exe -m pytest tests --collect-only -q -p no:cacheprovider",
     "collected_node_count": 326,
@@ -42,7 +42,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_adaptive_damp_integration.py::test_thermal_solver_records_adaptive_relax_history_when_enabled",
@@ -62,7 +62,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_alb_harmonic_linear.py::test_builtin_coefficient_contract_and_base_match",
@@ -82,7 +82,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_alb_harmonic_linear.py::test_pd_orbit_matches_documented_k_c_gxv_reconstruction",
@@ -102,7 +102,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_alb_harmonic_linear.py::test_rs_rotor_bearing_couple_accepts_harmonic_linear_bearing",
@@ -122,7 +122,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_coe_boundary_fullpad.py::TestCoeBoundaryFullPad::test_single_pad_full_coverage_coe_boundary_connected",
@@ -142,7 +142,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_gas_bearing.py::TestGasBearing::test_gas_bearing_solver_produces_physical_pressure",
@@ -162,7 +162,7 @@
       "required_extra": "thermal",
       "writes_artifacts": true,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_gas_bearing.py::TestGasBearing::test_gas_pressure_floor_is_zero_not_boundary_pressure",
@@ -182,7 +182,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_gas_bearing.py::TestGasBearing::test_placeholder_interfaces_are_explicit",
@@ -202,7 +202,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_gas_bearing.py::TestGasBearing::test_textured_foil_bearing_matches_paper_trend",
@@ -222,7 +222,7 @@
       "required_extra": "thermal",
       "writes_artifacts": true,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_alb_equivalence.py::test_dimensional_csorifice_stores_nondim_coefficients",
@@ -242,7 +242,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_alb_equivalence.py::test_no_orifice_flow",
@@ -262,7 +262,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_alb_equivalence.py::test_thermal_no_orifice_flow",
@@ -282,7 +282,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_alb_equivalence.py::test_thermal_with_orifice_flow_branch_specific",
@@ -302,7 +302,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_alb_equivalence.py::test_with_orifice_flow",
@@ -322,7 +322,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_interfaces.py::TestNodimInterfaces::test_csorifice_inherits_nodim_csorifice",
@@ -342,7 +342,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_interfaces.py::TestNodimInterfaces::test_nodim_alb_config_from_dict_builds_config_only",
@@ -362,7 +362,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_interfaces.py::TestNodimInterfaces::test_nodim_alb_factory_smoke",
@@ -382,7 +382,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_interfaces.py::TestNodimInterfaces::test_nodim_alb_rejects_dimensional_scale_inputs",
@@ -402,7 +402,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_interfaces.py::TestNodimInterfaces::test_nodim_bearing_with_nodim_csorifice_solves",
@@ -422,7 +422,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_interfaces.py::TestNodimInterfaces::test_nodim_pressure_matches_dimensional_pressure_with_degree_angles",
@@ -442,7 +442,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_interfaces.py::TestNodimInterfaces::test_nodim_thermal_alb_force_matches_dimensional_alb_force",
@@ -462,7 +462,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_nodim_interfaces.py::TestNodimInterfaces::test_nodim_thermal_bearing_force_matches_dimensional_force",
@@ -482,7 +482,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_skfem.py::TestSkfem::test_skfem_solver_returns_finite_pressure",
@@ -502,7 +502,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_static_position_convergence.py::TestStaticPositionConvergence::test_converged_initial_point_is_not_stepped_and_output_gets_nodim",
@@ -522,7 +522,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_static_position_convergence.py::TestStaticPositionConvergence::test_dx_inner_nonconvergence_stops_and_restores_base_state",
@@ -542,7 +542,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_static_position_convergence.py::TestStaticPositionConvergence::test_dy_inner_nonconvergence_stops_and_restores_base_state",
@@ -562,7 +562,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_static_position_convergence.py::TestStaticPositionConvergence::test_film_system_records_max_iter_nonconvergence",
@@ -582,7 +582,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_static_position_convergence.py::TestStaticPositionConvergence::test_film_system_requires_all_simple_models_to_converge",
@@ -602,7 +602,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_static_position_convergence.py::TestStaticPositionConvergence::test_final_row_is_recomputed_at_updated_coordinate",
@@ -622,7 +622,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_static_position_convergence.py::TestStaticPositionConvergence::test_inner_nonconvergence_stops_before_jacobian_update",
@@ -642,7 +642,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_static_position_convergence.py::TestStaticPositionConvergence::test_thermal_status_requires_latest_thermal_convergence",
@@ -662,7 +662,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_args_nodim_rejects_dimensional_output_by_default",
@@ -682,7 +682,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_local_conductivity_uses_film_thickness_and_supg_accepts_arrays",
@@ -702,7 +702,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_nondim_beta_matches_dimensional_viscosity_update",
@@ -722,7 +722,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_nondim_beta_requires_explicit_temperature_scale",
@@ -742,7 +742,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_nondim_orifice_source_has_order_one_local_cooling_strength",
@@ -762,7 +762,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_nondim_solver_is_selected_and_returns_nondim_fields",
@@ -782,7 +782,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_nondim_solver_with_nonzero_conductivity_assembles_local_coefficients",
@@ -802,7 +802,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_nondim_solver_zero_heat_partition_stays_at_supply_temperature",
@@ -822,7 +822,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_runtime_config_rejects_ambiguous_or_unsupported_thermal_modes",
@@ -842,7 +842,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_thermal_config_accepts_nondim_beta_and_reference_temperature",
@@ -862,7 +862,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_thermal_flow_scales_distinguish_film_flux_and_volumetric_flow",
@@ -882,7 +882,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_nondim_solver.py::test_thermal_nondim_scales_round_trip_temperature_and_viscosity",
@@ -902,7 +902,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_reference_snapshot.py::test_thermal_small_model_matches_reference_snapshot",
@@ -925,7 +925,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_segregated_newton.py::test_direct_log_update_continuation_small_case_converges",
@@ -948,7 +948,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_segregated_newton.py::test_direct_then_newton_does_not_false_converge_s0011_sample_162946",
@@ -971,7 +971,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_segregated_newton.py::test_direct_then_newton_reports_s0011_sample_30_without_false_convergence",
@@ -994,7 +994,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_segregated_newton.py::test_fixed_point_reference_snapshot_matches_pre_change_results_exactly",
@@ -1017,7 +1017,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_segregated_newton.py::test_newton_dimensional_small_case_converges_with_diagnostics",
@@ -1040,7 +1040,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_segregated_newton.py::test_newton_nondim_small_case_converges_with_nondim_outputs",
@@ -1063,7 +1063,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_segregated_newton.py::test_thermal_config_accepts_and_validates_iter_method_options",
@@ -1086,7 +1086,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestALBThermal::test_alb_builder_output",
@@ -1106,7 +1106,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestALBThermal::test_alb_thermal_plots",
@@ -1126,7 +1126,7 @@
       "required_extra": "thermal",
       "writes_artifacts": true,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestALBThermal::test_alb_with_csorifice_thermal",
@@ -1146,7 +1146,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_comparison_plot",
@@ -1166,7 +1166,7 @@
       "required_extra": "thermal",
       "writes_artifacts": true,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_csorifice_thermal",
@@ -1186,7 +1186,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_full_coupling",
@@ -1206,7 +1206,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_full_vs_half_differ",
@@ -1226,7 +1226,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_half_coupling",
@@ -1246,7 +1246,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_legacy_pressure_backend_rejected",
@@ -1266,7 +1266,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_orifice_cooling_correction",
@@ -1286,7 +1286,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_orifice_plots",
@@ -1306,7 +1306,7 @@
       "required_extra": "thermal",
       "writes_artifacts": true,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_thermal_grid_refreshes_after_input_geometry_change",
@@ -1326,7 +1326,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_thermal_postprocess_supports_quad_fields_save_and_lines",
@@ -1346,7 +1346,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_transient_temperature_converges_cycle_to_cycle",
@@ -1366,7 +1366,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper.py::TestThermalHydroBearing::test_transient_thermal_bearing_supports_kc_identification",
@@ -1386,7 +1386,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper_nodim_core.py::test_dimensional_miu0_override_rebuilds_reference_lambda",
@@ -1406,7 +1406,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper_nodim_core.py::test_dimensional_thermal_wrapper_matches_reference_baseline",
@@ -1426,7 +1426,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper_nodim_core.py::test_dimensional_wrapper_uses_nondim_core_backend",
@@ -1446,7 +1446,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper_nodim_core.py::test_direct_nondim_lambda_is_authoritative_and_miu0_conflict_fails",
@@ -1466,7 +1466,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper_nodim_core.py::test_nonconverged_steady_initialization_does_not_commit_state",
@@ -1486,7 +1486,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper_nodim_core.py::test_nonconverged_transient_solve_retains_previous_temperature_state",
@@ -1506,7 +1506,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_thermal_wrapper_nodim_core.py::test_thermal_collection_wrapper_dispatches_by_pad_unit_mode",
@@ -1526,7 +1526,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_tilting_pad_bearing.py::TestTiltingPadMultiPad::test_left_pad_can_unload_without_negative_film_thickness",
@@ -1546,7 +1546,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_tilting_pad_bearing.py::TestTiltingPadMultiPad::test_multipad_assembly_pressure_fields",
@@ -1566,7 +1566,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_tilting_pad_bearing.py::TestTiltingPadMultiPad::test_pad_update_tilt_step_adjusts_tilt",
@@ -1586,7 +1586,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_tilting_pad_bearing.py::TestTiltingPadMultiPad::test_solve_equilibrium_with_multipad",
@@ -1606,7 +1606,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_tilting_pad_bearing.py::TestTiltingPadMultiPad::test_tilting_pads_bearing_factory_returns_multipad",
@@ -1626,7 +1626,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_validation_precision.py::TestValidationPrecision::test_hydrostatic_bearing_matches_reference_on_sampled_cases",
@@ -1646,7 +1646,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/bearing/test_validation_smoke.py::TestValidationSmoke::test_representative_cases_return_finite_metrics",
@@ -1666,7 +1666,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_adaptive_damp.py::test_adaptive_damp_config_accepts_dataclass_instances",
@@ -1686,7 +1686,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_adaptive_damp.py::test_adaptive_damp_config_parses_from_model_configs",
@@ -1706,7 +1706,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_adaptive_damp.py::test_controller_does_not_raise_value_above_small_initial_damp",
@@ -1726,7 +1726,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_adaptive_damp.py::test_controller_grows_after_repeated_improvement_and_clamps_to_max",
@@ -1746,7 +1746,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_adaptive_damp.py::test_controller_shrinks_on_worse_or_nonfinite_error",
@@ -1766,7 +1766,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_adaptive_damp.py::test_disabled_controller_keeps_initial_value",
@@ -1786,7 +1786,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestALBConfigValidation::test_alb_config_from_dict_valid",
@@ -1806,7 +1806,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestALBConfigValidation::test_alb_config_invalid_alb",
@@ -1826,7 +1826,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestALBConfigValidation::test_alb_config_invalid_controller",
@@ -1846,7 +1846,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestALBConfigValidation::test_alb_config_invalid_servo",
@@ -1866,7 +1866,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestHydConfigValidation::test_hyd_config_invalid_e",
@@ -1886,7 +1886,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestHydConfigValidation::test_hyd_config_invalid_iter_method",
@@ -1906,7 +1906,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestHydConfigValidation::test_hyd_config_invalid_reynold",
@@ -1926,7 +1926,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestHydConfigValidation::test_hyd_config_valid",
@@ -1946,7 +1946,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestThermalConfigValidation::test_coupling_is_normalized_and_strict",
@@ -1966,7 +1966,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestThermalConfigValidation::test_deprecated_flow_rate_factor_is_a_strict_no_op",
@@ -1986,7 +1986,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestThermalConfigValidation::test_physical_thermal_reference_values_are_positive",
@@ -2006,7 +2006,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_config_validate.py::TestThermalConfigValidation::test_transient_requires_direct_iteration",
@@ -2026,7 +2026,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_servo_config_reference.py::test_moog_2nd_state_space_matches_reference",
@@ -2049,7 +2049,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_servo_config_reference.py::test_servo_config_contract_matches_reference",
@@ -2072,7 +2072,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_task.py::TestPaperTaskConfigBuild::test_alb_builder_wraps_pads_with_transient_thermal_when_enabled",
@@ -2092,7 +2092,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_task.py::TestPaperTaskConfigBuild::test_empty_local_config_dir_does_not_shadow_param_scan",
@@ -2112,7 +2112,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_task.py::TestPaperTaskConfigBuild::test_hb_thermal_helper_wraps_four_pad_bearing",
@@ -2132,7 +2132,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_task.py::TestPaperTaskConfigBuild::test_moog_delay_model_uses_configured_dynamic_coefficients",
@@ -2152,7 +2152,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_task.py::TestPaperTaskConfigBuild::test_paper_alb12_builds_pid_alb_instance",
@@ -2172,7 +2172,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_task.py::TestPaperTaskConfigBuild::test_paper_albfuzzy12_builds_fuzzy_alb_instance",
@@ -2192,7 +2192,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_task.py::TestPaperTaskConfigBuild::test_paper_hb34_builds_four_pad_bearing_instance",
@@ -2212,7 +2212,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_task.py::TestPaperTaskConfigBuild::test_paper_rotor_config_loads_shared_values",
@@ -2232,7 +2232,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_bundled_share_contains_only_shared_frequency_for_time_settings",
@@ -2254,7 +2254,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_cycle_points_resolves_dt_steps_and_end_time",
@@ -2276,7 +2276,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_factory_and_deprecated_recover_never_write_share",
@@ -2298,7 +2298,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_fixed_dt_preserves_dt_and_allows_partial_final_revolution",
@@ -2320,7 +2320,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_legacy_time_resolution_matches_pre_refactor_reference_exactly",
@@ -2342,7 +2342,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_read_share_supports_legacy_schema_without_time_file",
@@ -2364,7 +2364,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_task_factory_reads_share_and_time_once",
@@ -2386,7 +2386,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_factory_public_exports",
@@ -2408,7 +2408,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload0-TypeError]",
@@ -2430,7 +2430,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload1-TypeError]",
@@ -2452,7 +2452,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload10-ValueError]",
@@ -2474,7 +2474,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload2-ValueError]",
@@ -2496,7 +2496,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload3-ValueError]",
@@ -2518,7 +2518,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload4-ValueError]",
@@ -2540,7 +2540,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload5-TypeError]",
@@ -2562,7 +2562,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload6-ValueError]",
@@ -2584,7 +2584,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload7-ValueError]",
@@ -2606,7 +2606,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload8-ValueError]",
@@ -2628,7 +2628,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/config/test_time_grid_config.py::test_time_grid_rejects_ambiguous_or_invalid_inputs[payload9-ValueError]",
@@ -2650,7 +2650,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_component_contracts.py::test_classification_namespaces_preserve_implementation_identity",
@@ -2670,7 +2670,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_component_contracts.py::test_convergence_status_rejects_ambiguous_invalid_residuals",
@@ -2690,7 +2690,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_component_contracts.py::test_cso_args_has_one_canonical_owner",
@@ -2710,7 +2710,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_component_contracts.py::test_decorator_and_legacy_adapter_preserve_standard_bearing_contract",
@@ -2730,7 +2730,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_component_contracts.py::test_film_failure_uses_injected_notifier_without_infrastructure_import",
@@ -2750,7 +2750,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_component_contracts.py::test_multipad_rejects_empty_and_mixed_unit_collections",
@@ -2770,7 +2770,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_component_contracts.py::test_protocols_and_specialized_bearing_template_are_runtime_checkable",
@@ -2790,7 +2790,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_component_contracts.py::test_rotor_coupling_rejects_explicit_nondimensional_bearing",
@@ -2810,7 +2810,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_component_contracts.py::test_signal_and_base_system_attach_each_child_once",
@@ -2830,7 +2830,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_interface_contract_reference.py::test_legacy_scaler_pickle_loads_and_replays_exactly",
@@ -2853,7 +2853,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_interface_contract_reference.py::test_public_and_legacy_import_contract_matches_reference",
@@ -2876,7 +2876,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/contracts/test_interface_contract_reference.py::test_signal_and_numeric_behavior_match_reference_exactly",
@@ -2899,7 +2899,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/control/LQG/test_output_limits.py::test_lqg_config_rejects_invalid_output_limits[1.0-1.0]",
@@ -2919,7 +2919,7 @@
       "required_extra": "control",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/control/LQG/test_output_limits.py::test_lqg_config_rejects_invalid_output_limits[output_min1-output_max1]",
@@ -2939,7 +2939,7 @@
       "required_extra": "control",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/control/LQG/test_output_limits.py::test_lqg_config_rejects_invalid_output_limits[output_min2-output_max2]",
@@ -2959,7 +2959,7 @@
       "required_extra": "control",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/control/LQG/test_output_limits.py::test_lqg_config_supports_per_channel_output_limits",
@@ -2979,7 +2979,7 @@
       "required_extra": "control",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/control/LQG/test_output_limits.py::test_lqg_default_output_limits_are_minus_one_to_one",
@@ -2999,7 +2999,7 @@
       "required_extra": "control",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/control/LQG/test_simple_rotor_lqg_vibration.py::test_standard_lqg_reduces_noisy_resonant_vibration",
@@ -3019,7 +3019,7 @@
       "required_extra": "control",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/control/LQG/test_speed_units.py::test_lqg_builds_rotor_lti_with_angular_speed_rad_s",
@@ -3039,7 +3039,7 @@
       "required_extra": "control",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/control/LQG/test_speed_units.py::test_lqg_rejects_rotor_speed_that_does_not_match_frequency",
@@ -3059,7 +3059,7 @@
       "required_extra": "control",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/control/LQG/test_speed_units.py::test_rotor0_converts_frequency_hz_to_ross_speed_rad_s",
@@ -3079,7 +3079,7 @@
       "required_extra": "control",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_compat_wrappers_help",
@@ -3101,7 +3101,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_generic_job_cli_launch_dry_run_and_monitor_json",
@@ -3123,7 +3123,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_generic_job_cli_launch_dry_run_uses_config_only",
@@ -3145,7 +3145,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_generic_job_config_builds_stable_runner",
@@ -3167,7 +3167,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_generic_job_launch_uploads_before_scheduling",
@@ -3189,7 +3189,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_generic_queue_conditions",
@@ -3211,7 +3211,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_generic_queue_dry_run_inherits_run_id",
@@ -3233,7 +3233,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_monitor_summary_matches_reference",
@@ -3255,7 +3255,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_queue_config_and_launch_command_match_reference",
@@ -3277,7 +3277,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_start_preflight_checks_training_data_files",
@@ -3299,7 +3299,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_start_wrapper_dry_run_matches_reference",
@@ -3321,7 +3321,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_status_query_uses_monitor_helpers",
@@ -3343,7 +3343,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_status_summary_matches_reference",
@@ -3365,7 +3365,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/remote/test_remote_tools.py::test_transport_helpers",
@@ -3387,7 +3387,7 @@
       "required_extra": "remote",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiBackend::test_dynamic_gui_backend_matches_script_style_result",
@@ -3407,7 +3407,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiBackend::test_dynamic_smoke_nonthermal",
@@ -3427,7 +3427,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiBackend::test_parallel_orbit_matches_serial_orbit_nonthermal",
@@ -3447,7 +3447,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiBackend::test_static_gui_backend_matches_script_style_result",
@@ -3467,7 +3467,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiBackend::test_static_smoke_nonthermal",
@@ -3487,7 +3487,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiConfig::test_bearing_frequency_is_the_single_gui_time_grid_authority",
@@ -3507,7 +3507,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiConfig::test_fixed_dt_gui_config_preserves_dt_with_partial_revolution",
@@ -3527,7 +3527,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiConfig::test_legacy_runtime_time_schema_is_migrated_in_memory",
@@ -3547,7 +3547,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiConfig::test_paper_defaults_map_required_fields",
@@ -3567,7 +3567,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiConfig::test_runtime_config_round_trip_preserves_special_values",
@@ -3587,7 +3587,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiConfig::test_static_flat_config_forces_fixed_journal_control",
@@ -3607,7 +3607,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiFieldMerge::test_pressure_gaps_are_zero_filled",
@@ -3627,7 +3627,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiFieldMerge::test_temperature_gaps_are_masked",
@@ -3647,7 +3647,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_parameter_panel_displays_clearance_and_track_in_micrometers",
@@ -3667,7 +3667,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_parameter_panel_round_trip_and_change_signal",
@@ -3687,7 +3687,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_parameter_panel_updates_nested_thermal_settings",
@@ -3707,7 +3707,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_parameter_panel_wheel_does_not_change_input_values",
@@ -3727,7 +3727,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_window_busy_state_toggles_command_buttons",
@@ -3747,7 +3747,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_window_constructs_offscreen_and_saves",
@@ -3767,7 +3767,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_window_dynamic_progress_updates_progress_bar",
@@ -3787,7 +3787,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_window_dynamic_result_updates_text_and_plots",
@@ -3807,7 +3807,7 @@
       "required_extra": "gui",
       "writes_artifacts": true,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_window_error_handler_reenables_buttons",
@@ -3827,7 +3827,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_window_static_result_updates_text_and_plots",
@@ -3847,7 +3847,7 @@
       "required_extra": "gui",
       "writes_artifacts": true,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_alb_gui_tool.py::TestAlbGuiWindow::test_window_static_result_without_temperature_shows_placeholder",
@@ -3867,7 +3867,7 @@
       "required_extra": "gui",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_albnn_input_compat.py::test_albnn_c4_wrapper_matches_manual_rotation_for_vector_pairs",
@@ -3887,7 +3887,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_albnn_input_compat.py::test_albnn_input_fills_changed_inputs_from_config_and_extra_inputs",
@@ -3907,7 +3907,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_albnn_input_compat.py::test_aug_v2_allows_subset_input_columns",
@@ -3927,7 +3927,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_albnn_input_compat.py::test_cq2_sig_log_minmax01_maps_inputs_to_unit_range",
@@ -3947,7 +3947,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_albnn_input_compat.py::test_m0031_c4_wrapper_matches_manual_rotation_on_ten_validation_samples",
@@ -3967,7 +3967,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_albnn_input_compat.py::test_sqrt28_feature_set_has_fixed_thermal_input_contract",
@@ -3987,7 +3987,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_logging_dedup.py::TestLoggingDedup::test_duplicate_logs_are_suppressed",
@@ -4007,7 +4007,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_nondim_thermal_field_case.py::test_dimensional_and_nondim_parameter_sets_match_viscosity_field_evolution",
@@ -4027,7 +4027,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_nondim_thermal_field_case.py::test_nondim_pressure_field_matches_dimensional_scaling",
@@ -4047,7 +4047,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_nondim_thermal_field_case.py::test_nondim_thermal_field_case_uses_thermal_config_input",
@@ -4067,7 +4067,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_nondim_thermal_field_case.py::test_validation_import_ignores_param_scan_run_first_on_sys_path",
@@ -4087,7 +4087,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/test_nondim_thermal_field_case.py::test_zero_heat_partition_gives_zero_nondim_temperature_rise",
@@ -4107,7 +4107,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/thermal/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_extract_last_cycle_excludes_repeated_endpoint",
@@ -4127,7 +4127,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/thermal/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_three_case_configs_match_refactor_intent",
@@ -4147,7 +4147,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/thermal/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_three_cases_run_on_short_orbit",
@@ -4167,7 +4167,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/thermal/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_viscosity_skfem_degenerates_to_skfem_when_miu_ratio_is_one",
@@ -4187,7 +4187,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/thermal/test_thermal_kc_compare.py::TestThermalKcCompare::test_case_bearing_uses_fixed_zero_opening_without_control",
@@ -4207,7 +4207,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/thermal/test_thermal_kc_compare.py::TestThermalKcCompare::test_requested_orbit_matches_user_spec_and_is_valid",
@@ -4227,7 +4227,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/thermal/test_thermal_kc_compare.py::TestThermalKcCompare::test_short_kc_identification_returns_finite_coefficients_for_three_cases",
@@ -4247,7 +4247,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/thermal/test_thermal_kc_compare.py::TestThermalKcCompare::test_validation_dependency_ignores_param_scan_run_first_on_sys_path",
@@ -4267,7 +4267,7 @@
       "required_extra": "thermal",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/tool/test_bearing_film_nastran_export.py::test_bearing_film_mesh_export_and_preview",
@@ -4287,7 +4287,7 @@
       "required_extra": "core",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_cli_path_overrides_resolve_relative_to_cwd",
@@ -4310,7 +4310,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_column_transform_pipeline_matches_scaled_evs_reference",
@@ -4333,7 +4333,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_config_cli_epochs_equals_override_writes_resolved_config",
@@ -4356,7 +4356,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_config_cli_unsupported_legacy_override_fails_fast",
@@ -4379,7 +4379,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_config_rejects_non_mlp_model_kind",
@@ -4402,7 +4402,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_config_trainer_smoke",
@@ -4425,7 +4425,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_derived_outputs_fail_on_conflict_or_count_mismatch",
@@ -4448,7 +4448,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_dry_run_config_without_config_fails_before_legacy_training",
@@ -4471,7 +4471,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_legacy_device_without_config_fails_before_training",
@@ -4494,7 +4494,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_load_frame_filters_nonfinite_inputs_and_targets",
@@ -4517,7 +4517,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_minmax_constant_column_maps_to_midpoint_and_inverse_roundtrips",
@@ -4540,7 +4540,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_scaled_evs_uses_midpoint_for_constant_minmax_columns",
@@ -4563,7 +4563,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_stale_best_checkpoint_is_not_packaged_when_no_current_best",
@@ -4586,7 +4586,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_target_pipeline_inverse_roundtrip_and_huber_reference",
@@ -4609,7 +4609,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_target_pipeline_rejects_derived_outputs_at_fit_time",
@@ -4632,7 +4632,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_trainer_rejects_target_derived_transform_before_training",
@@ -4655,7 +4655,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_unsupported_target_output_fails_fast",
@@ -4678,7 +4678,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_config.py::test_val_interval_history_and_patience_use_validation_checks",
@@ -4701,7 +4701,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_packaging.py::test_invalid_run_does_not_isolate_existing_package",
@@ -4724,7 +4724,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_packaging.py::test_nonfinite_validation_loss_uses_patience_checks",
@@ -4747,7 +4747,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_packaging.py::test_reused_output_dir_isolates_complete_old_package",
@@ -4770,7 +4770,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_packaging.py::test_validation_prediction_locator_columns_reject_generated_name_conflicts",
@@ -4793,7 +4793,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_transforms.py::test_derived_source_must_reference_prior_fitted_step",
@@ -4816,7 +4816,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_transforms.py::test_selective_minmax_inverse_restores_constant_columns",
@@ -4839,7 +4839,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "collected",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_wrapper_failfast.py::test_expert_config_branch_fails_fast_before_placeholder_training",
@@ -4862,7 +4862,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_wrapper_failfast.py::test_expert_config_epoch_abbreviation_is_rejected",
@@ -4885,7 +4885,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_wrapper_failfast.py::test_expert_dry_run_config_without_config_fails_before_legacy_training",
@@ -4908,7 +4908,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_wrapper_failfast.py::test_expert_legacy_device_without_config_fails_before_training",
@@ -4931,7 +4931,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_wrapper_failfast.py::test_residual_config_branch_fails_fast_before_placeholder_training",
@@ -4954,7 +4954,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_wrapper_failfast.py::test_residual_config_epoch_abbreviation_is_rejected",
@@ -4977,7 +4977,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_wrapper_failfast.py::test_residual_dry_run_config_without_config_fails_before_legacy_training",
@@ -5000,7 +5000,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_alb_train_wrapper_failfast.py::test_residual_legacy_device_without_config_fails_before_training",
@@ -5023,7 +5023,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_evaluate_albnn_input_samples.py::test_resume_output_detects_input_value_mismatch_without_ids",
@@ -5046,7 +5046,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     },
     {
       "baseline_nodeid": "test/train/test_evaluate_albnn_input_samples.py::test_resume_output_must_match_input_prefix",
@@ -5069,7 +5069,7 @@
       "required_extra": "surrogate",
       "writes_artifacts": false,
       "verification_status": "skipped_external_migration_required",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937"
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a"
     }
   ],
   "non_collected_python_files": [
@@ -5079,7 +5079,7 @@
       "disposition": "test_support",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "present"
     },
     {
@@ -5088,7 +5088,7 @@
       "disposition": "test_support",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "present"
     },
     {
@@ -5097,7 +5097,7 @@
       "disposition": "test_support",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "present"
     },
     {
@@ -5106,7 +5106,7 @@
       "disposition": "manual",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "manual"
     },
     {
@@ -5115,7 +5115,7 @@
       "disposition": "manual",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "manual"
     },
     {
@@ -5124,7 +5124,7 @@
       "disposition": "manual",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "manual"
     },
     {
@@ -5133,7 +5133,7 @@
       "disposition": "manual",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "manual"
     },
     {
@@ -5142,7 +5142,7 @@
       "disposition": "manual",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "manual"
     },
     {
@@ -5151,7 +5151,7 @@
       "disposition": "manual",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "manual"
     },
     {
@@ -5160,7 +5160,7 @@
       "disposition": "manual",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "manual"
     },
     {
@@ -5169,7 +5169,7 @@
       "disposition": "manual",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "manual"
     },
     {
@@ -5178,7 +5178,7 @@
       "disposition": "manual",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "manual"
     },
     {
@@ -5187,7 +5187,7 @@
       "disposition": "manual",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "manual"
     },
     {
@@ -5196,7 +5196,7 @@
       "disposition": "diagnostic",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "present"
     },
     {
@@ -5205,7 +5205,7 @@
       "disposition": "diagnostic",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "present"
     },
     {
@@ -5214,7 +5214,7 @@
       "disposition": "diagnostic",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "present"
     },
     {
@@ -5223,7 +5223,7 @@
       "disposition": "diagnostic",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "present"
     },
     {
@@ -5232,7 +5232,7 @@
       "disposition": "diagnostic",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "present"
     },
     {
@@ -5241,7 +5241,7 @@
       "disposition": "diagnostic",
       "status": "implemented",
       "rationale": "Tracked Python file produced no baseline pytest node.",
-      "verification_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+      "verification_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
       "verification_status": "present"
     }
   ]

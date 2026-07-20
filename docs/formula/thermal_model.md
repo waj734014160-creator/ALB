@@ -3,13 +3,14 @@
 ## 文档角色
 
 - 角色：稳定公式和实现参考。
-- 目的：说明 `ALB/thermal.py` 的热压力模型、有限元离散、无量纲形式，以及代码到公式的映射。
+- 目的：说明 `ALB/physics/thermal/solver.py` 的热压力模型、有限元离散、无量纲形式，以及代码到公式的映射。
 - 允许更新：控制方程、离散步骤、边界条件、耦合流程和实现映射。
 - 禁止更新：实时运行状态、活跃任务进度、PID、ETA、单次 run 指标和原始日志堆叠。
 - 更新节奏：热压力方程、离散方式、边界处理或实现映射变化时更新。
 - 事实来源 / 相关文档：
   `docs/daily_maintenance/daily_doc_update_index.md`,
-  `ALB/thermal.py`, `ALB/nondim.py` 和 `ALB/config.py`。
+  `ALB/physics/thermal/solver.py`、`ALB/physics/thermal/scales.py`、
+  `ALB/config/film.py` 和 `ALB/config/thermal.py`。
 
 ## 1 概述
 
@@ -1479,7 +1480,7 @@ $$
 \frac{h_i^3}{\bar{\mu}_i}
 $$
 
-作为扩散系数，对应 `ALB/thermal.py` 中 `_reynolds_lhs_miu` 与 `h3_over_miu` 的装配逻辑。也就是说，局部粘度升高时，扩散系数按 $1/\bar{\mu}_i$ 减小。
+作为扩散系数，对应 `ALB/physics/thermal/solver.py` 中 `_reynolds_lhs_miu` 与 `h3_over_miu` 的装配逻辑。也就是说，局部粘度升高时，扩散系数按 $1/\bar{\mu}_i$ 减小。
 
 说明：源码中仍保留一个历史 `h_eff` 写法分支，但它不再作为设置项对外开放。若只从代数等价角度把 $h^3/\bar{\mu}$ 改写为等效膜厚，应满足
 

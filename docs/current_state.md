@@ -8,109 +8,90 @@
 - 禁止更新：SURROGATE_TRAIN 的训练/采样实时进度、论文任务实时状态、完整历史流水、原始日志正文、稳定 API 手册和未经验证的结论。
 - 更新节奏：ALB_MAIN 的开发阶段、工作重点、验证结论、风险或下一步发生实质变化时更新；旧状态应压缩为结论，不在本文持续堆叠时间线。
 - 事实来源 / 相关文档：
-  `AGENTS.md`,
-  `docs/daily_maintenance/daily_doc_update_index.md`,
-  `docs/project_overview.md`,
-  `docs/interface_architecture.md`,
-  `docs/alb_package_overview.md`,
-  `docs/run_index.md`,
-  Git 提交和与当前工作直接相关的测试结果。
+  `AGENTS.md`、
+  `docs/daily_maintenance/daily_doc_update_index.md`、
+  `docs/project_overview.md`、
+  `docs/interface_architecture.md`、
+  `docs/alb_package_overview.md`、
+  `docs/run_index.md`、
+  Git 提交和本文列出的验收报告。
 
-本文只记录 `ALB_MAIN` 自身的项目状态。ALBNN 训练、采样、远程队列和 monitor 的实时状态属于 `../SURROGATE_TRAIN/docs/current_runtime_status.md`；论文计算的实时状态属于 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md`。
+本文只记录 `ALB_MAIN`。ALBNN 活跃训练状态属于 `../SURROGATE_TRAIN/docs/current_runtime_status.md`；论文计算状态属于 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md`。
 
 ## 当前快照
 
-- 快照日期：2026-07-21。
-- 当前分支：`codex/full-repo-refactor`。
-- 最近提交：`721a3902063a7d8427488bf23b6446cdb92942dd`（`refactor: define ALB component interfaces`）。
-- 当前阶段：首轮 ALB package 接口与模块分类重构已经完成、验证并提交；现已启动 `0.2.0` 全仓库破坏式、命名空间优先重构，正在固定生产源码改动前的基线。
-- 当前提交相对行为参考提交 `597f3fe` 新增 38 个文件变更，共 `1463 insertions / 440 deletions`。
-- 当前没有未提交的生产源码重构。工作树仍包含本轮启动前已有或不属于本轮范围的两张热图、`.codex`、LQG 脚本和输出；这些文件不得随全仓库重构自动清理或混入后续提交。
+- 分支：`codex/full-repo-refactor`。
+- 包版本：`0.2.0`；最低 Python：`3.10`。
+- 发布标签：`v0.2.0`。
+- 重构前源码基线：commit `a4b2be1`，annotated tag `pre-full-repo-refactor-20260720`。
+- 完整行为参考基线：commit `d6d7432`，annotated tag `pre-full-repo-refactor-refs-20260720`。
+- 冻结参考：`refs/full_repo_refactor_v1/`，11 个领域、121 个冻结数组；现有 v1 参考不得覆盖。
+- 热收敛补充参考：`refs/full_repo_refactor_addendum_v1/`，3 个自包含 case、40 个冻结数组；由重构前 commit `a4b2be1` 的隔离源码生成，并由 annotated tag `full-repo-refactor-thermal-addendum-v1-20260721` 固定。
+- 当前阶段：0.2.0 全仓库重构、迁移资料、性能门禁和 wheel 隔离安装均已完成，进入发布后外部消费者迁移阶段。
 
-## 当前工作重点
+## 已完成的 0.2.0 边界
 
-1. 在任何生产源码改动前建立 `refs/full_repo_refactor_v1/`，冻结依赖、随机种子、输入输出、残差历史和关键时序；现有 v1 参考不得覆盖。
-2. `0.2.0` 采用破坏式、命名空间优先的新 API；顶层 `ALB.__init__` 只保留版本、基础单位/时步/收敛 DTO 和计算块协议，最终删除旧平铺 facade。
-3. 生产实现按 `contracts/core/config/physics/control/dynamics/surrogate/systems/infrastructure/workflows` 分层，一次只迁移一个领域，不同时改变方程、矩阵装配顺序或迭代准则。
-4. `SURROGATE_TRAIN` 和 `PAPER_WORK` 只做只读迁移审计；发现数值或物理问题只报告，修正必须另建提交和 v2 参考。
+1. `ALB.__init__` 只公开版本、`UnitSystem`、`StepContext`、`ConvergenceStatus` 和基础计算块协议。
+2. 旧 `ALB.base/film/bearing/thermal/controller/nn/alb/tool/task/remote` 等平铺模块已删除，不提供 facade。
+3. 实现按 `contracts`、`core`、`config`、`physics`、`control`、`dynamics`、`surrogate`、`systems`、`infrastructure` 和 `workflows` 分类。
+4. 标准 DTO、显式计算生命周期、唯一物理时步提交、统一收敛状态、`ResultBundle` 和 `ArtifactWriterProtocol` 已落地。
+5. Reynolds、热耦合、控制、转子、ALBNN、coupling 和谐波线性轴承的冻结行为保持精确一致；`K`、`C` 和复数 `G_xv` 作为正式能力保留。
+6. `RossRotor` 已拆分 `current_state()` 与 `advance()`；`output()` 不再承担隐藏推进。
+7. 配置迁移和 surrogate model-package/scaler 迁移均提供默认不覆盖原文件的 CLI 与工具脚本。
+8. generic remote engine 位于 `ALB.infrastructure.remote`；ALBNN 专用队列位于 `ALB.surrogate.training.remote`。
+9. 邮件能力改为 `SmtpNotifier`，只读取注入配置或环境变量；tracked example 不含私人默认信息。
+10. 正式 pytest 只从 `tests/` 收集；诊断和手动工具分别位于 `tools/diagnostics` 与 `tools/manual`。
 
-## 本轮已完成
+## 当前验收结论
 
-- 提取 `ComponentBase`、`BearingComponentBase`、`BaseSimpleModel`、`BaseSystem`、`BaseCSystem`、`Signal`、`TimeIter`、`TimeIterDt` 和共用验证 helper。
-- 定义 `BearingProtocol`、`BearingCoefficientProtocol`、`RotorProtocol`、`ControllerProtocol`、`ServoValveProtocol`、`TimeGridProtocol`、`NotifierProtocol`、`PersistableProtocol` 和 `ConvergenceStatus`。
-- 新增 `BearingDecoratorBase` 和 `LegacyBearingAdapter`；热轴承 wrapper 已迁移到 decorator 模板。
-- `ALBHarmonicLinear` 已迁移到标准轴承基类，原 `K/C/G_xv` 和耦合时域行为保持参考一致。
-- `RsRotorBearingCouple` 增加有量纲边界与二维有限力检查，同时兼容尚未声明单位制的旧第三方轴承。
-- `MultiPad` 增加空集合、单位制和节点一致性检查，不再原位修改首个 pad 的输出字典，并允许缺省 `friction`。
-- `CsoArgs` 统一由 `ALB.config` 定义；`ALB.orifice` 只保留兼容 re-export。
-- `FilmSystem` 已解除对邮件实现的直接依赖，异常通知改为可选 `NotifierProtocol` 注入。
-- `limit_signal` 的唯一实现迁至 `ALB.core.validation`；旧 `ALB.servovalve.limit_signal` 仍可导入。
-- `ALB.__all__` 由唯一 lazy export map 生成，消除手工列表漂移。
+| 门禁 | 结果 | 证据 |
+| --- | --- | --- |
+| 精确行为回归 | 11 个领域、121 个主参考数组使用精确相等检查通过；thermal direct/Newton/transient 的 40 个补充数组、残差历史和提交状态也精确通过 | `refs/full_repo_refactor_v1/`、`refs/full_repo_refactor_addendum_v1/`、`tests/regression/` |
+| 242 节点迁移 | 242 个基线节点全部映射；另有 19 个原非收集文件明确分类 | `docs/migrations/0.2.0_test_map.json` |
+| 全量 pytest | 293 passed、33 skipped、12 warnings、7 subtests passed；测试前后 tracked 状态增量为 0 | `docs/migrations/0.2.0_release_acceptance.json` |
+| 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
+| 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
+| 严格类型 | mypy 2.3.0 检查 `ALB/contracts` 与 `ALB/core`，19 个源文件无问题 | `docs/migrations/0.2.0_release_acceptance.json` |
+| Optional dependency | 各领域 namespace 的缺依赖提示与 extra 安装信息测试通过 | `tests/unit/contracts/`、`tests/validation/test_optional_dependency_errors.py` |
+| 同机性能 | film 0.8943、thermal 0.9114、ALB 0.9098、ALBNN 0.9028、coupling 0.9550，均低于 1.15 阈值 | `docs/migrations/0.2.0_performance.json` |
+| Wheel | `re_alb-0.2.0-py3-none-any.whl` 构建、隔离安装、8 组 extras 独立 import smoke、namespace smoke 和两个 CLI `--help` 通过 | `docs/migrations/0.2.0_build_acceptance.json` |
 
-## 已确认基线
+wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf197ebd8dea76`。它包含 122 个成员，不包含已删除的旧平铺模块。
 
-- 重构前源码基线：commit `24ea190becf19c6f0e33e3c05686c0052dfdbedd`，tag `pre-interface-refactor-20260720`。
-- 行为参考基线：commit `597f3fe`，tag `pre-interface-refactor-refs-20260720`。
-- 精确回归资产：`refs/interface_contract_reference_v1.json`、`refs/interface_contract_reference_v1.npz`。
-- 详细架构、兼容策略和迁移顺序以 `docs/interface_architecture.md` 为准。
+## 外部消费者状态
 
-## 当前验证状态
+本轮只读审计已覆盖：
 
-2026-07-20 已执行：
+- `SURROGATE_TRAIN` 23 个文件：19 个 direct、4 个 context。
+- `PAPER_WORK` 27 个文件：25 个 direct、2 个 transitive。
 
-```powershell
-E:/Anaconda2023/envs/ALB/python.exe -m pytest `
-  test/contracts `
-  test/config `
-  test/couple `
-  test/bearing/test_alb_harmonic_linear.py `
-  test/bearing/test_nodim_interfaces.py `
-  test/bearing/test_nodim_alb_equivalence.py `
-  test/bearing/test_thermal_nondim_solver.py `
-  test/bearing/test_thermal_wrapper_nodim_core.py `
-  -q -p no:cacheprovider
-```
+每个文件的 SHA-256、旧 import、0.2 目标 namespace 和语义迁移门槛位于 `docs/migrations/0.2.0_external_consumer_audit.json`。所有条目均标记 `external_file_modified=false`；本轮没有修改外部项目。
 
-结果：`94 passed, 2 subtests passed, 12 warnings`，耗时约 `22.43 s`。
+## 已知风险与边界
 
-- 12 条 warning 来自既有 `skfuzzy` 除法数值提示和 `scipy.optimize` 迭代进展提示，不是本次接口重构产生的测试失败。
-- `test/contracts/test_interface_contract_reference.py` 已确认旧 import、旧 export 目标、信号传播、谐波轴承、旧线性代理、转子耦合及 scaler pickle 参考保持一致。
-- 所有 34 个 v1 数值参考数组均使用 `numpy.testing.assert_array_equal` 逐元素比较通过。
-- 已对 `ALB/` 和 `test/contracts/` 共 67 个 Python 文件执行无写盘语法编译检查，全部通过。
-- 已成功构建 `re_alb-0.1.0-py3-none-any.whl`，在隔离目录安装后成功导入 68 个顶层 export 以及五个分类 namespace；临时 wheel、安装目录、`build/` 和 `re_alb.egg-info` 已清理。
+- 33 个 skip 主要对应尚未在所属仓库完成的外部消费者迁移和已有 optional artifact 条件；它们不是静默删除的基线测试。
+- 旧 S0011 Newton 精确节点因外部配置 `F:/BaiduSyncdisk/博士论文/task/PAPER/config/alb12.json5` 不存在而明确 skip；其中保留的 `6.0` lambda 构造属于历史测试基线问题，不是本轮 thermal solver 回归。自包含 Newton 精确能力由 thermal addendum 覆盖。
+- `RossRotor._check_time()` 仍保留重构前先追加时间、再用末项检查步长的逻辑，因而不能识别错误 `dt`。按本轮约束只记录，不修正；修正时必须另建提交和 v2 参考。
+- 旧 `ALB.nn` pickle 不属于 0.2 运行时兼容面。必须先使用显式迁移工具生成新的 model package，并只对可信 pickle 启用加载。
+- 删除当前工作树中的私人邮件默认值不会抹除 Git 历史；相关 SMTP 凭据仍需在外部轮换。
+- 重构中发现的既有数值或物理问题不在本版本顺带修复；修复必须使用独立提交和 v2 参考。
+- 性能门禁使用固定的小型 film、thermal、ALB、ALBNN 和合成 coupling case，能约束本次重构，不代表生产尺寸 M0035 或大型 ROSS 模型的绝对性能。
+- 当前用户工作树中的两张热图、`.codex/`、LQG 脚本及其输出未暂存、未移动，也不属于 0.2.0 发布变更。
 
-## 当前风险与待处理事项
+## 发布后下一步
 
-- 大型求解器实现尚未迁入分类子包；当前分类 namespace 仍主要提供兼容映射，不能表述为大型单体模块已经完全拆分。
-- `calc_error()` 的历史返回仍混有残差标量、布尔值和空值。新代码已有 `ConvergenceStatus`，但必须逐 solver 迁移，不能批量改变旧返回语义。
-- `RsRotorBearingCouple` 暂时允许 `unit_system="unspecified"` 的旧轴承；`0.2.0` 目标只允许 dimensional/nondimensional，因此收紧前必须先完成显式单位适配和精确回归。
-- `RossRotor.output()` 仍同时承担状态读取和推进相关语义；拆分为明确读/写时序前必须固定转子推进参考。
-- `ALB/tool.py::EmailSender` 仍存在嵌入式默认认证配置风险。凭据值不得写入文档或日志；应单独完成凭据轮换和基础设施迁移。
-- 本轮没有执行仓库内全部探索性、GUI、远程和会生成固定图片的测试；当前结论只覆盖上述 94 项稳定相关测试及 wheel 隔离导入。全仓库重构必须重新收集并逐项映射当前测试节点。
+1. 在 `SURROGATE_TRAIN` 独立分支按 23 文件清单迁移 import、model package 和 remote wrapper，并执行训练/推理 smoke。
+2. 在 `PAPER_WORK` 独立分支按 27 文件清单迁移脚本，保持论文任务配置和结果资产原地。
+3. 任何数值修正先生成 v2 参考，再独立提交；不得改写 `refs/full_repo_refactor_v1/`。
+4. 如需发布 wheel 到外部位置，先重新执行 `tools/validation/validate_wheel_0_2.py` 并核对 SHA-256。
 
-## 当前工作树中未纳入本轮提交的文件
+## 证据入口
 
-- 已修改：`test/bearing/_thermal_plots/alb_thermal_4pads.png`。
-- 已修改：`test/bearing/_thermal_plots/orifice_thermal_comparison.png`。
-- 未跟踪：`.codex/`。
-- 未跟踪：`test/control/LQG/albnn_rotor0_lqg_small_signal.py`。
-- 未跟踪：`test/control/LQG/output/`。
-
-上述文件当前均不得按接口重构产物处理。是否提交、归档或清理需要按各自来源另行确认。
-
-## 下一步
-
-1. 将本状态入口与 `AGENTS.md`、`README.md`、文档角色索引、文件分类和 run 索引作为独立状态文档包提交，并创建 `pre-full-repo-refactor-20260720` annotated tag。
-2. 建立 `refs/full_repo_refactor_v1/`、环境 manifest、领域参考和测试节点迁移映射；提交后创建 `pre-full-repo-refactor-refs-20260720` annotated tag。
-3. 按 `contracts/core/config` 基础层和固定领域依赖顺序实施机械迁移，每个阶段运行精确参考并形成独立提交。
-4. 单独处理私人邮件配置和 `SmtpNotifier`；删除当前 tracked 私人信息，但不改写 Git 历史，并明确提示在仓库外轮换凭据。
-5. 完成外部只读迁移报告、性能阈值、wheel/隔离安装/extras/CLI 验收后更新本文档并创建 `0.2.0` 最终 tag。
-
-## 证据指针
-
-- 接口与模块规则：`docs/interface_architecture.md`。
-- 稳定 package 导览：`docs/alb_package_overview.md`。
-- 重构前精确参考：`refs/interface_contract_reference_v1.json`、`refs/interface_contract_reference_v1.npz`。
-- 新接口测试：`test/contracts/test_component_contracts.py`。
-- 兼容数值回归：`test/contracts/test_interface_contract_reference.py`。
-- 最终重构提交：`721a3902063a7d8427488bf23b6446cdb92942dd`。
+- 架构：`docs/interface_architecture.md`。
+- 导入和不兼容迁移：`docs/migrations/0.2.0.md`、`docs/migrations/0.2.0_import_map.json`。
+- 测试映射：`docs/migrations/0.2.0_test_map.json`。
+- 最终 pytest、mypy、冻结参考和 tracked 工作树门禁：`docs/migrations/0.2.0_release_acceptance.json`。
+- 热收敛补充参考：`refs/full_repo_refactor_addendum_v1/thermal_convergence.json`。
+- 外部调用：`docs/migrations/0.2.0_external_consumer_audit.md`。
+- 性能：`docs/migrations/0.2.0_performance.json`。
+- 构建：`docs/migrations/0.2.0_build_acceptance.json`。

@@ -1,7 +1,7 @@
 {
   "schema": "alb.build-acceptance.v1",
   "version": "0.2.0",
-  "candidate_commit": "d0dfe287e2703b80e7e556ace034ddb763674937",
+  "candidate_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
   "wheel": {
     "path": "dist/re_alb-0.2.0-py3-none-any.whl",
     "size_bytes": 293544,

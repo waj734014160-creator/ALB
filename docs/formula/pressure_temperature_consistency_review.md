@@ -11,11 +11,11 @@
 
 涉及文件：
 
-- `ALB/nondim.py`
-- `ALB/orifice.py`
-- `ALB/thermal.py`
-- `ALB/config.py`
-- `test/bearing/test_nodim_alb_equivalence.py`
+- `ALB/physics/thermal/scales.py`
+- `ALB/physics/hydraulics/orifice.py`
+- `ALB/physics/thermal/solver.py`
+- `ALB/config/film.py` 与 `ALB/config/thermal.py`
+- `tests/regression/bearing/test_nodim_alb_equivalence.py`
 - 热模型与孔口契约的邻近单元测试
 
 ## 2. 当前活动调用链

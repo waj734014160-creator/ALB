@@ -105,7 +105,7 @@ E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_query_a
 E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_monitor_job.py --task-name <task> --process-match <needle>
 ```
 
-稳定实现维护在 `ALB.remote`：`job`、`albnn_queue`、`albnn_start`、`albnn_status`、`monitor` 和 `transport`。`SURROGATE_TRAIN/run/remote` 下的脚本是兼容入口，用于保持旧命令和 JSON queue config 可用。
+通用稳定实现维护在 `ALB.infrastructure.remote`：`job`、`monitor` 和 `transport`；ALBNN 专用 `queue`、`start` 和 `status` 维护在 `ALB.surrogate.training.remote`。`SURROGATE_TRAIN/run/remote` 下的脚本是外部项目兼容入口，迁移前只按 `docs/migrations/0.2.0_external_consumer_audit.md` 做只读审计。
 
 论文远程计算的本地入口已迁移到外部论文工作区：
 
@@ -114,7 +114,7 @@ E:/Anaconda2023/envs/ALB/python.exe F:/BaiduSyncdisk/博士论文/PAPER_WORK/run
 E:/Anaconda2023/envs/ALB/python.exe F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote/remote_job.py launch --config F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote/configs/<paper-job>.json
 ```
 
-论文任务文件归属规则由 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` 维护；通用远程实现仍由 `ALB.remote` 提供，旧 `SURROGATE_TRAIN/run/remote` paper 副本仅作为历史兼容入口。
+论文任务文件归属规则由 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` 维护；通用远程实现由 `ALB.infrastructure.remote` 提供，ALBNN 队列实现由 `ALB.surrogate.training.remote` 提供。旧 `SURROGATE_TRAIN/run/remote` paper 副本仅作为外部历史兼容入口，不在 ALB_MAIN 重构中修改。
 
 新建非训练远程任务时，优先使用配置驱动的通用 wrapper：
 

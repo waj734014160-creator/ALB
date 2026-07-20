@@ -38,6 +38,7 @@
 | `ALB_MAIN/docs/interface_architecture.md` | 稳定模块边界与接口协议说明 | ALB 依赖方向、通用模板、领域协议、单位制边界和兼容迁移策略。 | 模块分类、接口契约、兼容层、依赖规则、单位制规则和稳定验证入口。 | 实时运行状态、单次实验指标、训练进度和临时日志。 | 通用接口、模块边界、推荐导入路径或兼容策略变化时。 |
 | `ALB_MAIN/docs/alb_albnn_quickstart.md` | 稳定用户操作手册 | 快速构建 ALB 模型、加载 ALBNN packaged model，并说明常见输入输出契约。 | 稳定 API 用法、最小示例、推荐导入路径、常见输入输出契约和排错提示。 | 活跃训练进度、单次 run 指标、远程任务 PID、原始日志正文和临时实验结论。 | ALB / ALBNN 构建 API、配置契约或推荐 quickstart 流程变化时。 |
 | `ALB_MAIN/docs/migrations/0.2.0.md` | 稳定版本迁移手册 | 0.1 到 0.2 的 namespace、生命周期、DTO、持久化、配置和模型包迁移规则。 | 0.2 公共契约、导入映射、迁移工具、正式不兼容项和稳定验收入口。 | 实时任务状态、临时日志、未经验证的数值结论。 | 0.2 公共接口、迁移工具或正式验收结论变化时。 |
+| `ALB_MAIN/docs/migrations/0.2.0_release_acceptance.json` | 版本化机器验收证据 | 记录最终 pytest、mypy、冻结参考和 tracked 工作树前后门禁。 | 只能由正式发布验收工具按真实执行结果重建。 | 手工填写通过结论、实时任务状态、未经执行的测试结果。 | 0.2 发布候选重新验收时。 |
 | `ALB_MAIN/docs/migrations/0.2.0_external_consumer_audit.md` | 版本化只读迁移证据 | declared 外部调用者的路径、哈希、旧 import 和迁移目标汇总。 | 外部只读快照口径、文件清单、迁移门槛和证据指针。 | 修改外部文件、记录外部实时任务状态、复制原始日志。 | declared 快照或 0.2 迁移目标变化时。 |
 | `ALB_MAIN/docs/file_classification.md` | ALB_MAIN 文件归属和清理策略 | 文件组、归属边界、归档/删除策略。 | 文件类别、代表路径、保留/归档规则、清理风险说明。 | 实时运行状态、模型进度、详细 run 历史。 | 主要文件组、归档类别或清理策略变化时。 |
 | `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS 全局 run 规则和路径索引 | 项目前缀 run 编号、run ID、current-status 归属和规范路径指针。 | run 编号规则、项目前缀映射、current-status 指针、规范路径和归档指针规则。 | 原始日志、详细进度尾部、模型指标、实时 tick、清理动作。 | run 编号、项目前缀、current-status 归属、路径族或归档指针规则变化时。 |
@@ -88,6 +89,8 @@
 | `SURROGATE_TRAIN/outputs/remote_monitor_logs/` | 远程采样 monitor 状态。 |
 | `SURROGATE_TRAIN/outputs/queue_logs/` | 远程训练队列状态和同步日志尾部。 |
 | `ALB_MAIN/docs/current_state.md` | ALB_MAIN 当前开发阶段、基线、验证状态、风险、下一步和证据指针。 |
+| `ALB_MAIN/docs/migrations/0.2.0_release_acceptance.json` | 0.2 最终 pytest、mypy、冻结参考与 tracked 工作树门禁。 |
+| `ALB_MAIN/refs/full_repo_refactor_addendum_v1/` | 从重构前隔离源码生成的 thermal direct/Newton/transient 不可覆盖补充参考。 |
 | `ALB_MAIN/docs/run_index.md` | 人类可读的工作区全局 run 编号和路径策略。 |
 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` | 论文任务文件管理、路径命名和证据保留规则。 |
 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md` | 论文任务当前状态、最新输出路径、检查命令和下一步。 |
