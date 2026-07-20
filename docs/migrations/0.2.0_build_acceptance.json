@@ -1,0 +1,87 @@
+{
+  "schema": "alb.build-acceptance.v1",
+  "version": "0.2.0",
+  "candidate_commit": "4d303248074331c4ef1076c056cdf9e851943727",
+  "wheel": {
+    "path": "dist/re_alb-0.2.0-py3-none-any.whl",
+    "size_bytes": 293544,
+    "sha256": "9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf197ebd8dea76",
+    "member_count": 122,
+    "forbidden_members_present": [],
+    "required_members_present": [
+      "ALB/contracts/block.py",
+      "ALB/core/steps.py",
+      "ALB/dynamics/identification.py",
+      "ALB/infrastructure/persistence/writers.py",
+      "ALB/systems/alb/data/alb_harmonic_linear_gamma1_50hz.json"
+    ]
+  },
+  "metadata": {
+    "version": "0.2.0",
+    "requires_python": ">=3.10",
+    "extras": [
+      "all",
+      "control",
+      "dynamics",
+      "film",
+      "io",
+      "surrogate",
+      "test"
+    ]
+  },
+  "isolated_install": {
+    "root": "outputs/wheel_smoke/installed_4d30324",
+    "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+    "version": "0.2.0",
+    "root_exports": [
+      "AdvancingBlock",
+      "CommandBlock",
+      "ComputationalBlock",
+      "ConvergenceStatus",
+      "EvaluableBlock",
+      "SolvableBlock",
+      "StepContext",
+      "UnitSystem",
+      "__version__"
+    ],
+    "removed_specs": {
+      "ALB.alb": false,
+      "ALB.base": false,
+      "ALB.bearing": false,
+      "ALB.controller": false,
+      "ALB.film": false,
+      "ALB.nn": false,
+      "ALB.remote": false,
+      "ALB.results": false,
+      "ALB.task": false,
+      "ALB.thermal": false,
+      "ALB.tool": false
+    },
+    "namespace_smoke": [
+      "PID",
+      "FuzzyPID",
+      "RossRotor",
+      "DirectoryArtifactWriter",
+      "read_json5",
+      "HydrostaticBearing",
+      "SkfemNewtonFilm",
+      "ThermalHydroBearing",
+      "Net",
+      "TrainingConfig",
+      "ALBHarmonicLinear"
+    ]
+  },
+  "cli_help": {
+    "alb-migrate-config": {
+      "module": "ALB.config.cli",
+      "returncode": 0,
+      "usage": "usage: cli.py [-h] [--overwrite] source destination"
+    },
+    "alb-migrate-surrogate": {
+      "module": "ALB.surrogate.cli",
+      "returncode": 0,
+      "usage": "usage: cli.py [-h] [--metadata METADATA] [--overwrite]"
+    }
+  },
+  "overall_status": "passed"
+}
