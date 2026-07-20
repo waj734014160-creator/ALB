@@ -6,7 +6,7 @@ import numpy as np
 
 from ALB.core import TimeIterDt
 from ALB.physics.bearing import MultiPad
-from ALB.orbit import test_bearing_orbit
+from ALB.dynamics.orbit import test_bearing_orbit
 from run import thermal_kc_compare as kc
 
 OUT = Path("outputs/thermal_kc_compare/coupling_diagnosis.json")

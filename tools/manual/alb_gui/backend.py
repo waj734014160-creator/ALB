@@ -12,7 +12,7 @@ import numpy as np
 
 from ALB.alb import alb2, alb2_static
 from ALB.config import ALBConfig
-from ALB.orbit import EllipseTrack, orbitime, test_bearing_orbit_parallel
+from ALB.dynamics.orbit import EllipseTrack, orbitime, test_bearing_orbit_parallel
 
 from .config_io import build_flat_alb_config, resolve_gui_time_grid
 from .fields import FieldMap, pressure_map_from_pads, temperature_map_from_pads

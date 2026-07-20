@@ -27,10 +27,11 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import ALB  # noqa: E402
+from ALB import StepContext  # noqa: E402
 from ALB import alb_harmonic_linear  # noqa: E402
 from ALB.alb import ALBLinearAgent  # noqa: E402
 from ALB.core import Signal, TimeIterDt  # noqa: E402
-from ALB.couple import RsRotorBearingCouple  # noqa: E402
+from ALB.dynamics.coupling import RsRotorBearingCouple  # noqa: E402
 from ALB.results import DataFrameResult, SaveTreeNode  # noqa: E402
 from ALB.train.transforms import MidpointMinMaxScaler  # noqa: E402
 
@@ -376,8 +377,8 @@ def _coupling_reference() -> tuple[dict[str, object], dict[str, np.ndarray]]:
     time_grid = TimeIterDt(bearing.dt, num=2)
     coupling = RsRotorBearingCouple(rotor, time_grid, bearing)
     coupling.init()
-    coupling.output(ts=0.0)
-    coupling.output(ts=bearing.dt)
+    coupling.advance(StepContext(0, 0.0, bearing.dt, "dimensional"))
+    coupling.advance(StepContext(1, bearing.dt, bearing.dt, "dimensional"))
 
     assert rotor.last_force is not None
     assert rotor.last_force0 is not None

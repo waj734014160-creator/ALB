@@ -7,14 +7,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ALB import (
+from ALB import StepContext
+from ALB.harmonic_linear import (
     ALBHarmonicCoefficients,
     ALBHarmonicLinear,
     alb_harmonic_linear,
     load_builtin_alb_harmonic_coefficients,
 )
 from ALB.core import Signal, TimeIterDt
-from ALB.couple import RsRotorBearingCouple
+from ALB.dynamics.coupling import RsRotorBearingCouple
 from ALB.results import DataFrameResult, SaveTreeNode
 
 
@@ -163,8 +164,8 @@ def test_rs_rotor_bearing_couple_accepts_harmonic_linear_bearing():
     couple = RsRotorBearingCouple(rotor, time_iter, bearing)
 
     couple.init()
-    couple.output(ts=0.0)
-    couple.output(ts=bearing.dt)
+    couple.advance(StepContext(0, 0.0, bearing.dt, "dimensional"))
+    couple.advance(StepContext(1, bearing.dt, bearing.dt, "dimensional"))
 
     assert rotor.last_force is not None
     assert rotor.last_force.shape == (1, 2)

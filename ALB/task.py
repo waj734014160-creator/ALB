@@ -16,9 +16,9 @@ from ALB.config import (
     ThermalConfig,
     TimeGridConfig,
 )
-from ALB.couple import RsRotorBearingCouple
-from ALB.orbit import EllipseTrack, orbitime, test_bearing_orbit
-from ALB.rotor import rotor0
+from ALB.dynamics.coupling import RsRotorBearingCouple
+from ALB.dynamics.orbit import EllipseTrack, orbitime, test_bearing_orbit
+from ALB.dynamics.rotor import rotor0
 from ALB.physics.thermal import wrap_pad_collection_with_thermal
 from ALB.tool import read_json5, read_json5_with_share
 

@@ -6,13 +6,15 @@ from tqdm import tqdm
 
 from ALB.core.component import BaseCSystem, BaseSystem
 from ALB.core.validation import require_unit_system, validate_bearing_output
-from ALB.rotor import Gravity, StaicLoad
+from ALB.contracts import ResultBundle, StepContext, result_snapshot
+from ALB.dynamics.rotor import Gravity, StaticLoad
+from ALB.workflows import StepCommitLedger
 
-from .results import DataFrameResult, SaveTreeNode
+from ALB.results import DataFrameResult, SaveTreeNode
 
 # from ALB.logger import logger
 from .rotor import RossRotor, SingleRotor, UnbalancedExcitation
-from .tool import cvstack
+from ALB.tool import cvstack
 
 
 class RotorBearingCouple(BaseSystem):
@@ -81,6 +83,8 @@ class RsRotorBearingCouple(BaseCSystem):
         self._rp = None
         self._nt = None
         self._ts = None
+        self._last_output = None
+        self._step_ledger = StepCommitLedger()
 
     @property
     def results(self):
@@ -135,6 +139,8 @@ class RsRotorBearingCouple(BaseCSystem):
         self._forcef0 = np.array(self._forcef0)
         self._forcen0 = cvstack([np.array(self._forceu0), np.array(self._forcef0)])
         self._nt = 0
+        self._last_output = None
+        self._step_ledger = StepCommitLedger()
 
     def add_unbalance(
         self, node_link, phase=0, t_max: float = 1, m=0, freq=0, e=0, no_step=False
@@ -155,7 +161,7 @@ class RsRotorBearingCouple(BaseCSystem):
         self.forces.append(ube)
 
     def add_static_force(self, force, node_link):
-        force = StaicLoad(force)
+        force = StaticLoad(force)
         force.node_link = node_link
         self.forces.append(force)
 
@@ -199,7 +205,8 @@ class RsRotorBearingCouple(BaseCSystem):
             bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
         )
         for nt, ts in progress_bar:
-            self.output(ts, **kwargs)
+            context = StepContext(nt, ts, self._time_iter.dt, "dimensional")
+            self.advance(context, **kwargs)
 
     def input(self, *args, **kwargs):
         """
@@ -207,12 +214,15 @@ class RsRotorBearingCouple(BaseCSystem):
         """
         pass
 
-    def output(self, ts=None, **kwargs):
-        """
-        Advance one coupling time step and update rotor and bearing states.
-        """
-        if ts is None:
-            ts = self._time_iter.t_list[self._nt]
+    def advance(self, context: StepContext, **kwargs) -> ResultBundle:
+        """Advance one coupled physical step and commit it exactly once."""
+
+        if not isinstance(context, StepContext):
+            raise TypeError("context must be StepContext")
+        if context.unit_system.value != "dimensional":
+            raise ValueError("rotor-bearing coupling requires dimensional units")
+        self._step_ledger.validate_next(context)
+        ts = context.time
         self._ts = ts
         uxy_n1 = self._rp["uxy"]
         uxyt_n1 = self._rp["uxyt"]
@@ -228,13 +238,36 @@ class RsRotorBearingCouple(BaseCSystem):
         self.rotor.input_force2node(
             ts, self._forcen1, self._fnode_links, force0=self._forcen0
         )
+        self.rotor.advance()
         self._rp = self.rotor.output(self._bnode_links)
         self._forcen0 = self._forcen1
         self._forceu0 = self._forceu1
         self._forcef0 = self._forcef1
 
-        self._nt += 1
         self.signal.lead_loop("finish_signal")
+        self._last_output = result_snapshot(
+            {
+                "rotor_displacement": self._rp["uxy"],
+                "rotor_velocity": self._rp["uxyt"],
+                "bearing_force": self._forcef1,
+                "nodal_force": self._forcen1,
+            },
+            {
+                "step_index": context.step_index,
+                "time": context.time,
+                "unit_system": context.unit_system.value,
+            },
+        )
+        self._step_ledger.commit_step(context)
+        self._nt += 1
+        return self.output()
+
+    def output(self) -> ResultBundle:
+        """Read the most recent completed coupled result without advancing."""
+
+        if self._last_output is None:
+            raise RuntimeError("coupled output is unavailable before advance()")
+        return self._last_output
 
     def save(self, tofile=True, path=None, name=None, *args, **kwargs):
         if path is None:

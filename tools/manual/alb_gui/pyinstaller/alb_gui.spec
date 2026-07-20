@@ -78,7 +78,7 @@ hiddenimports = [
     "ALB.matrix.static",
     "ALB.mesh",
     "ALB.physics.thermal.scales",
-    "ALB.orbit",
+    "ALB.dynamics.orbit",
     "ALB.physics.hydraulics.orifice",
     "ALB.results",
     "ALB.control.valve",

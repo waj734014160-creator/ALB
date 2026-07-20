@@ -4,10 +4,12 @@ from importlib import import_module
 
 
 _EXPORTS = {
-    "RossRotor": ("ALB.rotor", "RossRotor"),
-    "SingleRotor": ("ALB.rotor", "SingleRotor"),
-    "RsRotorBearingCouple": ("ALB.couple", "RsRotorBearingCouple"),
-    "RotorBearingCouple": ("ALB.couple", "RotorBearingCouple"),
+    "RossRotor": ("ALB.dynamics.rotor", "RossRotor"),
+    "SingleRotor": ("ALB.dynamics.rotor", "SingleRotor"),
+    "RsRotorBearingCouple": ("ALB.dynamics.coupling", "RsRotorBearingCouple"),
+    "RotorBearingCouple": ("ALB.dynamics.coupling", "RotorBearingCouple"),
+    "EllipseTrack": ("ALB.dynamics.orbit", "EllipseTrack"),
+    "BearingForceTrack": ("ALB.dynamics.orbit", "BearingForceTrack"),
     "TimeIter": ("ALB.core.time", "TimeIter"),
     "TimeIterDt": ("ALB.core.time", "TimeIterDt"),
 }

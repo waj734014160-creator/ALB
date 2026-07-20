@@ -6,7 +6,7 @@ import ross as rs
 import scipy.fft
 
 from ALB.core import TimeIter
-from ALB.rotor import RossRotor, UnbalancedExcitation
+from ALB.dynamics.rotor import RossRotor, UnbalancedExcitation
 
 if __name__ == "__main__":
     start = 0

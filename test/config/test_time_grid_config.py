@@ -8,7 +8,7 @@ from unittest import mock
 import pytest
 
 from ALB.config import ALBConfig, TimeGridConfig
-from ALB.orbit import orbitime
+from ALB.dynamics.orbit import orbitime
 from ALB.task import TaskConfigFactory
 from ALB.tool import read_json5, read_share
 

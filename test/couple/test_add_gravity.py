@@ -3,8 +3,8 @@ import ross as rs
 
 from ALB.core import TimeIter
 from ALB.physics.bearing import HydrostaticBearing
-from ALB.couple import RsRotorBearingCouple
-from ALB.rotor import RossRotor, ShaftElement
+from ALB.dynamics.coupling import RsRotorBearingCouple
+from ALB.dynamics.rotor import RossRotor, ShaftElement
 
 if __name__ == "__main__":
     ls = [0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08]

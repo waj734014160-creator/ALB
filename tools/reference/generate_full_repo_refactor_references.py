@@ -54,6 +54,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from ALB.alb import nodim_alb
+from ALB import StepContext
 from ALB.core.fem import _assemble_matrixs, _assemble_rights
 from ALB.physics.bearing import (
     HydrostaticBearing,
@@ -75,7 +76,7 @@ from ALB.config import (
     PIDConfig,
 )
 from ALB.control.pid import PID
-from ALB.couple import RsRotorBearingCouple
+from ALB.dynamics.coupling import RsRotorBearingCouple
 from ALB.physics.gas import GasBearing
 from ALB.core.numerics.iteration import gauss_seidel_iteration_film
 from ALB.harmonic_linear import alb_harmonic_linear
@@ -99,7 +100,7 @@ from ALB.remote.transport import (
     remote_path,
 )
 from ALB.results import DataFrameResult, NpyResult, SaveTreeNode
-from ALB.rotor import RossRotor
+from ALB.dynamics.rotor import RossRotor
 from ALB.control.valve import moog_2nd_servovalve
 from ALB.config import ThermalConfig
 from ALB.physics.thermal import ThermalHydroBearing
@@ -184,7 +185,6 @@ class _ReferenceRotor:
     def output(self, node_links: Any) -> dict[str, np.ndarray]:
         count = len(np.asarray(node_links).reshape(-1))
         index = min(self.output_index, len(self.positions) - 1)
-        self.output_index += 1
         return {
             "uxy": np.repeat(self.positions[index][None, :], count, axis=0),
             "uxyt": np.repeat(self.velocities[index][None, :], count, axis=0),
@@ -201,6 +201,9 @@ class _ReferenceRotor:
         self.time_history.append(float(t))
         self.force_history.append(np.asarray(force, dtype=float).copy())
         self.previous_force_history.append(np.asarray(force0, dtype=float).copy())
+
+    def advance(self) -> None:
+        self.output_index = min(self.output_index + 1, len(self.positions) - 1)
 
     def finish_signal(self) -> None:
         return None
@@ -816,6 +819,7 @@ def _dynamics_coupling_case() -> CaseData:
     rotor_states = []
     for index, force in enumerate(rotor_forces):
         rotor.input_force(index * rotor._dt, force)
+        rotor.advance()
         rotor_states.append(rotor.output())
 
     bearing = alb_harmonic_linear(node_link=12)
@@ -827,7 +831,9 @@ def _dynamics_coupling_case() -> CaseData:
     )
     coupling.init()
     for index in range(3):
-        coupling.output(ts=index * bearing.dt)
+        coupling.advance(
+            StepContext(index, index * bearing.dt, bearing.dt, "dimensional")
+        )
     arrays = {
         "rotor_forces": rotor_forces,
         "rotor_states": np.vstack(rotor_states),
@@ -848,7 +854,7 @@ def _dynamics_coupling_case() -> CaseData:
     return CaseData(
         metadata={
             "purpose": "Rotor advance timing and coupling exchange order",
-            "legacy_output_advances_state": True,
+            "legacy_output_advances_state": False,
             "coupling_result_keys": sorted(coupling.results),
             "save_tree": coupling.save(tofile=False).get_dir(),
         },

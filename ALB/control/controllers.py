@@ -757,7 +757,7 @@ class ALBLQGController(BaseSimpleModel):
 
         Returns a continuous-time state-space system.
         """
-        from ALB.rotor import location_mapping_matrix
+        from ALB.dynamics.rotor import location_mapping_matrix
 
         self.ndof = self.rotor._rotor.ndof
         lti_r = self._rotor_lti()
@@ -1742,7 +1742,7 @@ def modal_truncation_by_dominance(sys, order, alpha=0.0):
 
 
 def test_lqg(eso=True, dt=1e-3, freq=50, alpha=1e-3, beta=2e-3):
-    from ALB.rotor import rotor0
+    from ALB.dynamics.rotor import rotor0
 
     rotor = rotor0(dt, freq, alpha=alpha, beta=beta)
 

@@ -268,7 +268,7 @@ class TestAlbGuiBackend(unittest.TestCase):
 
     def test_parallel_orbit_matches_serial_orbit_nonthermal(self):
         from ALB.alb import alb2
-        from ALB.orbit import (
+        from ALB.dynamics.orbit import (
             EllipseTrack,
             orbitime,
             test_bearing_orbit,
@@ -342,7 +342,7 @@ class TestAlbGuiBackend(unittest.TestCase):
 
     def test_dynamic_gui_backend_matches_script_style_result(self):
         from ALB.alb import alb2
-        from ALB.orbit import EllipseTrack, orbitime, test_bearing_orbit
+        from ALB.dynamics.orbit import EllipseTrack, orbitime, test_bearing_orbit
 
         config = make_small_test_config(thermal=False)
         gui_result = run_dynamic_calculation(config)

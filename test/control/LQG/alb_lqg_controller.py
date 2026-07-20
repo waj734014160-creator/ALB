@@ -12,7 +12,7 @@ from control.matlab import ss, lqr, lqe, balred, c2d
 import control as ctrl
 import matplotlib.pyplot as plt
 
-from ALB.rotor import location_mapping_matrix
+from ALB.dynamics.rotor import location_mapping_matrix
 
 # € € € ā  ラ ? € € € € € € € € € € € € € € € € € € € € € € € € € € € € € € € € € € € € €
 from model_reduction import (

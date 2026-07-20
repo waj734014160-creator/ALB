@@ -70,7 +70,7 @@ class ConstantExcitation(BaseExcitation):
         return np.array([fx, fy])
 
 
-class StaicLoad(BaseExcitation):
+class StaticLoad(BaseExcitation):
     """Static load excitation that always returns a fixed 2D force vector."""
 
     def __init__(self, load, **kwargs):
@@ -248,7 +248,7 @@ class SingleRotor(BaseSimpleModel):
         def add(dt, a):
             return expm(dt * a).dot(self._b)
 
-        self._h = lld_intergral(np.array([0, self._dt]), add, self._a)
+        self._h = lld_integral(np.array([0, self._dt]), add, self._a)
 
     def _calc_y(self, xk0):
         """
@@ -323,6 +323,10 @@ def _nodeforce2array(ndof, force, node):
 
 
 class RossRotor:
+    """ROSS rotor wrapper with explicit load, advance, and state-read phases."""
+
+    unit_system = "dimensional"
+
     def __init__(self, rotor: rs.Rotor, speed, dt, discrete=False):
         """
         Wrapper for ROSS rotor with unified continuous/discrete interfaces.
@@ -422,6 +426,7 @@ class RossRotor:
         self._check_time(t)
         # Current-step input.
         self._force1 = force
+        self._state_ready = False
         # Optional previous-step input for continuous mode.
         force0 = kwargs.get("force0", None)
         if force0 is not None:
@@ -439,6 +444,7 @@ class RossRotor:
         self._check_time(t)
         # Map node forces to global DOF vector.
         self._force1 = _nodeforce2array(self._rotor.ndof, force, node)
+        self._state_ready = False
         # Optional: override the initial state.
         if x0 is not None:
             self._xk0 = x0
@@ -458,6 +464,7 @@ class RossRotor:
         self._youts = []
         self._force1 = np.zeros(self._rotor.ndof)
         self._force0 = np.zeros(self._rotor.ndof)
+        self._state_ready = True
 
     def _check_time(self, t, tol=1e-15):
         """
@@ -506,19 +513,26 @@ class RossRotor:
         self._xout = self._xk0
         return self._xk1
 
-    def output(self, node=None):
-        """
-        Execute one solve step and return model output.
+    def advance(self):
+        """Advance exactly once from the currently latched force input."""
 
-        If `node` is provided, return {'uxy': ..., 'uxyt': ...}.
-        """
+        if self._state_ready:
+            raise RuntimeError("a new rotor load must be supplied before advance")
+        result = self.run()
+        self._state_ready = True
+        self.signal.lead_loop("finish_signal")
+        return result
+
+    def current_state(self, node=None):
+        """Read the current rotor state without advancing the model."""
+
+        if not self._state_ready:
+            raise RuntimeError("rotor state is stale until advance() completes")
         nof = self._rotor.number_dof
         ndof = self._rotor.ndof
-        # Execute one propagation step.
-        res = self.run()
-        self.signal.lead_loop("finish_signal")
+        res = self._xk0
         if node is None:
-            return res
+            return res.copy()
         else:
             node = np.array(node, dtype=np.int32).reshape(-1)
             # xy
@@ -530,6 +544,11 @@ class RossRotor:
             u1 = res[ndof + nof * node + 1]
             uxyt = np.vstack((u0, u1)).T
             return {"uxy": uxy, "uxyt": uxyt}
+
+    def output(self, node=None):
+        """Read the completed current state without hidden propagation."""
+
+        return self.current_state(node)
 
     def finish_signal(self):
         self._youts.append(copy.deepcopy(self._yout))
@@ -569,7 +588,7 @@ class RossRotor:
         return node
 
 
-class RossRotorSimlarityCheck:
+class RossRotorSimilarityCheck:
     def __init__(self, pt, rotor: RossRotor, threshold=0.999):
         self._pt = pt
         self._rotor = rotor
@@ -664,7 +683,7 @@ def calc_h(dt, a):
     return expm(dt * a).dot([0, 1])
 
 
-def lld_intergral(x_lim, func, *args, **kwargs):
+def lld_integral(x_lim, func, *args, **kwargs):
     """
     func = func(x, other_vars)
     len(x_lim) = 2

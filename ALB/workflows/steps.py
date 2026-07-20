@@ -27,15 +27,21 @@ class StepCommitLedger:
     ) -> None:
         """Commit one strictly increasing context and optionally record it."""
 
-        if self._last_context is not None:
-            if context.identity == self._last_context.identity:
-                raise RuntimeError("physical step has already been committed")
-            if context.step_index <= self._last_context.step_index:
-                raise RuntimeError("physical steps must be committed in increasing order")
-            if context.time <= self._last_context.time:
-                raise RuntimeError("physical step time must increase")
-            if context.unit_system is not self._last_context.unit_system:
-                raise RuntimeError("unit_system cannot change within one workflow")
+        self.validate_next(context)
         if recorder is not None:
             recorder(context)
         self._last_context = context
+
+    def validate_next(self, context: StepContext) -> None:
+        """Validate a prospective commit without mutating the ledger."""
+
+        if self._last_context is None:
+            return
+        if context.identity == self._last_context.identity:
+            raise RuntimeError("physical step has already been committed")
+        if context.step_index <= self._last_context.step_index:
+            raise RuntimeError("physical steps must be committed in increasing order")
+        if context.time <= self._last_context.time:
+            raise RuntimeError("physical step time must increase")
+        if context.unit_system is not self._last_context.unit_system:
+            raise RuntimeError("unit_system cannot change within one workflow")

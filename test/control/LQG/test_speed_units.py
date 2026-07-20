@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import ALB.rotor as rotor_module
+import ALB.dynamics.rotor as rotor_module
 from ALB.control.lqg import ALBLQGController
 
 

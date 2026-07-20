@@ -6,7 +6,7 @@ import numpy as np
 
 from ALB.core import TimeIterDt
 from ALB.physics.bearing import MultiPad
-from ALB.orbit import test_bearing_orbit
+from ALB.dynamics.orbit import test_bearing_orbit
 from ALB.physics.thermal import ThermalHydroBearing
 from run import thermal_kc_compare as kc
 

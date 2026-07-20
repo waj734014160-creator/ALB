@@ -25,8 +25,8 @@ from ALB.config import (
     ThermalConfig,
 )
 from ALB.control.pid import PID
-from ALB.orbit import EllipseTrack
-from ALB.orbit import test_bearing_orbit as run_bearing_orbit
+from ALB.dynamics.orbit import EllipseTrack
+from ALB.dynamics.orbit import test_bearing_orbit as run_bearing_orbit
 from ALB.physics.hydraulics import CSOrifice
 from ALB.control.valve import moog_servovalve
 from ALB.physics.thermal import (
