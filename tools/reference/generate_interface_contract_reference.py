@@ -28,7 +28,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import ALB  # noqa: E402
 from ALB import StepContext  # noqa: E402
-from ALB import alb_harmonic_linear  # noqa: E402
+from ALB.systems.alb import alb_harmonic_linear  # noqa: E402
 from ALB.systems.alb import ALBLinearAgent  # noqa: E402
 from ALB.core import Signal, TimeIterDt  # noqa: E402
 from ALB.dynamics.coupling import RsRotorBearingCouple  # noqa: E402
@@ -120,6 +120,11 @@ class _ReferenceRotor:
         self.time_history.append(self.last_time)
         self.force_history.append(self.last_force.copy())
         self.force0_history.append(self.last_force0.copy())
+
+    def advance(self) -> None:
+        """Record the explicit lifecycle boundary while preserving frozen states."""
+
+        return None
 
     def finish_signal(self) -> None:
         return None

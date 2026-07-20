@@ -43,6 +43,21 @@ class BearingDecoratorBase(BearingComponentBase):
         self.validate_output(output)
         return output
 
+    def evaluate(self, *args: Any, **kwargs: Any) -> Any:
+        """Delegate explicit evaluation, with a bridge for legacy wrapped bearings."""
+
+        method = getattr(self.bearing, "evaluate", None)
+        if method is not None:
+            return method(*args, **kwargs)
+        return self.bearing.output(*args, **kwargs)
+
+    def step(self, *args: Any, **kwargs: Any) -> Any:
+        """Compose legacy input, explicit evaluation, and read-only output."""
+
+        self.input(*args, **kwargs)
+        self.evaluate()
+        return self.output()
+
     def calc_error(self, *args: Any, **kwargs: Any) -> Any:
         method = getattr(self.bearing, "calc_error", None)
         return 0.0 if method is None else method(*args, **kwargs)
