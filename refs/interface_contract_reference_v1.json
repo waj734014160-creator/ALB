@@ -1,0 +1,730 @@
+{
+  "schema": "alb.interface-contract-reference.v1",
+  "generated_at_utc": "2026-07-20T14:24:44.297308+00:00",
+  "baseline_commit": "24ea190becf19c6f0e33e3c05686c0052dfdbedd",
+  "environment": {
+    "python": "3.10.17",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "numpy": "1.24.3",
+    "pandas": "2.1.1",
+    "scipy": "1.10.1",
+    "control": "0.10.2",
+    "ross_rotordynamics": "1.4.2",
+    "scikit_fem": "12.0.1",
+    "scikit_learn": "1.6.1"
+  },
+  "public_exports": [
+    "ALB",
+    "ALBConfig",
+    "ALBHarmonicCoefficients",
+    "ALBHarmonicLinear",
+    "ALBNN",
+    "ALBNNC4Canonical",
+    "AdaptiveDampConfig",
+    "AdaptiveDampController",
+    "FPBConfig",
+    "FilmNondimScales",
+    "FuzzyPID",
+    "FuzzyPIDConfig",
+    "GasBearing",
+    "GasConfig",
+    "HydConfig",
+    "HydrostaticBearing",
+    "LQGConfig",
+    "Moog2ndServoConfig",
+    "MultiPad",
+    "NodimALB",
+    "NodimALBConfig",
+    "NodimCSOrifice",
+    "NodimHydrostaticBearing",
+    "NodimNewtonFilm",
+    "NodimOrificeConfig",
+    "NodimPadConfig",
+    "NodimThermalHydroBearing",
+    "PID",
+    "PIDConfig",
+    "ResolvedTimeGrid",
+    "ServoConfig",
+    "SkfemThermalModel",
+    "SkfemThermalModelNondim",
+    "StaticPosition",
+    "TaskConfigFactory",
+    "ThermalConfig",
+    "ThermalHydroBearing",
+    "ThermalNondimScales",
+    "TiltingPadHydrodynamicPad",
+    "TimeGridConfig",
+    "alb2",
+    "alb2_fuzzy",
+    "alb2_static",
+    "alb_harmonic_linear",
+    "albnn",
+    "build_thermal_config",
+    "four_pads_bearing",
+    "four_pads_bearings",
+    "get_pad_pressure_fields",
+    "load_builtin_alb_harmonic_coefficients",
+    "nodim_alb",
+    "nodim_four_pads_bearing",
+    "nodim_four_pads_bearings",
+    "solve_tilting_pad_equilibrium",
+    "tilting_pads_bearing",
+    "tilting_pads_bearings"
+  ],
+  "legacy___all__": [
+    "ALB",
+    "ALBConfig",
+    "ALBHarmonicCoefficients",
+    "ALBHarmonicLinear",
+    "ALBNN",
+    "ALBNNC4Canonical",
+    "AdaptiveDampConfig",
+    "AdaptiveDampController",
+    "FPBConfig",
+    "FuzzyPID",
+    "FuzzyPIDConfig",
+    "GasBearing",
+    "GasConfig",
+    "HydConfig",
+    "HydrostaticBearing",
+    "LQGConfig",
+    "Moog2ndServoConfig",
+    "MultiPad",
+    "NodimALB",
+    "NodimALBConfig",
+    "NodimCSOrifice",
+    "NodimHydrostaticBearing",
+    "NodimNewtonFilm",
+    "NodimOrificeConfig",
+    "NodimPadConfig",
+    "NodimThermalHydroBearing",
+    "PID",
+    "PIDConfig",
+    "ResolvedTimeGrid",
+    "ServoConfig",
+    "SkfemThermalModel",
+    "SkfemThermalModelNondim",
+    "StaticPosition",
+    "TaskConfigFactory",
+    "ThermalConfig",
+    "ThermalHydroBearing",
+    "ThermalNondimScales",
+    "TiltingPadHydrodynamicPad",
+    "TimeGridConfig",
+    "alb2",
+    "alb2_fuzzy",
+    "alb2_static",
+    "alb_harmonic_linear",
+    "albnn",
+    "four_pads_bearing",
+    "four_pads_bearings",
+    "get_pad_pressure_fields",
+    "load_builtin_alb_harmonic_coefficients",
+    "nodim_alb",
+    "nodim_four_pads_bearing",
+    "nodim_four_pads_bearings",
+    "solve_tilting_pad_equilibrium",
+    "tilting_pads_bearing",
+    "tilting_pads_bearings"
+  ],
+  "known_export_drift": [
+    "FilmNondimScales",
+    "build_thermal_config"
+  ],
+  "public_export_targets": {
+    "ALB": {
+      "module": "ALB.alb",
+      "attribute": "ALB"
+    },
+    "ALBConfig": {
+      "module": "ALB.config",
+      "attribute": "ALBConfig"
+    },
+    "ALBHarmonicCoefficients": {
+      "module": "ALB.harmonic_linear",
+      "attribute": "ALBHarmonicCoefficients"
+    },
+    "ALBHarmonicLinear": {
+      "module": "ALB.harmonic_linear",
+      "attribute": "ALBHarmonicLinear"
+    },
+    "ALBNN": {
+      "module": "ALB.nn",
+      "attribute": "ALBNN"
+    },
+    "ALBNNC4Canonical": {
+      "module": "ALB.nn",
+      "attribute": "ALBNNC4Canonical"
+    },
+    "AdaptiveDampConfig": {
+      "module": "ALB.damping",
+      "attribute": "AdaptiveDampConfig"
+    },
+    "AdaptiveDampController": {
+      "module": "ALB.damping",
+      "attribute": "AdaptiveDampController"
+    },
+    "FPBConfig": {
+      "module": "ALB.config",
+      "attribute": "FPBConfig"
+    },
+    "FilmNondimScales": {
+      "module": "ALB.nondim",
+      "attribute": "FilmNondimScales"
+    },
+    "FuzzyPID": {
+      "module": "ALB.controller",
+      "attribute": "FuzzyPID"
+    },
+    "FuzzyPIDConfig": {
+      "module": "ALB.config",
+      "attribute": "FuzzyPIDConfig"
+    },
+    "GasBearing": {
+      "module": "ALB.gas",
+      "attribute": "GasBearing"
+    },
+    "GasConfig": {
+      "module": "ALB.config",
+      "attribute": "GasConfig"
+    },
+    "HydConfig": {
+      "module": "ALB.config",
+      "attribute": "HydConfig"
+    },
+    "HydrostaticBearing": {
+      "module": "ALB.bearing",
+      "attribute": "HydrostaticBearing"
+    },
+    "LQGConfig": {
+      "module": "ALB.config",
+      "attribute": "LQGConfig"
+    },
+    "Moog2ndServoConfig": {
+      "module": "ALB.config",
+      "attribute": "Moog2ndServoConfig"
+    },
+    "MultiPad": {
+      "module": "ALB.bearing",
+      "attribute": "MultiPad"
+    },
+    "NodimALB": {
+      "module": "ALB.alb",
+      "attribute": "NodimALB"
+    },
+    "NodimALBConfig": {
+      "module": "ALB.config",
+      "attribute": "NodimALBConfig"
+    },
+    "NodimCSOrifice": {
+      "module": "ALB.orifice",
+      "attribute": "NodimCSOrifice"
+    },
+    "NodimHydrostaticBearing": {
+      "module": "ALB.bearing",
+      "attribute": "NodimHydrostaticBearing"
+    },
+    "NodimNewtonFilm": {
+      "module": "ALB.film",
+      "attribute": "NodimNewtonFilm"
+    },
+    "NodimOrificeConfig": {
+      "module": "ALB.config",
+      "attribute": "NodimOrificeConfig"
+    },
+    "NodimPadConfig": {
+      "module": "ALB.config",
+      "attribute": "NodimPadConfig"
+    },
+    "NodimThermalHydroBearing": {
+      "module": "ALB.thermal",
+      "attribute": "NodimThermalHydroBearing"
+    },
+    "PID": {
+      "module": "ALB.controller",
+      "attribute": "PID"
+    },
+    "PIDConfig": {
+      "module": "ALB.config",
+      "attribute": "PIDConfig"
+    },
+    "ResolvedTimeGrid": {
+      "module": "ALB.config",
+      "attribute": "ResolvedTimeGrid"
+    },
+    "ServoConfig": {
+      "module": "ALB.config",
+      "attribute": "ServoConfig"
+    },
+    "SkfemThermalModel": {
+      "module": "ALB.thermal",
+      "attribute": "SkfemThermalModel"
+    },
+    "SkfemThermalModelNondim": {
+      "module": "ALB.thermal",
+      "attribute": "SkfemThermalModelNondim"
+    },
+    "StaticPosition": {
+      "module": "ALB.bearing",
+      "attribute": "StaticPosition"
+    },
+    "TaskConfigFactory": {
+      "module": "ALB.task",
+      "attribute": "TaskConfigFactory"
+    },
+    "ThermalConfig": {
+      "module": "ALB.thermal",
+      "attribute": "ThermalConfig"
+    },
+    "ThermalHydroBearing": {
+      "module": "ALB.thermal",
+      "attribute": "ThermalHydroBearing"
+    },
+    "ThermalNondimScales": {
+      "module": "ALB.nondim",
+      "attribute": "ThermalNondimScales"
+    },
+    "TiltingPadHydrodynamicPad": {
+      "module": "ALB.bearing",
+      "attribute": "TiltingPadHydrodynamicPad"
+    },
+    "TimeGridConfig": {
+      "module": "ALB.config",
+      "attribute": "TimeGridConfig"
+    },
+    "alb2": {
+      "module": "ALB.alb",
+      "attribute": "alb2"
+    },
+    "alb2_fuzzy": {
+      "module": "ALB.alb",
+      "attribute": "alb2_fuzzy"
+    },
+    "alb2_static": {
+      "module": "ALB.alb",
+      "attribute": "alb2_static"
+    },
+    "alb_harmonic_linear": {
+      "module": "ALB.harmonic_linear",
+      "attribute": "alb_harmonic_linear"
+    },
+    "albnn": {
+      "module": "ALB.nn",
+      "attribute": "albnn"
+    },
+    "build_thermal_config": {
+      "module": "ALB.config",
+      "attribute": "build_thermal_config"
+    },
+    "four_pads_bearing": {
+      "module": "ALB.bearing",
+      "attribute": "four_pads_bearing"
+    },
+    "four_pads_bearings": {
+      "module": "ALB.bearing",
+      "attribute": "four_pads_bearings"
+    },
+    "get_pad_pressure_fields": {
+      "module": "ALB.bearing",
+      "attribute": "get_pad_pressure_fields"
+    },
+    "load_builtin_alb_harmonic_coefficients": {
+      "module": "ALB.harmonic_linear",
+      "attribute": "load_builtin_alb_harmonic_coefficients"
+    },
+    "nodim_alb": {
+      "module": "ALB.alb",
+      "attribute": "nodim_alb"
+    },
+    "nodim_four_pads_bearing": {
+      "module": "ALB.bearing",
+      "attribute": "nodim_four_pads_bearing"
+    },
+    "nodim_four_pads_bearings": {
+      "module": "ALB.bearing",
+      "attribute": "nodim_four_pads_bearings"
+    },
+    "solve_tilting_pad_equilibrium": {
+      "module": "ALB.bearing",
+      "attribute": "solve_tilting_pad_equilibrium"
+    },
+    "tilting_pads_bearing": {
+      "module": "ALB.bearing",
+      "attribute": "tilting_pads_bearing"
+    },
+    "tilting_pads_bearings": {
+      "module": "ALB.bearing",
+      "attribute": "tilting_pads_bearings"
+    }
+  },
+  "legacy_import_surface": {
+    "ALB.alb": [
+      "ALB",
+      "ALBBuilder",
+      "ALBLinearAgent",
+      "ALBNNAgent"
+    ],
+    "ALB.base": [
+      "BaseCSystem",
+      "BaseSimpleModel",
+      "BaseSystem",
+      "Signal",
+      "TimeIter",
+      "TimeIterDt"
+    ],
+    "ALB.config": [
+      "CsoArgs",
+      "PIDConfig",
+      "ThermalConfig",
+      "TimeGridConfig"
+    ],
+    "ALB.nn": [
+      "ALBNN",
+      "ALBNet",
+      "Net",
+      "albnn",
+      "albnn_augment_frame"
+    ],
+    "ALB.orifice": [
+      "CSOrifice",
+      "CsoArgs",
+      "NodimCSOrifice"
+    ],
+    "ALB.results": [
+      "DataFrameResult",
+      "SaveTreeNode"
+    ],
+    "ALB.tool": [
+      "EmailSender",
+      "get_main_model_from_filmsystem"
+    ]
+  },
+  "signal": {
+    "callback_order": [
+      "parent",
+      "child"
+    ],
+    "parent_reset": true,
+    "child_reset": true
+  },
+  "bearing": {
+    "class_name": "ALBHarmonicLinear",
+    "node_link": 12,
+    "dt_s": 0.00125,
+    "input_signature": "(self, uxy, uxyt, t, *args, **kwargs) -> 'bool'",
+    "output_signature": "(self, *args, **kwargs) -> 'dict[str, Any]'",
+    "save_signature": "(self, tofile: 'bool' = True, path: 'str | Path | None' = None, name: 'str | None' = None, *args, **kwargs) -> 'SaveTreeNode'",
+    "output_keys": [
+      "force",
+      "force_damping",
+      "force_spool",
+      "force_stiffness",
+      "friction",
+      "spool",
+      "spool_command"
+    ],
+    "result_columns": [
+      "t",
+      "ux",
+      "uy",
+      "uxt",
+      "uyt",
+      "controller_u_x",
+      "controller_u_y",
+      "xv_x",
+      "xv_y",
+      "xv_quadrature_x",
+      "xv_quadrature_y",
+      "fk_x",
+      "fk_y",
+      "fc_x",
+      "fc_y",
+      "fxv_x",
+      "fxv_y",
+      "fx",
+      "fy",
+      "controller_saturated",
+      "servovalve_saturated"
+    ],
+    "result_rows": 8,
+    "save_tree": {
+      "alb_harmonic_linear": null
+    }
+  },
+  "legacy_linear": {
+    "class_name": "ALBLinearAgent",
+    "input_signature": "(self, t, uxy, uxyt, *args, **kwargs)",
+    "output_signature": "(self, *args, **kwargs)",
+    "save_signature": "(self, tofile=True, path=None, name=None, *args, **kwargs)",
+    "output_keys": [
+      "force"
+    ],
+    "result_columns": [
+      "t",
+      "ux",
+      "uy",
+      "uxt",
+      "uyt",
+      "fx",
+      "fy"
+    ],
+    "result_rows": 4
+  },
+  "coupling": {
+    "class_name": "RsRotorBearingCouple",
+    "bearing_count": 1,
+    "result_keys": [
+      "bearing0"
+    ],
+    "result_rows": 2,
+    "save_tree": {
+      "rotor_bearing_couple": {
+        "reference_rotor": null,
+        "ALBHarmonicLinear12": null
+      }
+    }
+  },
+  "pickle": {
+    "class_module": "ALB.train.transforms",
+    "class_name": "MidpointMinMaxScaler",
+    "columns": [
+      "constant",
+      "varying"
+    ],
+    "pickle_protocol": 5
+  },
+  "arrays": {
+    "bearing_time": {
+      "shape": [
+        8
+      ],
+      "dtype": "float64"
+    },
+    "bearing_position": {
+      "shape": [
+        8,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_velocity": {
+      "shape": [
+        8,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_force": {
+      "shape": [
+        8,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_force_stiffness": {
+      "shape": [
+        8,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_force_damping": {
+      "shape": [
+        8,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_force_spool": {
+      "shape": [
+        8,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_spool": {
+      "shape": [
+        8,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_spool_command": {
+      "shape": [
+        8,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_K": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_C": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_G_xv_real": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "bearing_G_xv_imag": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "legacy_static_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "legacy_fdxv": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "legacy_K": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "legacy_C": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "legacy_base_spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "legacy_base_position": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "legacy_time": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64"
+    },
+    "legacy_position": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "legacy_velocity": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "legacy_spool": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "legacy_force": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "coupling_time_history": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "coupling_force_history": {
+      "shape": [
+        2,
+        1,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "coupling_previous_force_history": {
+      "shape": [
+        2,
+        1,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "coupling_last_force": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "coupling_previous_force": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "coupling_node_links": {
+      "shape": [
+        1
+      ],
+      "dtype": "int32"
+    },
+    "coupling_bearing_results": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float64"
+    },
+    "pickle_scaler_bytes": {
+      "shape": [
+        534
+      ],
+      "dtype": "uint8"
+    },
+    "pickle_scaler_input": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "pickle_scaler_output": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64"
+    }
+  }
+}
