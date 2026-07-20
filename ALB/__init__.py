@@ -1,100 +1,31 @@
-﻿# coding: utf-8
+"""ALB 0.2 public package boundary.
 
-from importlib import import_module
+Domain implementations are imported from their explicit namespaces.  The
+package root deliberately exposes only version and foundational contracts.
+"""
 
-_EXPORTS = {
-    "ComponentBase": ("ALB.core", "ComponentBase"),
-    "BearingComponentBase": ("ALB.core", "BearingComponentBase"),
-    "BearingProtocol": ("ALB.contracts", "BearingProtocol"),
-    "BearingCoefficientProtocol": ("ALB.contracts", "BearingCoefficientProtocol"),
-    "ControllerProtocol": ("ALB.contracts", "ControllerProtocol"),
-    "ServoValveProtocol": ("ALB.contracts", "ServoValveProtocol"),
-    "RotorProtocol": ("ALB.contracts", "RotorProtocol"),
-    "TimeGridProtocol": ("ALB.contracts", "TimeGridProtocol"),
-    "NotifierProtocol": ("ALB.contracts", "NotifierProtocol"),
-    "ConvergenceStatus": ("ALB.contracts", "ConvergenceStatus"),
-    "BearingDecoratorBase": ("ALB.adapters", "BearingDecoratorBase"),
-    "LegacyBearingAdapter": ("ALB.adapters", "LegacyBearingAdapter"),
-    "ALB": ("ALB.alb", "ALB"),
-    "NodimALB": ("ALB.alb", "NodimALB"),
-    "alb2": ("ALB.alb", "alb2"),
-    "alb2_fuzzy": ("ALB.alb", "alb2_fuzzy"),
-    "alb2_static": ("ALB.alb", "alb2_static"),
-    "nodim_alb": ("ALB.alb", "nodim_alb"),
-    "ALBHarmonicCoefficients": (
-        "ALB.harmonic_linear",
-        "ALBHarmonicCoefficients",
-    ),
-    "ALBHarmonicLinear": ("ALB.harmonic_linear", "ALBHarmonicLinear"),
-    "alb_harmonic_linear": ("ALB.harmonic_linear", "alb_harmonic_linear"),
-    "load_builtin_alb_harmonic_coefficients": (
-        "ALB.harmonic_linear",
-        "load_builtin_alb_harmonic_coefficients",
-    ),
-    "HydrostaticBearing": ("ALB.bearing", "HydrostaticBearing"),
-    "NodimHydrostaticBearing": ("ALB.bearing", "NodimHydrostaticBearing"),
-    "MultiPad": ("ALB.bearing", "MultiPad"),
-    "StaticPosition": ("ALB.bearing", "StaticPosition"),
-    "four_pads_bearing": ("ALB.bearing", "four_pads_bearing"),
-    "four_pads_bearings": ("ALB.bearing", "four_pads_bearings"),
-    "nodim_four_pads_bearing": ("ALB.bearing", "nodim_four_pads_bearing"),
-    "nodim_four_pads_bearings": ("ALB.bearing", "nodim_four_pads_bearings"),
-    "TiltingPadHydrodynamicPad": ("ALB.bearing", "TiltingPadHydrodynamicPad"),
-    "tilting_pads_bearing": ("ALB.bearing", "tilting_pads_bearing"),
-    "tilting_pads_bearings": ("ALB.bearing", "tilting_pads_bearings"),
-    "solve_tilting_pad_equilibrium": (
-        "ALB.bearing",
-        "solve_tilting_pad_equilibrium",
-    ),
-    "get_pad_pressure_fields": ("ALB.bearing", "get_pad_pressure_fields"),
-    "ALBConfig": ("ALB.config", "ALBConfig"),
-    "NodimALBConfig": ("ALB.config", "NodimALBConfig"),
-    "NodimPadConfig": ("ALB.config", "NodimPadConfig"),
-    "NodimOrificeConfig": ("ALB.config", "NodimOrificeConfig"),
-    "FPBConfig": ("ALB.config", "FPBConfig"),
-    "FuzzyPIDConfig": ("ALB.config", "FuzzyPIDConfig"),
-    "LQGConfig": ("ALB.config", "LQGConfig"),
-    "HydConfig": ("ALB.config", "HydConfig"),
-    "GasConfig": ("ALB.config", "GasConfig"),
-    "TimeGridConfig": ("ALB.config", "TimeGridConfig"),
-    "ResolvedTimeGrid": ("ALB.config", "ResolvedTimeGrid"),
-    "TaskConfigFactory": ("ALB.task", "TaskConfigFactory"),
-    "AdaptiveDampConfig": ("ALB.damping", "AdaptiveDampConfig"),
-    "AdaptiveDampController": ("ALB.damping", "AdaptiveDampController"),
-    "PIDConfig": ("ALB.config", "PIDConfig"),
-    "ServoConfig": ("ALB.config", "ServoConfig"),
-    "Moog2ndServoConfig": ("ALB.config", "Moog2ndServoConfig"),
-    "GasBearing": ("ALB.gas", "GasBearing"),
-    "FuzzyPID": ("ALB.controller", "FuzzyPID"),
-    "PID": ("ALB.controller", "PID"),
-    "ThermalConfig": ("ALB.thermal", "ThermalConfig"),
-    "SkfemThermalModel": ("ALB.thermal", "SkfemThermalModel"),
-    "SkfemThermalModelNondim": ("ALB.thermal", "SkfemThermalModelNondim"),
-    "ThermalHydroBearing": ("ALB.thermal", "ThermalHydroBearing"),
-    "NodimThermalHydroBearing": ("ALB.thermal", "NodimThermalHydroBearing"),
-    "ThermalNondimScales": ("ALB.nondim", "ThermalNondimScales"),
-    "FilmNondimScales": ("ALB.nondim", "FilmNondimScales"),
-    "build_thermal_config": ("ALB.config", "build_thermal_config"),
-    "NodimCSOrifice": ("ALB.orifice", "NodimCSOrifice"),
-    "NodimNewtonFilm": ("ALB.film", "NodimNewtonFilm"),
-    "ALBNN": ("ALB.nn", "ALBNN"),
-    "ALBNNC4Canonical": ("ALB.nn", "ALBNNC4Canonical"),
-    "albnn": ("ALB.nn", "albnn"),
-}
+from .contracts import (
+    AdvancingBlock,
+    CommandBlock,
+    ComputationalBlock,
+    ConvergenceStatus,
+    EvaluableBlock,
+    SolvableBlock,
+    StepContext,
+    UnitSystem,
+)
 
 
-def __getattr__(name):
-    if name in _EXPORTS:
-        module_name, attr_name = _EXPORTS[name]
-        try:
-            module = import_module(module_name)
-        except ModuleNotFoundError as exc:
-            raise ModuleNotFoundError(
-                f"Failed to import '{name}' from '{module_name}'. "
-                f"Missing optional dependency: {exc.name}."
-            ) from exc
-        return getattr(module, attr_name)
-    raise AttributeError(f"module 'ALB' has no attribute '{name}'")
+__version__ = "0.2.0"
 
-
-__all__ = list(_EXPORTS)
+__all__ = [
+    "AdvancingBlock",
+    "CommandBlock",
+    "ComputationalBlock",
+    "ConvergenceStatus",
+    "EvaluableBlock",
+    "SolvableBlock",
+    "StepContext",
+    "UnitSystem",
+    "__version__",
+]

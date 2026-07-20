@@ -18,8 +18,6 @@ from .validation import finite_vector, validate_bearing_output
 class ComponentBase(ABC):
     """Small common template for event-aware components with result storage."""
 
-    unit_system = "unspecified"
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._results = pd.DataFrame()
         self.signal = Signal(sys=self)
@@ -108,8 +106,6 @@ class _CompositeSignalMixin:
 class BaseSystem(_CompositeSignalMixin):
     """Backward-compatible main-model plus auxiliary-model composition base."""
 
-    unit_system = "unspecified"
-
     def __init__(self, main_model: Any = None, *simple_models: Any, **args: Any) -> None:
         self.args = args
         self.main_model = main_model
@@ -162,8 +158,6 @@ class BaseSystem(_CompositeSignalMixin):
 
 class BaseCSystem(_CompositeSignalMixin, ABC):
     """Backward-compatible composition base for peer runtime components."""
-
-    unit_system = "unspecified"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.signal = Signal(sys=self)

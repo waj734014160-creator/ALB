@@ -7,6 +7,13 @@ from .component import (
     BearingComponentBase,
     ComponentBase,
 )
+from .computation import (
+    CommandComputingBlock,
+    EvaluatingBlock,
+    LatchedComputationalBlock,
+    SolvingBlock,
+    StateAdvancingBlock,
+)
 from .events import Signal
 from .time import TimeIter, TimeIterDt
 from .validation import (
@@ -23,8 +30,13 @@ __all__ = [
     "BaseSimpleModel",
     "BaseSystem",
     "BearingComponentBase",
+    "CommandComputingBlock",
     "ComponentBase",
+    "EvaluatingBlock",
+    "LatchedComputationalBlock",
     "Signal",
+    "SolvingBlock",
+    "StateAdvancingBlock",
     "TimeIter",
     "TimeIterDt",
     "VALID_UNIT_SYSTEMS",

@@ -102,7 +102,6 @@ class RsRotorBearingCouple(BaseCSystem):
         require_unit_system(
             bearing,
             "dimensional",
-            allow_unspecified=True,
             component_name="rotor-coupled bearing",
         )
 

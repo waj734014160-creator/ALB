@@ -4,8 +4,10 @@ from typing import Any, Mapping, Optional
 
 import numpy as np
 
+from ALB.contracts.types import UnitSystem
 
-VALID_UNIT_SYSTEMS = frozenset(("dimensional", "nondimensional", "unspecified"))
+
+VALID_UNIT_SYSTEMS = frozenset(unit_system.value for unit_system in UnitSystem)
 
 
 def finite_vector(value: Any, name: str, size: int = 2) -> np.ndarray:
@@ -29,31 +31,28 @@ def validate_bearing_output(output: Mapping[str, Any]) -> np.ndarray:
     return finite_vector(output["force"], "bearing force", size=2)
 
 
-def get_unit_system(component: Any, default: str = "unspecified") -> str:
+def get_unit_system(component: Any) -> str:
     """Return and validate a component unit-system declaration."""
 
-    unit_system = str(getattr(component, "unit_system", default))
-    if unit_system not in VALID_UNIT_SYSTEMS:
-        raise ValueError(
-            "unit_system must be 'dimensional', 'nondimensional', or 'unspecified'"
-        )
-    return unit_system
+    if not hasattr(component, "unit_system"):
+        raise TypeError(f"{type(component).__name__} must declare unit_system")
+    value = getattr(component, "unit_system")
+    if isinstance(value, UnitSystem):
+        return value.value
+    return UnitSystem.coerce(value).value
 
 
 def require_unit_system(
     component: Any,
     expected: str,
     *,
-    allow_unspecified: bool = False,
     component_name: Optional[str] = None,
 ) -> str:
     """Reject unit-incompatible components at an integration boundary."""
 
-    if expected not in VALID_UNIT_SYSTEMS - {"unspecified"}:
+    if expected not in VALID_UNIT_SYSTEMS:
         raise ValueError("expected unit system must be dimensional or nondimensional")
     actual = get_unit_system(component)
-    if actual == "unspecified" and allow_unspecified:
-        return actual
     if actual != expected:
         label = component_name or type(component).__name__
         raise TypeError(f"{label} must declare unit_system='{expected}', got '{actual}'")

@@ -13,7 +13,7 @@ class BearingDecoratorBase(BearingComponentBase):
     this class and override only the operations they actually modify.
     """
 
-    unit_system = "unspecified"
+    unit_system = "dimensional"
 
     def __init__(self, bearing: Any) -> None:
         if bearing is None:
@@ -23,17 +23,9 @@ class BearingDecoratorBase(BearingComponentBase):
         self.node_link = getattr(bearing, "node_link", None)
         wrapped_unit_system = get_unit_system(bearing)
         declared_unit_system = get_unit_system(self)
-        if (
-            wrapped_unit_system != "unspecified"
-            and declared_unit_system != "unspecified"
-            and wrapped_unit_system != declared_unit_system
-        ):
+        if wrapped_unit_system != declared_unit_system:
             raise TypeError("bearing decorator and wrapped bearing unit systems differ")
-        self.unit_system = (
-            declared_unit_system
-            if declared_unit_system != "unspecified"
-            else wrapped_unit_system
-        )
+        self.unit_system = declared_unit_system
         self.signal.children = [bearing.signal]
 
     @property
@@ -87,7 +79,7 @@ class LegacyBearingAdapter(BearingDecoratorBase):
         unit_system: str = "dimensional",
     ) -> None:
         wrapped_unit_system = get_unit_system(bearing)
-        if wrapped_unit_system not in ("unspecified", unit_system):
+        if wrapped_unit_system != unit_system:
             raise TypeError("legacy adapter cannot relabel an explicit unit system")
         super().__init__(bearing)
         if node_link is not None:

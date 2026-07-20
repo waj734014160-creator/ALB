@@ -1,17 +1,16 @@
 """Bearing-side contracts used by rotor coupling code."""
 
-from typing import Any, Literal, Mapping, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import numpy as np
 
-from .model import PersistableProtocol, SignalProtocol
-
-
-UnitSystem = Literal["dimensional", "nondimensional", "unspecified"]
+from .block import EvaluableBlock
+from .ports import BearingInput, BearingOutput
+from .types import UnitSystem
 
 
 @runtime_checkable
-class BearingProtocol(PersistableProtocol, Protocol):
+class BearingProtocol(EvaluableBlock[BearingInput, BearingOutput], Protocol):
     """Standard two-axis bearing contract.
 
     A conforming dimensional bearing accepts ``uxy`` in metres, ``uxyt`` in
@@ -21,31 +20,7 @@ class BearingProtocol(PersistableProtocol, Protocol):
     """
 
     node_link: int
-    signal: SignalProtocol
     unit_system: UnitSystem
-
-    @property
-    def results(self) -> Any:
-        """Return the component result store."""
-
-    def init(self, *args: Any, **kwargs: Any) -> Any:
-        """Reset bearing state."""
-
-    def input(
-        self,
-        uxy: np.ndarray,
-        uxyt: np.ndarray,
-        t: float,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Any:
-        """Accept one rotor state sample."""
-
-    def output(self, *args: Any, **kwargs: Any) -> Mapping[str, Any]:
-        """Return a mapping containing a finite two-component ``force``."""
-
-    def calc_is_finished(self, *args: Any, **kwargs: Any) -> bool:
-        """Return whether the bearing evaluation is complete."""
 
 
 @runtime_checkable

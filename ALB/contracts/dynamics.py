@@ -1,29 +1,14 @@
 """Rotor dynamics contracts."""
 
-from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
+from typing import Protocol, runtime_checkable
 
-import numpy as np
-
-from .model import PersistableProtocol, SignalProtocol
+from .block import AdvancingBlock
+from .ports import RotorLoadInput, RotorState
+from .types import UnitSystem
 
 
 @runtime_checkable
-class RotorProtocol(PersistableProtocol, Protocol):
+class RotorProtocol(AdvancingBlock[RotorLoadInput, RotorState], Protocol):
     """Rotor role consumed by ``RsRotorBearingCouple``."""
 
-    signal: SignalProtocol
-
-    def init(self, *args: Any, **kwargs: Any) -> Any:
-        """Reset rotor state."""
-
-    def output(self, node_links: Sequence[int]) -> Mapping[str, np.ndarray]:
-        """Return ``uxy`` and ``uxyt`` arrays at selected nodes."""
-
-    def input_force2node(
-        self,
-        t: float,
-        force: np.ndarray,
-        node_links: Sequence[int],
-        force0: np.ndarray,
-    ) -> Any:
-        """Advance the rotor using current and previous nodal force arrays."""
+    unit_system: UnitSystem

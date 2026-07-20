@@ -101,3 +101,9 @@ class ConvergenceStatus:
                 raise ValueError("iterations must be nonnegative")
         object.__setattr__(self, "residual", residual)
         object.__setattr__(self, "converged", bool(self.converged))
+
+    @classmethod
+    def pending(cls, message: str = "") -> "ConvergenceStatus":
+        """Return a standard local status before a numerical solve starts."""
+
+        return cls(residual=np.finfo(float).max, converged=False, message=message)

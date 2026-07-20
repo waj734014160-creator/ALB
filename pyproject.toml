@@ -1,15 +1,73 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "re-alb"
-version = "0.1.0"
-description = "Local package for ALB"
-requires-python = ">=3.9"
+version = "0.2.0"
+description = "Active lubricated bearing physics, control, dynamics, and surrogate models"
+requires-python = ">=3.10"
+dependencies = [
+    "numba>=0.58",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scipy>=1.10",
+    "tqdm>=4.65",
+]
+
+[project.optional-dependencies]
+film = [
+    "matplotlib>=3.7",
+    "scikit-fem>=11",
+]
+control = [
+    "control>=0.10",
+    "matplotlib>=3.7",
+    "scikit-fuzzy>=0.4",
+]
+dynamics = [
+    "matplotlib>=3.7",
+    "ross-rotordynamics>=1.4",
+]
+surrogate = [
+    "matplotlib>=3.7",
+    "scikit-learn>=1.3",
+    "torch>=2.1",
+]
+io = [
+    "chardet>=5",
+    "json5>=0.9",
+]
+all = [
+    "chardet>=5",
+    "control>=0.10",
+    "json5>=0.9",
+    "matplotlib>=3.7",
+    "ross-rotordynamics>=1.4",
+    "scikit-fem>=11",
+    "scikit-fuzzy>=0.4",
+    "scikit-learn>=1.3",
+    "torch>=2.1",
+]
+test = [
+    "build>=1.2",
+    "import-linter>=2.0",
+    "mypy>=1.10",
+    "pytest>=8",
+]
 
 [tool.setuptools.packages.find]
 include = ["ALB", "ALB.*"]
 
 [tool.setuptools.package-data]
 ALB = ["data/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-p", "no:cacheprovider"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["ALB/contracts", "ALB/core"]
+exclude = ["ALB/core/fem", "ALB/core/numerics"]
