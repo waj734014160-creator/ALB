@@ -30,4 +30,12 @@ def test_release_acceptance_reports_real_pytest_mypy_and_status_gates() -> None:
     assert "Success: no issues found" in report["mypy"]["stdout"]
     assert report["worktree"]["tracked_status_delta"] == 0
     assert report["worktree"]["before_sha256"] == report["worktree"]["after_sha256"]
+    assert report["worktree"]["tracked_status_before"] == [
+        " M test/bearing/_thermal_plots/alb_thermal_4pads.png",
+        " M test/bearing/_thermal_plots/orifice_thermal_comparison.png",
+    ]
+    assert (
+        report["worktree"]["tracked_status_after"]
+        == report["worktree"]["tracked_status_before"]
+    )
     assert report["references"]["full_repo_refactor_v1_unchanged_from_tag"] is True

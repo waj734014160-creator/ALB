@@ -1,7 +1,7 @@
 {
   "schema": "alb.release-acceptance.v1",
   "version": "0.2.0",
-  "candidate_commit": "6751d7d509ced488bd63a896f7681b6572a11d96",
+  "candidate_commit": "a0c4e2cf09112926c1bfbea06d3660865584373b",
   "pytest": {
     "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -m pytest tests -q -p no:cacheprovider -p tools.validation.release_pytest_plugin --basetemp=G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\pytest_tmp",
     "returncode": 0,
@@ -28,7 +28,7 @@
       "    warnings.warn(msg, RuntimeWarning)",
       "",
       "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
-      "293 passed, 33 skipped, 12 warnings, 7 subtests passed in 97.66s (0:01:37)",
+      "293 passed, 33 skipped, 12 warnings, 7 subtests passed in 97.37s (0:01:37)",
       ""
     ],
     "skipped": [
@@ -281,17 +281,15 @@
   },
   "worktree": {
     "tracked_status_before": [
-      "M docs/migrations/0.2.0_build_acceptance.json",
       " M test/bearing/_thermal_plots/alb_thermal_4pads.png",
       " M test/bearing/_thermal_plots/orifice_thermal_comparison.png"
     ],
     "tracked_status_after": [
-      "M docs/migrations/0.2.0_build_acceptance.json",
       " M test/bearing/_thermal_plots/alb_thermal_4pads.png",
       " M test/bearing/_thermal_plots/orifice_thermal_comparison.png"
     ],
-    "before_sha256": "b5776be36a5ed5323e8676bb2e0b89a18b102c84ca8408a77d0d3108f3b0a199",
-    "after_sha256": "b5776be36a5ed5323e8676bb2e0b89a18b102c84ca8408a77d0d3108f3b0a199",
+    "before_sha256": "54308018381828e59bc6e92ab0a7f7da2750033447f6190d43c28cd58983c1af",
+    "after_sha256": "54308018381828e59bc6e92ab0a7f7da2750033447f6190d43c28cd58983c1af",
     "tracked_status_delta": 0
   },
   "references": {
