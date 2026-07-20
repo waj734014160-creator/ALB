@@ -26,7 +26,7 @@ from ALB.config import (
 from ALB.controller import PID
 from ALB.orbit import EllipseTrack
 from ALB.orbit import test_bearing_orbit as run_bearing_orbit
-from ALB.orifice import CSOrifice
+from ALB.physics.hydraulics import CSOrifice
 from ALB.servovalve import moog_servovalve
 from ALB.thermal import (
     ThermalConfig,

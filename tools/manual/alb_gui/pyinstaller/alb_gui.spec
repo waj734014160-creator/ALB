@@ -79,7 +79,7 @@ hiddenimports = [
     "ALB.mesh",
     "ALB.nondim",
     "ALB.orbit",
-    "ALB.orifice",
+    "ALB.physics.hydraulics.orifice",
     "ALB.results",
     "ALB.servovalve",
     "ALB.thermal",

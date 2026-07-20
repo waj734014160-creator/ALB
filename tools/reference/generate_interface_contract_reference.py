@@ -49,7 +49,7 @@ LEGACY_IMPORT_SURFACE = {
     ],
     "ALB.config": ["CsoArgs", "PIDConfig", "ThermalConfig", "TimeGridConfig"],
     "ALB.nn": ["ALBNN", "ALBNet", "Net", "albnn", "albnn_augment_frame"],
-    "ALB.orifice": ["CSOrifice", "CsoArgs", "NodimCSOrifice"],
+    "ALB.physics.hydraulics": ["CSOrifice", "CsoArgs", "NodimCSOrifice"],
     "ALB.results": ["DataFrameResult", "SaveTreeNode"],
     "ALB.tool": ["EmailSender", "get_main_model_from_filmsystem"],
 }

@@ -38,7 +38,7 @@ from ALB.core.numerics.dynamic import (
     calc_ke_dy,
 )
 from ALB.core.numerics.static import calc_ke
-from ALB.orifice import Orifice, Orifices
+from ALB.physics.hydraulics import Orifice, Orifices
 from ALB.results import DataFrameResult, SaveTreeNode
 from ALB.tool import ParameterHub
 

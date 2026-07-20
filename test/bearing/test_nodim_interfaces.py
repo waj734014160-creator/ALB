@@ -19,7 +19,7 @@ from ALB.config import (
     PIDConfig,
 )
 from ALB.controller import PID
-from ALB.orifice import CSOrifice, NodimCSOrifice
+from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
 from ALB.servovalve import static_sv
 from ALB.thermal import NodimThermalHydroBearing, ThermalConfig, ThermalHydroBearing
 

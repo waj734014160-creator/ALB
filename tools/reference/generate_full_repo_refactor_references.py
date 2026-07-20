@@ -90,7 +90,7 @@ from ALB.nn import (
     albnn_augment_frame,
     c4_canonicalize_albnn_frame,
 )
-from ALB.orifice import NodimCSOrifice
+from ALB.physics.hydraulics import NodimCSOrifice
 from ALB.remote import job as remote_job
 from ALB.remote.transport import (
     encode_powershell,
