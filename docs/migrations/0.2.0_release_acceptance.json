@@ -1,7 +1,7 @@
 {
   "schema": "alb.release-acceptance.v1",
   "version": "0.2.0",
-  "candidate_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
+  "candidate_commit": "6751d7d509ced488bd63a896f7681b6572a11d96",
   "pytest": {
     "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -m pytest tests -q -p no:cacheprovider -p tools.validation.release_pytest_plugin --basetemp=G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\pytest_tmp",
     "returncode": 0,
@@ -28,7 +28,7 @@
       "    warnings.warn(msg, RuntimeWarning)",
       "",
       "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
-      "293 passed, 33 skipped, 12 warnings, 7 subtests passed in 97.41s (0:01:37)",
+      "293 passed, 33 skipped, 12 warnings, 7 subtests passed in 97.66s (0:01:37)",
       ""
     ],
     "skipped": [
@@ -281,37 +281,17 @@
   },
   "worktree": {
     "tracked_status_before": [
-      "M AGENTS.md",
-      " M README.md",
-      " M docs/alb_albnn_quickstart.md",
-      " M docs/alb_package_overview.md",
-      " M docs/current_state.md",
-      " M docs/file_classification.md",
-      " M docs/interface_architecture.md",
-      " M docs/migrations/0.2.0_build_acceptance.json",
-      " M docs/migrations/0.2.0_test_map.json",
-      " M docs/project_overview.md",
-      " M docs/remote_workstation_connection.md",
+      "M docs/migrations/0.2.0_build_acceptance.json",
       " M test/bearing/_thermal_plots/alb_thermal_4pads.png",
       " M test/bearing/_thermal_plots/orifice_thermal_comparison.png"
     ],
     "tracked_status_after": [
-      "M AGENTS.md",
-      " M README.md",
-      " M docs/alb_albnn_quickstart.md",
-      " M docs/alb_package_overview.md",
-      " M docs/current_state.md",
-      " M docs/file_classification.md",
-      " M docs/interface_architecture.md",
-      " M docs/migrations/0.2.0_build_acceptance.json",
-      " M docs/migrations/0.2.0_test_map.json",
-      " M docs/project_overview.md",
-      " M docs/remote_workstation_connection.md",
+      "M docs/migrations/0.2.0_build_acceptance.json",
       " M test/bearing/_thermal_plots/alb_thermal_4pads.png",
       " M test/bearing/_thermal_plots/orifice_thermal_comparison.png"
     ],
-    "before_sha256": "04a7b0bd200b6fd94fb76a3579c7bd63e85de6bd3242562c5c3ccbddd50f6dc2",
-    "after_sha256": "04a7b0bd200b6fd94fb76a3579c7bd63e85de6bd3242562c5c3ccbddd50f6dc2",
+    "before_sha256": "b5776be36a5ed5323e8676bb2e0b89a18b102c84ca8408a77d0d3108f3b0a199",
+    "after_sha256": "b5776be36a5ed5323e8676bb2e0b89a18b102c84ca8408a77d0d3108f3b0a199",
     "tracked_status_delta": 0
   },
   "references": {
