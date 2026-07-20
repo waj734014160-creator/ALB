@@ -21,7 +21,7 @@ from ALB.core.validation import require_unit_system, validate_bearing_output
 from ALB.dynamics.coupling import RsRotorBearingCouple
 from ALB.physics.film import FilmSystem
 from ALB.config import CsoArgs as OrificeCsoArgs
-from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 
 
 class _Bearing(BearingComponentBase):

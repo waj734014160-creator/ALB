@@ -7,7 +7,7 @@ import scipy.linalg
 from scipy import signal as ss
 
 from ALB.core.component import BaseSimpleModel
-from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 
 
 def _history_to_frame(history):
@@ -217,7 +217,7 @@ class BaseLti(BaseSimpleModel):
         )
         node = SaveTreeNode(path, res)
         if tofile:
-            node.save_to_file()
+            return node.persist(kwargs.get("writer"), path)
         return node
 
 

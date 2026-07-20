@@ -1,6 +1,6 @@
 """Control-facing namespace for controllers, valves, and damping policies."""
 
-from importlib import import_module
+from ALB.contracts.optional import import_optional_module
 
 
 _EXPORTS = {
@@ -26,7 +26,8 @@ def __getattr__(name):
     if name not in _EXPORTS:
         raise AttributeError(f"module 'ALB.control' has no attribute '{name}'")
     module_name, attribute_name = _EXPORTS[name]
-    return getattr(import_module(module_name), attribute_name)
+    module = import_optional_module("ALB.control", module_name, "control")
+    return getattr(module, attribute_name)
 
 
 __all__ = list(_EXPORTS)

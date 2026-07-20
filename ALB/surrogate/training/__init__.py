@@ -1,24 +1,30 @@
-# coding: utf-8
-"""Config-driven training helpers for ALB surrogate models.
+"""Config-driven training helpers for ALB surrogate models."""
 
-This package owns reusable training mechanics.  Project-specific experiment
-entry points remain in sibling repositories such as ``SURROGATE_TRAIN``.
-"""
+from ALB.contracts.optional import import_optional_module
 
-from .config import TrainingConfig
-from .config import TrainingConfigError
-from .runs import AlbnnExpertTrainer
-from .runs import AlbnnMlpTrainer
-from .runs import AlbnnResidualTrainer
-from .runs import TrainingRun
-from .transforms import ColumnTransformPipeline
 
-__all__ = [
-    "AlbnnExpertTrainer",
-    "AlbnnMlpTrainer",
-    "AlbnnResidualTrainer",
-    "ColumnTransformPipeline",
-    "TrainingConfig",
-    "TrainingConfigError",
-    "TrainingRun",
-]
+_EXPORTS = {
+    "TrainingConfig": ("ALB.surrogate.training.config", "TrainingConfig"),
+    "TrainingConfigError": ("ALB.surrogate.training.config", "TrainingConfigError"),
+    "AlbnnExpertTrainer": ("ALB.surrogate.training.runs", "AlbnnExpertTrainer"),
+    "AlbnnMlpTrainer": ("ALB.surrogate.training.runs", "AlbnnMlpTrainer"),
+    "AlbnnResidualTrainer": ("ALB.surrogate.training.runs", "AlbnnResidualTrainer"),
+    "TrainingRun": ("ALB.surrogate.training.runs", "TrainingRun"),
+    "ColumnTransformPipeline": (
+        "ALB.surrogate.training.transforms",
+        "ColumnTransformPipeline",
+    ),
+}
+
+
+def __getattr__(name: str):
+    """Resolve training helpers with a stable surrogate-extra error."""
+
+    if name not in _EXPORTS:
+        raise AttributeError(f"module 'ALB.surrogate.training' has no attribute '{name}'")
+    module_name, attribute_name = _EXPORTS[name]
+    module = import_optional_module("ALB.surrogate.training", module_name, "surrogate")
+    return getattr(module, attribute_name)
+
+
+__all__ = list(_EXPORTS)

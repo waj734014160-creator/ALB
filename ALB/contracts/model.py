@@ -9,6 +9,10 @@ from dataclasses import dataclass
 from typing import Any, Iterator, Optional, Protocol, runtime_checkable
 
 import numpy as np
+import numpy.typing as npt
+
+
+FloatArray = npt.NDArray[np.float64]
 
 
 @runtime_checkable
@@ -63,7 +67,7 @@ class TimeGridProtocol(Protocol):
         """Return the constant time increment."""
 
     @property
-    def t_list(self) -> np.ndarray:
+    def t_list(self) -> FloatArray:
         """Return all sample times, including the initial point."""
 
     def __iter__(self) -> Iterator[float]:
@@ -106,4 +110,4 @@ class ConvergenceStatus:
     def pending(cls, message: str = "") -> "ConvergenceStatus":
         """Return a standard local status before a numerical solve starts."""
 
-        return cls(residual=np.finfo(float).max, converged=False, message=message)
+        return cls(residual=float(np.finfo(float).max), converged=False, message=message)

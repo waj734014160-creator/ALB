@@ -16,7 +16,7 @@ from ALB.systems.alb.harmonic import (
 )
 from ALB.core import Signal, TimeIterDt
 from ALB.dynamics.coupling import RsRotorBearingCouple
-from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]

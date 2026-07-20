@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Iterable, Optional
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from .events import Signal
@@ -77,13 +78,16 @@ class BearingComponentBase(BaseSimpleModel, ABC):
     force_size = 2
 
     @staticmethod
-    def validate_state(uxy: Any, uxyt: Any) -> tuple:
+    def validate_state(
+        uxy: Any,
+        uxyt: Any,
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """Validate and return position and velocity vectors."""
 
         return finite_vector(uxy, "uxy", 2), finite_vector(uxyt, "uxyt", 2)
 
     @staticmethod
-    def validate_output(output: Any) -> np.ndarray:
+    def validate_output(output: Any) -> npt.NDArray[np.float64]:
         """Validate and return a standard two-axis force vector."""
 
         return validate_bearing_output(output)

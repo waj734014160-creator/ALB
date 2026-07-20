@@ -39,7 +39,7 @@ from ALB.core.numerics.dynamic import (
 )
 from ALB.core.numerics.static import calc_ke
 from ALB.physics.hydraulics import Orifice, Orifices
-from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.config.parameters import ParameterHub
 
 LOGGER = logging.getLogger("ALB.physics.bearing")
@@ -645,7 +645,7 @@ class MultiPad(BaseCSystem):
         ]
         parent_node.add_children(child_node)
         if tofile:
-            parent_node.save_to_file()
+            return parent_node.persist(kwargs.get("writer"), path)
         return parent_node
 
 
@@ -1001,7 +1001,7 @@ class StaticPosition:
             eys.append(ey)
         return np.array(exs), np.array(eys)
 
-    def save(self, tofile=True, path=None, name=None):
+    def save(self, tofile=True, path=None, name=None, *, writer=None):
         """
         Save the results.
         :param tofile: Whether to save to a file.
@@ -1018,7 +1018,7 @@ class StaticPosition:
         node = SaveTreeNode(path, res)
         node.add_children(self.child_nodes)
         if tofile:
-            node.save_to_file()
+            return node.persist(writer, path)
         return node
 
 

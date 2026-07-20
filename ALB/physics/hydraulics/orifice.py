@@ -11,7 +11,7 @@ from ALB.core.fem.base import BaseSimpleModels
 from ALB.config import CsoArgs
 
 # from ALB.infrastructure.logging import logger
-from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.physics.film.model_utils import get_primary_film_model
 
 __all__ = [
@@ -294,7 +294,7 @@ class Orifice(BaseOrifice):
         )
         node = SaveTreeNode(path, res)
         if tofile:
-            node.save_to_file()
+            return node.persist(kwargs.get("writer"), path)
         return node
 
     def flow_info(self, model=None):
@@ -571,7 +571,7 @@ class NodimCSOrifice(BaseOrifice):
         res = DataFrameResult({name + "_q": self._results})
         node = SaveTreeNode(path, res)
         if tofile:
-            node.save_to_file()
+            return node.persist(kwargs.get("writer"), path)
         return node
 
     def calc_error(self, *args, **kwargs):
@@ -1131,5 +1131,5 @@ class Orifices(BaseSimpleModels):
                 sm.save(path=name + str(num), name=name + str(num), tofile=False)
             )
         if tofile:
-            node.save_to_file()
+            return node.persist(kwargs.get("writer"), path)
         return node

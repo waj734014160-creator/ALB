@@ -1,17 +1,24 @@
 """Compressible gas-film bearing models."""
 
-from .solver import (
-    GasBearing,
-    GasFoilTextureCoupling,
-    GasSkfemNewtonFilm,
-    gas_reynolds_jacobian,
-    gas_reynolds_residual,
-)
+from ALB.contracts.optional import import_optional_module
 
-__all__ = [
+
+_NAMES = (
     "GasBearing",
     "GasFoilTextureCoupling",
     "GasSkfemNewtonFilm",
     "gas_reynolds_jacobian",
     "gas_reynolds_residual",
-]
+)
+
+
+def __getattr__(name: str):
+    """Resolve gas solvers with a stable film-extra error."""
+
+    if name not in _NAMES:
+        raise AttributeError(f"module 'ALB.physics.gas' has no attribute '{name}'")
+    module = import_optional_module("ALB.physics.gas", "ALB.physics.gas.solver", "film")
+    return getattr(module, name)
+
+
+__all__ = list(_NAMES)

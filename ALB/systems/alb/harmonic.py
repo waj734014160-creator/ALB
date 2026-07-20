@@ -21,7 +21,7 @@ import pandas as pd
 from ALB.config import Moog2ndServoConfig, PIDConfig
 from ALB.control.pid import PID
 from ALB.core import BearingComponentBase
-from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve
 
 
@@ -664,7 +664,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         )
         node = SaveTreeNode(str(path), result)
         if tofile:
-            node.save_to_file()
+            return node.persist(kwargs.get("writer"), path)
         return node
 
 

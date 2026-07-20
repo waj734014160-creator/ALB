@@ -14,7 +14,7 @@ from scipy.linalg import block_diag, pinv, schur
 from ALB.core.component import BaseSimpleModel
 from ALB.config import FuzzyPIDConfig, LQGConfig, PIDConfig
 from ALB.core.validation import limit_signal
-from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from .valve import moog_servovalve
 
 
@@ -181,7 +181,7 @@ class PID(BaseSimpleModel):
         res = DataFrameResult(res)
         node = SaveTreeNode(path, res)
         if tofile:
-            node.save_to_file()
+            return node.persist(kwargs.get("writer"), path)
         return node
 
 

@@ -8,9 +8,9 @@ from ALB.core.component import BaseCSystem, BaseSystem
 from ALB.core.validation import require_unit_system, validate_bearing_output
 from ALB.contracts import ResultBundle, StepContext, result_snapshot
 from ALB.dynamics.rotor import Gravity, StaticLoad
-from ALB.workflows import StepCommitLedger
+from ALB.core.steps import StepCommitLedger
 
-from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 
 # from ALB.infrastructure.logging import logger
 from .rotor import RossRotor, SingleRotor, UnbalancedExcitation
@@ -291,7 +291,7 @@ class RsRotorBearingCouple(BaseCSystem):
         parent_node.add_child(rotor_node)
         parent_node.add_children(bearing_nodes)
         if tofile:
-            parent_node.save_to_file()
+            return parent_node.persist(kwargs.get("writer"), path)
         return parent_node
 
     def finish_signal(self):

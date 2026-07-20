@@ -1,4 +1,4 @@
-"""Physical-step commit coordination owned only by top-level workflows."""
+"""Physical-step commit validation for use by top-level couplers and workflows."""
 
 from __future__ import annotations
 

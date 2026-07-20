@@ -25,6 +25,7 @@ from ALB.infrastructure.config_io import (
     read_json5,
     read_json5_with_shared as read_json5_with_share,
 )
+from ALB.infrastructure.persistence import DirectoryArtifactWriter
 
 
 class TaskConfigFactory:
@@ -228,7 +229,12 @@ def task_alb_dynamic(config_dir, save_dir=None, save_name="result", save_alb=Fal
     with open(file_path, "wb") as f:
         pickle.dump(save_data, f)
     if save_alb:
-        alb.save(tofile=True, path=os.path.join(root_path, "alb"), name="alb")
+        alb.save(
+            tofile=True,
+            path=os.path.join(root_path, "alb"),
+            name="alb",
+            writer=DirectoryArtifactWriter(overwrite=True),
+        )
 
 
 def task_albnn_dynamic(config_dir, save_dir=None, save_name="result", save_alb=False):
@@ -268,7 +274,12 @@ def task_albnn_dynamic(config_dir, save_dir=None, save_name="result", save_alb=F
     with open(file_path, "wb") as f:
         pickle.dump(save_data, f)
     if save_alb:
-        alb.save(tofile=True, path=os.path.join(root_path, "albnn"), name="albnn")
+        alb.save(
+            tofile=True,
+            path=os.path.join(root_path, "albnn"),
+            name="albnn",
+            writer=DirectoryArtifactWriter(overwrite=True),
+        )
 
 
 def task_albf_dynamic(config_dir, save_dir=None, save_name="result"):
@@ -347,7 +358,11 @@ def task_alb_rotor_couple(config_dir, save_dir=None, bearing="alb", save_name="r
     rbc.add_gravity()
     rbc.solve()
     root_path = os.path.join(save_dir, save_name)
-    rbc.save(tofile=True, path=root_path)
+    rbc.save(
+        tofile=True,
+        path=root_path,
+        writer=DirectoryArtifactWriter(overwrite=True),
+    )
 
 
 def task_albf_rotor_couple(config_dir, save_dir=None, save_name="result"):
@@ -387,7 +402,11 @@ def task_albf_rotor_couple(config_dir, save_dir=None, save_name="result"):
     rbc.add_gravity()
     rbc.solve()
     root_path = os.path.join(save_dir, save_name)
-    rbc.save(tofile=True, path=root_path)
+    rbc.save(
+        tofile=True,
+        path=root_path,
+        writer=DirectoryArtifactWriter(overwrite=True),
+    )
 
 
 def task_albnn_rotor_couple(config_dir, save_dir=None, save_name="result"):
@@ -421,7 +440,11 @@ def task_albnn_rotor_couple(config_dir, save_dir=None, save_name="result"):
     rbc.add_gravity()
     rbc.solve()
     root_path = os.path.join(save_dir, save_name)
-    rbc.save(tofile=True, path=root_path)
+    rbc.save(
+        tofile=True,
+        path=root_path,
+        writer=DirectoryArtifactWriter(overwrite=True),
+    )
 
 
 def couple_task(task_name):

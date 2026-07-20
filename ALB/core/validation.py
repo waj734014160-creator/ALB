@@ -1,16 +1,18 @@
 """Shared validation and saturation helpers."""
 
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, cast
 
 import numpy as np
+import numpy.typing as npt
 
 from ALB.contracts.types import UnitSystem
 
 
 VALID_UNIT_SYSTEMS = frozenset(unit_system.value for unit_system in UnitSystem)
+FloatArray = npt.NDArray[np.float64]
 
 
-def finite_vector(value: Any, name: str, size: int = 2) -> np.ndarray:
+def finite_vector(value: Any, name: str, size: int = 2) -> FloatArray:
     """Return a finite one-dimensional vector with an exact size."""
 
     vector = np.asarray(value, dtype=float).reshape(-1)
@@ -18,10 +20,10 @@ def finite_vector(value: Any, name: str, size: int = 2) -> np.ndarray:
         raise ValueError(f"{name} must contain exactly {size} values")
     if not np.all(np.isfinite(vector)):
         raise ValueError(f"{name} must contain only finite values")
-    return vector
+    return cast(FloatArray, vector)
 
 
-def validate_bearing_output(output: Mapping[str, Any]) -> np.ndarray:
+def validate_bearing_output(output: Mapping[str, Any]) -> FloatArray:
     """Validate and return the standard two-axis bearing force."""
 
     if not isinstance(output, Mapping):
@@ -59,7 +61,7 @@ def require_unit_system(
     return actual
 
 
-def limit_signal(value: Any, up: Any = 1, down: Any = -1) -> np.ndarray:
+def limit_signal(value: Any, up: Any = 1, down: Any = -1) -> npt.NDArray[np.generic]:
     """Clip a scalar or array-like signal with broadcast-compatible limits."""
 
     limited = np.array(value)
@@ -67,4 +69,4 @@ def limit_signal(value: Any, up: Any = 1, down: Any = -1) -> np.ndarray:
     lower = np.ones_like(limited) * down
     limited = np.where(limited > upper, upper, limited)
     limited = np.where(limited < lower, lower, limited)
-    return limited
+    return cast(npt.NDArray[np.generic], limited)

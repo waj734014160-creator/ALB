@@ -35,11 +35,9 @@ surrogate = [
     "torch>=2.1",
 ]
 io = [
-    "chardet>=5",
     "json5>=0.9",
 ]
 all = [
-    "chardet>=5",
     "control>=0.10",
     "json5>=0.9",
     "matplotlib>=3.7",

@@ -7,10 +7,15 @@ import warnings
 from pathlib import Path
 from typing import Any
 
-import json5
 import pandas as pd
 
 from ALB.config import TimeGridConfig
+from ALB.contracts.optional import missing_optional_dependency
+
+try:
+    import json5
+except ModuleNotFoundError as error:
+    raise missing_optional_dependency("ALB.infrastructure.config_io", "io", error) from error
 
 
 def read_json5(path: str | Path) -> dict[str, Any]:

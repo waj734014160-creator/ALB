@@ -3,6 +3,7 @@
 from typing import Protocol, runtime_checkable
 
 import numpy as np
+import numpy.typing as npt
 
 from .block import EvaluableBlock
 from .ports import BearingInput, BearingOutput
@@ -28,13 +29,13 @@ class BearingCoefficientProtocol(Protocol):
     """Optional local-linear coefficient capability."""
 
     @property
-    def K(self) -> np.ndarray:
+    def K(self) -> npt.NDArray[np.float64]:
         """Return the 2-by-2 stiffness matrix."""
 
     @property
-    def C(self) -> np.ndarray:
+    def C(self) -> npt.NDArray[np.float64]:
         """Return the 2-by-2 damping matrix."""
 
     @property
-    def G_xv(self) -> np.ndarray:
+    def G_xv(self) -> npt.NDArray[np.complex128]:
         """Return the complex 2-by-2 spool-force transfer matrix."""

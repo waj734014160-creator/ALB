@@ -1,4 +1,4 @@
-"""Frequency-domain post-processing and bearing coefficient identification."""
+"""Frequency-domain dynamics and bearing coefficient identification."""
 
 from __future__ import annotations
 

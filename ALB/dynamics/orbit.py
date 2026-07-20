@@ -3,14 +3,15 @@
 import copy
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
 from ALB.config import TimeGridConfig
-from ALB.infrastructure.persistence import SaveTreeNode
-from ALB.workflows.identification import recognize_kc
+from ALB.contracts.results import ArtifactManifest, ArtifactWriterProtocol, ResultBundle, result_snapshot
+from ALB.dynamics.identification import recognize_kc
 
 
 class EllipseTrack:
@@ -182,29 +183,28 @@ class BearingForceTrack:
             plt.show()
         return fig, ax
 
-    def save(self, path, name="bearing_forces.pkl"):
-        """
-        Save the BearingForceTrack object to a pickle file.
-        :param path: The directory path to save the file.
-        :param name: The name of the file.
-        """
-        node = SaveTreeNode("bearing_forces", self)
-        if not name.endswith(".pkl"):
-            name += ".pkl"
-        node.save_to_pickle(path, name)
+    def result_snapshot(self) -> ResultBundle:
+        """Return a detached snapshot without performing filesystem I/O."""
 
-    @staticmethod
-    def load(path):
-        """
-        Load a BearingForceTrack object from a pickle file.
-        :param path: The path to the pickle file.
-        :return: The loaded BearingForceTrack object.
-        """
-        node = SaveTreeNode.load_pickle(path)
-        if isinstance(node.data, BearingForceTrack):
-            return node.data
-        else:
-            raise ValueError("The data in the node is not BearingForceTrack")
+        return result_snapshot(
+            {"bearing_forces": self.bearing_forces},
+            {"schema": "alb.bearing-force-track.v1"},
+        )
+
+    def save(
+        self,
+        path: str | Path,
+        name: str = "bearing_forces",
+        *,
+        writer: ArtifactWriterProtocol | None = None,
+    ) -> ArtifactManifest:
+        """Persist through an injected writer and return an artifact manifest."""
+
+        if writer is None:
+            raise RuntimeError(
+                "BearingForceTrack.save requires an injected ArtifactWriterProtocol"
+            )
+        return writer.write(self.result_snapshot(), Path(path) / name.removesuffix(".pkl"))
 
 
 def test_bearing_orbit(time_iter, bearing, et, **kwargs):

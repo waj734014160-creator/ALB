@@ -25,7 +25,7 @@ from ALB.config import (
 )
 from ALB.control.controllers import FuzzyPID, PID
 from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
-from ALB.infrastructure.persistence import DataFrameResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve, moog_servovalve, static_sv
 from ALB.physics.thermal import (
     NodimThermalHydroBearing,
@@ -290,7 +290,7 @@ class ALB(BaseCSystem):
         )
         node.add_children(children)
         if tofile:
-            node.save_to_file()
+            return node.persist(kwargs.get("writer"), path)
         return node
 
     def start_signal(self):
@@ -779,7 +779,7 @@ class ALBNNAgent(BaseSimpleModel):
         res = DataFrameResult({name: self._results})
         node = SaveTreeNode(path, res)
         if tofile:
-            node.save_to_file()
+            return node.persist(kwargs.get("writer"), path)
         return node
 
     def finish_signal(self):

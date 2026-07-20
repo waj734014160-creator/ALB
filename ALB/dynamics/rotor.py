@@ -14,8 +14,8 @@ from ALB.core.events import Signal
 from ALB.core.fem.base import BasePostProcess
 
 # from ALB.infrastructure.logging import logger
-from ALB.infrastructure.persistence import RossRotorResult, SaveTreeNode
-from ALB.workflows.identification import pearson_similarity
+from ALB.contracts.result_tree import RossRotorResult, SaveTreeNode
+from ALB.dynamics.identification import pearson_similarity
 
 _intpoint = np.array(
     [
@@ -584,7 +584,7 @@ class RossRotor:
         )
         node = SaveTreeNode(path, res)
         if tofile:
-            node.save_to_file()
+            return node.persist(kwargs.get("writer"), path)
         return node
 
 

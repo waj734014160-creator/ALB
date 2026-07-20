@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 
-InputT = TypeVar("InputT")
+InputT = TypeVar("InputT", contravariant=True)
 OutputT = TypeVar("OutputT", covariant=True)
 
 

@@ -100,7 +100,7 @@ from ALB.infrastructure.remote.transport import (
     ps_quote,
     remote_path,
 )
-from ALB.infrastructure.persistence import DataFrameResult, NpyResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, NpyResult, SaveTreeNode
 from ALB.dynamics.rotor import RossRotor
 from ALB.control.valve import moog_2nd_servovalve
 from ALB.config import ThermalConfig

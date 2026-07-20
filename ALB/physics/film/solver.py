@@ -48,7 +48,7 @@ from ALB.core.numerics.iteration import (
 # from .logger import delogger, logger
 from ALB.core.numerics.static import calc_fe, calc_fe_vf, calc_ke
 from ALB.core.fem.mesh import Mesh
-from ALB.infrastructure.persistence import DataFrameResult, NpyResult, SaveTreeNode
+from ALB.contracts.result_tree import DataFrameResult, NpyResult, SaveTreeNode
 
 __all__ = [
     "NodimFilmModel",
@@ -524,7 +524,7 @@ class FilmModel(NodimFilmModel):
         node = SaveTreeNode(path, [res0, res1])
 
         if tofile:
-            node.save_to_file()
+            return node.persist(kwargs.get("writer"), path)
         return node
 
     def finish_signal(self):
@@ -1908,7 +1908,7 @@ class FilmSystem(BaseSystem):
         )
         parent_node.add_children(child_node)
         if tofile:
-            parent_node.save_to_file()
+            return parent_node.persist(kwargs.get("writer"), path)
         return parent_node
 
     def finish_signal(self):

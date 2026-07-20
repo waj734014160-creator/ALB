@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from numbers import Integral, Real
+from numbers import Integral
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 
 from .types import UnitSystem
 
 
-def _finite_time(value: Real) -> float:
-    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+FloatArray = npt.NDArray[np.float64]
+
+
+def _finite_time(value: Any) -> float:
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, float, np.number)):
         raise TypeError("time must be a real scalar")
     result = float(value)
     if not np.isfinite(result) or result < 0.0:
@@ -20,7 +24,7 @@ def _finite_time(value: Real) -> float:
     return result
 
 
-def _finite_axis_vector(value: Any, name: str) -> np.ndarray:
+def _finite_axis_vector(value: Any, name: str) -> FloatArray:
     array = np.asarray(value, dtype=float)
     if array.shape != (2,):
         raise ValueError(f"{name} must have shape (2,)")
@@ -31,7 +35,7 @@ def _finite_axis_vector(value: Any, name: str) -> np.ndarray:
     return result
 
 
-def _finite_node_axes(value: Any, name: str) -> np.ndarray:
+def _finite_node_axes(value: Any, name: str) -> FloatArray:
     array = np.asarray(value, dtype=float)
     if array.ndim == 1:
         if array.shape != (2,):
@@ -61,8 +65,8 @@ class _PortDto:
 class BearingInput(_PortDto):
     """Two-axis bearing displacement and velocity at one time sample."""
 
-    displacement: np.ndarray
-    velocity: np.ndarray
+    displacement: FloatArray
+    velocity: FloatArray
     time: float
     unit_system: UnitSystem
 
@@ -78,7 +82,7 @@ class BearingInput(_PortDto):
 class BearingOutput(_PortDto):
     """Two-axis bearing force produced for one input sample."""
 
-    force: np.ndarray
+    force: FloatArray
     time: float
     unit_system: UnitSystem
 
@@ -91,7 +95,7 @@ class BearingOutput(_PortDto):
 class ControlInput(_PortDto):
     """Two-axis control error at one time sample."""
 
-    error: np.ndarray
+    error: FloatArray
     time: float
     unit_system: UnitSystem
 
@@ -104,7 +108,7 @@ class ControlInput(_PortDto):
 class ControlOutput(_PortDto):
     """Two-axis normalized control command."""
 
-    command: np.ndarray
+    command: FloatArray
     time: float
     unit_system: UnitSystem
 
@@ -117,7 +121,7 @@ class ControlOutput(_PortDto):
 class ValveInput(_PortDto):
     """Two-axis valve command at one time sample."""
 
-    command: np.ndarray
+    command: FloatArray
     time: float
     unit_system: UnitSystem
 
@@ -130,7 +134,7 @@ class ValveInput(_PortDto):
 class ValveOutput(_PortDto):
     """Two-axis valve spool state at one time sample."""
 
-    spool: np.ndarray
+    spool: FloatArray
     time: float
     unit_system: UnitSystem
 
@@ -143,8 +147,8 @@ class ValveOutput(_PortDto):
 class RotorLoadInput(_PortDto):
     """Two-axis nodal loads supplied to a rotor advance operation."""
 
-    force: np.ndarray
-    previous_force: np.ndarray
+    force: FloatArray
+    previous_force: FloatArray
     node_links: tuple[int, ...]
     time: float
     unit_system: UnitSystem
@@ -174,8 +178,8 @@ class RotorLoadInput(_PortDto):
 class RotorState(_PortDto):
     """Two-axis displacement and velocity for one or more rotor nodes."""
 
-    displacement: np.ndarray
-    velocity: np.ndarray
+    displacement: FloatArray
+    velocity: FloatArray
     time: float
     unit_system: UnitSystem
 
