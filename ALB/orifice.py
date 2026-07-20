@@ -6,7 +6,8 @@ import pandas as pd
 from scipy.optimize import fsolve
 from scipy.sparse import coo_matrix
 
-from ALB.base import BaseSimpleModel, BaseSimpleModels
+from ALB.core.component import BaseSimpleModel
+from ALB.core.fem.base import BaseSimpleModels
 from ALB.config import CsoArgs
 
 # from ALB.logger import logger

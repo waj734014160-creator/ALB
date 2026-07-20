@@ -20,8 +20,8 @@ from skfem import (
 )
 from skfem.helpers import grad
 
-from . import boundary
-from .base import (
+from ALB.core.fem import boundary
+from ALB.core.fem.base import (
     BaseBoundary,
     BaseElem,
     BaseMainModel,
@@ -31,17 +31,23 @@ from .base import (
     BaseSimpleModel,
     BaseSystem,
 )
-from .boundary import (
+from ALB.core.fem.boundary import (
     couple_boundary_matrix,
     set_continuity_boundary,
     set_value_boundary,
 )
-from .damping import AdaptiveDampController, normalize_adaptive_damp_config
-from .gauss import gauss_seidel_iteration_film, gauss_seidel_iteration_matrix
+from ALB.core.numerics.damping import (
+    AdaptiveDampController,
+    normalize_adaptive_damp_config,
+)
+from ALB.core.numerics.iteration import (
+    gauss_seidel_iteration_film,
+    gauss_seidel_iteration_matrix,
+)
 
 # from .logger import delogger, logger
-from .matrix.static import calc_fe, calc_fe_vf, calc_ke
-from .mesh import Mesh
+from ALB.core.numerics.static import calc_fe, calc_fe_vf, calc_ke
+from ALB.core.fem.mesh import Mesh
 from .results import DataFrameResult, NpyResult, SaveTreeNode
 
 __all__ = [

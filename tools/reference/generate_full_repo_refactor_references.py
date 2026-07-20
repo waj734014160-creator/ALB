@@ -54,13 +54,13 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from ALB.alb import nodim_alb
-from ALB.base import _assemble_matrixs, _assemble_rights
+from ALB.core.fem import _assemble_matrixs, _assemble_rights
 from ALB.bearing import (
     HydrostaticBearing,
     NodimHydrostaticBearing,
     nodim_four_pads_bearing,
 )
-from ALB.boundary import (
+from ALB.core.fem.boundary import (
     couple_boundary_matrix,
     set_continuity_boundary,
     set_value_boundary,
@@ -77,11 +77,11 @@ from ALB.config import (
 from ALB.controller import PID
 from ALB.couple import RsRotorBearingCouple
 from ALB.gas import GasBearing
-from ALB.gauss import gauss_seidel_iteration_film
+from ALB.core.numerics.iteration import gauss_seidel_iteration_film
 from ALB.harmonic_linear import alb_harmonic_linear
-from ALB.matrix.dynmaic import calc_fe_dx, calc_ke_dx
-from ALB.matrix.static import calc_fe, calc_fe_vf, calc_ke
-from ALB.mesh import create_rect, create_serend_2d
+from ALB.core.numerics.dynamic import calc_fe_dx, calc_ke_dx
+from ALB.core.numerics.static import calc_fe, calc_fe_vf, calc_ke
+from ALB.core.fem.mesh import create_rect, create_serend_2d
 from ALB.nn import (
     ALBNN,
     ALBNNC4Canonical,

@@ -10,8 +10,11 @@ _EXPORTS = {
     "limit_signal": ("ALB.core.validation", "limit_signal"),
     "moog_servovalve": ("ALB.servovalve", "moog_servovalve"),
     "moog_2nd_servovalve": ("ALB.servovalve", "moog_2nd_servovalve"),
-    "AdaptiveDampConfig": ("ALB.damping", "AdaptiveDampConfig"),
-    "AdaptiveDampController": ("ALB.damping", "AdaptiveDampController"),
+    "AdaptiveDampConfig": ("ALB.core.numerics.damping", "AdaptiveDampConfig"),
+    "AdaptiveDampController": (
+        "ALB.core.numerics.damping",
+        "AdaptiveDampController",
+    ),
 }
 
 

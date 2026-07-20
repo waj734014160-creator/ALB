@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from ALB.adapters import BearingDecoratorBase, LegacyBearingAdapter
-from ALB.base import BaseSystem, Signal, TimeIterDt
+from ALB.core import BaseSystem, Signal, TimeIterDt
 from ALB.bearing import MultiPad
 from ALB.config import CsoArgs as ConfigCsoArgs
 from ALB.contracts import (

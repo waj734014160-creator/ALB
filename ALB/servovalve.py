@@ -7,7 +7,7 @@ import control as cl
 import numpy as np
 import pandas as pd
 
-from ALB.base import BaseSystem
+from ALB.core.component import BaseSystem
 from ALB.core.validation import limit_signal as _limit_signal
 from ALB.lti import BaseLti, TSDlti
 

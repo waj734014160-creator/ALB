@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from ALB.base import BaseCSystem, BaseSystem
+from ALB.core.component import BaseCSystem, BaseSystem
 from ALB.core.validation import require_unit_system, validate_bearing_output
 from ALB.rotor import Gravity, StaicLoad
 

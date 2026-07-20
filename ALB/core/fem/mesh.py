@@ -3,7 +3,7 @@
 import numpy as np
 from numba import njit
 
-from ALB.base import BaseElem, BaseMesh, BaseNode
+from .base import BaseElem, BaseMesh, BaseNode
 
 
 def take_args(func, keys=None, z_lim=False):

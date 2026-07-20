@@ -6,7 +6,10 @@ from typing import Optional, Union
 
 import numpy as np
 
-from ALB.damping import AdaptiveDampConfig, normalize_adaptive_damp_config
+from ALB.core.numerics.damping import (
+    AdaptiveDampConfig,
+    normalize_adaptive_damp_config,
+)
 
 
 _THERMAL_ITER_METHODS = {"direct", "newton", "direct_then_newton"}

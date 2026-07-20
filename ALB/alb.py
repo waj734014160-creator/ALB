@@ -7,7 +7,8 @@ import pandas as pd
 from scipy import sparse as sp
 from scipy.sparse import linalg as sl
 
-from ALB.base import BaseCSystem, BaseSimpleModel, Signal
+from ALB.core.component import BaseCSystem, BaseSimpleModel
+from ALB.core.events import Signal
 from ALB.bearing import four_pads_bearings, nodim_four_pads_bearings
 from ALB.config import (
     ALBConfig,

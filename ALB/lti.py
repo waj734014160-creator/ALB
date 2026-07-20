@@ -6,7 +6,7 @@ import pandas as pd
 import scipy.linalg
 from scipy import signal as ss
 
-from ALB.base import BaseSimpleModel
+from ALB.core.component import BaseSimpleModel
 from ALB.results import DataFrameResult, SaveTreeNode
 
 

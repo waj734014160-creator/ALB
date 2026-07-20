@@ -9,7 +9,9 @@ import ross as rs
 import scipy
 from scipy.linalg import expm
 
-from ALB.base import BasePostProcess, BaseSimpleModel, Signal
+from ALB.core.component import BaseSimpleModel
+from ALB.core.events import Signal
+from ALB.core.fem.base import BasePostProcess
 
 # from ALB.logger import logger
 from ALB.results import RossRotorResult, SaveTreeNode

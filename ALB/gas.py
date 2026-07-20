@@ -4,7 +4,8 @@ from scipy.sparse.linalg import spsolve
 from skfem import BilinearForm, LinearForm, asm
 from skfem.helpers import grad
 
-from ALB.base import BaseSimpleModel, ElemManager, MatrixProcess, NodeManager
+from ALB.core.component import BaseSimpleModel
+from ALB.core.fem import ElemManager, MatrixProcess, Mesh, NodeManager
 from ALB.config import GasConfig
 from ALB.film import (
     FilmBoundary,
@@ -14,7 +15,6 @@ from ALB.film import (
     SkfemNewtonFilm,
     ThicknessModel,
 )
-from ALB.mesh import Mesh
 
 # no validation！！！
 

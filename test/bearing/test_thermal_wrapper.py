@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ALB.alb import ALB, ALBBuilder
-from ALB.base import TimeIterDt
+from ALB.core import TimeIterDt
 from ALB.bearing import HydrostaticBearing, four_pads_bearings
 from ALB.config import (
     ALBConfig,

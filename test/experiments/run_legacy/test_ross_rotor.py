@@ -5,7 +5,7 @@ import plotly.offline
 import ross as rs
 import scipy.fft
 
-from ALB.base import TimeIter
+from ALB.core import TimeIter
 from ALB.rotor import RossRotor, UnbalancedExcitation
 
 if __name__ == "__main__":

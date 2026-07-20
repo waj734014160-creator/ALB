@@ -1,7 +1,7 @@
 import math
 
 from ALB.config import HydConfig, NodimPadConfig, ThermalConfig
-from ALB.damping import AdaptiveDampConfig, AdaptiveDampController
+from ALB.core.numerics.damping import AdaptiveDampConfig, AdaptiveDampController
 
 
 def test_disabled_controller_keeps_initial_value():

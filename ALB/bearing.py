@@ -10,7 +10,8 @@ import pandas as pd
 import scipy.sparse as sp
 from tqdm import tqdm
 
-from ALB.base import BaseCSystem, ElemManager, MatrixProcess, NodeManager
+from ALB.core.component import BaseCSystem
+from ALB.core.fem import ElemManager, MatrixProcess, Mesh, NodeManager
 from ALB.config import FPBConfig, HydConfig
 from ALB.core.validation import get_unit_system
 from ALB.film import (
@@ -28,7 +29,7 @@ from ALB.film import (
     SkfemNewtonFilm,
     ThicknessModel,
 )
-from ALB.matrix.dynmaic import (
+from ALB.core.numerics.dynamic import (
     calc_fe_dx,
     calc_fe_dxt,
     calc_fe_dy,
@@ -36,8 +37,7 @@ from ALB.matrix.dynmaic import (
     calc_ke_dx,
     calc_ke_dy,
 )
-from ALB.matrix.static import calc_ke
-from ALB.mesh import Mesh
+from ALB.core.numerics.static import calc_ke
 from ALB.orifice import Orifice, Orifices
 from ALB.results import DataFrameResult, SaveTreeNode
 from ALB.tool import ParameterHub

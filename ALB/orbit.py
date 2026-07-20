@@ -380,7 +380,7 @@ def orbitime(
     through :class:`ALB.config.TimeGridConfig` fields.
     """
 
-    from ALB.base import TimeIterDt
+    from ALB.core.time import TimeIterDt
 
     canonical_values = any(
         value is not None

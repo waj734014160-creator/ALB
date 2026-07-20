@@ -1,7 +1,7 @@
 ﻿# -- coding: utf-8 --
 import ross as rs
 
-from ALB.base import TimeIter
+from ALB.core import TimeIter
 from ALB.bearing import HydrostaticBearing
 from ALB.couple import RsRotorBearingCouple
 from ALB.rotor import RossRotor, ShaftElement

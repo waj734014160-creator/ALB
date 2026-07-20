@@ -9,9 +9,9 @@ from skfem import Basis, BilinearForm, ElementTriP1, LinearForm, MeshTri, asm, e
 from skfem.helpers import dot, grad
 
 from ALB.adapters import BearingDecoratorBase
-from ALB.base import BasePostProcess
+from ALB.core.fem.base import BasePostProcess
 from ALB.config import ThermalConfig, build_thermal_config  # noqa: F401  re-exported
-from ALB.damping import AdaptiveDampController
+from ALB.core.numerics.damping import AdaptiveDampController
 from ALB.film import (
     FilmOutput,
     NodimNewtonFilm,
@@ -20,7 +20,7 @@ from ALB.film import (
     SkfemNewtonFilm,
     film_args_trans,
 )
-from ALB.matrix.static import calc_fe, calc_fe_vf, calc_ke
+from ALB.core.numerics.static import calc_fe, calc_fe_vf, calc_ke
 from ALB.nondim import ThermalNondimScales
 
 _MIU_NUMERIC_FLOOR = 1e-12

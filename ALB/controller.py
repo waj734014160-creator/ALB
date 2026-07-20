@@ -11,7 +11,7 @@ import skfuzzy.control as ctrl
 from control.matlab import c2d, lqe, lqr, ss
 from scipy.linalg import block_diag, pinv, schur
 
-from ALB.base import BaseSimpleModel
+from ALB.core.component import BaseSimpleModel
 from ALB.config import FuzzyPIDConfig, LQGConfig, PIDConfig
 from ALB.core.validation import limit_signal
 from ALB.results import DataFrameResult, SaveTreeNode

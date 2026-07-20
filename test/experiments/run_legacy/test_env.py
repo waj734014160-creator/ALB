@@ -4,8 +4,7 @@ import math
 import numpy as np
 
 from ALB.film import RectFilmElem, RectFilmNode, FilmBoundary
-from ALB.base import ElemManager, NodeManager, MatrixProcess
-from ALB.mesh import Mesh
+from ALB.core.fem import ElemManager, MatrixProcess, Mesh, NodeManager
 
 mesh = Mesh()
 x_lim = np.array([0, 2 * np.pi])

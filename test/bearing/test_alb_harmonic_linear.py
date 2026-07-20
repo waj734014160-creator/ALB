@@ -13,7 +13,7 @@ from ALB import (
     alb_harmonic_linear,
     load_builtin_alb_harmonic_coefficients,
 )
-from ALB.base import Signal, TimeIterDt
+from ALB.core import Signal, TimeIterDt
 from ALB.couple import RsRotorBearingCouple
 from ALB.results import DataFrameResult, SaveTreeNode
 
