@@ -8,7 +8,7 @@ import pytest
 
 from ALB.adapters import BearingDecoratorBase, LegacyBearingAdapter
 from ALB.core import BaseSystem, Signal, TimeIterDt
-from ALB.bearing import MultiPad
+from ALB.physics.bearing import MultiPad
 from ALB.config import CsoArgs as ConfigCsoArgs
 from ALB.contracts import (
     BearingProtocol,
@@ -158,7 +158,7 @@ def test_film_failure_uses_injected_notifier_without_infrastructure_import():
 
 def test_classification_namespaces_preserve_implementation_identity():
     from ALB.alb import ALB
-    from ALB.bearing import HydrostaticBearing
+    from ALB.physics.bearing import HydrostaticBearing
     from ALB.controller import PID
     from ALB.control import PID as CategorizedPID
     from ALB.physics import HydrostaticBearing as CategorizedBearing

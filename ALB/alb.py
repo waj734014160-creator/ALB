@@ -9,7 +9,7 @@ from scipy.sparse import linalg as sl
 
 from ALB.core.component import BaseCSystem, BaseSimpleModel
 from ALB.core.events import Signal
-from ALB.bearing import four_pads_bearings, nodim_four_pads_bearings
+from ALB.physics.bearing import four_pads_bearings, nodim_four_pads_bearings
 from ALB.config import (
     ALBConfig,
     CsoArgs,
@@ -509,7 +509,7 @@ class ALBLinear:
         :param uxy: Rotor position (x, y).
         :return: A dictionary containing the linearized parameters.
         """
-        from ALB.bearing import BearingDynamicChar
+        from ALB.physics.bearing import BearingDynamicChar
 
         force = self._static_calc(uxy)
         fdxv = np.zeros((2, 2))

@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from ALB.bearing import HydrostaticBearing, NodimHydrostaticBearing
+from ALB.physics.bearing import HydrostaticBearing, NodimHydrostaticBearing
 from ALB.config import HydConfig, ThermalConfig
 from ALB.thermal import (
     NodimThermalHydroBearing,

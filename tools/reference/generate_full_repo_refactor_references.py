@@ -55,7 +55,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from ALB.alb import nodim_alb
 from ALB.core.fem import _assemble_matrixs, _assemble_rights
-from ALB.bearing import (
+from ALB.physics.bearing import (
     HydrostaticBearing,
     NodimHydrostaticBearing,
     nodim_four_pads_bearing,

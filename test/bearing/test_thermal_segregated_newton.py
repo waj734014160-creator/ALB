@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 
 from ALB.alb import alb2
-from ALB.bearing import HydrostaticBearing, NodimHydrostaticBearing
+from ALB.physics.bearing import HydrostaticBearing, NodimHydrostaticBearing
 from ALB.config import ALBConfig, CsoArgs, HydConfig, ThermalConfig
 from ALB.thermal import NodimThermalHydroBearing, ThermalHydroBearing
 from ALB.tool import read_json5_with_share

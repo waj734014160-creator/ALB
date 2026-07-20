@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from ALB.bearing import HydrostaticBearing
+from ALB.physics.bearing import HydrostaticBearing
 from ALB.config import HydConfig
 
 

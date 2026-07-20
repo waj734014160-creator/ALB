@@ -2,7 +2,7 @@
 import ross as rs
 
 from ALB.core import TimeIter
-from ALB.bearing import HydrostaticBearing
+from ALB.physics.bearing import HydrostaticBearing
 from ALB.couple import RsRotorBearingCouple
 from ALB.rotor import RossRotor, ShaftElement
 

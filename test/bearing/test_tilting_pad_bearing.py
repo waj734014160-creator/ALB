@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from ALB.bearing import (
+from ALB.physics.bearing import (
     MultiPad,
     TiltingPadHydrodynamicPad,
     get_pad_pressure_fields,

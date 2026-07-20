@@ -6,7 +6,7 @@ import sys
 
 import numpy as np
 
-from ALB.bearing import HydrostaticBearing, MultiPad
+from ALB.physics.bearing import HydrostaticBearing, MultiPad
 from ALB.config import HydConfig
 
 BASE_HYD_CONFIG = importlib.import_module("validation_reference_data").BASE_HYD_CONFIG

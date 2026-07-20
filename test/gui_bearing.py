@@ -45,7 +45,7 @@ from PySide6.QtWidgets import (  # noqa: E402
     QWidget,
 )
 
-from ALB.bearing import BearingDynamicChar, HydrostaticBearing  # noqa: E402
+from ALB.physics.bearing import BearingDynamicChar, HydrostaticBearing  # noqa: E402
 
 # -- ALB imports --------------------------------------------------------
 from ALB.config import HydConfig  # noqa: E402

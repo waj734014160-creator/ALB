@@ -66,7 +66,7 @@ hiddenimports = [
     "tqdm",
     "ALB.alb",
     "ALB.base",
-    "ALB.bearing",
+    "ALB.physics.bearing",
     "ALB.boundary",
     "ALB.config",
     "ALB.controller",

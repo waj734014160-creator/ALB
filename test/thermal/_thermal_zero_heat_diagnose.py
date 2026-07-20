@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from ALB.core import TimeIterDt
-from ALB.bearing import MultiPad
+from ALB.physics.bearing import MultiPad
 from ALB.orbit import test_bearing_orbit
 from run import thermal_kc_compare as kc
 

@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from ALB.bearing import StaticPosition
+from ALB.physics.bearing import StaticPosition
 from ALB.physics.film import FilmSystem
 from ALB.thermal import NodimThermalHydroBearing
 

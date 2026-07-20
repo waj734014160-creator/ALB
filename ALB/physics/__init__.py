@@ -6,9 +6,12 @@ from importlib import import_module
 _EXPORTS = {
     "FilmSystem": ("ALB.physics.film", "FilmSystem"),
     "NodimNewtonFilm": ("ALB.physics.film", "NodimNewtonFilm"),
-    "HydrostaticBearing": ("ALB.bearing", "HydrostaticBearing"),
-    "NodimHydrostaticBearing": ("ALB.bearing", "NodimHydrostaticBearing"),
-    "MultiPad": ("ALB.bearing", "MultiPad"),
+    "HydrostaticBearing": ("ALB.physics.bearing", "HydrostaticBearing"),
+    "NodimHydrostaticBearing": (
+        "ALB.physics.bearing",
+        "NodimHydrostaticBearing",
+    ),
+    "MultiPad": ("ALB.physics.bearing", "MultiPad"),
     "GasBearing": ("ALB.gas", "GasBearing"),
     "CSOrifice": ("ALB.physics.hydraulics", "CSOrifice"),
     "NodimCSOrifice": ("ALB.physics.hydraulics", "NodimCSOrifice"),

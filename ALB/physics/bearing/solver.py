@@ -42,7 +42,7 @@ from ALB.physics.hydraulics import Orifice, Orifices
 from ALB.results import DataFrameResult, SaveTreeNode
 from ALB.tool import ParameterHub
 
-LOGGER = logging.getLogger("ALB.bearing")
+LOGGER = logging.getLogger("ALB.physics.bearing")
 
 
 def _create_model(phub: ParameterHub, mesh, node_manager, elem_manager, matrix_process):

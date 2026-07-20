@@ -1,6 +1,6 @@
 import numpy as np
 
-from ALB.bearing import HydrostaticBearing
+from ALB.physics.bearing import HydrostaticBearing
 from ALB.config import HydConfig
 from ALB.thermal import ThermalConfig, ThermalHydroBearing
 
