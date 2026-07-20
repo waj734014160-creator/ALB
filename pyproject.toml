@@ -56,6 +56,9 @@ test = [
     "pytest>=8",
 ]
 
+[project.scripts]
+alb-migrate-config = "ALB.config.cli:main"
+
 [tool.setuptools.packages.find]
 include = ["ALB", "ALB.*"]
 

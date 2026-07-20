@@ -1388,9 +1388,9 @@ class NodimALBConfig(ConfigData):
 class ALBNetConfig(ConfigData):
     """Configuration for the ALB Neural Network agent."""
 
-    scaler_X: str = "G:\\仿真计算\\20250622-代理训练\\model2\\scaler_X.pkl"
-    scaler_y: str = "G:\\仿真计算\\20250622-代理训练\\model2\\scaler_y.pkl"
-    model: str = "G:\\仿真计算\\20250622-代理训练\\model2\\best_model2.pth"
+    scaler_X: Optional[str] = None
+    scaler_y: Optional[str] = None
+    model: Optional[str] = None
     c: float = 120e-6
     vf: float = 1
     freq: float = None
