@@ -9,7 +9,7 @@ import pandas as pd
 
 from ALB.core.component import BaseSystem
 from ALB.core.validation import limit_signal as _limit_signal
-from ALB.lti import BaseLti, TSDlti
+from .state_space import BaseLti, TSDlti
 
 # from ALB.logger import logger
 

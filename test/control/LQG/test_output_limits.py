@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from ALB.config import LQGConfig
-from ALB.controller import ALBLQGController
+from ALB.control.lqg import ALBLQGController
 
 
 def _attach_runtime_system(controller, raw_output):

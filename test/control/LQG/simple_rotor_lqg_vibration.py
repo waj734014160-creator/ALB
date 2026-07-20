@@ -27,8 +27,8 @@ if str(REPOSITORY_ROOT) not in sys.path:
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from ALB.controller import ALBLQGController
-from ALB.servovalve import moog_2nd_servovalve
+from ALB.control.lqg import ALBLQGController
+from ALB.control.valve import moog_2nd_servovalve
 
 
 @dataclass(frozen=True)

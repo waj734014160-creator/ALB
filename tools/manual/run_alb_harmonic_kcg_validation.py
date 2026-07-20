@@ -27,8 +27,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from ALB.config import PIDConfig
-from ALB.controller import PID
-from ALB.servovalve import moog_2nd_servovalve
+from ALB.control.pid import PID
+from ALB.control.valve import moog_2nd_servovalve
 
 
 def parse_args() -> argparse.Namespace:

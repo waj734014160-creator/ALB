@@ -4,12 +4,14 @@ from importlib import import_module
 
 
 _EXPORTS = {
-    "PID": ("ALB.controller", "PID"),
-    "FuzzyPID": ("ALB.controller", "FuzzyPID"),
-    "ALBLQGController": ("ALB.controller", "ALBLQGController"),
+    "ControllerBlock": ("ALB.control.blocks", "ControllerBlock"),
+    "PID": ("ALB.control.pid", "PID"),
+    "FuzzyPID": ("ALB.control.fuzzy", "FuzzyPID"),
+    "ALBLQGController": ("ALB.control.lqg", "ALBLQGController"),
     "limit_signal": ("ALB.core.validation", "limit_signal"),
-    "moog_servovalve": ("ALB.servovalve", "moog_servovalve"),
-    "moog_2nd_servovalve": ("ALB.servovalve", "moog_2nd_servovalve"),
+    "moog_servovalve": ("ALB.control.valve", "moog_servovalve"),
+    "moog_2nd_servovalve": ("ALB.control.valve", "moog_2nd_servovalve"),
+    "ValveBlock": ("ALB.control.blocks", "ValveBlock"),
     "AdaptiveDampConfig": ("ALB.core.numerics.damping", "AdaptiveDampConfig"),
     "AdaptiveDampController": (
         "ALB.core.numerics.damping",

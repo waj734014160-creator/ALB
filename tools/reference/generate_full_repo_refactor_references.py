@@ -74,7 +74,7 @@ from ALB.config import (
     NodimPadConfig,
     PIDConfig,
 )
-from ALB.controller import PID
+from ALB.control.pid import PID
 from ALB.couple import RsRotorBearingCouple
 from ALB.physics.gas import GasBearing
 from ALB.core.numerics.iteration import gauss_seidel_iteration_film
@@ -100,7 +100,7 @@ from ALB.remote.transport import (
 )
 from ALB.results import DataFrameResult, NpyResult, SaveTreeNode
 from ALB.rotor import RossRotor
-from ALB.servovalve import moog_2nd_servovalve
+from ALB.control.valve import moog_2nd_servovalve
 from ALB.config import ThermalConfig
 from ALB.physics.thermal import ThermalHydroBearing
 from ALB.train.losses import sample_loss_values, weighted_mean

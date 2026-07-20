@@ -19,10 +19,10 @@ import numpy as np
 import pandas as pd
 
 from ALB.config import Moog2ndServoConfig, PIDConfig
-from ALB.controller import PID
+from ALB.control.pid import PID
 from ALB.core import BearingComponentBase
 from ALB.results import DataFrameResult, SaveTreeNode
-from ALB.servovalve import moog_2nd_servovalve
+from ALB.control.valve import moog_2nd_servovalve
 
 
 BUILTIN_COEFFICIENT_RESOURCE = "data/alb_harmonic_linear_gamma1_50hz.json"

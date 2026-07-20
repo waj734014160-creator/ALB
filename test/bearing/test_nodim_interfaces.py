@@ -18,9 +18,9 @@ from ALB.config import (
     NodimPadConfig,
     PIDConfig,
 )
-from ALB.controller import PID
+from ALB.control.pid import PID
 from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
-from ALB.servovalve import static_sv
+from ALB.control.valve import static_sv
 from ALB.config import ThermalConfig
 from ALB.physics.thermal import NodimThermalHydroBearing, ThermalHydroBearing
 

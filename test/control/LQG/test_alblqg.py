@@ -1,7 +1,7 @@
 ﻿import numpy as np
 
-from ALB.controller import balanced_truncation
-from ALB.controller import test_lqg as _test_lqg
+from ALB.control.controllers import test_lqg as _test_lqg
+from ALB.control.reduction import balanced_truncation
 
 if __name__ == "__main__":
     ctrl3 = _test_lqg(eso=True)

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 import ALB.rotor as rotor_module
-from ALB.controller import ALBLQGController
+from ALB.control.lqg import ALBLQGController
 
 
 def test_rotor0_converts_frequency_hz_to_ross_speed_rad_s(monkeypatch):

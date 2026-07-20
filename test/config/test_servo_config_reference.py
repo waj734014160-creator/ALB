@@ -5,7 +5,7 @@ import numpy as np
 
 from ALB.alb import alb2, nodim_alb
 from ALB.config import ALBConfig, Moog2ndServoConfig, NodimALBConfig, ServoConfig
-from ALB.servovalve import (
+from ALB.control.valve import (
     MOOG_2ND_NATURAL_FREQ_HZ,
     MOOG_2ND_TW,
     MOOG_2ND_ZETA,

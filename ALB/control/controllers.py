@@ -15,7 +15,7 @@ from ALB.core.component import BaseSimpleModel
 from ALB.config import FuzzyPIDConfig, LQGConfig, PIDConfig
 from ALB.core.validation import limit_signal
 from ALB.results import DataFrameResult, SaveTreeNode
-from ALB.servovalve import moog_servovalve
+from .valve import moog_servovalve
 
 
 class PID(BaseSimpleModel):
