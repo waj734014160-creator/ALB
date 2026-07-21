@@ -1,0 +1,421 @@
+{
+  "reference_name": "csorifice_monotonic_reference_v2",
+  "created_at": "2026-07-21T13:19:23.358138+00:00",
+  "baseline_commit": "84e14d70c1da947f22be68f8e0fce3b0d1e8b230",
+  "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+  "python_version": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "q_leak_contract": "exactly_zero",
+  "oracle": "independent monotonic scalar mass balance with implicit qdp",
+  "local_cases": {
+    "supply": {
+      "cq0": 1.7,
+      "cq1_h2": [
+        0.8,
+        1.2,
+        2.0
+      ],
+      "cq2": 0.3,
+      "pn": [
+        0.2,
+        0.35,
+        0.5
+      ],
+      "xv": 0.6,
+      "ps": 1.0,
+      "fd_step": 1e-06
+    },
+    "zero_source_return": {
+      "cq0": 1.7,
+      "cq1_h2": [
+        0.8,
+        1.2,
+        2.0
+      ],
+      "cq2": 0.3,
+      "pn": [
+        -1.8e-09,
+        -2.6e-09,
+        -1.78e-09
+      ],
+      "xv": 0.4,
+      "ps": 0.0,
+      "fd_step": 3e-10
+    },
+    "reverse": {
+      "cq0": 1.7,
+      "cq1_h2": [
+        0.8,
+        1.2,
+        2.0
+      ],
+      "cq2": 0.3,
+      "pn": [
+        0.7,
+        0.8,
+        0.9
+      ],
+      "xv": 0.6,
+      "ps": 0.0,
+      "fd_step": 1e-06
+    },
+    "endpoint": {
+      "cq0": 1.7,
+      "cq1_h2": [
+        0.8,
+        1.2,
+        2.0
+      ],
+      "cq2": 0.3,
+      "pn": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "xv": 0.6,
+      "ps": 0.0,
+      "fd_step": 1e-12
+    }
+  },
+  "coupled_cases": {
+    "thermal_case": [
+      0.45,
+      -0.25,
+      0.1,
+      -0.08,
+      0.6,
+      -0.4
+    ],
+    "flow_cases": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.3,
+        -0.2
+      ],
+      [
+        0.45,
+        -0.25,
+        0.1,
+        -0.08,
+        0.6,
+        -0.4
+      ],
+      [
+        -0.55,
+        0.2,
+        -0.12,
+        0.09,
+        -0.7,
+        0.5
+      ],
+      [
+        0.65,
+        0.35,
+        0.2,
+        -0.15,
+        0.8,
+        0.7
+      ]
+    ]
+  },
+  "arrays": {
+    "flow.dim_force": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7e12d6fcf94c1a5133148bfd4dbe3e0018bddcf2bd8e5a8f3b475630a8192e0f"
+    },
+    "flow.inputs": {
+      "shape": [
+        4,
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "3898d84ca016ac47f30408bd0d55a71c443d3df53efefbb18209a8f460325d65"
+    },
+    "flow.nd_force": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "11fa09e3106213b201d1824cbbee4677772719a34f53091816af28e5e702a46d"
+    },
+    "local.endpoint.answer": {
+      "shape": [
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "2c34ce1df23b838c5abf2a7f6437cca3d3067ed509ff25f11df6b11b582b51eb"
+    },
+    "local.endpoint.assembly_qdp": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "36a6dc2da73a1529b14cfa32966925701f7b6ec196ef2aee2ba71a3738d669dc"
+    },
+    "local.endpoint.dqndpn": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "123fd7a7a9584a0112f65ff0cb138448a1fc7d5ff4a89b8e915333536cace1a1"
+    },
+    "local.endpoint.dqndpn_fd": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "31439eb4154f23a49af33db4a68ad753fbccd6c0951a0cc1d1939706d161c337"
+    },
+    "local.endpoint.residual": {
+      "shape": [
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "2c34ce1df23b838c5abf2a7f6437cca3d3067ed509ff25f11df6b11b582b51eb"
+    },
+    "local.reverse.answer": {
+      "shape": [
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "fd8e74431aab95fa30ce8a945359aab5c5b954eb9d6cb12538dfbf3216ba19f5"
+    },
+    "local.reverse.assembly_qdp": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "3d2da59ecf69fa6a2070931730fd3208081da7c7791e21ff89d9f7ec61d1e2f2"
+    },
+    "local.reverse.dqndpn": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "b4b352e1b810673ffc330a6b09b82c9fff85a95859195ab43a56bb5bc7a274b9"
+    },
+    "local.reverse.dqndpn_fd": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "19ef02e9f6a4f52d5f70d7725de04a9cf75f7068ce2410ee04932d6d97c888e3"
+    },
+    "local.reverse.residual": {
+      "shape": [
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "e9ab40628c03386e01c12afa65afc69f560d8d9878808ff620f9999bb3f06f93"
+    },
+    "local.supply.answer": {
+      "shape": [
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "8fcec4e778a1276fd940dd40cf0b89094eab341ccaef668b3ae5f4148fe21ec2"
+    },
+    "local.supply.assembly_qdp": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "b5c0860efbb40ca251903788b23c967c03402964477af326012eeca7c5c5f447"
+    },
+    "local.supply.dqndpn": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "ca0980a345ca511e7f685a58190704103f35cda6c432ceda3f1f700cfe0bfa88"
+    },
+    "local.supply.dqndpn_fd": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "c9a19ebecff8a63e0d8e8049dc28ee39d62c12c487ddb321b15bcbb672b91163"
+    },
+    "local.supply.residual": {
+      "shape": [
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "2f1784d7f016e8491bfdd2e0dab987b8062c201191adfe03ae6c1bd0052f52fc"
+    },
+    "local.zero_source_return.answer": {
+      "shape": [
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "1124abcc7bd03f8471c869645291e017999cb0fdbc5d6c6260eae4338ac36607"
+    },
+    "local.zero_source_return.assembly_qdp": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "17c96d62c7e584828d90365eee449ead13346a31ebc60b588dceaf4b14d74c86"
+    },
+    "local.zero_source_return.dqndpn": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "adee96b95d1ed3cd8bca5bdf6cd9745976370179fc274f0776e323b528fbd575"
+    },
+    "local.zero_source_return.dqndpn_fd": {
+      "shape": [
+        3,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "89e49a69a675914a01fb9d28fa54fbb08b779036dee0a35bbbca250428ad1f51"
+    },
+    "local.zero_source_return.residual": {
+      "shape": [
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "48040bbb329c60f6dda693260714ad5e47c224f9b767da8854960255bd5b0da5"
+    },
+    "thermal.dim.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "83ba7cb4da162dbc18c274dbe2e832c2238b164042c3ca6616db62b0a51e828b"
+    },
+    "thermal.dim.pressure": {
+      "shape": [
+        4,
+        16,
+        10
+      ],
+      "dtype": "float64",
+      "sha256": "7149ce40f0883bfffbb42e9482b5ed43adcda2d93feccc31b025e7581bad52b1"
+    },
+    "thermal.dim.psv": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "aa931a297e837ddf54b43f8253631e8ad44378b4eccd7bc7a960ad8ff0da0c66"
+    },
+    "thermal.dim.qn": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "ca51167af47f1839a98c5eeafe59878ceec0cae3150aeff259c26e8bbf3f5d40"
+    },
+    "thermal.dim.temperature": {
+      "shape": [
+        4,
+        16,
+        10
+      ],
+      "dtype": "float64",
+      "sha256": "cb4e3033767858f8e664c2ea330034e3893965849d415aedc64e957c49b52ace"
+    },
+    "thermal.dim.viscosity": {
+      "shape": [
+        4,
+        16,
+        10
+      ],
+      "dtype": "float64",
+      "sha256": "c836d6a1456e8b423d80fa5989f7fc63642b4890ece4c055e016bc460eb9a957"
+    },
+    "thermal.dim_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "4fa253c0ca6c2d32dbc238ecb5a6a5d7fab50155a4c6e7772cc9531328679f05"
+    },
+    "thermal.input": {
+      "shape": [
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "30819b42f9e2fe9cdf6be1e1f3406ae36b9c2fb390ade363fa6646bffb9f32f0"
+    },
+    "thermal.nd.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "83ba7cb4da162dbc18c274dbe2e832c2238b164042c3ca6616db62b0a51e828b"
+    },
+    "thermal.nd.pressure": {
+      "shape": [
+        4,
+        16,
+        10
+      ],
+      "dtype": "float64",
+      "sha256": "d966869210e019dec6f58a217218219a8ea7b6ecc3cad33d5ade495a62efa7e1"
+    },
+    "thermal.nd.psv": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "00c49011356db49fcf1f3fbc5c0cfb59ff685630256e816a0cc79523257fa3cf"
+    },
+    "thermal.nd.qn": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "72df6e813810f553c69f604b50b24623e42e714336dd7302a9eaa1683f95bd10"
+    },
+    "thermal.nd.temperature": {
+      "shape": [
+        4,
+        16,
+        10
+      ],
+      "dtype": "float64",
+      "sha256": "ab8c669cf97d4103b8c057d15ad4c7a3054499d24d8be3d9a337c845a71fa012"
+    },
+    "thermal.nd.viscosity": {
+      "shape": [
+        4,
+        16,
+        10
+      ],
+      "dtype": "float64",
+      "sha256": "94a5e84b307756520b053593b3dfb355ad807fe0adc96e6b95ffc3ebcd78bab7"
+    },
+    "thermal.nd_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "e060f1751d04121043f7c74f32ec6380da913c1ac8bf271e8f6bc651f06e94eb"
+    }
+  }
+}
