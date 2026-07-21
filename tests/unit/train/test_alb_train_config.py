@@ -119,12 +119,7 @@ def _load_train_albnn_module():
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     sys.modules[spec.name] = module
-    try:
-        spec.loader.exec_module(module)
-    except ModuleNotFoundError as exc:
-        if exc.name == "ALB.nn":
-            pytest.skip("read-only SURROGATE_TRAIN trainer still imports ALB.nn")
-        raise
+    spec.loader.exec_module(module)
     return module
 
 

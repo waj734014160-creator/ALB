@@ -7,14 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
-
-pytestmark = pytest.mark.skip(
-    reason="read-only SURROGATE_TRAIN training wrappers still import ALB.nn"
-)
-
-
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SURROGATE_ROOT = REPO_ROOT.parent / "SURROGATE_TRAIN"
 
