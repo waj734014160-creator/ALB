@@ -1,11 +1,16 @@
 """Lifecycle regression tests for explicit rotor advancement."""
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
 from ALB.dynamics.rotor import RossRotor
+
+
+ROOT = Path(__file__).resolve().parents[3]
+TIME_REFERENCE = ROOT / "refs" / "ross_rotor_time_validation_reference_v2.npz"
 
 
 class _LinearRotorPlant:
@@ -19,6 +24,26 @@ class _LinearRotorPlant:
             B=np.array([[1.0], [0.2]], dtype=float),
             C=np.eye(2, dtype=float),
             D=np.zeros((2, 1), dtype=float),
+        )
+
+
+class _NodeRotorPlant:
+    ndof = 4
+    number_dof = 4
+
+    def _lti(self, speed):
+        del speed
+        state_count = 2 * self.ndof
+        return SimpleNamespace(
+            A=-0.5 * np.eye(state_count, dtype=float),
+            B=np.vstack(
+                (
+                    np.eye(self.ndof, dtype=float),
+                    0.25 * np.eye(self.ndof, dtype=float),
+                )
+            ),
+            C=np.eye(state_count, dtype=float),
+            D=np.zeros((state_count, self.ndof), dtype=float),
         )
 
 
@@ -37,3 +62,109 @@ def test_rotor_output_never_hides_state_advancement():
     np.testing.assert_array_equal(rotor.output(), first)
     with pytest.raises(RuntimeError, match="new rotor load"):
         rotor.advance()
+
+
+def test_rotor_valid_time_trajectories_match_v2_reference_exactly():
+    with np.load(TIME_REFERENCE) as reference:
+        global_rotor = RossRotor(
+            _LinearRotorPlant(), speed=2.0 * np.pi * 50.0, dt=1.0e-3
+        )
+        global_states = []
+        for time_value, force in zip(
+            reference["global.times"], reference["global.forces"]
+        ):
+            global_rotor.input_force(time_value, force)
+            global_states.append(global_rotor.advance().copy())
+
+        node_rotor = RossRotor(_NodeRotorPlant(), speed=10.0, dt=2.0e-3)
+        node_global_forces = []
+        node_states = []
+        for time_value, force in zip(
+            reference["node.times"], reference["node.input_forces"]
+        ):
+            node_rotor.input_force2node(time_value, force, node=[0])
+            node_global_forces.append(node_rotor._force1.copy())
+            node_states.append(node_rotor.advance().copy())
+
+        actual = {
+            "global.times": np.asarray(global_rotor._t, dtype=float),
+            "global.forces": reference["global.forces"],
+            "global.states": np.vstack(global_states),
+            "global.time_history": np.asarray(global_rotor._t, dtype=float),
+            "global.state_history": np.asarray(global_rotor._xouts, dtype=float),
+            "global.output_history": np.asarray(global_rotor._youts, dtype=float),
+            "global.Ad": np.asarray(global_rotor._a, dtype=float),
+            "global.Bd0": np.asarray(global_rotor._Bd0, dtype=float),
+            "global.Bd1": np.asarray(global_rotor._Bd1, dtype=float),
+            "node.times": np.asarray(node_rotor._t, dtype=float),
+            "node.input_forces": reference["node.input_forces"],
+            "node.global_forces": np.vstack(node_global_forces),
+            "node.states": np.vstack(node_states),
+            "node.time_history": np.asarray(node_rotor._t, dtype=float),
+        }
+        assert set(actual) == set(reference.files)
+        for name, value in actual.items():
+            np.testing.assert_array_equal(value, reference[name], err_msg=name)
+
+
+def test_input_force_rejects_invalid_time_without_mutating_state():
+    dt = 1.0e-3
+    fresh_rotor = RossRotor(_LinearRotorPlant(), speed=1.0, dt=dt)
+    with pytest.raises(ValueError, match="finite"):
+        fresh_rotor.input_force(np.nan, np.array([1.0]))
+    assert fresh_rotor._t == []
+
+    for invalid_time in (0.0, 0.5 * dt, 1.5 * dt, np.nan, np.inf, -np.inf):
+        rotor = RossRotor(_LinearRotorPlant(), speed=1.0, dt=dt)
+        rotor.input_force(0.0, np.array([1.0]))
+        rotor.advance()
+        before = {
+            "time": list(rotor._t),
+            "force0": rotor._force0.copy(),
+            "force1": rotor._force1.copy(),
+            "state": rotor._xk0.copy(),
+            "state_ready": rotor._state_ready,
+        }
+
+        with pytest.raises(ValueError):
+            rotor.input_force(
+                invalid_time,
+                np.array([9.0]),
+                x0=np.full(2, 8.0),
+                force0=np.array([7.0]),
+            )
+
+        assert rotor._t == before["time"]
+        np.testing.assert_array_equal(rotor._force0, before["force0"])
+        np.testing.assert_array_equal(rotor._force1, before["force1"])
+        np.testing.assert_array_equal(rotor._xk0, before["state"])
+        assert rotor._state_ready is before["state_ready"]
+
+
+def test_input_force2node_rejects_invalid_time_without_mutating_state():
+    dt = 1.0e-3
+    rotor = RossRotor(_NodeRotorPlant(), speed=1.0, dt=dt)
+    rotor.input_force2node(0.0, np.array([1.0, -1.0]), node=[0])
+    rotor.advance()
+    before = {
+        "time": list(rotor._t),
+        "force0": rotor._force0.copy(),
+        "force1": rotor._force1.copy(),
+        "state": rotor._xk0.copy(),
+        "state_ready": rotor._state_ready,
+    }
+
+    with pytest.raises(ValueError, match="time step"):
+        rotor.input_force2node(
+            1.5 * dt,
+            np.array([9.0, -9.0]),
+            node=[0],
+            x0=np.full(8, 8.0),
+            force0=np.array([7.0, -7.0]),
+        )
+
+    assert rotor._t == before["time"]
+    np.testing.assert_array_equal(rotor._force0, before["force0"])
+    np.testing.assert_array_equal(rotor._force1, before["force1"])
+    np.testing.assert_array_equal(rotor._xk0, before["state"])
+    assert rotor._state_ready is before["state_ready"]

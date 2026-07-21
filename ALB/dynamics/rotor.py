@@ -421,9 +421,9 @@ class RossRotor:
             x0: override current state.
             force0: previous-step force for continuous interpolation.
         """
-        # Record time and validate step consistency.
-        self._t.append(t)
+        # Validate before mutating histories or latched inputs.
         self._check_time(t)
+        self._t.append(t)
         # Current-step input.
         self._force1 = force
         self._state_ready = False
@@ -439,9 +439,9 @@ class RossRotor:
         """
         Input per-node 2D forces and map them to global DOFs.
         """
-        # Record time and validate step consistency.
-        self._t.append(t)
+        # Validate before mutating histories or latched inputs.
         self._check_time(t)
+        self._t.append(t)
         # Map node forces to global DOF vector.
         self._force1 = _nodeforce2array(self._rotor.ndof, force, node)
         self._state_ready = False
@@ -468,11 +468,14 @@ class RossRotor:
 
     def _check_time(self, t, tol=1e-15):
         """
-        Validate that successive time increments match system dt.
+        Validate that time is finite and successive increments match system dt.
         """
+        if not np.isfinite(t):
+            raise ValueError("Input time must be finite.")
+
         if len(self._t) > 0:
             dt = t - self._t[-1]
-            if (dt - self._dt) > tol:
+            if abs(dt - self._dt) > tol:
                 raise ValueError("Input time step does not match system dt.")
 
     def run(self):
