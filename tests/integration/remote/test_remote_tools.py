@@ -62,9 +62,6 @@ def test_transport_helpers():
     assert connection.connect_timeout == 10
 
 
-@pytest.mark.skip(
-    reason="read-only SURROGATE_TRAIN wrapper still imports the removed ALB 0.1 remote namespace"
-)
 def test_start_wrapper_dry_run_matches_reference():
     ref = load_ref("remote_albnn_start_dry_run_reference_v1.json")
     result = subprocess.run(
@@ -398,9 +395,6 @@ def test_queue_config_and_launch_command_match_reference(monkeypatch):
     assert out.getvalue() == ref["print_queue_output"]
 
 
-@pytest.mark.skip(
-    reason="read-only SURROGATE_TRAIN wrappers require the 0.2 import-map migration"
-)
 def test_compat_wrappers_help():
     wrappers = [
         "remote_start_albnn_train.py",
