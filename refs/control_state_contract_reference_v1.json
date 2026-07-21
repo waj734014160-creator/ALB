@@ -1,0 +1,189 @@
+{
+  "reference_name": "control_state_contract_reference_v1",
+  "created_at": "2026-07-21T19:48:21.538144+00:00",
+  "baseline_commit": "7b71d31232c675887929d60ea22427fa8d0dfe61",
+  "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+  "python_version": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "fuzzy_warnings_before_fix": [
+    "invalid value encountered in divide",
+    "invalid value encountered in divide",
+    "invalid value encountered in divide"
+  ],
+  "mimo_contract": "output returns the current Cx+Du vector; histories remain available through yout/xout",
+  "arrays": {
+    "fuzzy.errors": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8fad71b67b9feb599d56a948c91768bb50fe18f2b943489e743b9a187c1fa885"
+    },
+    "fuzzy.gains": {
+      "shape": [
+        2,
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "39d49d5bfc8cee621ae7b8ce90376e30e9b59a9316edd5a4e490386b2653003a"
+    },
+    "fuzzy.outputs": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "27f6ae221ec779b77948906e0dff10eaed1d5a6d97177325313cd53acd28651e"
+    },
+    "fuzzy.times": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "dc5d8ca6769d45f247e793baa229054a7604d96280472306d23f3a233a2472d2"
+    },
+    "lti_mimo.A": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "24d1d850894ded9c62c8040035b4323c0f5bb1ef3b0c28166601e6a3fb4b6d65"
+    },
+    "lti_mimo.B": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7b38b86d9a7e623764dc234b5d8aa67afbf388f139b4dc5a266ed0b4b7a258ea"
+    },
+    "lti_mimo.C": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "873e80c73f5d98f4ac7dfb74b18e13e35f1179b5b7486b6644e211eca52e9721"
+    },
+    "lti_mimo.D": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "413c8e92faa69d12c331ec9a45bda5ea8559812507d2bcfc46a9c7f9e6317512"
+    },
+    "lti_mimo.expected_outputs": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8519f4c778372ffeb8b7c25b5b7164b0fceff7908b8cfbb1e4e6d89626ea9594"
+    },
+    "lti_mimo.expected_states": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "45652a00bba3d7f61c6bb0b3f080e0b43bd712a7a6e020f611abcbc5c7664c9a"
+    },
+    "lti_mimo.inputs": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "a0cb6026614045cd30cf80712b946fbc06a30d1cb3c31ad764fcc9fdc7b0a617"
+    },
+    "lti_mimo.x0": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "ffd197f51045b6ab70c0b9e786c2e9d3098dbccdeafa53f32a2d7b0920b3c5c2"
+    },
+    "lti_siso.inputs": {
+      "shape": [
+        3,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "5905be67e897ba92d8ef864564b67a9cf34291a07be44a8d4b4071778d9c7752"
+    },
+    "lti_siso.outputs": {
+      "shape": [
+        3,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "9f42c0cd4b1b341185cac362cc2992b52489015d965455f1643939be60018350"
+    },
+    "lti_siso.states": {
+      "shape": [
+        3,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "65a2b3088ba569dbf7405a2eaddc555be5496bfe4fa849b0932fd96a524ff3be"
+    },
+    "lti_siso.times": {
+      "shape": [
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "4fd2afbd8294d7eeb38b6b77d9d0c5f1d007c617d5cfde0351c790d39099ddd3"
+    },
+    "pid.errors": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8fad71b67b9feb599d56a948c91768bb50fe18f2b943489e743b9a187c1fa885"
+    },
+    "pid.kd_calc": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "bad9e11cf6f02968941302a168534dc0946852fdf359e3d9499cd8d3cac2e4ba"
+    },
+    "pid.ki_calc": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "9c1ac6ad7a2c31951a0edf61b15448dfb5049ad99ba980a9b457f62e6735da08"
+    },
+    "pid.kp_calc": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8fad71b67b9feb599d56a948c91768bb50fe18f2b943489e743b9a187c1fa885"
+    },
+    "pid.outputs": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "2e1c8ca02cf7fa754f6cd56f1005a362d236aced56046519168e49a4e006a015"
+    },
+    "pid.times": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "dc5d8ca6769d45f247e793baa229054a7604d96280472306d23f3a233a2472d2"
+    }
+  }
+}

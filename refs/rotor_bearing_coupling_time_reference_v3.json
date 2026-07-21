@@ -1,0 +1,87 @@
+{
+  "reference_name": "rotor_bearing_coupling_time_reference_v3",
+  "created_at": "2026-07-21T19:48:21.892628+00:00",
+  "baseline_commit": "7b71d31232c675887929d60ea22427fa8d0dfe61",
+  "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+  "python_version": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "observed_defect": "an inclusive four-sample grid with three intervals advances four times",
+  "corrected_contract": "t=0 is a committed read-only initial snapshot; only target samples dt through end_time advance the rotor",
+  "arrays": {
+    "corrected.final_metadata": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "250917ff86c281aacb494fc8129bdbf39aa8cd21434ae58b8e3e17911bd0b466"
+    },
+    "corrected.initial_state": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "corrected.initial_time": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc"
+    },
+    "corrected.input_times": {
+      "shape": [
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "b36b8c812d94f7f6aea6f78123586b63d2c75b8591533613873bb1fd75140963"
+    },
+    "corrected.result_times": {
+      "shape": [
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "b36b8c812d94f7f6aea6f78123586b63d2c75b8591533613873bb1fd75140963"
+    },
+    "corrected.states": {
+      "shape": [
+        3,
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "67d9dac0cef94f3e10463041b8fc5b32c38f5c52f619051aad7c53f2cdde673a"
+    },
+    "legacy.final_metadata": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "180b424dd59dd5dc08918af3f38f4d53986fdf4a47f0dedda62f4c8c207474e6"
+    },
+    "legacy.input_times": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "1eb0848cc58e6aa04157a9621392f90f32b97c5a261da2f782d6067fc4117c6e"
+    },
+    "legacy.result_times": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "1eb0848cc58e6aa04157a9621392f90f32b97c5a261da2f782d6067fc4117c6e"
+    },
+    "legacy.states": {
+      "shape": [
+        4,
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "cdd7aa665a606b89a6f8aac1fdf3808b40bfc192be7107b7075320c8f6aac37b"
+    }
+  }
+}
