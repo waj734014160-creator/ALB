@@ -1,7 +1,9 @@
 # -- coding: utf-8 --
 import unittest
 
-from ALB.config import ALBConfig, HydConfig, ThermalConfig
+import numpy as np
+
+from ALB.config import ALBConfig, HydConfig, NodimALBConfig, ThermalConfig
 
 
 class TestHydConfigValidation(unittest.TestCase):
@@ -23,6 +25,16 @@ class TestHydConfigValidation(unittest.TestCase):
 
 
 class TestALBConfigValidation(unittest.TestCase):
+    def test_array_defaults_are_independent_factories(self):
+        for config_type in (ALBConfig, NodimALBConfig):
+            with self.subTest(config_type=config_type.__name__):
+                first = config_type()
+                second = config_type()
+                first.gxy[0, 0] = 9.0
+                first.gxyt[0, 0] = 8.0
+                np.testing.assert_array_equal(second.gxy, np.eye(2))
+                np.testing.assert_array_equal(second.gxyt, np.zeros((2, 2)))
+
     def test_alb_config_from_dict_valid(self):
         cfg = ALBConfig.from_dict({"alb": "ALB", "servo": "moog", "freq": 50})
         self.assertEqual(cfg.alb, "ALB")

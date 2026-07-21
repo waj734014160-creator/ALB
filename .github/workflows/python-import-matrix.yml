@@ -1,0 +1,23 @@
+name: Python compatibility
+
+on:
+  push:
+    branches: [main, codex/full-repo-refactor]
+  pull_request:
+
+jobs:
+  import-smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install core package
+        run: python -m pip install .
+      - name: Import public core and config namespaces
+        run: python -c "import ALB; import ALB.config; from ALB.config import ALBConfig, NodimALBConfig; ALBConfig(); NodimALBConfig()"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -171,8 +172,28 @@ def migrate_config_file(
             "JSON5 migration requires the optional 'io' extra: pip install re-alb[io]"
         ) from exc
 
-    with source_path.open("r", encoding="utf-8") as stream:
-        payload = json5.load(stream)
+    try:
+        source_text = source_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as utf8_error:
+        source_bytes = source_path.read_bytes()
+        source_text = None
+        fallback_encoding = None
+        for encoding in ("gbk", "cp936"):
+            try:
+                source_text = source_bytes.decode(encoding)
+                fallback_encoding = encoding
+                break
+            except UnicodeDecodeError:
+                continue
+        if source_text is None or fallback_encoding is None:
+            raise utf8_error
+        warnings.warn(
+            f"Legacy config is not UTF-8; decoded temporarily as "
+            f"{fallback_encoding} and writing the migrated document as UTF-8.",
+            UnicodeWarning,
+            stacklevel=2,
+        )
+    payload = json5.loads(source_text)
     migrated, report = migrate_legacy_config(payload)
     destination_path.parent.mkdir(parents=True, exist_ok=True)
     with destination_path.open("w", encoding="utf-8", newline="\n") as stream:

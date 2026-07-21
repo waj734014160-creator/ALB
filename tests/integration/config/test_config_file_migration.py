@@ -31,3 +31,22 @@ def test_migration_refuses_overwrite_by_default(tmp_path):
     destination.write_text("{}", encoding="utf-8")
     with pytest.raises(FileExistsError):
         migrate_config_file(source, destination)
+
+
+@pytest.mark.parametrize("encoding", ["gbk", "cp936"])
+def test_migration_warns_and_converts_legacy_chinese_encoding(tmp_path, encoding):
+    source = tmp_path / f"legacy-{encoding}.json5"
+    destination = tmp_path / f"config-{encoding}-0.2.json"
+    legacy_text = "{r: 0.04, label: '旧配置'}\n"
+    source.write_bytes(legacy_text.encode(encoding))
+
+    with pytest.warns(UnicodeWarning, match="not UTF-8"):
+        report = migrate_config_file(source, destination)
+
+    assert source.read_bytes() == legacy_text.encode(encoding)
+    assert json.loads(destination.read_text(encoding="utf-8")) == {
+        "schema_version": "0.2.0",
+        "film": {"r": 0.04},
+        "legacy_unmapped": {"label": "旧配置"},
+    }
+    assert report.target_schema == "0.2.0"

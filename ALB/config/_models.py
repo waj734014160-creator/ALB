@@ -1053,8 +1053,8 @@ class ALBConfig(ConfigData):
     )  # or FuzzyPIDConfig()
     dt: float = 6.667e-4
     node_link: np.int_ = None
-    gxy: np.ndarray = np.eye(2)
-    gxyt: np.ndarray = np.zeros((2, 2))
+    gxy: np.ndarray = field(default_factory=lambda: np.eye(2))
+    gxyt: np.ndarray = field(default_factory=lambda: np.zeros((2, 2)))
     alb: str = "ALB"  # ALB or ALBSV
     servo: str = "moog_2nd"  # moog_2nd, moog, or static
     switch: bool = True  # Whether to enable control
@@ -1331,8 +1331,8 @@ class NodimALBConfig(ConfigData):
     )
     dt: float = 6.667e-4
     node_link: np.int_ = None
-    gxy: np.ndarray = np.eye(2)
-    gxyt: np.ndarray = np.zeros((2, 2))
+    gxy: np.ndarray = field(default_factory=lambda: np.eye(2))
+    gxyt: np.ndarray = field(default_factory=lambda: np.zeros((2, 2)))
     alb: str = "ALB"  # ALB or ALBSV
     servo: str = "moog_2nd"  # moog_2nd, moog, or static
     switch: bool = True
