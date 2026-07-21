@@ -32,7 +32,8 @@
 - ALBSV 状态修正参考：`refs/albsv_convergence_state_reference_v2.{json,npz}`；重复收敛查询已改为纯读取，完成时压力和力保持精确一致。
 - CSOrifice 单调求解参考：commit `765b9b6` 先创建 `refs/csorifice_monotonic_reference_v2.{json,npz}`，冻结局部供油、零供油回流、反向流、端点及完整热耦合共 38 个数组；`refs/csorifice_monotonic_consumers_reference_v2.{json,npz}` 另冻结 ALBSV direct-spool 与 S0011 的 57 个下游数组。既有 v1/v2 参考均未覆盖。
 - 重构后审查参考：`refs/control_state_contract_reference_v1.{json,npz}` 含 22 个控制状态数组；`refs/rotor_bearing_coupling_time_reference_v3.{json,npz}` 含 10 个旧/新耦合时序数组；有意改变的 orifice AST 由 `encoding_repair_reference_v2.json` 接管，既有编码 v1 未覆盖。
-- 当前阶段：0.2.0 全仓库重构、消费者迁移和重构后 13 项具体代码审查修正均已落地；下一阶段是按领域处理单体模块、双生命周期和类型覆盖三个结构性欠账。
+- 二轮审查参考：commit `1ef2ee8` 先创建 `refs/rotor_dof_coupling_reference_v4.{json,npz}`，以真实 ROSS 4/6-DOF 转子、非零状态相关轴承力和 `force0/force1` 插值冻结 40 个数组，并创建 `refs/control_lifecycle_reference_v2.{json,npz}` 冻结旧重复 `output()` 缺陷和 21 个修正目标；commit `1eb9538` 再实施生产修正。既有参考未覆盖。
+- 当前阶段：0.2.0 全仓库重构、消费者迁移、首轮 13 项和二轮 5 项代码审查修正均已落地；下一阶段是按领域处理单体模块、剩余旧类生命周期和类型覆盖三个结构性欠账。
 
 ## 已完成的 0.2.0 边界
 
@@ -48,6 +49,7 @@
 10. 正式 pytest 只从 `tests/` 收集；诊断和手动工具分别位于 `tools/diagnostics` 与 `tools/manual`。
 11. CSOrifice 的 `q_leak` 固定为 `0.0`；所有压力方向共用一个带压力物理边界的单调标量根，不再通过 `fsolve` 初值或工况分支选择解法，装配导数改为隐式解析式。
 12. 重构后审查确认的 13 个具体问题已修复：Python 3.11+ 配置导入、耦合时间轴、LTI MIMO/时间/输出、控制器复位、ROSS 节点载荷、阀芯边界、`no_step`、空控制器、固定 Ki、builder 参数、ledger、LQG 空历史和 legacy 编码回退。
+13. 二轮审查确认的 5 个问题已修复：ROSS 4/6-DOF 统一布局、真实 coupling 精确门禁、无控制器保存及无量纲装配、中途异常后的 coupling 强制失效，以及 LTI/PID/FuzzyPID 的只读 `output()` 生命周期。
 
 ## 当前验收结论
 
@@ -61,6 +63,7 @@
 | SURROGATE_TRAIN 消费者迁移及后续修复 | 329 passed、13 skipped、12 warnings、7 subtests passed；23 个 declared 文件中 20 个迁移改写、3 个 context 文件按计划不改；热力 `sx/sy` 四瓦参考另有 4 项精确回归通过；旧平铺 import 为 0 | `docs/migrations/0.2.0_surrogate_train_post_migration_audit.json` |
 | CSOrifice 单调求解修正 | 339 passed、13 skipped、1 warning、7 subtests passed；352 个节点全部收集，测试前后 tracked 状态增量为 0；局部、完整热耦合、ALBSV 与 S0011 共 95 个修正参考数组精确通过 | `refs/csorifice_monotonic_reference_v2.json`、`refs/csorifice_monotonic_consumers_reference_v2.json`、`tests/regression/hydraulics/test_csorifice_monotonic_reference.py` |
 | 重构后代码审查修正 | 368 passed、13 skipped、0 warnings、9 subtests passed；381 个节点全部收集；mypy 19 个文件无问题；测试前后 tracked 状态增量为 0 | `docs/migrations/0.2.0_post_refactor_review_acceptance.json` |
+| 二轮代码审查修正 | 375 passed、13 skipped、0 warnings、9 subtests passed；388 个节点全部收集；contracts/core 的 19 个文件 mypy 无问题；真实 4/6-DOF coupling、LQG 映射和控制生命周期按新参考逐元素精确通过；测试前后 tracked 状态增量为 0 | `docs/migrations/0.2.0_second_review_acceptance.json` |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
@@ -96,7 +99,7 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - thermal 主参考的 direct/Newton/transient 收敛证据已由 addendum 补齐；但现有性能与热参考仍主要是小算例，且 orifice cooling、非零导热、生产尺寸 M0035 和大型 ROSS 性能不在当前精确门禁覆盖内。
 - 性能门禁使用固定的小型 film、thermal、ALB、ALBNN 和合成 coupling case，能约束本次重构，不代表生产尺寸 M0035 或大型 ROSS 模型的绝对性能。
 - 两张会被重生成的 thermal 热图已解除 Git 跟踪但保留本地文件；`.codex/` 与 `test/control/LQG/` 也保留原地。四类路径均由根 `.gitignore` 精确忽略。
-- 重构后审查的 13 个具体缺陷已经关闭，但三个结构性欠账仍在：`thermal/solver.py` 等 6 个主要模块仍为约 1269-3259 行的单体；严格 block 与部分旧公开类仍有双生命周期；mypy 严格门禁仍只覆盖 contracts/core 的 19 个文件。这些属于分阶段重构工作，不能用本轮局部修复宣称完成。
+- 两轮审查的 18 个具体缺陷已经关闭，但三个结构性欠账仍在：`thermal/solver.py` 等 6 个主要模块仍为约 1269-3259 行的单体；本轮已关闭 BaseLti/PID/FuzzyPID 的重复 `output()` 推进，仍需继续盘点其他旧公开类；mypy 严格门禁仍只覆盖 contracts/core 的 19 个文件。这些属于分阶段重构工作，不能用本轮局部修复宣称完成。
 
 ## 发布后下一步
 
@@ -118,7 +121,8 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - 发布后 S0011/lambda 修正门禁：`docs/migrations/0.2.0_post_release_numeric_acceptance.json`。
 - 发布后 RossRotor 时步修正门禁：`docs/migrations/0.2.0_post_release_rotor_acceptance.json`。
 - 重构后代码审查修正门禁：`docs/migrations/0.2.0_post_refactor_review_acceptance.json`。
-- 控制状态和耦合时序参考：`refs/control_state_contract_reference_v1.json`、`refs/rotor_bearing_coupling_time_reference_v3.json`。
+- 二轮代码审查修正门禁：`docs/migrations/0.2.0_second_review_acceptance.json`。
+- 控制状态和耦合时序参考：`refs/control_state_contract_reference_v1.json`、`refs/control_lifecycle_reference_v2.json`、`refs/rotor_bearing_coupling_time_reference_v3.json`、`refs/rotor_dof_coupling_reference_v4.json`。
 - RossRotor 合法轨迹参考：`refs/ross_rotor_time_validation_reference_v2.json`。
 - CSOrifice 单调求解参考：`refs/csorifice_monotonic_reference_v2.json`、`refs/csorifice_monotonic_consumers_reference_v2.json`。
 - 热收敛补充参考：`refs/full_repo_refactor_addendum_v1/thermal_convergence.json`。
