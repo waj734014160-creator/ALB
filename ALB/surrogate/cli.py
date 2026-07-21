@@ -22,6 +22,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("destination", type=Path)
     parser.add_argument("--metadata", type=Path)
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument(
+        "--trust-legacy-pickle",
+        action="store_true",
+        help="Load trusted legacy scaler pickles and rewrite retired ALB.nn globals.",
+    )
     return parser
 
 
@@ -36,6 +41,7 @@ def main() -> int:
         args.destination,
         metadata=args.metadata,
         overwrite=args.overwrite,
+        trust_legacy_pickle=args.trust_legacy_pickle,
     )
     print(json.dumps(asdict(report), ensure_ascii=False, indent=2))
     return 0

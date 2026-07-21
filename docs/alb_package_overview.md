@@ -31,7 +31,7 @@ from ALB.physics.bearing import HydrostaticBearing
 from ALB.control.pid import PID
 from ALB.dynamics.rotor import RossRotor
 from ALB.surrogate.inference import albnn
-from ALB.systems.alb import BearingBlock, nodim_alb
+from ALB.systems.alb import BearingBlock, DirectSpoolBearingBlock, nodim_alb
 ```
 
 ## 模块地图
@@ -52,7 +52,7 @@ from ALB.systems.alb import BearingBlock, nodim_alb
 | `ALB.dynamics` | 转子与耦合 | rotor、coupling、orbit、FFT/KC 识别 |
 | `ALB.surrogate` | 部署侧代理模型 | features、networks、scalers、inference、versioned model package、非破坏迁移 |
 | `ALB.surrogate.training` | 训练侧公共能力 | config、data、loss、transform、report、run 和 ALBNN 专用远程队列 |
-| `ALB.systems.alb` | 顶层 ALB 系统装配 | builder、非线性 ALB、严格 `BearingBlock`、谐波线性轴承及 `K/C/G_xv` |
+| `ALB.systems.alb` | 顶层 ALB 系统装配 | builder、非线性 ALB、严格 `BearingBlock`、direct-spool 适配器、谐波线性轴承及 `K/C/G_xv` |
 | `ALB.infrastructure` | 外部副作用 | UTF-8 配置 IO、日志、`SmtpNotifier`、artifact writer、generic remote engine |
 | `ALB.workflows` | 可执行流程和后处理 | ALB workflow、DoE、配置装配、命名、绘图、后处理和顶层执行 |
 
@@ -82,7 +82,7 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 
 `ALB.contracts` 提供 `BearingInput/BearingOutput`、`ControlInput/ControlOutput`、`ValveInput/ValveOutput`、`RotorLoadInput/RotorState`。DTO 在构造时验证形状、有限性、非负时间和单位制，并冻结数组副本。
 
-严格 block 遵循 `input()`、显式计算、`output()` 的生命周期。非线性 ALB 和谐波线性轴承都可通过 `ALB.systems.alb.BearingBlock` 系列暴露同一个轴承端口协议。
+严格 block 遵循 `input()`、显式计算、`output()` 的生命周期。非线性 ALB 和谐波线性轴承都可通过 `ALB.systems.alb.BearingBlock` 系列暴露同一个轴承端口协议。已经是归一化阀芯状态的 `sx/sy` 应通过 `DirectSpoolBearingInput(BearingInput, ValveOutput)` 交给 `DirectSpoolBearingBlock`；它不会再次引入阀动态。
 
 ### 配置
 
@@ -90,7 +90,7 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 
 ### ALBNN
 
-部署入口位于 `ALB.surrogate`。0.2 model package 使用 manifest、固定 artifact 名和 SHA-256 校验；加载 pickle scaler 时必须显式声明信任。旧 `ALB.nn` pickle 不作为运行时兼容面，先使用 `alb-migrate-surrogate` 或 `tools/migrations/migrate_surrogate_0_2.py` 迁移。
+部署入口位于 `ALB.surrogate`。0.2 model package 使用 manifest、固定 artifact 名和 SHA-256 校验；加载 pickle scaler 时必须显式声明信任。旧 `ALB.nn` pickle 不作为运行时兼容面，先使用带 `--trust-legacy-pickle` 的 `alb-migrate-surrogate` 或 `tools/migrations/migrate_surrogate_0_2.py` 迁移可信本地文件。迁移器把已知旧 scaler 类重写到当前 namespace，默认不覆盖源文件。
 
 thermal ALBNN 的实际输入列、feature set、target transform 和模型选择以 model package metadata 及 `../SURROGATE_TRAIN/docs/albnn_training_brief.md` 为准，不在 package 根硬编码。
 

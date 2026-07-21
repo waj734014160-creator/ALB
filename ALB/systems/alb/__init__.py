@@ -21,6 +21,14 @@ _EXPORTS = {
         "load_builtin_alb_harmonic_coefficients",
     ),
     "BearingBlock": ("ALB.systems.alb.ports", "BearingBlock"),
+    "DirectSpoolBearingBlock": (
+        "ALB.systems.alb.ports",
+        "DirectSpoolBearingBlock",
+    ),
+    "DirectSpoolBearingInput": (
+        "ALB.systems.alb.ports",
+        "DirectSpoolBearingInput",
+    ),
     "HarmonicBearingBlock": ("ALB.systems.alb.ports", "HarmonicBearingBlock"),
 }
 
