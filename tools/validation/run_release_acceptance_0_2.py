@@ -45,6 +45,7 @@ def _run(command: list[str], *, environment: dict[str, str]) -> subprocess.Compl
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",
         check=False,
     )
 
@@ -106,6 +107,7 @@ def run_acceptance() -> dict[str, Any]:
 
     environment = os.environ.copy()
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONIOENCODING"] = "utf-8"
     environment["ALB_RELEASE_PYTEST_REPORT"] = str(pytest_report)
     before = _tracked_status()
     pytest_command = [
@@ -123,7 +125,9 @@ def run_acceptance() -> dict[str, Any]:
     pytest_run = _run(pytest_command, environment=environment)
     if pytest_run.returncode != 0:
         raise RuntimeError(
-            "Full pytest acceptance failed:\n" + pytest_run.stdout + pytest_run.stderr
+            "Full pytest acceptance failed:\n"
+            + (pytest_run.stdout or "")
+            + (pytest_run.stderr or "")
         )
     reports = json.loads(pytest_report.read_text(encoding="utf-8"))
     skipped = [item for item in reports["reports"] if item["outcome"] == "skipped"]
