@@ -6,6 +6,7 @@ from scipy.sparse import eye
 from ALB.physics.bearing import HydrostaticBearing, NodimHydrostaticBearing
 from ALB.config import HydConfig, ThermalConfig
 from ALB.physics.thermal import (
+    FilmNondimScales,
     NodimThermalHydroBearing,
     SkfemThermalModelNondim,
     ThermalHydroBearing,
@@ -14,10 +15,17 @@ from ALB.physics.thermal import (
 
 
 def _lambda_and_lr(cfg: HydConfig):
-    omega = cfg.w * 2.0 * np.pi / 60.0
-    lambda_value = 6.0 * cfg.miu * omega * cfg.l**2 / (cfg.ps * cfg.c**2)
-    lr = cfg.l / (2.0 * cfg.r)
-    return lambda_value, lr
+    scales = FilmNondimScales.from_dimensional(
+        w=cfg.w,
+        miu=cfg.miu,
+        c=cfg.c,
+        r=cfg.r,
+        l=cfg.l,
+        ps=cfg.ps,
+        rho=cfg.rho,
+        vf=cfg.vf,
+    )
+    return scales.lambda_value, scales.lr
 
 
 def _build_pad(cfg: HydConfig, args_nodim: bool):

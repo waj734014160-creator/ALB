@@ -212,9 +212,9 @@ def _pad_summaries(model: Any) -> list[dict[str, Any]]:
     return summaries
 
 
-def _effective_s0011_config(path: Path) -> dict[str, Any]:
-    """Resolve and freeze the effective S0011 diagnostic configuration."""
-    config = read_json5_with_shared(str(path))
+def _fixed_point_s0011_config(source_config: dict[str, Any]) -> dict[str, Any]:
+    """Apply the historical fixed-point replay overrides to a resolved config."""
+    config = copy.deepcopy(source_config)
     thermal = config.setdefault("thermal", {})
     thermal["iter_method"] = "direct"
     thermal["supg"] = True
@@ -408,8 +408,9 @@ def generate(
     arrays = _run_dimensional(dim_case)
     arrays.update(_run_nondimensional(nondim_case))
 
-    base_config = _effective_s0011_config(paper_config)
-    s0011_arrays, s0011_records = _run_s0011(s0011_v1, base_config)
+    resolved_source_config = read_json5_with_shared(str(paper_config))
+    fixed_point_config = _fixed_point_s0011_config(resolved_source_config)
+    s0011_arrays, s0011_records = _run_s0011(s0011_v1, fixed_point_config)
     arrays.update(s0011_arrays)
     s0011_case = metadata["cases"]["s0011_diagnostic_fixed_point"]
     s0011_case.update(
@@ -434,7 +435,8 @@ def generate(
                     "as an exact replay of the original S0011 configuration."
                 ),
             },
-            "effective_base_config": base_config,
+            "resolved_source_config": resolved_source_config,
+            "fixed_point_config": fixed_point_config,
             "records": s0011_records,
         }
     )

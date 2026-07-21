@@ -2,43 +2,27 @@ import contextlib
 import copy
 import io
 import json
-import math
 import warnings
 from dataclasses import fields
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import pytest
 
 from ALB.systems.alb import alb2
 from ALB.physics.bearing import HydrostaticBearing, NodimHydrostaticBearing
-from ALB.config import ALBConfig, CsoArgs, HydConfig, ThermalConfig
-from ALB.physics.thermal import NodimThermalHydroBearing, ThermalHydroBearing
-from ALB.infrastructure.config_io import read_json5_with_shared as read_json5_with_share
+from ALB.config import ALBConfig, HydConfig, ThermalConfig
+from ALB.physics.thermal import (
+    FilmNondimScales,
+    NodimThermalHydroBearing,
+    ThermalHydroBearing,
+)
 
 
 ROOT = Path(__file__).resolve().parents[3]
 REF_DIR = ROOT / "refs"
-REF_JSON = REF_DIR / "thermal_segregated_newton_reference_v1.json"
-REF_NPZ = REF_DIR / "thermal_segregated_newton_reference_v1.npz"
-S0011_CSV = (
-    ROOT.parent
-    / "SURROGATE_TRAIN"
-    / "outputs"
-    / "alb_data2"
-    / "S0011_alb_data2_exey0to0p9_200000_seed20260607_20260607"
-    / "alb_data2_results_n200000_seed20260607.csv"
-)
-PAPER_CONFIG = Path("F:/BaiduSyncdisk/博士论文/task/PAPER/config/alb12.json5")
-S0011_SAMPLE_IDS = [30, 33, 162946]
-
-
-def _require_s0011_fixture():
-    """Skip S0011 integration checks when external paper fixtures are absent."""
-    missing = [path for path in (PAPER_CONFIG, S0011_CSV) if not path.exists()]
-    if missing:
-        pytest.skip(f"S0011 external fixtures are not available: {missing}")
+REF_JSON = REF_DIR / "thermal_segregated_newton_reference_v2.json"
+REF_NPZ = REF_DIR / "thermal_segregated_newton_reference_v2.npz"
 
 
 def _dataclass_args(cls, payload):
@@ -47,10 +31,17 @@ def _dataclass_args(cls, payload):
 
 
 def _lambda_and_lr(cfg: HydConfig):
-    omega = cfg.w * 2.0 * np.pi / 60.0
-    lambda_value = 6.0 * cfg.miu * omega * cfg.l**2 / (cfg.ps * cfg.c**2)
-    lr = cfg.l / (2.0 * cfg.r)
-    return lambda_value, lr
+    scales = FilmNondimScales.from_dimensional(
+        w=cfg.w,
+        miu=cfg.miu,
+        c=cfg.c,
+        r=cfg.r,
+        l=cfg.l,
+        ps=cfg.ps,
+        rho=cfg.rho,
+        vf=cfg.vf,
+    )
+    return scales.lambda_value, scales.lr
 
 
 def _build_nondim_pad(cfg: HydConfig):
@@ -186,38 +177,6 @@ def _run_nondim_small(metadata):
     }
 
 
-def _derive_base_values(base_config):
-    thermal = dict(base_config.get("thermal", {}))
-    cso = CsoArgs()
-    miu = float(base_config["miu"])
-    c = float(base_config["c"])
-    r = float(base_config["r"])
-    l = float(base_config["l"])
-    ps = float(base_config["ps"])
-    rho = float(base_config["rho"])
-    lr = l / (2.0 * r)
-    qw = ps * c**3 / (12.0 * miu * lr)
-    cq0 = cso.cd * cso.w * math.sqrt(2.0 / rho) * math.sqrt(ps) / qw
-    cq1 = rho / (5.0 * (math.pi * c * cso.d) ** 2) * qw**2 / ps
-    cq2 = 128.0 * miu * cso.l / (math.pi * cso.d**4) * qw / ps
-    lambda_per_hz = 1.5 * miu * (2.0 * math.pi) * l**2 / (ps * c**2)
-    beta_nondim = (
-        float(thermal.get("beta", 0.03))
-        * float(thermal.get("heat_partition", 0.9))
-        * ps
-        / (rho * float(thermal.get("cp_lub", 2000.0)))
-    )
-    return {
-        "lambda_per_hz": lambda_per_hz,
-        "beta_nondim": beta_nondim,
-        "lr": lr,
-        "cq0": cq0,
-        "cq1": cq1,
-        "cq2": cq2,
-        "force_scale": ps * l * r / 2.0,
-    }
-
-
 def _pad_summary(model):
     result = []
     for pad in getattr(model, "pads", []):
@@ -243,43 +202,34 @@ def _pad_summary(model):
     return result
 
 
-def _run_s0011_reference():
-    _require_s0011_fixture()
-    base_config = read_json5_with_share(str(PAPER_CONFIG))
-    thermal_config = base_config.setdefault("thermal", {})
-    thermal_config["iter_method"] = "direct"
-    thermal_config["supg"] = True
-    thermal_config["miu_min"] = 1e-4
-    thermal_config["max_delta_t"] = 80.0
-    thermal_config["miu_update"] = "linear"
-    thermal_config.pop("miu_update_max_ratio", None)
-    thermal_config.pop("heat_partition_steps", None)
-    derived = _derive_base_values(base_config)
-    rows = pd.read_csv(S0011_CSV)
-    rows = rows[rows["sample_id"].isin(S0011_SAMPLE_IDS)].sort_values("sample_id")
+def _run_s0011_reference(metadata):
+    case = metadata["cases"]["s0011_diagnostic_fixed_point"]
+    base_config = case["fixed_point_config"]
+    force_scale = float(case["derived"]["force_scale"])
     actual = {}
-    for _, row in rows.iterrows():
+    for record in case["records"]:
+        sample = record["input"]
         cfg = copy.deepcopy(base_config)
-        cfg["freq"] = float(row["freq"])
+        cfg["freq"] = float(sample["freq"])
         cfg["alb"] = "ALBSV"
         cfg["servo"] = "static"
         cfg["switch"] = False
         model = alb2(ALBConfig.from_dict(cfg))
         model.init()
         model.input(
-            uxy=np.array([float(row["ex"]), float(row["ey"])], dtype=float),
-            uxyt=np.array([float(row["vx"]), float(row["vy"])], dtype=float),
+            uxy=np.array([float(sample["ex"]), float(sample["ey"])], dtype=float),
+            uxyt=np.array([float(sample["vx"]), float(sample["vy"])], dtype=float),
             t=0.0,
-            sv=np.array([float(row["sx"]), float(row["sy"])], dtype=float),
+            sv=np.array([float(sample["sx"]), float(sample["sy"])], dtype=float),
             nodim=True,
         )
         with contextlib.redirect_stdout(io.StringIO()), warnings.catch_warnings():
             warnings.simplefilter("ignore")
             out = model.output(nodim=False)
         force_dim = np.asarray(out["force"], dtype=np.float64)
-        force = force_dim / float(derived["force_scale"])
+        force = force_dim / force_scale
         pads = _pad_summary(model)
-        sid = int(row["sample_id"])
+        sid = int(record["sample_id"])
         prefix = f"s0011_diagnostic_fixed_point.sample_{sid}"
         actual[f"{prefix}.force"] = force
         actual[f"{prefix}.force_dim"] = force_dim
@@ -299,12 +249,15 @@ def _run_s0011_reference():
 
 
 def _run_s0011_case(sample_id, thermal_overrides):
-    _require_s0011_fixture()
-    base_config = read_json5_with_share(str(PAPER_CONFIG))
-    rows = pd.read_csv(S0011_CSV).set_index("sample_id")
-    row = rows.loc[int(sample_id)]
+    metadata = json.loads(REF_JSON.read_text(encoding="utf-8"))
+    case = metadata["cases"]["s0011_diagnostic_fixed_point"]
+    base_config = case["resolved_source_config"]
+    record = next(
+        item for item in case["records"] if int(item["sample_id"]) == int(sample_id)
+    )
+    sample = record["input"]
     cfg = copy.deepcopy(base_config)
-    cfg["freq"] = float(row["freq"])
+    cfg["freq"] = float(sample["freq"])
     cfg["alb"] = "ALBSV"
     cfg["servo"] = "static"
     cfg["switch"] = False
@@ -314,10 +267,10 @@ def _run_s0011_case(sample_id, thermal_overrides):
     model = alb2(ALBConfig.from_dict(cfg))
     model.init()
     model.input(
-        uxy=np.array([float(row["ex"]), float(row["ey"])], dtype=float),
-        uxyt=np.array([float(row["vx"]), float(row["vy"])], dtype=float),
+        uxy=np.array([float(sample["ex"]), float(sample["ey"])], dtype=float),
+        uxyt=np.array([float(sample["vx"]), float(sample["vy"])], dtype=float),
         t=0.0,
-        sv=np.array([float(row["sx"]), float(row["sy"])], dtype=float),
+        sv=np.array([float(sample["sx"]), float(sample["sy"])], dtype=float),
         nodim=True,
     )
     with contextlib.redirect_stdout(io.StringIO()), warnings.catch_warnings():
@@ -328,14 +281,32 @@ def _run_s0011_case(sample_id, thermal_overrides):
 
 def test_fixed_point_reference_snapshot_matches_pre_change_results_exactly():
     metadata = json.loads(REF_JSON.read_text(encoding="utf-8"))
+    assert metadata["reference_name"] == "thermal_segregated_newton_reference_v2"
     actual = {}
     actual.update(_run_dim_small(metadata))
     actual.update(_run_nondim_small(metadata))
-    actual.update(_run_s0011_reference())
 
     with np.load(REF_NPZ) as reference:
-        assert set(actual) == set(reference.files)
-        for key in reference.files:
+        expected_keys = {
+            key for key in reference.files if not key.startswith("s0011_")
+        }
+        assert set(actual) == expected_keys
+        for key in expected_keys:
+            np.testing.assert_array_equal(actual[key], reference[key], err_msg=key)
+
+
+def test_s0011_current_replay_reference_v2_matches_exactly():
+    metadata = json.loads(REF_JSON.read_text(encoding="utf-8"))
+    s0011_case = metadata["cases"]["s0011_diagnostic_fixed_point"]
+    assert not s0011_case["config_provenance"]["historical_share_available"]
+    actual = _run_s0011_reference(metadata)
+
+    with np.load(REF_NPZ) as reference:
+        expected_keys = {
+            key for key in reference.files if key.startswith("s0011_")
+        }
+        assert set(actual) == expected_keys
+        for key in expected_keys:
             np.testing.assert_array_equal(actual[key], reference[key], err_msg=key)
 
 
