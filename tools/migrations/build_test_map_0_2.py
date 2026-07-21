@@ -25,10 +25,13 @@ PATH_OVERRIDES = {
     "test/train/test_evaluate_albnn_input_samples.py": "tests/validation/external/test_evaluate_albnn_input_samples.py",
 }
 
-EXTERNAL_VALIDATION_SOURCES = {
+VALIDATION_ONLY_SOURCES = {
     "test/test_nondim_thermal_field_case.py",
     "test/thermal/test_thermal_force_time_term_compare.py",
     "test/thermal/test_thermal_kc_compare.py",
+}
+
+MIGRATED_EXTERNAL_SOURCES = {
     "test/train/test_alb_train_wrapper_failfast.py",
     "test/train/test_evaluate_albnn_input_samples.py",
 }
@@ -103,13 +106,21 @@ def build_map() -> dict[str, Any]:
         item["status"] = "implemented"
         item["verification_commit"] = verification_commit
 
-        if source_path in EXTERNAL_VALIDATION_SOURCES:
+        if source_path in VALIDATION_ONLY_SOURCES:
             item["target_category"] = "validation"
             item["disposition"] = "validation"
             item["verification_status"] = "skipped_external_migration_required"
             item["rationale"] = (
                 "Retained as an explicit read-only external migration check; the 0.1 "
                 "external caller still imports removed flat namespaces."
+            )
+        elif source_path in MIGRATED_EXTERNAL_SOURCES:
+            item["target_category"] = "validation"
+            item["disposition"] = "validation"
+            item["verification_status"] = "collected_migrated_consumer"
+            item["rationale"] = (
+                "The SURROGATE_TRAIN caller was migrated on its own branch and this "
+                "external validation node now executes against the ALB 0.2 API."
             )
         else:
             item["verification_status"] = "collected"
@@ -173,10 +184,13 @@ def build_map() -> dict[str, Any]:
             "replacement_node_count": len(replacement_nodeids),
             "replacement_nodeids_sha256": _node_digest(replacement_nodeids),
             "all_replacements_collected": True,
-            "full_suite_evidence": "docs/migrations/0.2.0_release_acceptance.json",
+            "full_suite_evidence": (
+                "docs/migrations/0.2.0_surrogate_train_post_migration_audit.json"
+            ),
             "notes": [
                 "All 242 baseline nodes have an explicit replacement node.",
-                "External validation skips state the missing 0.2 caller migration.",
+                "Migrated SURROGATE_TRAIN validation nodes are collected and executed.",
+                "Remaining external validation skips state the missing caller migration.",
                 "Execution outcomes are recorded by the release acceptance runner, not hard-coded here.",
             ],
         },

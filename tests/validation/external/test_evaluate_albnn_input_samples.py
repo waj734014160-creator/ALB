@@ -10,11 +10,6 @@ import pandas as pd
 import pytest
 
 
-pytestmark = pytest.mark.skip(
-    reason="read-only SURROGATE_TRAIN evaluator still imports the removed ALB 0.1 namespace"
-)
-
-
 ROOT = Path(__file__).resolve().parents[3]
 EVALUATOR = (
     ROOT.parent
@@ -61,12 +56,12 @@ def test_resume_output_must_match_input_prefix():
     matching["fx"] = 1.0
     matching["fy"] = 2.0
 
-    evaluator._validate_resume_output(matching, inputs)
+    evaluator._validate_resume_output(matching, inputs, list(evaluator.INPUT_COLS))
 
     stale = matching.copy()
     stale.loc[0, "input_sample_id"] = 99
     with pytest.raises(ValueError, match="does not match"):
-        evaluator._validate_resume_output(stale, inputs)
+        evaluator._validate_resume_output(stale, inputs, list(evaluator.INPUT_COLS))
 
 
 def test_resume_output_detects_input_value_mismatch_without_ids():
@@ -76,9 +71,9 @@ def test_resume_output_detects_input_value_mismatch_without_ids():
     matching["fx"] = 1.0
     matching["fy"] = 2.0
 
-    evaluator._validate_resume_output(matching, inputs)
+    evaluator._validate_resume_output(matching, inputs, list(evaluator.INPUT_COLS))
 
     stale = matching.copy()
     stale.loc[0, "lambda_value"] = 2.0
     with pytest.raises(ValueError, match="lambda_value"):
-        evaluator._validate_resume_output(stale, inputs)
+        evaluator._validate_resume_output(stale, inputs, list(evaluator.INPUT_COLS))
