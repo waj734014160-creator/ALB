@@ -1,0 +1,151 @@
+{
+  "schema": "alb.albsv-convergence-state-reference.v2",
+  "source_reference": "refs/albsv_direct_spool_reference_v1.json",
+  "environment": {
+    "python": "3.10.17",
+    "numpy": "1.24.3"
+  },
+  "contract": "Completion status and pressure snapshots are read-only after a completed FilmSystem solve; repeated status queries do not update damping history.",
+  "cases": {
+    "zero": {
+      "spool": [
+        0.0,
+        0.0
+      ],
+      "status_first_query_pre_fix": true,
+      "status_second_query_pre_fix": true,
+      "expected_status_after_fix": true,
+      "block_status": true
+    },
+    "nonzero": {
+      "spool": [
+        0.2,
+        -0.3
+      ],
+      "status_first_query_pre_fix": true,
+      "status_second_query_pre_fix": true,
+      "expected_status_after_fix": true,
+      "block_status": true
+    },
+    "reversed": {
+      "spool": [
+        -0.2,
+        0.3
+      ],
+      "status_first_query_pre_fix": true,
+      "status_second_query_pre_fix": true,
+      "expected_status_after_fix": true,
+      "block_status": true
+    }
+  },
+  "arrays": {
+    "zero.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "4a4158a4384a8990c92a138c659e044d9a7d8fea2a604ed47082f5cf5383afc7"
+    },
+    "zero.pressure_at_completion": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "cb45d09fa58229ad0cc007c993c1e96f75e563e02925db6312388654dc616580"
+    },
+    "zero.history_lengths_before_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "zero.history_lengths_after_first_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "zero.history_lengths_after_second_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "nonzero.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "21a8c66dfe2233f22fa1c0704502c33dd65c7bbbd6c8bfa1736b3b10a2ff56a9"
+    },
+    "nonzero.pressure_at_completion": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "b4b5b31cc00406f148bd761c21fc9362321e7bec0268e8ae0fffb263b9f71216"
+    },
+    "nonzero.history_lengths_before_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "nonzero.history_lengths_after_first_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "nonzero.history_lengths_after_second_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "reversed.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "97c221fe1c38893fdc66432e3577d71142103f25d7053169322543dc47dee771"
+    },
+    "reversed.pressure_at_completion": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "82f900c8c2e7475b6e0f7adb8018694b1adceb9795e073252314d064bbadd63e"
+    },
+    "reversed.history_lengths_before_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "reversed.history_lengths_after_first_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "reversed.history_lengths_after_second_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    }
+  }
+}
