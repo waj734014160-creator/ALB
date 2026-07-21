@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 import subprocess
 from typing import Any
+import uuid
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -101,9 +102,10 @@ def run_acceptance() -> dict[str, Any]:
     if not runtime_root.is_relative_to(REPOSITORY_ROOT / "outputs"):
         raise RuntimeError("release runtime directory escaped outputs")
     runtime_root.mkdir(parents=True, exist_ok=True)
-    pytest_report = runtime_root / "pytest_reports.json"
-    pytest_basetemp = runtime_root / "pytest_tmp"
-    mypy_cache = runtime_root / "mypy_cache"
+    run_token = f"{os.getpid()}_{uuid.uuid4().hex[:8]}"
+    pytest_report = runtime_root / f"pytest_reports_{run_token}.json"
+    pytest_basetemp = runtime_root / f"pytest_tmp_{run_token}"
+    mypy_cache = runtime_root / f"mypy_cache_{run_token}"
 
     environment = os.environ.copy()
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
