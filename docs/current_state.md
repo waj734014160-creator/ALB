@@ -79,6 +79,7 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - S0011 v2 已嵌入三条输入、当前 resolved source config 和 fixed-point config，不再读取外部 84.3 MB CSV。历史 `alb12.json5` 哈希一致，但原 `share.json5` 已缺失且当前 hash 不同；因此 v1 到 v2 的 dimensional/S0011 漂移不能归因于 lambda 修正，也不能宣称完成历史配置精确复现。
 - `RossRotor._check_time()` 已改为在状态变更前拒绝非有限或不匹配 `dt` 的时间；合法 global/node 轨迹对修正前 v2 参考精确一致，被拒绝调用的时间、载荷和状态保持不变。
 - `task/task_albnn_data.py` 已通过 `DirectSpoolBearingInput/DirectSpoolBearingBlock` 传递 `sx/sy`，三个冻结工况的力值逐元素精确相等。`task/task_alb_data2.py` 仍有 dimensional 模型配合 `input(nodim=True)`、`output(nodim=False)` 的混合单位边界，严格端口化前必须另建尺度适配器和冻结参考。
+- direct-spool 冻结参考同时暴露既有状态语义问题：求解后立即锁存的局部收敛为 true，但随后读取压力场诊断会让旧 `model.calc_is_finished()` 在非零/反向阀芯工况变为 false。当前 adapter 通过立即锁存避免消费者结果随读取顺序变化，旧完成信号本身未在机械迁移中修改。
 - `task/task_thermal_forces.py` 存在本次机械迁移未修正的既有行为：采样的 `sx/sy` 不参与求解而是共用固定 `xv`，只返回第一个热瓦块的力/收敛，声明的 `pooln` 也未接入串行循环。它们应作为独立数值/物理修正处理。
 - 当前实际引用的 M0031、M0035 和 KNN 基线已生成默认不覆盖源文件的 `package_v0_2`；未来 base/expert/residual 训练仍输出松散 checkpoint/scaler，自动生成 0.2 package 尚待独立实现。
 - 旧 `ALB.nn` pickle 不属于 0.2 运行时兼容面。必须先使用显式迁移工具生成新的 model package，并只对可信 pickle 启用加载。

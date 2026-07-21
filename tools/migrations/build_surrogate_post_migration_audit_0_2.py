@@ -131,6 +131,16 @@ VERIFICATION = (
 
 REMAINING_FINDINGS = (
     {
+        "id": "direct-spool-convergence-read-order",
+        "classification": "pre_existing_behavior",
+        "path": "ALB/systems/alb/ports.py",
+        "description": (
+            "direct-spool 冻结参考显示，求解后立即读取的局部收敛状态为 true；"
+            "随后读取压力场诊断会使旧 model.calc_is_finished() 在非零阀芯工况变为"
+            "false。新 adapter 会立即锁存局部状态，但旧完成信号仍具有读取顺序依赖。"
+        ),
+    },
+    {
         "id": "mixed-unit-alb-data2",
         "classification": "migration_follow_up",
         "path": "task/task_alb_data2.py",

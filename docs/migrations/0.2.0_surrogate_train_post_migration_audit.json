@@ -4,7 +4,7 @@
   "audit_date": "2026-07-21",
   "pre_migration_audit": "docs/migrations/0.2.0_external_consumer_audit.json",
   "pre_migration_reference": "refs/alb_0_2_consumer_migration_v1/consumer_migration_reference_v1.json",
-  "alb_main_migration_commit": "0d593615b59242bc0120b0b583a6b405b79d0e53",
+  "alb_main_migration_commit": "4b6cb970734c5af94d95681fdcc4242e6465282f",
   "surrogate_train": {
     "root": "G:/ALB_PROJECTS/SURROGATE_TRAIN",
     "branch": "codex/alb-0.2-consumer-migration",
@@ -446,6 +446,12 @@
     }
   ],
   "remaining_findings": [
+    {
+      "id": "direct-spool-convergence-read-order",
+      "classification": "pre_existing_behavior",
+      "path": "ALB/systems/alb/ports.py",
+      "description": "direct-spool 冻结参考显示，求解后立即读取的局部收敛状态为 true；随后读取压力场诊断会使旧 model.calc_is_finished() 在非零阀芯工况变为false。新 adapter 会立即锁存局部状态，但旧完成信号仍具有读取顺序依赖。"
+    },
     {
       "id": "mixed-unit-alb-data2",
       "classification": "migration_follow_up",
