@@ -1,0 +1,23 @@
+{
+  "schema": "alb.albnn-input-transform-reference.v1",
+  "source_reference": "G:\\ALB_PROJECTS\\SURROGATE_TRAIN\\refs\\alb_0_2_consumer_migration_v1\\consumer_migration_reference_v1.npz",
+  "source_reference_sha256": "4e94d56f704d7c5884149c2e18c5a8c3d96d72218013818dc31822facdc2b5de",
+  "arrays": {
+    "m31.transformed_inputs": {
+      "shape": [
+        40,
+        12
+      ],
+      "dtype": "float64",
+      "sha256": "bc6494809abd72305640c2cf17919b4b564ca74f09d361dc683204bb3c8933b5"
+    },
+    "m35.transformed_inputs": {
+      "shape": [
+        10,
+        12
+      ],
+      "dtype": "float64",
+      "sha256": "38566de354ec64df892ff779d0d49553cfa9bfcf54db85cd4de58639980210a4"
+    }
+  }
+}
