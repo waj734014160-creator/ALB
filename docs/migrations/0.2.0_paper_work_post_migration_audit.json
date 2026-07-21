@@ -1,0 +1,385 @@
+{
+  "schema": "alb.paper-work-post-migration-audit.v1",
+  "version": "0.2.0",
+  "audit_date": "2026-07-21",
+  "pre_migration_audit": "docs/migrations/0.2.0_external_consumer_audit.json",
+  "snapshot_manifest": "F:/BaiduSyncdisk/博士论文/PAPER_WORK/refs/alb_0_2_consumer_migration_v1/manifest.json",
+  "paper_work": {
+    "root": "F:/BaiduSyncdisk/博士论文/PAPER_WORK",
+    "git_repository": false,
+    "declared_count": 27,
+    "dynamic_helper_count": 2,
+    "declared_changed_count": 25,
+    "all_changed_count": 27,
+    "remaining_flat_import_count": 0,
+    "entries": [
+      {
+        "path": "run/remote/remote_job.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "3a1b2a95aa2466ad5edc71fb67aa223ba05caaf80cee0fddb0cfbcfd1891c9ae",
+        "post_sha256": "29086c38690512b4e8da3308aa3980d1dbe6fc4a3d9efd283a9fa2e5f92ec0b0",
+        "size_bytes": 608,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_3_2/动特性轨迹示意图.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "fd83d23381bdbe3c36d5edef1fe082e5050581102f0abf1b3aad5e961dfea268",
+        "post_sha256": "a04561e652cf8f6293be43c4aeea0fb57a43e2e5f391fecf78964d68523c88ef",
+        "size_bytes": 15581,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_4_1/主动供油冷源对油膜温度场的影响.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "3c0f302abe4c15b47f9a3d287bf5ea0d820c1ca90c5435c59905db4c1b4210a7",
+        "post_sha256": "fc255826117e7e0a390ea60568c679ad81afcdb4fa8779265eb6ea66f4f549d3",
+        "size_bytes": 12600,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_4_1/热流耦合模型下油膜压力温度和黏度分布.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "0b6d266c5ded8ed3183e018fa208d46f41497a0eb331f8451bac5163b445cc68",
+        "post_sha256": "4da7cbd6e119a74ca65a3d10441ce138a3faaea625e0e48384390f520e36f303",
+        "size_bytes": 8292,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_4_1/等温模型与热流耦合模型的静特性参数对比.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "9bae2438fdad36779beb38dc3182cc754be46c3f17098c96c1f91201f6bd3097",
+        "post_sha256": "e839d42a4f5427248fe3ef8ce74e240c52a1e5c7f9240e48f752d1d90f74b824",
+        "size_bytes": 20308,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_4_2/不同供油孔直径下的静特性.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "90814a76c8ebe3cfd6e44cdcc413ca3ff7aef5cdca2db081e8cb41728325c52d",
+        "post_sha256": "905c190c0d77b5d1d5d2868551f49849efad8652a2d3982661fdd83d6a2bfcdb",
+        "size_bytes": 27376,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_4_2/不同供油孔长度下的静特性.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "1bc82d5fd735bf120f53c65e3f4de55e84b78e29007972c8d0ce968120531580",
+        "post_sha256": "018de926642b9c96a66b9da952907d4e37f7ce0413d152867fb1ea6640f1461c",
+        "size_bytes": 36615,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_4_2/不同油源压力下的静特性.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "20456021a97b8b809e9c6a03f0e24d31f3cd6d2a030ae73acf8a93ca02162fc2",
+        "post_sha256": "3e7b81e3ca0108662c7e9e50301f6ddde6049dbb7d712d76cea66dc52a276ac7",
+        "size_bytes": 26058,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_4_2/不同阀芯面积下的静特性.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "7a20056a10ba9dfa71867f273734370474f20c68c33f97d1b9e391bf5001a017",
+        "post_sha256": "919ddd940b950c103a357526c7c99ebc7a554d033b99b633a58272b40a1bdb62",
+        "size_bytes": 55094,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_4_2/不同阀芯面积下的静特性_ALBNN载荷工况重算.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "461f2328477a7a4241613d6047aeade81896b1411ea9dfc1104a7b0ab0a4b887",
+        "post_sha256": "acaf90d1b3f84d2128bc92844b396938aa9816b76bd3b1db7802434ba93d6069",
+        "size_bytes": 21559,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_1/不同微分系数下热效应对动力学系数的影响.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "75d5581077ce1bb4cace111d1a0b9c67a4ae2deecce9550d996eb4f72744cce7",
+        "post_sha256": "cb6b6ba12b5cf32aa100c6842b9070de9fcf16e6dcc4fab0e6c4cb2212e621a0",
+        "size_bytes": 17257,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_1/不同微分系数下热效应对动力学系数的影响_无热惯性.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "834cd562c6a4e0e6d8b337b33ee661cd04e0cd5984ef10760ff06ab6c436b695",
+        "post_sha256": "7c988ad3514c77b6faa8fd804b4c92c7602f1a24fb909578dd954bdfa707c6f8",
+        "size_bytes": 19289,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_1/不同比例系数下热效应对动力学系数的影响.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "fa94e870c62dc40dcb5938fce2b1bda53cd928b6b4f788640371a7b3d28a4697",
+        "post_sha256": "f564af63e89716090b6d065425519e4437c0f6af23da4021fd6315de198bd896",
+        "size_bytes": 17721,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_1/不同比例系数下热效应对动力学系数的影响_无热惯性.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "a2946839089b92999a31fe4439f49e4f8b4d32652010f223a49f297a4cef185d",
+        "post_sha256": "fc2948cb15bb1c2a37a77998fa3c72dfdda4d243ecada8c722aa13d30be2536c",
+        "size_bytes": 19765,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_1/热流耦合对动力学系数的影响.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "0b768675334eed1d40d5bc5df224257af1006c67c4df9e01719def32e3df2538",
+        "post_sha256": "ec08282fcfdcde645feb39ce5ab5a06eff2dde2659d5d2045d08627629ca1b44",
+        "size_bytes": 19535,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_1/热流耦合对动态油膜力的影响.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "beb6f33ff5ee34bbf534b61fc2fdd841d1d60bbd2dbf613d74868a3f8a907eda",
+        "post_sha256": "f1ad1dcc0bac5c49dcd3bc9ee5aec84f2d921039769d4f99e08b61df90f5d70c",
+        "size_bytes": 21913,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_2/fixed_center_dynamic_runner.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "c769f6a9633710c8e7df1c1205300b3ba3e43ada30f0f28e2cec1f5efd649fa3",
+        "post_sha256": "9f848dd6e0105351a9520390963bc885cf506e277c32f25c39a016368ffdce94",
+        "size_bytes": 45488,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_2/不同油压对动力学系数的影响.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "3e435ad5f284ad40d79b032e5456a83300cc06c2f99ec42fc990a6192f46e619",
+        "post_sha256": "1abf16858aed93bf0ff230bb5f1384e299e4fb1adba441964286c395307c1b0b",
+        "size_bytes": 26912,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_2/不同节流孔径下的动力学特性.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "9cd07a36804878b054629062e36fa8a64fa2856d7b5a7d85483d663e0cd69728",
+        "post_sha256": "caecda66c0725aa0a5f8b570a9bbb2d16a97af2f8d3e8ba63871e0a4e428a16b",
+        "size_bytes": 30768,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_2/不同阀芯面积下的动力学特性.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "b990cc3404c351a39e7f1878003fd35c83f5ed5d40fe8c7fec3d1bf8fab9db4e",
+        "post_sha256": "ec1d0f97adf336f903467e3d6e3f4e2265a4847788433ecb4bfe965dd202def8",
+        "size_bytes": 31230,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_2/计算被动工况动力学系数基准.py",
+        "kind": "transitive",
+        "source": "declared_audit",
+        "pre_sha256": "ea426535449f6d39de4deb93dfd724a16efa3882925e048eb5a1d36e0792eaa5",
+        "post_sha256": "ea426535449f6d39de4deb93dfd724a16efa3882925e048eb5a1d36e0792eaa5",
+        "size_bytes": 3298,
+        "changed": false,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_3/不同伺服阀固有频率对动力学系数和临界质量的影响.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "fce5afeb6397a1c8730815a9e711e08ba711df23a4e84f05a738dcb6a8580dcd",
+        "post_sha256": "40184430fd445448aca7471d5e5325bed173a0b670b0b45d414027926c75455b",
+        "size_bytes": 36303,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_3/不同伺服阀阻尼比对动力学系数和临界质量的影响.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "58cd46abde88b7395d41df3d08909c25e22bbc0d56d0e6b5d8fadf81665e4766",
+        "post_sha256": "d0b4f2bf24a99349f8232af0b59944d80d5948e0e732e9cddb3b1e016bf28edf",
+        "size_bytes": 35766,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_3/伺服阀频响传递链时域数据计算.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "849f8edc83c1fc2c1ba211cc02db5e71293a1a953ef49f833622d14247d1faab",
+        "post_sha256": "4f43864683f669bffead0d4183ec354c52402e58e96964497b3ec5921de2be65",
+        "size_bytes": 17879,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_3/工作转速范围伺服阀频响动力系数稳定性重算.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "ca6d4f5c086d88a624051800d95ea0c4ab4f76efdde4bf1d891e18917733df1a",
+        "post_sha256": "ab872acab45f7554151875513c785727d9a96b51c168d776273572bda57f4230",
+        "size_bytes": 34110,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_3/工作转速范围伺服阀频响动力系数稳定性重算_zeta0p7.py",
+        "kind": "direct",
+        "source": "declared_audit",
+        "pre_sha256": "ac0d02e742afcfe57c16503a50e9ecec7a4071cd7725ff58d7d41cdf1225b62b",
+        "post_sha256": "27523f3de2045206b3c9f8135fa9dec68894891c814b711aef5d398528273379",
+        "size_bytes": 30251,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/paper_2_5_3/伺服阀固有频率和阻尼比云图_M35_ALBNN重算.py",
+        "kind": "transitive",
+        "source": "declared_audit",
+        "pre_sha256": "a9e25172c48ab94b062d55355f30c59cffee3e4b8fce62c76c3f330fc5da4b9b",
+        "post_sha256": "a9e25172c48ab94b062d55355f30c59cffee3e4b8fce62c76c3f330fc5da4b9b",
+        "size_bytes": 9960,
+        "changed": false,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/local/paper_2_5_3/run_paper253_albnn_w025.py",
+        "kind": "transitive_dynamic_helper",
+        "source": "post_audit_dependency_discovery",
+        "pre_sha256": "3e83213544b07369375e5be80b63fb9a365910f74b3326e82c80a1f4559d046a",
+        "post_sha256": "f450303be3cc33b17672114c7df1af040e758b9326890dd20b7fc8dd9efb6475",
+        "size_bytes": 29874,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/local/paper_2_5_3/compare_albnn_core_one_case.py",
+        "kind": "transitive_dynamic_helper",
+        "source": "post_audit_dependency_discovery",
+        "pre_sha256": "eca30d6b8fa23325590f56ab2f844922e57117c66e5dcec8cb1843dc7b847401",
+        "post_sha256": "982b350eb01d339d391952a029ce93014e07da40c353c406fc7fab6df048499a",
+        "size_bytes": 28017,
+        "changed": true,
+        "remaining_flat_imports": []
+      }
+    ]
+  },
+  "model_packages": [
+    {
+      "package_dir": "M0031_s8b_s0011_allvalid_base12_mlp_minmax01_gelu_adamw_p1000_20260609/package_v0_2",
+      "manifest_schema": "alb.surrogate-package.v0.2",
+      "pickle_trust_required": true,
+      "artifacts": {
+        "model": {
+          "path": "model.pt",
+          "expected_sha256": "7c012dfd817c4f7af4bb54bf42c603921b092cce44c48fd71a165b2c5f54d8ad",
+          "actual_sha256": "7c012dfd817c4f7af4bb54bf42c603921b092cce44c48fd71a165b2c5f54d8ad",
+          "matches_manifest": true
+        },
+        "input_scaler": {
+          "path": "input_scaler.pkl",
+          "expected_sha256": "2efe21ea7cbd86d72bccbd96b1f2f0fa21d612cd7f0ae6b930e329573c625411",
+          "actual_sha256": "2efe21ea7cbd86d72bccbd96b1f2f0fa21d612cd7f0ae6b930e329573c625411",
+          "matches_manifest": true
+        },
+        "output_scaler": {
+          "path": "output_scaler.pkl",
+          "expected_sha256": "fdf5392b9abd5ddd5fa0f013fcd49e6234808615405b5806f80b1ed7a8df227a",
+          "actual_sha256": "fdf5392b9abd5ddd5fa0f013fcd49e6234808615405b5806f80b1ed7a8df227a",
+          "matches_manifest": true
+        },
+        "metadata": {
+          "path": "metadata.json",
+          "expected_sha256": "c1d2bb765ff4ab8ab4df24e0d0c025fcade48ea003a19d59a3a4314337602cdf",
+          "actual_sha256": "c1d2bb765ff4ab8ab4df24e0d0c025fcade48ea003a19d59a3a4314337602cdf",
+          "matches_manifest": true
+        }
+      }
+    },
+    {
+      "package_dir": "M0035_s8b_s0011_enormlt0p85_vnormlt0p4_edotvlt0p195_base12_mlp_minmax01_gelu_adamw_p1000_20260609/package_v0_2",
+      "manifest_schema": "alb.surrogate-package.v0.2",
+      "pickle_trust_required": true,
+      "artifacts": {
+        "model": {
+          "path": "model.pt",
+          "expected_sha256": "02647bbbb1867381400d751a0194a122e59376e92d931516c79a07f5e6d55b36",
+          "actual_sha256": "02647bbbb1867381400d751a0194a122e59376e92d931516c79a07f5e6d55b36",
+          "matches_manifest": true
+        },
+        "input_scaler": {
+          "path": "input_scaler.pkl",
+          "expected_sha256": "1e8d8fbbbc3c5f3100ee5b2db10ccc229c069d8e4520ae924f30f4c15d96a56f",
+          "actual_sha256": "1e8d8fbbbc3c5f3100ee5b2db10ccc229c069d8e4520ae924f30f4c15d96a56f",
+          "matches_manifest": true
+        },
+        "output_scaler": {
+          "path": "output_scaler.pkl",
+          "expected_sha256": "524304db7a4e98a847283d7ad7049c39525360db61d8dee533fb4c80907bfd8d",
+          "actual_sha256": "524304db7a4e98a847283d7ad7049c39525360db61d8dee533fb4c80907bfd8d",
+          "matches_manifest": true
+        },
+        "metadata": {
+          "path": "metadata.json",
+          "expected_sha256": "04e7740b27bb8582d574df807f41bdec9295d299120d3714c5bb00ef5ea13c30",
+          "actual_sha256": "04e7740b27bb8582d574df807f41bdec9295d299120d3714c5bb00ef5ea13c30",
+          "matches_manifest": true
+        }
+      }
+    }
+  ],
+  "validation": {
+    "ast_parse": "29 passed",
+    "guarded_import_smoke": "24 passed",
+    "ast_only_due_to_top_level_execution": 5,
+    "remote_cli_help": "passed",
+    "package_load_smoke": "M0031 and M0035 passed"
+  },
+  "boundaries": [
+    "Four task scripts still execute calculations at import time and require main-guard isolation.",
+    "Legacy BaseSimpleModel/FakeOf consumers still require a dedicated DTO block migration.",
+    "Shared legacy JSON5 is expanded by config_io; nested 0.2 schema loading remains a separate gate.",
+    "Historical remote payload archives were not modified and must be rebuilt before reuse."
+  ]
+}

@@ -4,11 +4,11 @@
   "audit_date": "2026-07-21",
   "pre_migration_audit": "docs/migrations/0.2.0_external_consumer_audit.json",
   "pre_migration_reference": "refs/alb_0_2_consumer_migration_v1/consumer_migration_reference_v1.json",
-  "alb_main_migration_commit": "4b6cb970734c5af94d95681fdcc4242e6465282f",
+  "alb_main_migration_commit": "223af41cd4c619f2c1cfde9bc2e9f0140b0965bd",
   "surrogate_train": {
     "root": "G:/ALB_PROJECTS/SURROGATE_TRAIN",
     "branch": "codex/alb-0.2-consumer-migration",
-    "commit": "346256136dad592b49c3c9f410a9358268c5cb1f",
+    "commit": "3e3b99de4e361699e96dba03ed17c61320fc7074",
     "working_tree_clean": true,
     "declared_count": 23,
     "changed_count": 20,
@@ -216,8 +216,8 @@
         "path": "task/task_thermal_forces.py",
         "kind": "direct",
         "pre_sha256": "5f7a62503690d2f189cd8658efd71238883ee69fa31486449cca686ad15de4c1",
-        "post_sha256": "1758dacffb7557abe38c78f4b17dfd7adbaf452ad2d29e436fd96ea8996d464d",
-        "size_bytes": 11562,
+        "post_sha256": "a014b79291bd1d6d5e70b35b96a2cc6e555762f1fa60e6aad7f20e7104cac527",
+        "size_bytes": 11982,
         "changed": true,
         "remaining_flat_imports": []
       }
@@ -411,7 +411,7 @@
   "verification": [
     {
       "scope": "ALB_MAIN 全量 pytest",
-      "result": "325 passed、13 skipped、12 warnings、7 subtests passed",
+      "result": "329 passed、13 skipped、12 warnings、7 subtests passed",
       "status": "passed"
     },
     {
@@ -421,7 +421,7 @@
     },
     {
       "scope": "ALB 外部消费者、严格端口和 direct-spool 冻结参考",
-      "result": "49 项通过",
+      "result": "新增 ALBSV v2 状态参考及相关定向组合 15 项通过",
       "status": "passed"
     },
     {
@@ -440,35 +440,22 @@
       "status": "passed_with_documented_variation"
     },
     {
-      "scope": "SURROGATE_TRAIN tests/test_train_albnn_contracts.py",
-      "result": "禁用受限系统临时目录 cache provider 后 3 项通过",
+      "scope": "SURROGATE_TRAIN 全量 pytest",
+      "result": "指定可写 basetemp 且禁用 cache provider 后 7 项通过",
+      "status": "passed"
+    },
+    {
+      "scope": "SURROGATE_TRAIN thermal force v2",
+      "result": "sx/sy 四瓦映射与系统标签 4 项精确回归通过",
       "status": "passed"
     }
   ],
   "remaining_findings": [
     {
-      "id": "direct-spool-convergence-read-order",
-      "classification": "pre_existing_behavior",
-      "path": "ALB/systems/alb/ports.py",
-      "description": "direct-spool 冻结参考显示，求解后立即读取的局部收敛状态为 true；随后读取压力场诊断会使旧 model.calc_is_finished() 在非零阀芯工况变为false。新 adapter 会立即锁存局部状态，但旧完成信号仍具有读取顺序依赖。"
-    },
-    {
       "id": "mixed-unit-alb-data2",
       "classification": "migration_follow_up",
       "path": "task/task_alb_data2.py",
       "description": "dimensional ALB 路径有意保留 input(nodim=True) 和 output(nodim=False)。改为严格端口前，必须先增加显式尺度适配器和独立冻结参考。"
-    },
-    {
-      "id": "thermal-force-unused-spool-components",
-      "classification": "pre_existing_behavior",
-      "path": "task/task_thermal_forces.py",
-      "description": "采样并保存了 sx/sy，但求解时两个节流孔共用一个固定 xv，因此这两个声明输入不影响标签。"
-    },
-    {
-      "id": "thermal-force-single-pad-label",
-      "classification": "pre_existing_behavior",
-      "path": "task/task_thermal_forces.py",
-      "description": "脚本构造四瓦 ALB 系统，但只有 thermal_pads[0] 提供力和收敛状态。"
     },
     {
       "id": "thermal-force-pooln-not-used",

@@ -91,7 +91,7 @@ SOURCE_ARTIFACTS = {
 VERIFICATION = (
     {
         "scope": "ALB_MAIN 全量 pytest",
-        "result": "325 passed、13 skipped、12 warnings、7 subtests passed",
+        "result": "329 passed、13 skipped、12 warnings、7 subtests passed",
         "status": "passed",
     },
     {
@@ -101,7 +101,7 @@ VERIFICATION = (
     },
     {
         "scope": "ALB 外部消费者、严格端口和 direct-spool 冻结参考",
-        "result": "49 项通过",
+        "result": "新增 ALBSV v2 状态参考及相关定向组合 15 项通过",
         "status": "passed",
     },
     {
@@ -123,23 +123,18 @@ VERIFICATION = (
         "status": "passed_with_documented_variation",
     },
     {
-        "scope": "SURROGATE_TRAIN tests/test_train_albnn_contracts.py",
-        "result": "禁用受限系统临时目录 cache provider 后 3 项通过",
+        "scope": "SURROGATE_TRAIN 全量 pytest",
+        "result": "指定可写 basetemp 且禁用 cache provider 后 7 项通过",
+        "status": "passed",
+    },
+    {
+        "scope": "SURROGATE_TRAIN thermal force v2",
+        "result": "sx/sy 四瓦映射与系统标签 4 项精确回归通过",
         "status": "passed",
     },
 )
 
 REMAINING_FINDINGS = (
-    {
-        "id": "direct-spool-convergence-read-order",
-        "classification": "pre_existing_behavior",
-        "path": "ALB/systems/alb/ports.py",
-        "description": (
-            "direct-spool 冻结参考显示，求解后立即读取的局部收敛状态为 true；"
-            "随后读取压力场诊断会使旧 model.calc_is_finished() 在非零阀芯工况变为"
-            "false。新 adapter 会立即锁存局部状态，但旧完成信号仍具有读取顺序依赖。"
-        ),
-    },
     {
         "id": "mixed-unit-alb-data2",
         "classification": "migration_follow_up",
@@ -148,23 +143,6 @@ REMAINING_FINDINGS = (
             "dimensional ALB 路径有意保留 input(nodim=True) 和 "
             "output(nodim=False)。改为严格端口前，必须先增加显式尺度适配器和"
             "独立冻结参考。"
-        ),
-    },
-    {
-        "id": "thermal-force-unused-spool-components",
-        "classification": "pre_existing_behavior",
-        "path": "task/task_thermal_forces.py",
-        "description": (
-            "采样并保存了 sx/sy，但求解时两个节流孔共用一个固定 xv，因此这两个"
-            "声明输入不影响标签。"
-        ),
-    },
-    {
-        "id": "thermal-force-single-pad-label",
-        "classification": "pre_existing_behavior",
-        "path": "task/task_thermal_forces.py",
-        "description": (
-            "脚本构造四瓦 ALB 系统，但只有 thermal_pads[0] 提供力和收敛状态。"
         ),
     },
     {
