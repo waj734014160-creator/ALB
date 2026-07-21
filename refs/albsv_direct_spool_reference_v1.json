@@ -1,0 +1,385 @@
+{
+  "schema": "alb.albsv-direct-spool-reference.v1",
+  "baseline_commit": "6a9c5cb5289441babf41bf788becd36a4a0385e9",
+  "environment": {
+    "python": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "numpy": "1.24.3",
+    "scipy": "1.10.1",
+    "scikit-fem": "12.0.1"
+  },
+  "bearing_input": {
+    "displacement": [
+      0.1,
+      -0.2
+    ],
+    "velocity": [
+      0.03,
+      -0.04
+    ],
+    "time": 0.0
+  },
+  "spool_cases": {
+    "zero": [
+      0.0,
+      0.0
+    ],
+    "nonzero": [
+      0.2,
+      -0.3
+    ],
+    "reversed": [
+      -0.2,
+      0.3
+    ]
+  },
+  "config": {
+    "alb": "ALBSV",
+    "servo": "static",
+    "switch": false,
+    "dt": 0.0006667,
+    "lambda_value": 1.2,
+    "lr": 1.0,
+    "lx": 80.0,
+    "lz": 2.0,
+    "nx": 79,
+    "nz": 39,
+    "coe": false,
+    "max_iter": 80,
+    "error_set": 1e-06,
+    "damp": 0.7,
+    "position": [
+      [
+        0.5,
+        0.25
+      ],
+      [
+        0.5,
+        0.5
+      ],
+      [
+        0.5,
+        0.75
+      ]
+    ],
+    "cq0": 6.0557,
+    "cq1": 0.02313,
+    "cq2": 0.002173,
+    "ps": 1.0,
+    "p0": 0.0,
+    "xrange": [
+      0.49,
+      0.51
+    ],
+    "zrange": [
+      0.2,
+      0.8
+    ],
+    "h_tank": 2.0,
+    "thermal_enabled": true,
+    "thermal": {
+      "args_nodim": true,
+      "t_in": 1.0,
+      "t_supply": 1.0,
+      "t_ref": 1.0,
+      "beta_nondim": 0.1083715596,
+      "delta_t_scale": 1.0,
+      "cp_lub": 1.0,
+      "heat_partition": 0.9,
+      "k_lub": 0.0,
+      "relax": 0.6,
+      "max_iter": 80,
+      "tol": 1e-06,
+      "coupling": "full",
+      "pressure_backend": "skfem"
+    }
+  },
+  "status": {
+    "zero": {
+      "unit_system": "nondimensional",
+      "calculation_finished": true,
+      "thermal_converged_by_pad": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "solver_used_by_pad": [
+        "direct",
+        "direct",
+        "direct",
+        "direct"
+      ]
+    },
+    "nonzero": {
+      "unit_system": "nondimensional",
+      "calculation_finished": false,
+      "thermal_converged_by_pad": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "solver_used_by_pad": [
+        "direct",
+        "direct",
+        "direct",
+        "direct"
+      ]
+    },
+    "reversed": {
+      "unit_system": "nondimensional",
+      "calculation_finished": false,
+      "thermal_converged_by_pad": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "solver_used_by_pad": [
+        "direct",
+        "direct",
+        "direct",
+        "direct"
+      ]
+    }
+  },
+  "arrays": {
+    "zero.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "96acd5e9efd5340c72f28be4bb3d160367a3d5731e7dd471358bc9347552ec4f"
+    },
+    "zero.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "864d2470c4d063a974757b972dbf2851b8f191467bda5f38c182b0346c6031cf"
+    },
+    "zero.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "zero.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "4a4158a4384a8990c92a138c659e044d9a7d8fea2a604ed47082f5cf5383afc7"
+    },
+    "zero.output.friction": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "6989a07c56406e99d9d87f21f4a95c216f0fdf8475c5320840989656a825f920"
+    },
+    "zero.output.servovalve_spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "zero.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "9395254a7ce8a8d5fccd333f03c1ad61939c0281bad1245b44e6a2afd494b2a4"
+    },
+    "zero.thermal.viscosity": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "8c14721dcb0353f07d90c5dd1aedee4abd3d87acb82c4b752e8a66078d3f270d"
+    },
+    "zero.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "9a49a9b318db661e09f7428913ffc36da8c3e011b0ce4eab18e119bf3356d8ca"
+    },
+    "zero.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "dbb79c625b78aaad4e18d34a4f7e0dbf915a1a3b9bb9fd3247a9abdc3024a2bf"
+    },
+    "zero.film.pressure_fields": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "c7291d7da14b35d8f54e0be58cda179a3c8d8ac0efc7498fafb8b237276dc8da"
+    },
+    "nonzero.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "96acd5e9efd5340c72f28be4bb3d160367a3d5731e7dd471358bc9347552ec4f"
+    },
+    "nonzero.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "864d2470c4d063a974757b972dbf2851b8f191467bda5f38c182b0346c6031cf"
+    },
+    "nonzero.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "539e3fce6e0f1d2c101b9f23d7f4447dc207eebc5de5965b352140d8a6847144"
+    },
+    "nonzero.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "21a8c66dfe2233f22fa1c0704502c33dd65c7bbbd6c8bfa1736b3b10a2ff56a9"
+    },
+    "nonzero.output.friction": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "5be369dff764615e1dbc3025bf00fe040459bd763f364fb590e3656eee17d250"
+    },
+    "nonzero.output.servovalve_spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "539e3fce6e0f1d2c101b9f23d7f4447dc207eebc5de5965b352140d8a6847144"
+    },
+    "nonzero.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "83bfa148bc1d272f01d90884a8cfee5a437887fb126d20a85a61d319978c897c"
+    },
+    "nonzero.thermal.viscosity": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "a4e6719475a19fdedd3f3ab36ac9c77ba9c996fd775ded249b409326af334d11"
+    },
+    "nonzero.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "18979467483760aa75af65140f22e370a7b929126795ec724f1c38d09dd8e52a"
+    },
+    "nonzero.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "a80ae540986b14c8da5e5aa522f40674df9efdd1bb2cafb67a03403ac3c28120"
+    },
+    "nonzero.film.pressure_fields": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "27cf2a52165845158bfbe3125ece2fc751b8d24bf8c0464e172fb423b2613e6e"
+    },
+    "reversed.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "96acd5e9efd5340c72f28be4bb3d160367a3d5731e7dd471358bc9347552ec4f"
+    },
+    "reversed.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "864d2470c4d063a974757b972dbf2851b8f191467bda5f38c182b0346c6031cf"
+    },
+    "reversed.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "74dd72797e368bb9f4d0e5b66478203faf64764262c441fd1d80f6305e45d249"
+    },
+    "reversed.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "97c221fe1c38893fdc66432e3577d71142103f25d7053169322543dc47dee771"
+    },
+    "reversed.output.friction": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "eb3bfedc0285bb4dfd5cb609d40d11c3d4e58402603d245aaaa48846540d649e"
+    },
+    "reversed.output.servovalve_spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "74dd72797e368bb9f4d0e5b66478203faf64764262c441fd1d80f6305e45d249"
+    },
+    "reversed.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "02b49294f0f9db85182592d2b360d1e0e1eb1b67a39ba4df4d9650720034a155"
+    },
+    "reversed.thermal.viscosity": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "ab411c6feeb077a05ef89d93aa52b1d4c9612fe310d96e8a867a84fcfce5ad83"
+    },
+    "reversed.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "9a49a9b318db661e09f7428913ffc36da8c3e011b0ce4eab18e119bf3356d8ca"
+    },
+    "reversed.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "e4559ccddc3148c0d03b2171835c34cc8e1939f9edcb1874f67f5adcc1a8c90c"
+    },
+    "reversed.film.pressure_fields": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "0a17301905bb8fe7cac76d696f3bc52c86cfcf429ecc7d33334005c2120f625b"
+    }
+  }
+}
