@@ -11,17 +11,18 @@
   "implementation_commit": "5188d3823f96b7a2b71ecb42325eb9dc69900c7a",
   "verification": {
     "collection_command": "E:/Anaconda2023/envs/ALB/python.exe -m pytest tests --collect-only -q -p no:cacheprovider",
-    "collected_node_count": 327,
-    "collected_nodeids_sha256": "8e0eb7f1da2eca1a9ec841befb8fea989f94b6fa81317826960f2696e9940c4d",
+    "collected_node_count": 330,
+    "collected_nodeids_sha256": "0d0e4cfd235582c7d6d2c28730eeecf3974a5cbbb57d572e4541bcedf1038b95",
     "replacement_node_count": 242,
     "replacement_nodeids_sha256": "5bfc9bb3de3795ad68acece977e11c5271eaec1904ee352cd39eea9adbc48eed",
     "all_replacements_collected": true,
-    "full_suite_evidence": "docs/migrations/0.2.0_release_acceptance.json",
+    "full_suite_evidence": "docs/migrations/0.2.0_post_release_rotor_acceptance.json",
     "notes": [
       "All 242 baseline nodes have an explicit replacement node.",
       "External validation skips state the missing 0.2 caller migration.",
       "Execution outcomes are recorded by the release acceptance runner, not hard-coded here.",
-      "The post-release S0011 v2 exact-replay node increases the collected suite to 327 without changing the frozen 242-node replacement set."
+      "The post-release S0011 v2 exact-replay node increases the collected suite to 327 without changing the frozen 242-node replacement set.",
+      "Three RossRotor time-validation nodes increase the collected suite to 330 without changing the frozen 242-node replacement set."
     ]
   },
   "mappings": [

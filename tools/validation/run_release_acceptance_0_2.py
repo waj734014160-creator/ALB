@@ -36,6 +36,20 @@ S0011_NODEIDS = {
         "test_direct_then_newton_does_not_false_converge_s0011_sample_162946"
     ),
 }
+ROSS_ROTOR_TIME_NODEIDS = {
+    (
+        "tests/unit/dynamics/test_rotor_lifecycle.py::"
+        "test_rotor_valid_time_trajectories_match_v2_reference_exactly"
+    ),
+    (
+        "tests/unit/dynamics/test_rotor_lifecycle.py::"
+        "test_input_force_rejects_invalid_time_without_mutating_state"
+    ),
+    (
+        "tests/unit/dynamics/test_rotor_lifecycle.py::"
+        "test_input_force2node_rejects_invalid_time_without_mutating_state"
+    ),
+}
 
 
 def _run(command: list[str], *, environment: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -140,6 +154,13 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("The complete self-contained S0011 v2 node set was not recorded")
     if any(item["outcome"] != "passed" for item in s0011_reports):
         raise AssertionError("A self-contained S0011 v2 node did not pass")
+    ross_rotor_time_reports = [
+        item for item in reports["reports"] if item["nodeid"] in ROSS_ROTOR_TIME_NODEIDS
+    ]
+    if {item["nodeid"] for item in ross_rotor_time_reports} != ROSS_ROTOR_TIME_NODEIDS:
+        raise AssertionError("The complete RossRotor time-validation node set was not recorded")
+    if any(item["outcome"] != "passed" for item in ross_rotor_time_reports):
+        raise AssertionError("A RossRotor time-validation node did not pass")
 
     mypy_environment = environment.copy()
     mypy_environment["PYTHONPATH"] = str(DEVTOOLS_ROOT)
@@ -192,6 +213,7 @@ def run_acceptance() -> dict[str, Any]:
             "summary_tail": combined_output.splitlines()[-20:],
             "skipped": skipped,
             "s0011_reports": s0011_reports,
+            "ross_rotor_time_reports": ross_rotor_time_reports,
         },
         "mypy": {
             "command": subprocess.list2cmdline(mypy_command),
@@ -212,6 +234,9 @@ def run_acceptance() -> dict[str, Any]:
             "thermal_addendum": "refs/full_repo_refactor_addendum_v1",
             "thermal_segregated_newton_v2": (
                 "refs/thermal_segregated_newton_reference_v2.json"
+            ),
+            "ross_rotor_time_validation_v2": (
+                "refs/ross_rotor_time_validation_reference_v2.json"
             ),
         },
         "overall_status": "passed",
