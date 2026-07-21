@@ -10,6 +10,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from tests._support.dynamics.coupling_v4 import (
+    assert_corrected_coupling_reference_exact,
+)
 from tools.reference.generate_full_repo_refactor_references import (
     DOMAIN_ORDER,
     EXPECTED_BASELINE_COMMIT,
@@ -64,7 +67,7 @@ def replayed_cases():
 
 @pytest.mark.parametrize("domain", DOMAIN_ORDER)
 def test_domain_arrays_match_reference_exactly(domain, replayed_cases):
-    """Preserve v1 exactly except the explicitly superseded hydraulics result."""
+    """Preserve v1 or require an exact corrected reference when superseded."""
 
     metadata = json.loads(
         (REFERENCE_DIR / f"{domain}.json").read_text(encoding="utf-8")
@@ -83,17 +86,15 @@ def test_domain_arrays_match_reference_exactly(domain, replayed_cases):
             assert list(actual_array.shape) == metadata["arrays"][key]["shape"]
             assert str(actual_array.dtype) == metadata["arrays"][key]["dtype"]
             assert _array_digest(reference_array) == metadata["arrays"][key]["sha256"]
-            if domain in {"hydraulics_orifice", "dynamics_coupling"}:
-                # The immutable v1 archive remains an integrity record of the
-                # superseded implementation. Production behavior is gated by
-                # an explicit corrected reference instead of this old output.
-                continue
-            assert _array_digest(actual_array) == metadata["arrays"][key]["sha256"]
-            np.testing.assert_array_equal(
-                actual_array,
-                reference_array,
-                err_msg=f"{domain}:{key}",
-            )
+            if domain not in {"hydraulics_orifice", "dynamics_coupling"}:
+                assert _array_digest(actual_array) == metadata["arrays"][key]["sha256"]
+                np.testing.assert_array_equal(
+                    actual_array,
+                    reference_array,
+                    err_msg=f"{domain}:{key}",
+                )
+        if domain == "dynamics_coupling":
+            assert_corrected_coupling_reference_exact()
 
 
 def test_baseline_test_node_inventory_is_complete_and_unique():

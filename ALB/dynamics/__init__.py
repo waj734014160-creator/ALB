@@ -5,6 +5,7 @@ from ALB.contracts.optional import import_optional_module
 
 _EXPORTS = {
     "RossRotor": ("ALB.dynamics.rotor", "RossRotor"),
+    "RotorDofLayout": ("ALB.dynamics.rotor", "RotorDofLayout"),
     "SingleRotor": ("ALB.dynamics.rotor", "SingleRotor"),
     "RsRotorBearingCouple": ("ALB.dynamics.coupling", "RsRotorBearingCouple"),
     "RotorBearingCouple": ("ALB.dynamics.coupling", "RotorBearingCouple"),

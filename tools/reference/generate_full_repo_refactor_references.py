@@ -770,6 +770,7 @@ def _control_valve_case() -> CaseData:
     pid_outputs = []
     for time_s, error in zip(times, errors):
         pid.input(time_s, error)
+        pid.evaluate()
         pid_outputs.append(pid.output())
 
     servo_config = Moog2ndServoConfig(dt=1.0e-3)

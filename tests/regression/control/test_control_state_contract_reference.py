@@ -38,6 +38,7 @@ def _run_pid() -> dict[str, np.ndarray]:
     terms = {name: [] for name in ("kp_calc", "ki_calc", "kd_calc")}
     for time, error in zip(times, errors):
         controller.input(float(time), error)
+        controller.evaluate()
         outputs.append(controller.output())
         for name in terms:
             terms[name].append(np.asarray(getattr(controller, name), dtype=float))
@@ -59,6 +60,7 @@ def _run_fuzzy(controller: FuzzyPID) -> dict[str, np.ndarray]:
     gains = []
     for time, error in zip(times, errors):
         controller.input(float(time), error)
+        controller.evaluate()
         outputs.append(controller.output())
         gains.append(np.stack([controller.kp, controller.ki, controller.kd]))
     return {
@@ -86,9 +88,11 @@ def test_pid_fresh_trajectory_and_reset_match_reference_exactly():
             )
         )
         controller.input(0.0, [0.8, -0.6])
+        controller.evaluate()
         controller.output()
         controller.init()
         controller.input(0.0, reference["pid.errors"][0])
+        controller.evaluate()
         np.testing.assert_array_equal(controller.output(), reference["pid.outputs"][0])
         assert len(controller.results) == 1
 
@@ -129,6 +133,7 @@ def test_fuzzy_all_fixed_gains_bypass_zero_width_memberships():
         warnings.simplefilter("always")
         controller = FuzzyPID(config)
         controller.input(0.0, [0.2, -0.3])
+        controller.evaluate()
         output = controller.output()
     assert controller.pid_sim is None
     assert not [item for item in caught if issubclass(item.category, RuntimeWarning)]
@@ -147,6 +152,7 @@ def test_siso_lti_history_is_exact_and_output_is_current_vector():
             reference["lti_siso.times"], reference["lti_siso.inputs"]
         ):
             model.input(float(time), value)
+            model.evaluate()
             returned.append(model.output())
         np.testing.assert_array_equal(
             np.asarray(model.xout).reshape(-1, 1), reference["lti_siso.states"]
@@ -173,6 +179,7 @@ def test_mimo_lti_accepts_all_inputs_and_includes_feedthrough():
         outputs = []
         for time, value in zip([0.0, 0.1], reference["lti_mimo.inputs"]):
             model.input(time, value)
+            model.evaluate()
             outputs.append(model.output())
         np.testing.assert_array_equal(
             np.asarray(model.xout), reference["lti_mimo.expected_states"]

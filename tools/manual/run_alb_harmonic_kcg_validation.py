@@ -186,6 +186,7 @@ def build_warmed_pd_servo(
     for step in range(int(warmup_steps)):
         t = step * dt
         controller.input(t, analytic.CENTER_NONDIM)
+        controller.evaluate()
         command = np.asarray(controller.output(), dtype=float).reshape(2)
         for index, valve in enumerate(valves):
             valve.input(t, command[index])
@@ -304,6 +305,7 @@ def run_direction(
         displacement_nondim = analytic.CENTER_NONDIM + delta_input[:2]
         t = (warmup_steps + step) * dt
         controller.input(t, displacement_nondim)
+        controller.evaluate()
         controller_command = np.asarray(
             controller.output(), dtype=float
         ).reshape(2)

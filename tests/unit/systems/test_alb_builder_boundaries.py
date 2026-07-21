@@ -4,9 +4,19 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from ALB.config import ALBConfig, OrificeConfig
+import pandas as pd
+
+from ALB.config import (
+    ALBConfig,
+    NodimALBConfig,
+    NodimOrificeConfig,
+    NodimPadConfig,
+    OrificeConfig,
+)
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.core import Signal
-from ALB.systems.alb import ALB, ALBBuilder
+from ALB.systems.alb import ALB, ALBBuilder, NodimALB, nodim_alb
+from ALB.systems.alb.assembly import alb_no_controller
 
 
 class _Pad:
@@ -22,6 +32,13 @@ class _Pad:
     def init(self) -> None:
         self.init_calls += 1
 
+    def save(self, tofile=False, path=None, name=None, *args, **kwargs):
+        del tofile, args, kwargs
+        return SaveTreeNode(
+            path or "pad",
+            DataFrameResult({name or "pad": pd.DataFrame()}),
+        )
+
 
 def test_alb_init_accepts_explicitly_absent_controller():
     pad = _Pad()
@@ -30,6 +47,52 @@ def test_alb_init_accepts_explicitly_absent_controller():
     model.init()
 
     assert pad.init_calls == 1
+    assert model.controller is None
+
+
+def test_alb_save_accepts_explicitly_absent_controller():
+    model = alb_no_controller(ALBConfig())
+
+    result = model.save(tofile=False, path=None, name=None)
+
+    assert model.controller is None
+    assert [child.path for child in result.children] == [
+        "pad0",
+        "pad1",
+        "pad2",
+        "pad3",
+        "servovalves0",
+        "servovalves1",
+    ]
+
+
+def test_nondimensional_factory_accepts_explicitly_absent_controller():
+    config = NodimALBConfig(
+        pad_config=NodimPadConfig(
+            lambda_value=1.2,
+            lr=1.0,
+            lx=90.0,
+            lz=2.0,
+            nx=5,
+            nz=3,
+            coe=False,
+            max_iter=3,
+            error_set=1.0e-5,
+        ),
+        orifice_config=NodimOrificeConfig(
+            position=[[0.5, 0.5]],
+            cq0=0.2,
+            cq1=1.0,
+            cq2=0.1,
+        ),
+        controller_config=None,
+        servo="static",
+    )
+
+    model = nodim_alb(config)
+    model.init()
+
+    assert isinstance(model, NodimALB)
     assert model.controller is None
 
 

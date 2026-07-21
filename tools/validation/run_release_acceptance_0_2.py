@@ -50,6 +50,36 @@ ROSS_ROTOR_TIME_NODEIDS = {
         "test_input_force2node_rejects_invalid_time_without_mutating_state"
     ),
 }
+SECOND_REVIEW_NODEIDS = {
+    (
+        "tests/regression/dynamics/test_rotor_dof_coupling_reference.py::"
+        "test_real_ross_coupling_and_lqg_mapping_match_v4_exactly"
+    ),
+    (
+        "tests/regression/control/test_control_lifecycle_reference_v2.py::"
+        "test_pid_and_fuzzy_outputs_are_read_only_after_one_evaluation"
+    ),
+    (
+        "tests/regression/control/test_control_lifecycle_reference_v2.py::"
+        "test_lti_output_is_read_only_after_one_evaluation"
+    ),
+    (
+        "tests/integration/dynamics/test_coupling_step_commit.py::"
+        "test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization"
+    ),
+    (
+        "tests/unit/dynamics/test_rotor_lifecycle.py::"
+        "test_six_dof_result_and_mapping_use_ross_local_layout"
+    ),
+    (
+        "tests/unit/systems/test_alb_builder_boundaries.py::"
+        "test_alb_save_accepts_explicitly_absent_controller"
+    ),
+    (
+        "tests/unit/systems/test_alb_builder_boundaries.py::"
+        "test_nondimensional_factory_accepts_explicitly_absent_controller"
+    ),
+}
 
 
 def _run(command: list[str], *, environment: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -161,6 +191,13 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("The complete RossRotor time-validation node set was not recorded")
     if any(item["outcome"] != "passed" for item in ross_rotor_time_reports):
         raise AssertionError("A RossRotor time-validation node did not pass")
+    second_review_reports = [
+        item for item in reports["reports"] if item["nodeid"] in SECOND_REVIEW_NODEIDS
+    ]
+    if {item["nodeid"] for item in second_review_reports} != SECOND_REVIEW_NODEIDS:
+        raise AssertionError("The complete second-review regression node set was not recorded")
+    if any(item["outcome"] != "passed" for item in second_review_reports):
+        raise AssertionError("A second-review regression node did not pass")
 
     mypy_environment = environment.copy()
     mypy_environment["PYTHONPATH"] = str(DEVTOOLS_ROOT)
@@ -214,6 +251,7 @@ def run_acceptance() -> dict[str, Any]:
             "skipped": skipped,
             "s0011_reports": s0011_reports,
             "ross_rotor_time_reports": ross_rotor_time_reports,
+            "second_review_reports": second_review_reports,
         },
         "mypy": {
             "command": subprocess.list2cmdline(mypy_command),
@@ -238,6 +276,8 @@ def run_acceptance() -> dict[str, Any]:
             "ross_rotor_time_validation_v2": (
                 "refs/ross_rotor_time_validation_reference_v2.json"
             ),
+            "control_lifecycle_v2": "refs/control_lifecycle_reference_v2.json",
+            "rotor_dof_coupling_v4": "refs/rotor_dof_coupling_reference_v4.json",
         },
         "overall_status": "passed",
     }

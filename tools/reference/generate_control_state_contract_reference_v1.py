@@ -66,6 +66,7 @@ def _pid_arrays() -> dict[str, np.ndarray]:
     kd_values = []
     for time, error in zip(times, errors):
         controller.input(float(time), error)
+        controller.evaluate()
         outputs.append(controller.output())
         kp_values.append(np.asarray(controller.kp_calc, dtype=float))
         ki_values.append(np.asarray(controller.ki_calc, dtype=float))
@@ -97,6 +98,7 @@ def _fuzzy_arrays() -> tuple[dict[str, np.ndarray], list[str]]:
         gains = []
         for time, error in zip(times, errors):
             controller.input(float(time), error)
+            controller.evaluate()
             outputs.append(controller.output())
             gains.append(
                 np.stack(

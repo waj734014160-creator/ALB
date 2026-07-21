@@ -32,6 +32,9 @@ class ControllerBlock(CommandComputingBlock[ControlInput, ControlOutput]):
     def compute_command(self) -> None:
         dto = self._require_input()
         self.controller.input(dto.time, dto.error)
+        evaluate = getattr(self.controller, "evaluate", None)
+        if evaluate is not None:
+            evaluate()
         command = self.controller.output()
         self._publish_output(
             ControlOutput(command, dto.time, self.unit_system)

@@ -1048,7 +1048,7 @@ class ALBConfig(ConfigData):
     servo_config: ServoConfig = field(default_factory=Moog2ndServoConfig)
     orifice_config: OrificeConfig = field(default_factory=OrificeConfig)
     tank_config: TankConfig = field(default_factory=TankConfig)
-    controller_config: Union[PIDConfig, FuzzyPIDConfig] = field(
+    controller_config: Optional[Union[PIDConfig, FuzzyPIDConfig]] = field(
         default_factory=PIDConfig
     )  # or FuzzyPIDConfig()
     dt: float = 6.667e-4
@@ -1326,7 +1326,7 @@ class NodimALBConfig(ConfigData):
     orifice_config: NodimOrificeConfig = field(default_factory=NodimOrificeConfig)
     servo_config: ServoConfig = field(default_factory=Moog2ndServoConfig)
     tank_config: TankConfig = field(default_factory=TankConfig)
-    controller_config: Union[PIDConfig, FuzzyPIDConfig] = field(
+    controller_config: Optional[Union[PIDConfig, FuzzyPIDConfig]] = field(
         default_factory=PIDConfig
     )
     dt: float = 6.667e-4

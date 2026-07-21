@@ -14,6 +14,9 @@ import pytest
 
 import ALB
 from ALB.surrogate.training.transforms import MidpointMinMaxScaler
+from tests._support.dynamics.coupling_v4 import (
+    assert_corrected_coupling_reference_exact,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -103,22 +106,24 @@ def test_signal_and_numeric_behavior_match_reference_exactly():
 
     bearing_metadata, bearing_arrays = generator._bearing_reference()
     legacy_metadata, legacy_arrays = generator._legacy_linear_reference()
-    coupling_metadata, coupling_arrays = generator._coupling_reference()
-    del bearing_metadata, legacy_metadata, coupling_metadata
+    del bearing_metadata, legacy_metadata
 
     actual_arrays = {
         **bearing_arrays,
         **legacy_arrays,
-        **coupling_arrays,
     }
     with np.load(REF_NPZ) as reference_arrays:
         for name, actual in actual_arrays.items():
             expected = reference_arrays[name]
             assert list(actual.shape) == metadata["arrays"][name]["shape"]
             assert str(actual.dtype) == metadata["arrays"][name]["dtype"]
-            if name.startswith("coupling_"):
-                continue
             np.testing.assert_array_equal(actual, expected, err_msg=name)
+        for name in reference_arrays.files:
+            if name.startswith("coupling_"):
+                expected = reference_arrays[name]
+                assert list(expected.shape) == metadata["arrays"][name]["shape"]
+                assert str(expected.dtype) == metadata["arrays"][name]["dtype"]
+    assert_corrected_coupling_reference_exact()
 
 
 def test_legacy_scaler_pickle_loads_and_replays_exactly():

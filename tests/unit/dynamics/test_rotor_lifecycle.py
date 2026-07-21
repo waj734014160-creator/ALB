@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from ALB.dynamics.rotor import RossRotor
+from ALB.dynamics.rotor import RotorDofLayout, RossRotor, location_mapping_matrix
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -198,6 +198,23 @@ def test_node_force_mapping_uses_actual_six_dof_stride():
     expected = np.zeros(12)
     expected[6:8] = [3.0, -4.0]
     np.testing.assert_array_equal(rotor._force1, expected)
+
+
+def test_six_dof_result_and_mapping_use_ross_local_layout():
+    rotor = RossRotor(_SixDofNodeRotorPlant(), speed=1.0, dt=1.0e-3)
+    yout = np.arange(24, dtype=float)
+    rotor._youts = [yout]
+
+    np.testing.assert_array_equal(rotor.result_uxy(1), [[6.0, 7.0]])
+    layout = RotorDofLayout.from_dof_per_node(6)
+    mapping = location_mapping_matrix(
+        12,
+        [(1, "x"), (1, "y"), (1, "alpha"), (1, "beta")],
+        layout=layout,
+    )
+    expected = np.zeros((12, 4))
+    expected[[6, 7, 9, 10], np.arange(4)] = 1.0
+    np.testing.assert_array_equal(mapping, expected)
 
 
 @pytest.mark.parametrize(

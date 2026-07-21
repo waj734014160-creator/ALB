@@ -53,8 +53,11 @@ class RotorBearingCouple(BaseSystem):
 
 
 class RsRotorBearingCouple(BaseCSystem):
-    """
-    Couple a ROSS rotor model with multiple bearing models.
+    """Couple a ROSS rotor with bearings using exactly-once step commits.
+
+    A failure after component mutation invalidates the coupler. Call ``init()``
+    before reading or advancing again so a partially applied physical step
+    cannot be retried as if it were untouched.
     """
 
     def __init__(self, rotor: RossRotor, time_iter, *bearings, **kwargs):
@@ -87,6 +90,7 @@ class RsRotorBearingCouple(BaseCSystem):
         self._ts = None
         self._last_output = None
         self._step_ledger = StepCommitLedger()
+        self._valid = False
 
     @property
     def results(self):
@@ -112,6 +116,7 @@ class RsRotorBearingCouple(BaseCSystem):
         )
 
     def init(self, **kwargs):
+        self._valid = False
         time_values = [float(value) for value in self._time_iter()]
         if not time_values:
             raise ValueError("rotor-bearing coupling time grid cannot be empty")
@@ -168,6 +173,7 @@ class RsRotorBearingCouple(BaseCSystem):
             },
         )
         self._step_ledger.commit_step(initial_context)
+        self._valid = True
 
     def add_unbalance(
         self, node_link, phase=0, t_max: float = 1, m=0, freq=0, e=0, no_step=False
@@ -252,54 +258,69 @@ class RsRotorBearingCouple(BaseCSystem):
     def advance(self, context: StepContext, **kwargs) -> ResultBundle:
         """Advance one coupled physical step and commit it exactly once."""
 
+        if not self._valid:
+            raise RuntimeError(
+                "coupling state is invalid; call init() before advancing"
+            )
         if not isinstance(context, StepContext):
             raise TypeError("context must be StepContext")
         if context.unit_system.value != "dimensional":
             raise ValueError("rotor-bearing coupling requires dimensional units")
         self._step_ledger.validate_next(context)
-        ts = context.time
-        self._ts = ts
-        uxy_n1 = self._rp["uxy"]
-        uxyt_n1 = self._rp["uxyt"]
-        self._forceu1 = vertical_stack_nonempty([force(ts) for force in self.forces])
-        self._forcef1 = []
-        for num, bearing in enumerate(self.bearings):
-            bearing.input(uxy=uxy_n1[num], uxyt=uxyt_n1[num], t=ts)
-            self._forcef1.append(validate_bearing_output(bearing.output()))
-        self._forcef1 = np.array(self._forcef1)
+        try:
+            ts = context.time
+            self._ts = ts
+            uxy_n1 = self._rp["uxy"]
+            uxyt_n1 = self._rp["uxyt"]
+            self._forceu1 = vertical_stack_nonempty(
+                [force(ts) for force in self.forces]
+            )
+            self._forcef1 = []
+            for num, bearing in enumerate(self.bearings):
+                bearing.input(uxy=uxy_n1[num], uxyt=uxyt_n1[num], t=ts)
+                self._forcef1.append(validate_bearing_output(bearing.output()))
+            self._forcef1 = np.array(self._forcef1)
 
-        self._forcen0 = vertical_stack_nonempty((self._forceu0, self._forcef0))
-        self._forcen1 = vertical_stack_nonempty((self._forceu1, self._forcef1))
-        self.rotor.input_force2node(
-            ts, self._forcen1, self._fnode_links, force0=self._forcen0
-        )
-        self.rotor.advance()
-        self._rp = self.rotor.output(self._bnode_links)
-        self._forcen0 = self._forcen1
-        self._forceu0 = self._forceu1
-        self._forcef0 = self._forcef1
+            self._forcen0 = vertical_stack_nonempty((self._forceu0, self._forcef0))
+            self._forcen1 = vertical_stack_nonempty((self._forceu1, self._forcef1))
+            self.rotor.input_force2node(
+                ts, self._forcen1, self._fnode_links, force0=self._forcen0
+            )
+            self.rotor.advance()
+            self._rp = self.rotor.output(self._bnode_links)
+            self._forcen0 = self._forcen1
+            self._forceu0 = self._forceu1
+            self._forcef0 = self._forcef1
 
-        self.signal.lead_loop("finish_signal")
-        self._last_output = result_snapshot(
-            {
-                "rotor_displacement": self._rp["uxy"],
-                "rotor_velocity": self._rp["uxyt"],
-                "bearing_force": self._forcef1,
-                "nodal_force": self._forcen1,
-            },
-            {
-                "step_index": context.step_index,
-                "time": context.time,
-                "unit_system": context.unit_system.value,
-            },
-        )
-        self._step_ledger.commit_step(context)
-        self._nt += 1
-        return self.output()
+            self.signal.lead_loop("finish_signal")
+            self._last_output = result_snapshot(
+                {
+                    "rotor_displacement": self._rp["uxy"],
+                    "rotor_velocity": self._rp["uxyt"],
+                    "bearing_force": self._forcef1,
+                    "nodal_force": self._forcen1,
+                },
+                {
+                    "step_index": context.step_index,
+                    "time": context.time,
+                    "unit_system": context.unit_system.value,
+                },
+            )
+            self._step_ledger.commit_step(context)
+            self._nt += 1
+            return self.output()
+        except Exception:
+            self._valid = False
+            self._last_output = None
+            raise
 
     def output(self) -> ResultBundle:
         """Read the most recent completed coupled result without advancing."""
 
+        if not self._valid:
+            raise RuntimeError(
+                "coupling state is invalid; call init() before reading output"
+            )
         if self._last_output is None:
             raise RuntimeError("coupled output is unavailable before advance()")
         return self._last_output

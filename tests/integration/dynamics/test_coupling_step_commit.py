@@ -32,6 +32,18 @@ class _Bearing:
         raise AssertionError("save is outside this test")
 
 
+class _FailingBearing(_Bearing):
+    """Bearing that fails after component state has already been advanced."""
+
+    def __init__(self):
+        super().__init__()
+        self.fail_on_finish = True
+
+    def finish_signal(self):
+        if self.fail_on_finish:
+            raise RuntimeError("injected finish failure")
+
+
 class _Rotor:
     def __init__(self):
         self.signal = Signal(sys=self)
@@ -96,3 +108,28 @@ def test_add_unbalance_forwards_soft_start_selection():
     excitation = coupling.forces[-1]
     assert excitation._no_step_set is True
     np.testing.assert_array_equal(excitation(0.0), [0.0, 0.0])
+
+
+def test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization():
+    bearing = _FailingBearing()
+    rotor = _Rotor()
+    coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.01, 1), bearing)
+    coupling.init()
+    context = StepContext(1, 0.01, 0.01, "dimensional")
+
+    with pytest.raises(RuntimeError, match="injected finish failure"):
+        coupling.advance(context)
+    assert rotor.input_calls == 1
+
+    with pytest.raises(RuntimeError, match="invalid"):
+        coupling.advance(context)
+    with pytest.raises(RuntimeError, match="invalid"):
+        coupling.output()
+    assert rotor.input_calls == 1
+
+    bearing.fail_on_finish = False
+    coupling.init()
+    result = coupling.advance(context)
+
+    assert rotor.input_calls == 1
+    assert result.metadata["step_index"] == 1

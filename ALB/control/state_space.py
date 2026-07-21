@@ -68,6 +68,13 @@ def dlti_state_space_matrix_init(a, b, c, d, dt):
 
 
 class BaseLti(BaseSimpleModel):
+    """Continuous state-space model with an explicit three-phase lifecycle.
+
+    ``input()`` validates and latches one sample, ``evaluate()`` advances or
+    evaluates exactly once, and ``output()`` returns a copy of the completed
+    result. A new input invalidates the previous readable output.
+    """
+
     def __init__(self, sys, dt, **kwargs):
         """
         :param sys: Continuous transfer function or state-space model.
@@ -99,6 +106,8 @@ class BaseLti(BaseSimpleModel):
         self.yout = []
         self.xout = []
         self.u = []
+        self._input_pending = False
+        self._last_output = None
 
     @property
     def A(self):
@@ -128,6 +137,8 @@ class BaseLti(BaseSimpleModel):
         self.yout = []
         self.xout = []
         self.u = []
+        self._input_pending = False
+        self._last_output = None
 
     def _state_space_matrix_init(self, a, b, c, d, dt):
         return lti_state_space_matrix_init(a, b, c, d, dt)
@@ -165,16 +176,22 @@ class BaseLti(BaseSimpleModel):
         return u
 
     def input(self, t, u, *args, **kwargs):
+        """Validate and latch one input without advancing the state."""
+        if self._input_pending:
+            raise RuntimeError("latched LTI input must be evaluated before replacement")
         t = self._check_time(t)
         u = self._check_input(u)
         self.ts.append(t)
         self.u1 = u
         u = np.squeeze(u)
         self.u.append(u)
+        self._input_pending = True
+        self._last_output = None
 
-    def output(self):
-        if self.u1 is None:
-            self.u1 = np.zeros((self._Bd1.shape[0], 1), dtype=float)
+    def evaluate(self):
+        """Advance once from the latched input and publish one output snapshot."""
+        if not self._input_pending or self.u1 is None:
+            raise RuntimeError("a new LTI input must be supplied before evaluate()")
         current_input = np.asarray(self.u1, dtype=float).reshape(-1)
         # The first call publishes y(0) without advancing the state.
         if self.u0 is None:
@@ -182,22 +199,29 @@ class BaseLti(BaseSimpleModel):
             self.xout.append(np.squeeze(self.xk0))
             yout = self._c @ np.asarray(self.xk0).reshape(-1) + self._d @ current_input
             self.yout.append(np.squeeze(yout))
-            return np.asarray(yout, dtype=float).reshape(-1).copy()
+        else:
+            self.xk1 = (
+                np.asarray(self.xk0).reshape(-1) @ self._a
+                + np.asarray(self.u0).reshape(-1) @ self._Bd0
+                + current_input @ self._Bd1
+            )
 
-        self.xk1 = (
-            np.asarray(self.xk0).reshape(-1) @ self._a
-            + np.asarray(self.u0).reshape(-1) @ self._Bd0
-            + current_input @ self._Bd1
-        )
+            # Save the current input as the previous input for the next step.
+            self.u0 = current_input.copy()
+            yout = self._c @ np.asarray(self.xk1).reshape(-1) + self._d @ current_input
+            self.yout.append(np.squeeze(yout))
+            self.xk0 = self.xk1
+            self.xout.append(np.squeeze(self.xk0))
 
-        # Save the current input as the previous input for the next step.
-        self.u0 = current_input.copy()
-        yout = self._c @ np.asarray(self.xk1).reshape(-1) + self._d @ current_input
-        self.yout.append(np.squeeze(yout))
-        self.xk0 = self.xk1
-        self.xout.append(np.squeeze(self.xk0))
+        self._last_output = np.asarray(yout, dtype=float).reshape(-1).copy()
+        self._input_pending = False
+        return self._last_output.copy()
 
-        return np.asarray(yout, dtype=float).reshape(-1).copy()
+    def output(self):
+        """Read the last completed output without advancing model state."""
+        if self._input_pending or self._last_output is None:
+            raise RuntimeError("LTI output is unavailable until evaluate() completes")
+        return self._last_output.copy()
 
     def plot_output(self):
         plt.plot(self.ts, self.yout)
@@ -228,6 +252,8 @@ class BaseLti(BaseSimpleModel):
 
 
 class BaseDlti(BaseLti):
+    """Discrete state-space variant using the same explicit lifecycle."""
+
     def __init__(self, sys, dt, **kwargs):
         super().__init__(sys, dt, **kwargs)
 
@@ -249,17 +275,19 @@ class BaseDlti(BaseLti):
             raise ValueError("Input vector must be finite")
         return u
 
-    def output(self):
-        if self.u1 is None:
-            self.u1 = np.zeros((self._b.shape[1], 1), dtype=float)
+    def evaluate(self):
+        """Advance the discrete state once from the latched input."""
+        if not self._input_pending or self.u1 is None:
+            raise RuntimeError("a new LTI input must be supplied before evaluate()")
         current_input = np.asarray(self.u1, dtype=float).reshape(-1)
         self.xk1 = self._a @ np.asarray(self.xk0).reshape(-1) + self._b @ current_input
         yout = self._c @ self.xk1 + self._d @ current_input
         self.yout.append(np.squeeze(yout))
         self.xk0 = self.xk1
         self.xout.append(np.squeeze(self.xk0))
-
-        return np.asarray(yout, dtype=float).reshape(-1).copy()
+        self._last_output = np.asarray(yout, dtype=float).reshape(-1).copy()
+        self._input_pending = False
+        return self._last_output.copy()
 
 
 def get_space_matrix_from_sys(system):

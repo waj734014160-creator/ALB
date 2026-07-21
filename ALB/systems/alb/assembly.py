@@ -236,6 +236,7 @@ class ALB(BaseCSystem):
         u0 = np.zeros_like(uv)
         if self.controller is not None:
             self.controller.input(t, uv - u0)
+            self.controller.evaluate()
             output = self.controller.output()
             return output
         else:
@@ -288,9 +289,12 @@ class ALB(BaseCSystem):
                     path="servovalves" + str(num), name="servovalve_res", tofile=False
                 )
             )
-        children.append(
-            self.controller.save(path="controller", name="controller_res", tofile=False)
-        )
+        if self.controller is not None:
+            children.append(
+                self.controller.save(
+                    path="controller", name="controller_res", tofile=False
+                )
+            )
         node.add_children(children)
         if tofile:
             return node.persist(kwargs.get("writer"), path)
@@ -1192,6 +1196,8 @@ def _nodim_controller_from_config(alb_config, controller):
     if controller is not None:
         return controller
     controller_config = copy.deepcopy(alb_config.controller_config)
+    if controller_config is None:
+        return None
     # Keep the controller time step aligned with the top-level ALB time step.
     if hasattr(controller_config, "dt"):
         controller_config.dt = alb_config.dt

@@ -19,8 +19,11 @@ from .valve import moog_servovalve
 
 
 class PID(BaseSimpleModel):
-    """
-    A Proportional-Integral-Derivative (PID) controller.
+    """Proportional-integral-derivative controller with explicit evaluation.
+
+    ``input()`` only latches the next error, ``evaluate()`` updates the PID
+    memory once, and ``output()`` reads the completed command without another
+    integration or history write.
     """
 
     def __init__(self, pid_config: PIDConfig, *args, **kwargs):
@@ -71,6 +74,9 @@ class PID(BaseSimpleModel):
         self.kp_calc = 0
         self.ki_calc = 0
         self.kd_calc = 0
+        self._committed_error = None
+        self._input_pending = False
+        self._last_output = None
         if pid_config.sensor_angles is None:
             self.sensor_angles = np.array([0, 90])
         else:
@@ -118,6 +124,9 @@ class PID(BaseSimpleModel):
         self.kp_calc = 0
         self.ki_calc = 0
         self.kd_calc = 0
+        self._committed_error = None
+        self._input_pending = False
+        self._last_output = None
 
     def input(self, t, error, *args, **kwargs):
         """
@@ -125,21 +134,31 @@ class PID(BaseSimpleModel):
         :param t: The current time.
         :param error: The error signal.
         """
-        error = np.array(error).reshape(-1)
-        self.inp = error
-        error = self._sensor(error)
-        if self.error is None:
-            self.delta_error = np.zeros_like(error)
+        if self._input_pending:
+            raise RuntimeError("latched controller input must be evaluated first")
+        inp = np.asarray(error, dtype=float).reshape(-1)
+        if inp.size != 2:
+            raise ValueError("PID input error must contain exactly two values")
+        if not np.all(np.isfinite(inp)):
+            raise ValueError("PID input error must be finite")
+        projected_error = self._sensor(inp)
+        self.inp = inp
+        if self._committed_error is None:
+            self.delta_error = np.zeros_like(projected_error)
         else:
-            self.delta_error = error - self.error
-        self.error = limit_signal(error)
+            self.delta_error = projected_error - self._committed_error
+        self.error = limit_signal(projected_error)
         self.t = t
+        self._input_pending = True
+        self._last_output = None
 
-    def output(self, *args, **kwargs):
+    def evaluate(self, *args, **kwargs):
         """
-        Calculates the PID controller output.
+        Calculate one PID command from the currently latched input.
         :return: The controller output signal.
         """
+        if not self._input_pending or self.error is None:
+            raise RuntimeError("a new controller input is required before evaluate()")
         output = self.decrete_pid(self.error, self.delta_error)
         output = limit_signal(output)
         self.results.loc[self.results.shape[0]] = [
@@ -152,7 +171,16 @@ class PID(BaseSimpleModel):
             self.ki_calc,
             self.kd_calc,
         ]
-        return output
+        self._committed_error = np.asarray(self.error, dtype=float).copy()
+        self._last_output = np.asarray(output, dtype=float).copy()
+        self._input_pending = False
+        return self._last_output.copy()
+
+    def output(self, *args, **kwargs):
+        """Read the completed PID command without integrating again."""
+        if self._input_pending or self._last_output is None:
+            raise RuntimeError("controller output is unavailable until evaluate() completes")
+        return self._last_output.copy()
 
     def decrete_pid(self, error, delta_error):
         """
@@ -410,11 +438,13 @@ class FuzzyPID(PID):
         )
         return True
 
-    def output(self, *args, **kwargs):
+    def evaluate(self, *args, **kwargs):
         """
-        Calculates the Fuzzy PID controller output.
+        Calculate one Fuzzy PID command from the currently latched input.
         :return: The controller output signal.
         """
+        if not self._input_pending or self.error is None:
+            raise RuntimeError("a new controller input is required before evaluate()")
         self.fuzzy_pid(self.error, self.delta_error)
         output = self.decrete_pid(self.error, self.delta_error)
         self.results.loc[self.results.shape[0]] = [
@@ -432,7 +462,10 @@ class FuzzyPID(PID):
             self.ki_nodim,
             self.kd_nodim,
         ]
-        return output
+        self._committed_error = np.asarray(self.error, dtype=float).copy()
+        self._last_output = np.asarray(output, dtype=float).copy()
+        self._input_pending = False
+        return self._last_output.copy()
 
     def fuzzy_pid(self, error, delta_error):
         """
@@ -808,9 +841,21 @@ class ALBLQGController(BaseSimpleModel):
 
         Returns a continuous-time state-space system.
         """
-        from ALB.dynamics.rotor import location_mapping_matrix
+        from ALB.dynamics.rotor import RotorDofLayout, location_mapping_matrix
 
         self.ndof = self.rotor._rotor.ndof
+        try:
+            layout = self.rotor.dof_layout
+        except (AttributeError, ValueError):
+            layout = None
+        if layout is None:
+            raw_rotor = self.rotor._rotor
+            if hasattr(raw_rotor, "number_dof"):
+                layout = RotorDofLayout.from_ross(raw_rotor)
+            else:
+                # Minimal legacy test plants expose only a single four-DOF
+                # planar node and are not complete ROSS rotor objects.
+                layout = RotorDofLayout.from_dof_per_node(4)
         lti_r = self._rotor_lti()
         self._Ar_full, self._Br_full = lti_r.A, lti_r.B
 
@@ -822,11 +867,15 @@ class ALBLQGController(BaseSimpleModel):
             act_loc = [[b.act_node, "x"], [b.act_node, "y"]]
             sen_loc = [[b.sensor_node, "x"], [b.sensor_node, "y"]]
 
-            T_act = location_mapping_matrix(self.ndof, act_loc)
+            T_act = location_mapping_matrix(self.ndof, act_loc, layout=layout)
             B_all_list.append(Br @ T_act)
 
-            H_sen_disp = location_mapping_matrix(self.ndof * 2, sen_loc).T
-            H_act_disp = location_mapping_matrix(self.ndof * 2, act_loc).T
+            H_sen_disp = location_mapping_matrix(
+                self.ndof * 2, sen_loc, layout=layout
+            ).T
+            H_act_disp = location_mapping_matrix(
+                self.ndof * 2, act_loc, layout=layout
+            ).T
             H_act_vel = np.roll(H_act_disp, self.ndof, axis=1)
 
             C_disp_act_list.append(H_act_disp)
@@ -835,7 +884,7 @@ class ALBLQGController(BaseSimpleModel):
 
         for node in self.unbalance_nodes:
             loc = [[node, "x"], [node, "y"]]
-            T_d = location_mapping_matrix(self.ndof, loc)
+            T_d = location_mapping_matrix(self.ndof, loc, layout=layout)
             B_all_list.append(Br @ T_d)
 
         B_all = np.hstack(B_all_list) if B_all_list else np.zeros((Ar.shape[0], 0))

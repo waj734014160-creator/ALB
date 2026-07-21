@@ -1,5 +1,6 @@
 ﻿# -- coding: utf-8 --
 import copy
+from dataclasses import dataclass
 from numbers import Integral
 from typing import List, Tuple
 
@@ -309,20 +310,87 @@ class SingleRotor(BaseSimpleModel):
         pass
 
 
-def _nodeforce2array(ndof, number_dof, force, node):
-    """Map per-node XY forces to the global vector for 4/6-DOF ROSS nodes."""
+@dataclass(frozen=True)
+class RotorDofLayout:
+    """ROSS node-local DOF layout and the only node-to-global mapper."""
+
+    dof_per_node: int
+    x: int
+    y: int
+    alpha: int
+    beta: int
+
+    def __post_init__(self) -> None:
+        values = (self.x, self.y, self.alpha, self.beta)
+        if self.dof_per_node < 4:
+            raise ValueError("dof_per_node must be at least four")
+        if len(set(values)) != len(values):
+            raise ValueError("rotor local DOF indices must be unique")
+        if any(value < 0 or value >= self.dof_per_node for value in values):
+            raise ValueError("rotor local DOF index is outside the node layout")
+
+    @classmethod
+    def from_dof_per_node(cls, dof_per_node: int) -> "RotorDofLayout":
+        """Return the standard ROSS four- or six-DOF node layout."""
+        if dof_per_node == 4:
+            return cls(4, x=0, y=1, alpha=2, beta=3)
+        if dof_per_node == 6:
+            return cls(6, x=0, y=1, alpha=3, beta=4)
+        raise ValueError("only four- and six-DOF ROSS layouts are supported")
+
+    @classmethod
+    def from_ross(cls, rotor) -> "RotorDofLayout":
+        """Build the layout from a ROSS shaft-element DOF mapping."""
+        dof_per_node = int(rotor.number_dof)
+        shaft_elements = getattr(rotor, "shaft_elements", None)
+        if not shaft_elements:
+            return cls.from_dof_per_node(dof_per_node)
+        mapping = shaft_elements[0].dof_mapping()
+        required = {name: f"{name}_0" for name in ("x", "y", "alpha", "beta")}
+        missing = [key for key in required.values() if key not in mapping]
+        if missing:
+            raise ValueError(f"ROSS shaft DOF mapping is missing {missing}")
+        return cls(
+            dof_per_node,
+            **{name: int(mapping[key]) for name, key in required.items()},
+        )
+
+    def local_index(self, direction: str) -> int:
+        """Return the local index for one supported physical direction."""
+        if direction not in {"x", "y", "alpha", "beta"}:
+            raise ValueError(
+                "direction must be one of: x, y, alpha, beta"
+            )
+        return int(getattr(self, direction))
+
+    def global_index(self, node: int, direction: str, total_dof: int) -> int:
+        """Map one nonnegative node/direction pair into a global DOF index."""
+        if isinstance(node, (bool, np.bool_)) or not isinstance(
+            node, (Integral, np.integer)
+        ):
+            raise TypeError("node index must be an integer")
+        node = int(node)
+        if node < 0:
+            raise ValueError("node index must be nonnegative")
+        index = self.dof_per_node * node + self.local_index(direction)
+        if index >= total_dof:
+            raise ValueError(
+                f"node {node} direction {direction!r} exceeds total_dof {total_dof}"
+            )
+        return index
+
+
+def _nodeforce2array(ndof, layout, force, node):
+    """Map per-node XY forces through one explicit ROSS DOF layout."""
     if isinstance(ndof, (bool, np.bool_)) or not isinstance(
         ndof, (Integral, np.integer)
     ):
         raise TypeError("ndof must be an integer")
-    if isinstance(number_dof, (bool, np.bool_)) or not isinstance(
-        number_dof, (Integral, np.integer)
-    ):
-        raise TypeError("number_dof must be an integer")
     ndof = int(ndof)
-    number_dof = int(number_dof)
-    if ndof <= 0 or number_dof < 2:
-        raise ValueError("ndof must be positive and number_dof must be at least 2")
+    if ndof <= 0:
+        raise ValueError("ndof must be positive")
+    if not isinstance(layout, RotorDofLayout):
+        raise TypeError("layout must be RotorDofLayout")
 
     force_array = np.asarray(force, dtype=float)
     if force_array.ndim == 1:
@@ -346,14 +414,12 @@ def _nodeforce2array(ndof, number_dof, force, node):
         raise ValueError("node count must match the number of force rows")
     if np.any(nodes < 0):
         raise ValueError("node indices must be nonnegative")
-    if np.any(number_dof * nodes + 1 >= ndof):
-        raise ValueError("node index exceeds the global rotor DOF vector")
-
     aforce = np.zeros(ndof, dtype=float)
     for index, node_index in enumerate(nodes):
-        offset = number_dof * int(node_index)
-        aforce[offset] += force_array[index, 0]
-        aforce[offset + 1] += force_array[index, 1]
+        x_index = layout.global_index(int(node_index), "x", ndof)
+        y_index = layout.global_index(int(node_index), "y", ndof)
+        aforce[x_index] += force_array[index, 0]
+        aforce[y_index] += force_array[index, 1]
     return aforce
 
 
@@ -391,6 +457,11 @@ class RossRotor:
         self._dt = dt
         self._sys = rotor._lti(speed)
         self._number_dof = rotor.number_dof
+        self._dof_layout = (
+            RotorDofLayout.from_ross(rotor)
+            if int(self._number_dof) in {4, 6}
+            else None
+        )
         if not discrete:
             self.continuesys()
         else:
@@ -474,15 +545,17 @@ class RossRotor:
         """
         Input per-node 2D forces and map them to global DOFs.
         """
+        if self._dof_layout is None:
+            raise ValueError("node-force mapping requires a four- or six-DOF layout")
         mapped_force = _nodeforce2array(
-            self._rotor.ndof, self._number_dof, force, node
+            self._rotor.ndof, self._dof_layout, force, node
         )
         force0 = kwargs.get("force0", None)
         mapped_force0 = (
             None
             if force0 is None
             else _nodeforce2array(
-                self._rotor.ndof, self._number_dof, force0, node
+                self._rotor.ndof, self._dof_layout, force0, node
             )
         )
         # Validate all inputs before mutating histories or latched state.
@@ -575,20 +648,29 @@ class RossRotor:
 
         if not self._state_ready:
             raise RuntimeError("rotor state is stale until advance() completes")
-        nof = self._rotor.number_dof
         ndof = self._rotor.ndof
         res = self._xk0
         if node is None:
             return res.copy()
         else:
+            if self._dof_layout is None:
+                raise ValueError(
+                    "node-state extraction requires a four- or six-DOF layout"
+                )
             node = np.array(node, dtype=np.int32).reshape(-1)
             # xy
-            u0 = res[nof * node]
-            u1 = res[nof * node + 1]
+            x_indices = np.asarray(
+                [self._dof_layout.global_index(int(value), "x", ndof) for value in node]
+            )
+            y_indices = np.asarray(
+                [self._dof_layout.global_index(int(value), "y", ndof) for value in node]
+            )
+            u0 = res[x_indices]
+            u1 = res[y_indices]
             uxy = np.vstack((u0, u1)).T
             # xyt
-            u0 = res[ndof + nof * node]
-            u1 = res[ndof + nof * node + 1]
+            u0 = res[ndof + x_indices]
+            u1 = res[ndof + y_indices]
             uxyt = np.vstack((u0, u1)).T
             return {"uxy": uxy, "uxyt": uxyt}
 
@@ -596,6 +678,14 @@ class RossRotor:
         """Read the completed current state without hidden propagation."""
 
         return self.current_state(node)
+
+    @property
+    def dof_layout(self) -> RotorDofLayout:
+        """Return the immutable ROSS-derived node DOF layout."""
+
+        if self._dof_layout is None:
+            raise ValueError("rotor does not expose a four- or six-DOF layout")
+        return self._dof_layout
 
     def finish_signal(self):
         self._youts.append(copy.deepcopy(self._yout))
@@ -613,7 +703,11 @@ class RossRotor:
         """
         Extract displacement history (x, y) for a given node.
         """
-        return np.array(self._youts)[:, 4 * node : 4 * node + 2]
+        if self._dof_layout is None:
+            raise ValueError("result_uxy requires a four- or six-DOF layout")
+        x_index = self._dof_layout.global_index(node, "x", self._rotor.ndof)
+        y_index = self._dof_layout.global_index(node, "y", self._rotor.ndof)
+        return np.asarray(self._youts)[:, [x_index, y_index]]
 
     def plot_rotor(self, **kwargs):
         return self._rotor.plot_rotor(**kwargs)
@@ -820,7 +914,9 @@ def rotor0(
 
 
 def location_mapping_matrix(
-    total_dof: int, actuator_locations: List[Tuple[int, str]]
+    total_dof: int,
+    actuator_locations: List[Tuple[int, str]],
+    layout: RotorDofLayout | None = None,
 ) -> np.ndarray:
     """
     Constructs the actuator location mapping matrix T_act.
@@ -831,11 +927,14 @@ def location_mapping_matrix(
 
     Args:
         total_dof (int): The total number of degrees of freedom in the system.
-            For standard rotor models, this is typically node_count * 4.
+            This may be the rotor coordinate count or full state count,
+            depending on the matrix being constructed.
         actuator_locations (List[Tuple[int, str]]): A list of tuples specifying
             the location of each actuator.
             Format: [(node_index, 'direction'), (node_index, 'direction'), ...]
             Supported directions: 'x', 'y', 'alpha', 'beta'.
+        layout (RotorDofLayout, optional): ROSS-derived local node layout.
+            Omission preserves the legacy four-DOF mapping convention.
 
     Returns:
         np.ndarray: A mapping matrix with shape (total_dof, len(actuator_locations)).
@@ -851,30 +950,12 @@ def location_mapping_matrix(
     # Initialize a sparse-like matrix with zeros (Shape: N x m)
     t_act = np.zeros((total_dof, n_inputs))
 
-    # Mapping for local DoF indices (Standard rotor dynamics convention)
-    # 0: x-displacement, 1: y-displacement
-    # 2: alpha (rotation around y), 3: beta (rotation around x)
-    dof_map = {"x": 0, "y": 1, "alpha": 2, "beta": 3}
+    if layout is None:
+        layout = RotorDofLayout.from_dof_per_node(4)
 
     for col_idx, (node_idx, direction) in enumerate(actuator_locations):
         # 1. Validate the direction input
-        if direction not in dof_map:
-            raise ValueError(
-                f"Invalid direction: '{direction}'. "
-                f"Supported directions are: {list(dof_map.keys())}"
-            )
-
-        # 2. Calculate the global row index
-        # Assuming 4 DoFs per node, which is standard for Timoshenko beam elements
-        local_dof = dof_map[direction]
-        global_row_idx = 4 * node_idx + local_dof
-
-        # 3. Check for index out of bounds
-        if global_row_idx >= total_dof:
-            raise ValueError(
-                f"Calculated index ({global_row_idx}) for Node {node_idx} "
-                f"('{direction}') exceeds total_dof ({total_dof})."
-            )
+        global_row_idx = layout.global_index(node_idx, direction, total_dof)
 
         # 4. Assign unity to the mapping position
         t_act[global_row_idx, col_idx] = 1.0

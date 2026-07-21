@@ -11,12 +11,12 @@
   "implementation_commit": "1ec827fd05c6f78235a369b41bd00ea91131a403",
   "verification": {
     "collection_command": "E:/Anaconda2023/envs/ALB/python.exe -m pytest tests --collect-only -q -p no:cacheprovider",
-    "collected_node_count": 381,
-    "collected_nodeids_sha256": "673a67994791d53f799b40e8128aeea236f531432c180fd41152944777a0db87",
+    "collected_node_count": 388,
+    "collected_nodeids_sha256": "6de5769f76f6b27e28cc1326b81836479931985e985be465519b560dc1fed876",
     "replacement_node_count": 242,
     "replacement_nodeids_sha256": "5bfc9bb3de3795ad68acece977e11c5271eaec1904ee352cd39eea9adbc48eed",
     "all_replacements_collected": true,
-    "full_suite_evidence": "docs/migrations/0.2.0_post_refactor_review_acceptance.json",
+    "full_suite_evidence": "docs/migrations/0.2.0_second_review_acceptance.json",
     "notes": [
       "All 242 baseline nodes have an explicit replacement node.",
       "Migrated SURROGATE_TRAIN validation nodes are collected and executed.",

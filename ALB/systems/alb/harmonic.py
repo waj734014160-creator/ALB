@@ -435,6 +435,7 @@ class ALBHarmonicLinear(BearingComponentBase):
 
         assert self.controller is not None
         self.controller.input(time_s, uxy / self.coefficients.clearance_m)
+        self.controller.evaluate()
         command = np.asarray(self.controller.output(), dtype=float).reshape(2)
         spool = np.zeros(2, dtype=float)
         for axis, valve in enumerate(self.servovalves):

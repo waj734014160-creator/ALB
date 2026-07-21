@@ -29,7 +29,7 @@
 ```python
 from ALB.physics.bearing import HydrostaticBearing
 from ALB.control.pid import PID
-from ALB.dynamics.rotor import RossRotor
+from ALB.dynamics.rotor import RossRotor, RotorDofLayout
 from ALB.surrogate.inference import albnn
 from ALB.systems.alb import BearingBlock, DirectSpoolBearingBlock, nodim_alb
 ```
@@ -49,7 +49,7 @@ from ALB.systems.alb import BearingBlock, DirectSpoolBearingBlock, nodim_alb
 | `ALB.physics.gas` | 气体轴承 | gas-film solver |
 | `ALB.physics.thermal` | 热耦合 | 热模型、黏温/尺度转换和热惯性状态 |
 | `ALB.control` | 控制和阀 | PID、Fuzzy、LQG、状态空间、降阶、伺服阀和严格端口 blocks |
-| `ALB.dynamics` | 转子与耦合 | rotor、coupling、orbit、FFT/KC 识别 |
+| `ALB.dynamics` | 转子与耦合 | `RotorDofLayout`、rotor、coupling、orbit、FFT/KC 识别 |
 | `ALB.surrogate` | 部署侧代理模型 | features、networks、scalers、inference、versioned model package、非破坏迁移 |
 | `ALB.surrogate.training` | 训练侧公共能力 | config、data、loss、transform、report、run 和 ALBNN 专用远程队列 |
 | `ALB.systems.alb` | 顶层 ALB 系统装配 | builder、非线性 ALB、严格 `BearingBlock`、direct-spool 适配器、谐波线性轴承及 `K/C/G_xv` |
@@ -136,7 +136,8 @@ thermal ALBNN 的实际输入列、feature set、target transform 和模型选�
 - `StaicLoad` 更名为 `StaticLoad`，`dynmaic` 更名为 `dynamic`，`rotor_respone` 更名为 `rotor_response`。
 - `RossRotor.output()` 不再隐式推进；使用 `advance()` 和 `current_state()`。
 - `RsRotorBearingCouple` 的首点是初始快照，包含 `num + 1` 个采样点的网格只推进 `num` 次。
-- `BaseLti`/`BaseDlti.output()` 返回当前向量，不再在后续调用中改为返回完整历史。
+- `BaseLti`、`BaseDlti`、`PID` 和 `FuzzyPID` 使用 `input()` → `evaluate()` → `output()`；`output()` 只读取已完成快照，重复读取不再推进状态、积分或写历史。
+- 4/6-DOF ROSS 节点映射统一通过 `RotorDofLayout`；`result_uxy()` 与 LQG 执行器、传感器和扰动映射不再假定固定 4-DOF 步长。
 - 旧结果树保存方法和数值模块内部 exporter 已删除；保存必须经过 artifact writer。
 - 数值实现内部仍可能保留用于冻结行为的旧参数解析或适配代码，但这些不是 0.2 推荐公共 import 面。
 

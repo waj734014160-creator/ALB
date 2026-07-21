@@ -37,12 +37,13 @@ class BaseValve(BaseSystem):
         self.main_model.input(t, uv)
 
     def output(self, *args, **kwargs):
-        return self.solve()
+        return self.main_model.output()
 
     def calc_is_finished(self):
         return True
 
     def solve(self):
+        self.main_model.evaluate()
         return self.main_model.output()
 
     def save(self, tofile=True, path=None, name=None, *args, **kwargs):
@@ -76,7 +77,7 @@ class ServoValve2(BaseValve):
         uv = uv.reshape([-1, 1])
         self.uv = limit_signal(uv)
         self.main_model.input(t, uv, *args, **kwargs)
-        self.main_model.output()
+        self.main_model.evaluate()
         self.xv = self.yout[-1]
         self.xv = limit_signal(self.xv)
         return True
