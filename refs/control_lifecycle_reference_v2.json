@@ -1,0 +1,162 @@
+{
+  "reference_name": "control_lifecycle_reference_v2",
+  "created_at": "2026-07-21T22:37:17.173279+00:00",
+  "baseline_commit": "ffa93f25fbe8fe8853905c274d32703055ea7f69",
+  "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+  "python_version": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "observed_defect": "BaseLti, PID, and FuzzyPID output calls mutate state and history without a newly latched input",
+  "target_contract": "input invalidates output, evaluate computes once, and repeated output reads one immutable result",
+  "arrays": {
+    "fuzzy.corrected_integral": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "fuzzy.corrected_repeated_outputs": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8c2e5742c96fb0d73178ca5d2a230589561427da32d55096cd7d6cf5e6bdfd18"
+    },
+    "fuzzy.corrected_result_rows": {
+      "shape": [
+        1
+      ],
+      "dtype": "int64",
+      "sha256": "7c9fa136d4413fa6173637e883b6998d32e1d675f88cddff9dcbcf331820f4b8"
+    },
+    "fuzzy.first_output": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "c40785439394f5aa7c309f533fe14aca0322b4622c6b1c9aa40ac41dccf5425d"
+    },
+    "fuzzy.observed_duplicate_integral": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "fuzzy.observed_duplicate_output": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "c40785439394f5aa7c309f533fe14aca0322b4622c6b1c9aa40ac41dccf5425d"
+    },
+    "fuzzy.observed_result_rows": {
+      "shape": [
+        1
+      ],
+      "dtype": "int64",
+      "sha256": "d86e8112f3c4c4442126f8e9f44f16867da487f29052bf91b810457db34209a4"
+    },
+    "lti.corrected_history_lengths": {
+      "shape": [
+        2
+      ],
+      "dtype": "int64",
+      "sha256": "814dd7b9784d57c15b9c2972e9b4fd6cf7e164f8162a934bdb2452a413dab1f7"
+    },
+    "lti.corrected_repeated_outputs": {
+      "shape": [
+        2,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "158c1da0eab475a098be78a68ad3736fcab720d4ab0a01834687a258e8a9fc2b"
+    },
+    "lti.corrected_state": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "76ac2cde7665454a2feeeb3ff8bf3c4b85272509b98228dbc1e8f7a8c979a647"
+    },
+    "lti.first_output": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "ffe32dfe9ce90461c1938cd8e4a5f0dc5d398e6c947a45f7d24a3ae765119102"
+    },
+    "lti.observed_duplicate_output": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "9c4aa6f598c6bcb950ab765e8af7c67a3fdd0b282ba5dbba55c55a3e45301749"
+    },
+    "lti.observed_duplicate_state": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "b290220f61564b26ccf782cff005bb33c6d42153f920b6b36fb57c691772a357"
+    },
+    "lti.observed_history_lengths": {
+      "shape": [
+        2
+      ],
+      "dtype": "int64",
+      "sha256": "fa7c63f601691b958793c6d5ebe2ec4456e1a35b2b448b4f3e55cd1f86787673"
+    },
+    "pid.corrected_integral": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "dd57f6388c9d5adb680fdf231f167dd6f712e91cd9119644732613c0c520a31c"
+    },
+    "pid.corrected_repeated_outputs": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "eb16aa2dc38394eef0be21bc1dc319b137ef6bc6759059ed0590b840a59813d2"
+    },
+    "pid.corrected_result_rows": {
+      "shape": [
+        1
+      ],
+      "dtype": "int64",
+      "sha256": "7c9fa136d4413fa6173637e883b6998d32e1d675f88cddff9dcbcf331820f4b8"
+    },
+    "pid.first_output": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "3f27f1962fe0d544a57356af95ec7ccca5ec8a4905b6f3c86ef56aada3df87ad"
+    },
+    "pid.observed_duplicate_integral": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "b34951b548c3f07690a31cdefd4b25aa851e9c788f2eb2f147592e1b50f6792c"
+    },
+    "pid.observed_duplicate_output": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "32eb0f67675220b5e9c69971674bc6f5bf279b824cf7dbee479113c1b8e4d1c7"
+    },
+    "pid.observed_result_rows": {
+      "shape": [
+        1
+      ],
+      "dtype": "int64",
+      "sha256": "d86e8112f3c4c4442126f8e9f44f16867da487f29052bf91b810457db34209a4"
+    }
+  }
+}
