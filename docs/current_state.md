@@ -29,7 +29,7 @@
 - 热收敛补充参考：`refs/full_repo_refactor_addendum_v1/`，3 个自包含 case、40 个冻结数组；由重构前 commit `a4b2be1` 的隔离源码生成，并由 annotated tag `full-repo-refactor-thermal-addendum-v1-20260721` 固定。
 - 热 Newton 修正参考：`refs/thermal_segregated_newton_reference_v2.{json,npz}`，33 个数组；commit `d9d37de` 先于测试修正建立，v1 保持不变。S0011 部分冻结的是当前代码和当前 shared config 回放，不是缺失的历史 `share.json5` 精确重建。
 - 转子时步修正参考：`refs/ross_rotor_time_validation_reference_v2.{json,npz}`，14 个数组；commit `4713eec` 先建立修正前合法轨迹，commit `e375d2d` 再修复校验，既有 v1 未改动。
-- 当前阶段：0.2.0 全仓库重构、迁移资料、性能门禁和 wheel 隔离安装均已完成；发布后 S0011/lambda 与 RossRotor 时步校验已分别完成，下一阶段仍是外部消费者迁移。
+- 当前阶段：0.2.0 全仓库重构、发布后 S0011/lambda 与 RossRotor 修正均已完成；SURROGATE_TRAIN 的 23 文件 declared 消费者迁移已在独立分支落地并通过全量门禁，下一阶段是处理明确保留的非机械边界和迁移 PAPER_WORK。
 
 ## 已完成的 0.2.0 边界
 
@@ -53,6 +53,7 @@
 | 0.2.0 标签验收 | 293 passed、33 skipped、12 warnings、7 subtests passed；测试前后 tracked 状态增量为 0 | `docs/migrations/0.2.0_release_acceptance.json` |
 | 发布后数值修正验收 | 297 passed、30 skipped、12 warnings、7 subtests passed；4 个 S0011 节点全部 passed，mypy 19 个文件无问题，tracked 状态增量为 0 | `docs/migrations/0.2.0_post_release_numeric_acceptance.json` |
 | 发布后转子时步验收 | 300 passed、30 skipped、12 warnings、7 subtests passed；3 个 RossRotor 时步节点和 4 个 S0011 节点全部 passed，mypy 19 个文件无问题，tracked 状态增量为 0 | `docs/migrations/0.2.0_post_release_rotor_acceptance.json` |
+| SURROGATE_TRAIN 消费者迁移 | 325 passed、13 skipped、12 warnings、7 subtests passed；23 个 declared 文件中 20 个改写、3 个 context 文件按计划不改；旧平铺 import 为 0；三个 model package 的 manifest/artifact 哈希通过 | `docs/migrations/0.2.0_surrogate_train_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
 | 严格类型 | mypy 2.3.0 检查 `ALB/contracts` 与 `ALB/core`，19 个源文件无问题 | `docs/migrations/0.2.0_release_acceptance.json` |
@@ -64,21 +65,22 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 
 ## 外部消费者状态
 
-本轮只读审计已覆盖：
+迁移前只读 v1 审计保持不变，覆盖：
 
 - `SURROGATE_TRAIN` 23 个文件：19 个 direct、4 个 context。
 - `PAPER_WORK` 27 个文件：25 个 direct、2 个 transitive。
 
-每个文件的 SHA-256、旧 import、0.2 目标 namespace 和语义迁移门槛位于 `docs/migrations/0.2.0_external_consumer_audit.json`。所有条目均标记 `external_file_modified=false`；本轮没有修改外部项目。
+每个文件的原始 SHA-256、旧 import、0.2 目标 namespace 和语义迁移门槛位于 `docs/migrations/0.2.0_external_consumer_audit.json`。SURROGATE_TRAIN 已在 `codex/alb-0.2-consumer-migration` 分支完成 remote、训练 import、推理分析、物理/config/DoE 调用迁移；20 个需要改写的文件均已提交，3 个无直接 import 的 context 文件仅 smoke。逐文件新哈希、三个 package manifest、验证结果和剩余边界见 `docs/migrations/0.2.0_surrogate_train_post_migration_audit.json`。PAPER_WORK 仍保持只读。
 
 ## 已知风险与边界
 
-- 原发布验收的 33 个 skip 分为：`SURROGATE_TRAIN` 17、外部 `VALIDATION` 13、S0011 旧路径 3。S0011 三项已修复；当前 30 个 skip 只剩 `SURROGATE_TRAIN` 17 和 `VALIDATION` 13。
-- `SURROGATE_TRAIN` 的 17 项中，16 项确需外部旧 namespace 迁移；M0031 的 1 项是本仓库测试把 sibling 项目错误拼成 `ALB_MAIN/SURROGATE_TRAIN`，实际 5 个 artifact 存在，尚待独立修正。
+- 原发布验收的 33 个 skip 分为：`SURROGATE_TRAIN` 17、外部 `VALIDATION` 13、S0011 旧路径 3。S0011 与 SURROGATE_TRAIN 两组均已解除；当前全量只剩外部 `VALIDATION` 13 项。
 - 两个 liquid-film 测试曾用 `6.0 * miu * omega * l**2 / (ps*c**2)`，把 Reynolds bearing number 放大 4 倍；现统一通过 `FilmNondimScales` 使用生产定义 `1.5`。`ALB.physics.gas` 中的 `6.0` 属于另一套气体轴承定义，不在此次修正范围。
 - S0011 v2 已嵌入三条输入、当前 resolved source config 和 fixed-point config，不再读取外部 84.3 MB CSV。历史 `alb12.json5` 哈希一致，但原 `share.json5` 已缺失且当前 hash 不同；因此 v1 到 v2 的 dimensional/S0011 漂移不能归因于 lambda 修正，也不能宣称完成历史配置精确复现。
 - `RossRotor._check_time()` 已改为在状态变更前拒绝非有限或不匹配 `dt` 的时间；合法 global/node 轨迹对修正前 v2 参考精确一致，被拒绝调用的时间、载荷和状态保持不变。
-- `task/task_albnn_data.py` 的 `sx/sy` 需要作为直接 `sv` 输入传入 `NodimALBSV`，但当前严格 `BearingInput/BearingBlock` 不携带阀芯量。外部迁移前必须先补严格 ALBSV adapter 或明确受控内部边界，不能直接套用 `BearingBlock` 导致零阀芯和样本力漂移。
+- `task/task_albnn_data.py` 已通过 `DirectSpoolBearingInput/DirectSpoolBearingBlock` 传递 `sx/sy`，三个冻结工况的力值逐元素精确相等。`task/task_alb_data2.py` 仍有 dimensional 模型配合 `input(nodim=True)`、`output(nodim=False)` 的混合单位边界，严格端口化前必须另建尺度适配器和冻结参考。
+- `task/task_thermal_forces.py` 存在本次机械迁移未修正的既有行为：采样的 `sx/sy` 不参与求解而是共用固定 `xv`，只返回第一个热瓦块的力/收敛，声明的 `pooln` 也未接入串行循环。它们应作为独立数值/物理修正处理。
+- 当前实际引用的 M0031、M0035 和 KNN 基线已生成默认不覆盖源文件的 `package_v0_2`；未来 base/expert/residual 训练仍输出松散 checkpoint/scaler，自动生成 0.2 package 尚待独立实现。
 - 旧 `ALB.nn` pickle 不属于 0.2 运行时兼容面。必须先使用显式迁移工具生成新的 model package，并只对可信 pickle 启用加载。
 - 删除当前工作树中的私人邮件默认值不会抹除 Git 历史；相关 SMTP 凭据仍需在外部轮换。
 - thermal 主参考的 direct/Newton/transient 收敛证据已由 addendum 补齐；但现有性能与热参考仍主要是小算例，且 orifice cooling、非零导热、生产尺寸 M0035 和大型 ROSS 性能不在当前精确门禁覆盖内。
@@ -87,10 +89,11 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 
 ## 发布后下一步
 
-1. 在 `SURROGATE_TRAIN` 独立分支按 `docs/migrations/0.2.0_external_consumer_audit.md` 的 8 步、23 文件计划迁移 remote、训练、model package、推理和物理调用；先解决 ALBSV 严格端口缺口，再执行固定样本与 CLI smoke。
-2. 在 `PAPER_WORK` 独立分支按 27 文件清单迁移脚本，保持论文任务配置和结果资产原地。
-3. 在 ALB_MAIN 单独修正 M0031 测试的 sibling-root 路径；它不是外部源码迁移，不能混入 `SURROGATE_TRAIN` 提交。
-4. 如需发布 wheel 到外部位置，先重新执行 `tools/validation/validate_wheel_0_2.py` 并核对 SHA-256。
+1. 为 `task/task_alb_data2.py` 的混合单位调用先建立参考与显式尺度适配器；不要直接套用 nondimensional strict port。
+2. 将新 base/expert/residual 训练输出自动封装为 0.2 model package；residual 的主模型嵌套关系需先定义 manifest 语义。
+3. 在 `PAPER_WORK` 独立分支按 27 文件清单迁移脚本，保持论文任务配置和结果资产原地。
+4. `task/task_thermal_forces.py` 的三个既有问题若要修复，另建提交和 v2 参考，不混入消费者机械迁移。
+5. 如需重新发布 wheel，先执行完整 wheel 隔离安装门禁并核对新 SHA-256。
 
 ## 证据入口
 
@@ -103,5 +106,6 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - RossRotor 合法轨迹参考：`refs/ross_rotor_time_validation_reference_v2.json`。
 - 热收敛补充参考：`refs/full_repo_refactor_addendum_v1/thermal_convergence.json`。
 - 外部调用：`docs/migrations/0.2.0_external_consumer_audit.md`。
+- SURROGATE_TRAIN 迁移后证据：`docs/migrations/0.2.0_surrogate_train_post_migration_audit.md`。
 - 性能：`docs/migrations/0.2.0_performance.json`。
 - 构建：`docs/migrations/0.2.0_build_acceptance.json`。

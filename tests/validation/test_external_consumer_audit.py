@@ -9,6 +9,10 @@ from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 AUDIT_PATH = REPOSITORY_ROOT / "docs/migrations/0.2.0_external_consumer_audit.json"
+POST_AUDIT_PATH = (
+    REPOSITORY_ROOT
+    / "docs/migrations/0.2.0_surrogate_train_post_migration_audit.json"
+)
 
 
 def test_declared_external_snapshot_has_exact_required_counts() -> None:
@@ -22,15 +26,55 @@ def test_declared_external_snapshot_has_exact_required_counts() -> None:
     assert projects["PAPER_WORK"]["counts"] == {"direct": 25, "transitive": 2}
 
 
-def test_external_snapshot_hashes_still_match_without_writes() -> None:
+def test_paper_work_snapshot_hashes_still_match_without_writes() -> None:
     audit = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
-    for project in audit["projects"]:
-        root = Path(project["root"])
-        for entry in project["entries"]:
-            path = root / entry["path"]
-            assert path.is_file()
-            assert hashlib.sha256(path.read_bytes()).hexdigest() == entry["sha256"]
-            assert entry["external_file_modified"] is False
-            if entry["kind"] == "direct":
-                assert entry["old_imports"]
-                assert entry["target_namespaces"]
+    project = next(
+        item for item in audit["projects"] if item["project"] == "PAPER_WORK"
+    )
+    root = Path(project["root"])
+    for entry in project["entries"]:
+        path = root / entry["path"]
+        assert path.is_file()
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == entry["sha256"]
+        assert entry["external_file_modified"] is False
+        if entry["kind"] == "direct":
+            assert entry["old_imports"]
+            assert entry["target_namespaces"]
+
+
+def test_surrogate_post_migration_hashes_and_packages_match() -> None:
+    pre_audit = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
+    post_audit = json.loads(POST_AUDIT_PATH.read_text(encoding="utf-8"))
+    pre_project = next(
+        item
+        for item in pre_audit["projects"]
+        if item["project"] == "SURROGATE_TRAIN"
+    )
+    pre_hashes = {entry["path"]: entry["sha256"] for entry in pre_project["entries"]}
+    project = post_audit["surrogate_train"]
+
+    assert project["declared_count"] == 23
+    assert project["changed_count"] == 20
+    assert project["remaining_flat_import_count"] == 0
+    assert project["working_tree_clean"] is True
+
+    root = Path(project["root"])
+    for entry in project["entries"]:
+        path = root / entry["path"]
+        assert entry["pre_sha256"] == pre_hashes[entry["path"]]
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == entry["post_sha256"]
+        assert entry["remaining_flat_imports"] == []
+
+    assert len(post_audit["model_packages"]) == 3
+    for package in post_audit["model_packages"]:
+        package_root = root / package["package_dir"]
+        assert package["manifest_schema"] == "alb.surrogate-package.v0.2"
+        assert package["git_ignored"] is True
+        assert package["pickle_trust_required"] is True
+        for artifact in package["artifacts"].values():
+            path = package_root / artifact["path"]
+            assert hashlib.sha256(path.read_bytes()).hexdigest() == artifact[
+                "actual_sha256"
+            ]
+            assert artifact["matches_manifest"] is True
+            assert artifact["contains_legacy_ALB_nn_reference"] is False

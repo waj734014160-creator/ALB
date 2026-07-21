@@ -1,0 +1,481 @@
+{
+  "schema": "alb.surrogate-train-post-migration-audit.v1",
+  "version": "0.2.0",
+  "audit_date": "2026-07-21",
+  "pre_migration_audit": "docs/migrations/0.2.0_external_consumer_audit.json",
+  "pre_migration_reference": "refs/alb_0_2_consumer_migration_v1/consumer_migration_reference_v1.json",
+  "alb_main_migration_commit": "0d593615b59242bc0120b0b583a6b405b79d0e53",
+  "surrogate_train": {
+    "root": "G:/ALB_PROJECTS/SURROGATE_TRAIN",
+    "branch": "codex/alb-0.2-consumer-migration",
+    "commit": "346256136dad592b49c3c9f410a9358268c5cb1f",
+    "working_tree_clean": true,
+    "declared_count": 23,
+    "changed_count": 20,
+    "remaining_flat_import_count": 0,
+    "entries": [
+      {
+        "path": "run/analysis/check_s0008_dimensional_cross_validation.py",
+        "kind": "direct",
+        "pre_sha256": "fae32198b99bcc3930960810d2f0e55aff32977d2c44608c8828791713ad760e",
+        "post_sha256": "ddb43df3c74b8513293303a85faa51e3c9403ed0c86dc680b8c0e7dd08bad709",
+        "size_bytes": 14955,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/analysis/compare_packaged_albnn_force_kc.py",
+        "kind": "direct",
+        "pre_sha256": "f894b7f773e9a280fd7215d6d2b2cebc8c7c5ca4651aa5d7849caf6384b3cb12",
+        "post_sha256": "f71cc172f3d077e8e1c7ac58bdd954c2e2be928925da0e1c5865042e6a85b57e",
+        "size_bytes": 46437,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/analysis/knn_local_oracle_kc.py",
+        "kind": "direct",
+        "pre_sha256": "48d8d1d1a04c4a28caef4a782d6e06c758987e8e60f62d17ef7dd1b82fffbbc5",
+        "post_sha256": "3ce5a88c30dab1e6ab0a21479ce3b5a8409b075f7e5593c5af9eeed3e9f3924c",
+        "size_bytes": 20564,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/analysis/knn_validation_oracle_g0.py",
+        "kind": "direct",
+        "pre_sha256": "d8cba83941e9611b4fff927bdfd615fdeadc1e487fce40952dc16e60f9fe96ef",
+        "post_sha256": "fe01ecff5393be8a38fdc59df06f9bf393ff2ff294c1b89dd250aaaa4abda40b",
+        "size_bytes": 13357,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/analysis/retry_s0011_thermal_settings.py",
+        "kind": "direct",
+        "pre_sha256": "358160b793425b258b08fc4c4d0baa1fde766849abfcf1cfe0c0fbeb23bfe625",
+        "post_sha256": "868837bde514c5ab3bb015d76c5312bba6c06619f1925c6a299379a5b5b7001f",
+        "size_bytes": 10792,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/jupyter/data_check.ipynb",
+        "kind": "direct",
+        "pre_sha256": "7babd957916c9da5f295d96fbb5a7523b99f0e6ee1118644d906af1da36b2431",
+        "post_sha256": "2dc6012979d70f39797a7935434fae8b1a07217c01cddea29ec3c856d31738da",
+        "size_bytes": 14142,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/remote/remote_job.py",
+        "kind": "direct",
+        "pre_sha256": "fe1cfd6a848afc14172c48236ce041d668479218d2811137962ed63c839e31c1",
+        "post_sha256": "453e3d9b37cfb7f404babce580332101f99fa5c89cf763170c0411333c4d51d9",
+        "size_bytes": 488,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/remote/remote_monitor_job.py",
+        "kind": "direct",
+        "pre_sha256": "990da153494a340a9b4aa6d7f02d608bce2d3e155fccbd53618ce27cc0705695",
+        "post_sha256": "5eefc223c397ef2f98873dcfc0c7378f186f9188cbd493f57ceebfce70eb4fab",
+        "size_bytes": 496,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/remote/remote_query_albnn_status.py",
+        "kind": "direct",
+        "pre_sha256": "4f98b81ed16b47c671595424c9ae8ef674c9e72530b52e537d7465e5248538ac",
+        "post_sha256": "ede421be6b66e9517533b694253f83f9f1eba6924761146bac5a064b11b73890",
+        "size_bytes": 502,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/remote/remote_queue_albnn_activation_sweep.py",
+        "kind": "direct",
+        "pre_sha256": "c44d49db81ded2f6d1576c0d349eb030b19e2a43c4b8a9392dd29c2cd2134c21",
+        "post_sha256": "092bbe8164006a999ca0de95dd81e526bda67318a3f12dce9ab4fd21c5beaee5",
+        "size_bytes": 500,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/remote/remote_start_albnn_train.py",
+        "kind": "direct",
+        "pre_sha256": "20d173b19fa07fc17a2bafad4c8bb1ff092c2d1ca814587b43203b2b5a2887b0",
+        "post_sha256": "5303282996f4c799f11c97bdf774fec784ba9032e56c66538f8796072c876047",
+        "size_bytes": 500,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/remote/retry_invalid_adaptive_damp.py",
+        "kind": "direct",
+        "pre_sha256": "6fa6ce460cfc40b0f9333d4835ffb0890b16225daaff554c55cc2de433c936c3",
+        "post_sha256": "2426bb36d7baab421bfb820847437534dd491d11a7ae029505e0062197c1828f",
+        "size_bytes": 7041,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/train/run_acceptance_training_campaign.py",
+        "kind": "context",
+        "pre_sha256": "875e6acd5b3a3e6b43a51162e1468f23419a20f6fdea292c0fed4ab1817d7aa6",
+        "post_sha256": "875e6acd5b3a3e6b43a51162e1468f23419a20f6fdea292c0fed4ab1817d7aa6",
+        "size_bytes": 8516,
+        "changed": false,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/train/run_local_kc_campaign.py",
+        "kind": "context",
+        "pre_sha256": "3e9d91e0b7529ce774f43935679b9a246dec0acc2c547cf31eeb39f6047646f5",
+        "post_sha256": "3e9d91e0b7529ce774f43935679b9a246dec0acc2c547cf31eeb39f6047646f5",
+        "size_bytes": 10190,
+        "changed": false,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/train/train_alb_agent.py",
+        "kind": "direct",
+        "pre_sha256": "3d852bcea144387fd6b9ad1f2ab37bb103e1bc4f8d0ccdb450bb32e336009271",
+        "post_sha256": "c9df0bd25d56846a900a640e9674a8922deda6f5276bf87be60a0bfbcb15874a",
+        "size_bytes": 8444,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/train/train_albnn.py",
+        "kind": "direct",
+        "pre_sha256": "3bc11f144b0fc74dfcb26b6d85840f9a88f4db240a81339861eaf0d4bfdaf310",
+        "post_sha256": "77915102a950ccfbd0ef69e3258da4a3662045479f07fe5d9a1c774d3add7157",
+        "size_bytes": 136521,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/train/train_albnn_expert.py",
+        "kind": "direct",
+        "pre_sha256": "301b6f34a2ae1be4917c4c7d68f7d24052e99282766708b1444d0907c10ebde6",
+        "post_sha256": "d5578411cd50dab8454c13afb0c5b7d47f25276c2fe10e19d224ca607fd472d0",
+        "size_bytes": 62941,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/train/train_albnn_residual_expert.py",
+        "kind": "direct",
+        "pre_sha256": "b43e9b0520673a61fff06008f23480798f82ae36f374338c56f9b824d29aed09",
+        "post_sha256": "76cb57290f69ea9c8802330bbfa1783f14b0441f4c0e5d4a51f8976e72eafac0",
+        "size_bytes": 37794,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/train/train_thermal_mlp.py",
+        "kind": "context",
+        "pre_sha256": "29a2d1a92b7fef5f74d6b250fb76bf5af65908dc1acd61f599b5d0550feab22f",
+        "post_sha256": "f54994ed78bbf33863e2e65cdd11921459f059fd45b5894ef7f560fa09c287a2",
+        "size_bytes": 14122,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "run/train/watch_heat_albnn_pipeline.py",
+        "kind": "context",
+        "pre_sha256": "6080f9ca6a87e5a934082233d2b0d2e151012c20de6ae36bb12e4a28691f26e9",
+        "post_sha256": "6080f9ca6a87e5a934082233d2b0d2e151012c20de6ae36bb12e4a28691f26e9",
+        "size_bytes": 8334,
+        "changed": false,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/task_alb_data2.py",
+        "kind": "direct",
+        "pre_sha256": "86edba976a43d7e1af8143b8bf3089fc7c9eebb707a1a33556ead4e888162925",
+        "post_sha256": "5b6eb9c7ec191a86b6c06b17e18a5264fbcc16d15d7945317904af0675c8ce69",
+        "size_bytes": 24030,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/task_albnn_data.py",
+        "kind": "direct",
+        "pre_sha256": "27bcc84d2295489542f615dd92dc660e3976b6da382ea413e6b73dae8db85148",
+        "post_sha256": "ed01dd0012f93597f8d4404afd687ffdf07329b6ad1300d7a00e0591f155379e",
+        "size_bytes": 36336,
+        "changed": true,
+        "remaining_flat_imports": []
+      },
+      {
+        "path": "task/task_thermal_forces.py",
+        "kind": "direct",
+        "pre_sha256": "5f7a62503690d2f189cd8658efd71238883ee69fa31486449cca686ad15de4c1",
+        "post_sha256": "1758dacffb7557abe38c78f4b17dfd7adbaf452ad2d29e436fd96ea8996d464d",
+        "size_bytes": 11562,
+        "changed": true,
+        "remaining_flat_imports": []
+      }
+    ]
+  },
+  "model_packages": [
+    {
+      "id": "M0031",
+      "model_dir": "models/M0031_s8b_s0011_allvalid_base12_mlp_minmax01_gelu_adamw_p1000_20260609",
+      "package_dir": "models/M0031_s8b_s0011_allvalid_base12_mlp_minmax01_gelu_adamw_p1000_20260609/package_v0_2",
+      "git_ignored": true,
+      "manifest_schema": "alb.surrogate-package.v0.2",
+      "manifest_sha256": "5e9dfcb22ecfabdeca52e9e06d111de7da76dfe2ca3f8cd4cae69c1f0589ce75",
+      "pickle_trust_required": true,
+      "artifacts": {
+        "model": {
+          "path": "model.pt",
+          "manifest_sha256": "7c012dfd817c4f7af4bb54bf42c603921b092cce44c48fd71a165b2c5f54d8ad",
+          "actual_sha256": "7c012dfd817c4f7af4bb54bf42c603921b092cce44c48fd71a165b2c5f54d8ad",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        },
+        "input_scaler": {
+          "path": "input_scaler.pkl",
+          "manifest_sha256": "2efe21ea7cbd86d72bccbd96b1f2f0fa21d612cd7f0ae6b930e329573c625411",
+          "actual_sha256": "2efe21ea7cbd86d72bccbd96b1f2f0fa21d612cd7f0ae6b930e329573c625411",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        },
+        "output_scaler": {
+          "path": "output_scaler.pkl",
+          "manifest_sha256": "fdf5392b9abd5ddd5fa0f013fcd49e6234808615405b5806f80b1ed7a8df227a",
+          "actual_sha256": "fdf5392b9abd5ddd5fa0f013fcd49e6234808615405b5806f80b1ed7a8df227a",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        },
+        "metadata": {
+          "path": "metadata.json",
+          "manifest_sha256": "c1d2bb765ff4ab8ab4df24e0d0c025fcade48ea003a19d59a3a4314337602cdf",
+          "actual_sha256": "c1d2bb765ff4ab8ab4df24e0d0c025fcade48ea003a19d59a3a4314337602cdf",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        }
+      },
+      "legacy_sources": {
+        "model": {
+          "path": "best_albnn.pth",
+          "sha256": "7c012dfd817c4f7af4bb54bf42c603921b092cce44c48fd71a165b2c5f54d8ad",
+          "matches_v1_reference": true
+        },
+        "input_scaler": {
+          "path": "scaler_X.pkl",
+          "sha256": "bd170d61d2294fb01f438decf3c265adc57987bfc26f0017704c7102c9c37e23",
+          "matches_v1_reference": true
+        },
+        "output_scaler": {
+          "path": "scaler_y.pkl",
+          "sha256": "34647e562e1cbcc6443999484dd346529521a3c45711752913ec2bac7ffc2eca",
+          "matches_v1_reference": true
+        },
+        "metadata": {
+          "path": "metadata.json",
+          "sha256": "041999fd95f06f7ce8412ebc46d996d1c0c33bd26362d44d9ea9b6aef4ba6965",
+          "matches_v1_reference": true
+        }
+      }
+    },
+    {
+      "id": "M0035",
+      "model_dir": "models/M0035_s8b_s0011_enormlt0p85_vnormlt0p4_edotvlt0p195_base12_mlp_minmax01_gelu_adamw_p1000_20260609",
+      "package_dir": "models/M0035_s8b_s0011_enormlt0p85_vnormlt0p4_edotvlt0p195_base12_mlp_minmax01_gelu_adamw_p1000_20260609/package_v0_2",
+      "git_ignored": true,
+      "manifest_schema": "alb.surrogate-package.v0.2",
+      "manifest_sha256": "24ca2888fb76aafb480fba1e729ee95d90e5c40207fffbbd5daf74c18ee1e133",
+      "pickle_trust_required": true,
+      "artifacts": {
+        "model": {
+          "path": "model.pt",
+          "manifest_sha256": "02647bbbb1867381400d751a0194a122e59376e92d931516c79a07f5e6d55b36",
+          "actual_sha256": "02647bbbb1867381400d751a0194a122e59376e92d931516c79a07f5e6d55b36",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        },
+        "input_scaler": {
+          "path": "input_scaler.pkl",
+          "manifest_sha256": "1e8d8fbbbc3c5f3100ee5b2db10ccc229c069d8e4520ae924f30f4c15d96a56f",
+          "actual_sha256": "1e8d8fbbbc3c5f3100ee5b2db10ccc229c069d8e4520ae924f30f4c15d96a56f",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        },
+        "output_scaler": {
+          "path": "output_scaler.pkl",
+          "manifest_sha256": "524304db7a4e98a847283d7ad7049c39525360db61d8dee533fb4c80907bfd8d",
+          "actual_sha256": "524304db7a4e98a847283d7ad7049c39525360db61d8dee533fb4c80907bfd8d",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        },
+        "metadata": {
+          "path": "metadata.json",
+          "manifest_sha256": "04e7740b27bb8582d574df807f41bdec9295d299120d3714c5bb00ef5ea13c30",
+          "actual_sha256": "04e7740b27bb8582d574df807f41bdec9295d299120d3714c5bb00ef5ea13c30",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        }
+      },
+      "legacy_sources": {
+        "model": {
+          "path": "best_albnn.pth",
+          "sha256": "02647bbbb1867381400d751a0194a122e59376e92d931516c79a07f5e6d55b36",
+          "matches_v1_reference": true
+        },
+        "input_scaler": {
+          "path": "scaler_X.pkl",
+          "sha256": "00c7dcb537172d69c3ec3f7fb46d618439be387f75e1ee32abdbd496d745a3c5",
+          "matches_v1_reference": true
+        },
+        "output_scaler": {
+          "path": "scaler_y.pkl",
+          "sha256": "841a1fda4cb1b8fd0873154ed49e019cf0eb8ce3b603e9cf59409ebc66ef6b98",
+          "matches_v1_reference": true
+        },
+        "metadata": {
+          "path": "metadata.json",
+          "sha256": "68b19db42726b3be2e6da41d2d54e863fb22282fe4bf9174d68907d3d3efc227",
+          "matches_v1_reference": true
+        }
+      }
+    },
+    {
+      "id": "KNN_BASELINE_20260515",
+      "model_dir": "models/train121661_valid30416_l1lt1p5_evsgeomlt0p8_scaledevs16_circular_e085_v08_s10_lrgt0p5_lroverlrlt4_mlp_minmax01_mse_noaug_h512_256_128_64_adamw_lr2em04_wd1em05_bs4096_p2500_plateau100_20260515",
+      "package_dir": "models/train121661_valid30416_l1lt1p5_evsgeomlt0p8_scaledevs16_circular_e085_v08_s10_lrgt0p5_lroverlrlt4_mlp_minmax01_mse_noaug_h512_256_128_64_adamw_lr2em04_wd1em05_bs4096_p2500_plateau100_20260515/package_v0_2",
+      "git_ignored": true,
+      "manifest_schema": "alb.surrogate-package.v0.2",
+      "manifest_sha256": "416b62274027d5ef3d34fe8031f6fa369cbf5895e5b5b114d26cecd4e66074e1",
+      "pickle_trust_required": true,
+      "artifacts": {
+        "model": {
+          "path": "model.pt",
+          "manifest_sha256": "ecbf712e2b706252bc13057bd7f3cc7a46e7ad774af4f3947d2956dc17e78f8c",
+          "actual_sha256": "ecbf712e2b706252bc13057bd7f3cc7a46e7ad774af4f3947d2956dc17e78f8c",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        },
+        "input_scaler": {
+          "path": "input_scaler.pkl",
+          "manifest_sha256": "adf8a875a1b86e1cae3508644dfe4ef518ce4ce0a4d818c6d9044c05d013258e",
+          "actual_sha256": "adf8a875a1b86e1cae3508644dfe4ef518ce4ce0a4d818c6d9044c05d013258e",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        },
+        "output_scaler": {
+          "path": "output_scaler.pkl",
+          "manifest_sha256": "6e6bc3e57a655d0b993f09a177ab7c9b9dec6de58d7999955af2a839b99d314e",
+          "actual_sha256": "6e6bc3e57a655d0b993f09a177ab7c9b9dec6de58d7999955af2a839b99d314e",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        },
+        "metadata": {
+          "path": "metadata.json",
+          "manifest_sha256": "f17d73151557b9f7a0005eb5fbd65d596b0e93f340d0e05f52ce9df35ef7fab2",
+          "actual_sha256": "f17d73151557b9f7a0005eb5fbd65d596b0e93f340d0e05f52ce9df35ef7fab2",
+          "matches_manifest": true,
+          "contains_legacy_ALB_nn_reference": false
+        }
+      },
+      "legacy_sources": {
+        "model": {
+          "path": "best_albnn.pth",
+          "sha256": "ecbf712e2b706252bc13057bd7f3cc7a46e7ad774af4f3947d2956dc17e78f8c",
+          "matches_v1_reference": null
+        },
+        "input_scaler": {
+          "path": "scaler_X.pkl",
+          "sha256": "e8d51053620aecd258af207fb1fa7c9a898752cdd0602c93efb8f04bce24977e",
+          "matches_v1_reference": null
+        },
+        "output_scaler": {
+          "path": "scaler_y.pkl",
+          "sha256": "1e43c3b45687c8fda3055aa909362de02b67edb6ff76efdf4bc95c4f70dd176d",
+          "matches_v1_reference": null
+        },
+        "metadata": {
+          "path": "metadata.json",
+          "sha256": "3c18a6bece722427314877a101c727c70d3a506f5a7dde232cecd9632168faa1",
+          "matches_v1_reference": null
+        }
+      }
+    }
+  ],
+  "verification": [
+    {
+      "scope": "ALB_MAIN 全量 pytest",
+      "result": "325 passed、13 skipped、12 warnings、7 subtests passed",
+      "status": "passed"
+    },
+    {
+      "scope": "ALB surrogate package 与输入适配器",
+      "result": "10 项通过",
+      "status": "passed"
+    },
+    {
+      "scope": "ALB 外部消费者、严格端口和 direct-spool 冻结参考",
+      "result": "49 项通过",
+      "status": "passed"
+    },
+    {
+      "scope": "9 个已迁移的 SURROGATE_TRAIN 命令行入口",
+      "result": "9 个 --help smoke 均通过",
+      "status": "passed"
+    },
+    {
+      "scope": "M0031 package 推理",
+      "result": "legacy/package 精确相等；package/v1 精确相等",
+      "status": "passed"
+    },
+    {
+      "scope": "M0035 package 推理",
+      "result": "legacy/package 精确相等；package/v1 max_abs=2.715295792654615e-07，来自既有的跨进程 torch 数值波动",
+      "status": "passed_with_documented_variation"
+    },
+    {
+      "scope": "SURROGATE_TRAIN tests/test_train_albnn_contracts.py",
+      "result": "禁用受限系统临时目录 cache provider 后 3 项通过",
+      "status": "passed"
+    }
+  ],
+  "remaining_findings": [
+    {
+      "id": "mixed-unit-alb-data2",
+      "classification": "migration_follow_up",
+      "path": "task/task_alb_data2.py",
+      "description": "dimensional ALB 路径有意保留 input(nodim=True) 和 output(nodim=False)。改为严格端口前，必须先增加显式尺度适配器和独立冻结参考。"
+    },
+    {
+      "id": "thermal-force-unused-spool-components",
+      "classification": "pre_existing_behavior",
+      "path": "task/task_thermal_forces.py",
+      "description": "采样并保存了 sx/sy，但求解时两个节流孔共用一个固定 xv，因此这两个声明输入不影响标签。"
+    },
+    {
+      "id": "thermal-force-single-pad-label",
+      "classification": "pre_existing_behavior",
+      "path": "task/task_thermal_forces.py",
+      "description": "脚本构造四瓦 ALB 系统，但只有 thermal_pads[0] 提供力和收敛状态。"
+    },
+    {
+      "id": "thermal-force-pooln-not-used",
+      "classification": "pre_existing_behavior",
+      "path": "task/task_thermal_forces.py",
+      "description": "文档声明的 pooln 并行模式未接入实际串行样本循环。"
+    },
+    {
+      "id": "training-output-package-generation",
+      "classification": "migration_follow_up",
+      "path": "run/train",
+      "description": "训练仍输出松散 checkpoint 与 scaler。当前可信推理消费者已迁移，但未来 base/expert/residual run 自动生成 0.2 package 仍是独立后续任务。"
+    }
+  ],
+  "data_or_legacy_model_sources_overwritten": false
+}
