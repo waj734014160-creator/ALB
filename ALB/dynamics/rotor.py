@@ -1,5 +1,6 @@
 ﻿# -- coding: utf-8 --
 import copy
+from numbers import Integral
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt
@@ -308,17 +309,51 @@ class SingleRotor(BaseSimpleModel):
         pass
 
 
-def _nodeforce2array(ndof, force, node):
-    """
-    Map per-node 2D forces to a global DOF force vector.
-    """
-    aforce = np.zeros(ndof)
-    force = np.array(force)
-    force = force.reshape((-1, 2))
-    node = np.array(node).reshape(-1)
-    for i in range(len(node)):
-        aforce[4 * node[i] + 0] += force[i, 0]
-        aforce[4 * node[i] + 1] += force[i, 1]
+def _nodeforce2array(ndof, number_dof, force, node):
+    """Map per-node XY forces to the global vector for 4/6-DOF ROSS nodes."""
+    if isinstance(ndof, (bool, np.bool_)) or not isinstance(
+        ndof, (Integral, np.integer)
+    ):
+        raise TypeError("ndof must be an integer")
+    if isinstance(number_dof, (bool, np.bool_)) or not isinstance(
+        number_dof, (Integral, np.integer)
+    ):
+        raise TypeError("number_dof must be an integer")
+    ndof = int(ndof)
+    number_dof = int(number_dof)
+    if ndof <= 0 or number_dof < 2:
+        raise ValueError("ndof must be positive and number_dof must be at least 2")
+
+    force_array = np.asarray(force, dtype=float)
+    if force_array.ndim == 1:
+        if force_array.size != 2:
+            raise ValueError("one node force must contain exactly two values")
+        force_array = force_array.reshape(1, 2)
+    if force_array.ndim != 2 or force_array.shape[1] != 2:
+        raise ValueError("force must have shape (node_count, 2)")
+    if not np.all(np.isfinite(force_array)):
+        raise ValueError("force values must be finite")
+
+    raw_nodes = list(np.asarray(node, dtype=object).reshape(-1))
+    if any(
+        isinstance(value, (bool, np.bool_))
+        or not isinstance(value, (Integral, np.integer))
+        for value in raw_nodes
+    ):
+        raise TypeError("node indices must be integers")
+    nodes = np.asarray(raw_nodes, dtype=np.int64)
+    if len(nodes) != force_array.shape[0]:
+        raise ValueError("node count must match the number of force rows")
+    if np.any(nodes < 0):
+        raise ValueError("node indices must be nonnegative")
+    if np.any(number_dof * nodes + 1 >= ndof):
+        raise ValueError("node index exceeds the global rotor DOF vector")
+
+    aforce = np.zeros(ndof, dtype=float)
+    for index, node_index in enumerate(nodes):
+        offset = number_dof * int(node_index)
+        aforce[offset] += force_array[index, 0]
+        aforce[offset + 1] += force_array[index, 1]
     return aforce
 
 
@@ -439,19 +474,28 @@ class RossRotor:
         """
         Input per-node 2D forces and map them to global DOFs.
         """
-        # Validate before mutating histories or latched inputs.
+        mapped_force = _nodeforce2array(
+            self._rotor.ndof, self._number_dof, force, node
+        )
+        force0 = kwargs.get("force0", None)
+        mapped_force0 = (
+            None
+            if force0 is None
+            else _nodeforce2array(
+                self._rotor.ndof, self._number_dof, force0, node
+            )
+        )
+        # Validate all inputs before mutating histories or latched state.
         self._check_time(t)
         self._t.append(t)
-        # Map node forces to global DOF vector.
-        self._force1 = _nodeforce2array(self._rotor.ndof, force, node)
+        self._force1 = mapped_force
         self._state_ready = False
         # Optional: override the initial state.
         if x0 is not None:
             self._xk0 = x0
         # Optional previous-step input for continuous mode.
-        force0 = kwargs.get("force0", None)
-        if force0 is not None:
-            self._force0 = _nodeforce2array(self._rotor.ndof, force0, node)
+        if mapped_force0 is not None:
+            self._force0 = mapped_force0
 
     def init(self, x0=None):
         if x0 is not None:

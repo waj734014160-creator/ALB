@@ -382,8 +382,8 @@ def _coupling_reference() -> tuple[dict[str, object], dict[str, np.ndarray]]:
     time_grid = TimeIterDt(bearing.dt, num=2)
     coupling = RsRotorBearingCouple(rotor, time_grid, bearing)
     coupling.init()
-    coupling.advance(StepContext(0, 0.0, bearing.dt, "dimensional"))
     coupling.advance(StepContext(1, bearing.dt, bearing.dt, "dimensional"))
+    coupling.advance(StepContext(2, 2.0 * bearing.dt, bearing.dt, "dimensional"))
 
     assert rotor.last_force is not None
     assert rotor.last_force0 is not None

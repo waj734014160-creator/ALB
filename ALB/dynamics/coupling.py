@@ -1,5 +1,7 @@
 ﻿# coding: utf-8
 
+from decimal import Decimal
+
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -110,6 +112,10 @@ class RsRotorBearingCouple(BaseCSystem):
         )
 
     def init(self, **kwargs):
+        time_values = [float(value) for value in self._time_iter()]
+        if not time_values:
+            raise ValueError("rotor-bearing coupling time grid cannot be empty")
+        initial_time = time_values[0]
         self.rotor.init()
         for bearing in self.bearings:
             bearing.init()
@@ -124,7 +130,9 @@ class RsRotorBearingCouple(BaseCSystem):
         if len(self.forces) == 0:
             self._forceu0 = []
         else:
-            self._forceu0 = np.vstack([force(t=0) for force in self.forces])
+            self._forceu0 = np.vstack(
+                [force(t=initial_time) for force in self.forces]
+            )
         self._rp = self.rotor.output(self._bnode_links)
         for num, bearing in enumerate(self.bearings):
             self._result["bearing" + str(num)] = pd.DataFrame(
@@ -134,15 +142,32 @@ class RsRotorBearingCouple(BaseCSystem):
         for num, bearing in enumerate(self.bearings):
             rp_uxy = self._rp["uxy"][num]
             rp_uxyt = self._rp["uxyt"][num]
-            bearing.input(uxy=rp_uxy, uxyt=rp_uxyt, t=0)
+            bearing.input(uxy=rp_uxy, uxyt=rp_uxyt, t=initial_time)
             self._forcef0.append(validate_bearing_output(bearing.output()))
         self._forcef0 = np.array(self._forcef0)
         self._forcen0 = vertical_stack_nonempty(
             [np.array(self._forceu0), np.array(self._forcef0)]
         )
         self._nt = 0
-        self._last_output = None
         self._step_ledger = StepCommitLedger()
+        initial_context = StepContext(
+            0, initial_time, self._time_iter.dt, "dimensional"
+        )
+        self._last_output = result_snapshot(
+            {
+                "rotor_displacement": self._rp["uxy"],
+                "rotor_velocity": self._rp["uxyt"],
+                "bearing_force": self._forcef0,
+                "nodal_force": self._forcen0,
+            },
+            {
+                "step_index": initial_context.step_index,
+                "time": initial_context.time,
+                "unit_system": initial_context.unit_system.value,
+                "initial_snapshot": True,
+            },
+        )
+        self._step_ledger.commit_step(initial_context)
 
     def add_unbalance(
         self, node_link, phase=0, t_max: float = 1, m=0, freq=0, e=0, no_step=False
@@ -200,9 +225,17 @@ class RsRotorBearingCouple(BaseCSystem):
 
         positon = kwargs.get("position", 0)
 
+        time_values = [float(value) for value in self._time_iter()]
+        initial_time = time_values[0]
+        dt_decimal = Decimal(str(self._time_iter.dt))
+        initial_decimal = Decimal(str(initial_time))
+        target_times = [
+            float(initial_decimal + dt_decimal * index)
+            for index in range(1, len(time_values))
+        ]
         progress_bar = tqdm(
-            enumerate(self._time_iter()),
-            total=self._time_iter.num + 1,
+            enumerate(target_times, start=1),
+            total=len(target_times),
             position=positon,
             bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
         )

@@ -1,4 +1,4 @@
-"""Exact regression tests for the immutable full-repository refactor refs."""
+"""Regression tests for immutable refs except explicitly superseded results."""
 
 from __future__ import annotations
 
@@ -83,10 +83,10 @@ def test_domain_arrays_match_reference_exactly(domain, replayed_cases):
             assert list(actual_array.shape) == metadata["arrays"][key]["shape"]
             assert str(actual_array.dtype) == metadata["arrays"][key]["dtype"]
             assert _array_digest(reference_array) == metadata["arrays"][key]["sha256"]
-            if domain == "hydraulics_orifice":
+            if domain in {"hydraulics_orifice", "dynamics_coupling"}:
                 # The immutable v1 archive remains an integrity record of the
-                # fsolve implementation. Production hydraulics is now gated by
-                # csorifice_monotonic_reference_v2 instead of this old output.
+                # superseded implementation. Production behavior is gated by
+                # an explicit corrected reference instead of this old output.
                 continue
             assert _array_digest(actual_array) == metadata["arrays"][key]["sha256"]
             np.testing.assert_array_equal(

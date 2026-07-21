@@ -47,6 +47,26 @@ class _NodeRotorPlant:
         )
 
 
+class _SixDofNodeRotorPlant:
+    ndof = 12
+    number_dof = 6
+
+    def _lti(self, speed):
+        del speed
+        state_count = 2 * self.ndof
+        return SimpleNamespace(
+            A=-0.5 * np.eye(state_count, dtype=float),
+            B=np.vstack(
+                (
+                    np.eye(self.ndof, dtype=float),
+                    0.25 * np.eye(self.ndof, dtype=float),
+                )
+            ),
+            C=np.eye(state_count, dtype=float),
+            D=np.zeros((state_count, self.ndof), dtype=float),
+        )
+
+
 def test_rotor_output_never_hides_state_advancement():
     rotor = RossRotor(_LinearRotorPlant(), speed=1.0, dt=1.0e-3)
     initial = rotor.output()
@@ -168,3 +188,35 @@ def test_input_force2node_rejects_invalid_time_without_mutating_state():
     np.testing.assert_array_equal(rotor._force1, before["force1"])
     np.testing.assert_array_equal(rotor._xk0, before["state"])
     assert rotor._state_ready is before["state_ready"]
+
+
+def test_node_force_mapping_uses_actual_six_dof_stride():
+    rotor = RossRotor(_SixDofNodeRotorPlant(), speed=1.0, dt=1.0e-3)
+
+    rotor.input_force2node(0.0, [[3.0, -4.0]], node=[1])
+
+    expected = np.zeros(12)
+    expected[6:8] = [3.0, -4.0]
+    np.testing.assert_array_equal(rotor._force1, expected)
+
+
+@pytest.mark.parametrize(
+    ("force", "node", "error"),
+    [
+        ([[1.0, 2.0], [3.0, 4.0]], [0], "node count"),
+        ([[1.0, 2.0]], [-1], "nonnegative"),
+        ([[1.0, 2.0]], [2], "exceeds"),
+        ([[1.0, 2.0]], [0.5], "integers"),
+        ([[1.0, np.nan]], [0], "finite"),
+    ],
+)
+def test_invalid_node_force_mapping_is_atomic(force, node, error):
+    rotor = RossRotor(_SixDofNodeRotorPlant(), speed=1.0, dt=1.0e-3)
+    before_time = list(rotor._t)
+    before_force = rotor._force1.copy()
+
+    with pytest.raises((TypeError, ValueError), match=error):
+        rotor.input_force2node(0.0, force, node=node)
+
+    assert rotor._t == before_time
+    np.testing.assert_array_equal(rotor._force1, before_force)

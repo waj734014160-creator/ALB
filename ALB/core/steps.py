@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 from typing import Callable
 
 from ALB.contracts import StepContext
@@ -39,9 +40,20 @@ class StepCommitLedger:
             return
         if context.identity == self._last_context.identity:
             raise RuntimeError("physical step has already been committed")
-        if context.step_index <= self._last_context.step_index:
-            raise RuntimeError("physical steps must be committed in increasing order")
-        if context.time <= self._last_context.time:
-            raise RuntimeError("physical step time must increase")
         if context.unit_system is not self._last_context.unit_system:
             raise RuntimeError("unit_system cannot change within one workflow")
+        if context.dt != self._last_context.dt:
+            raise RuntimeError("dt cannot change within one workflow")
+        expected_index = self._last_context.step_index + 1
+        if context.step_index != expected_index:
+            raise RuntimeError(
+                f"physical step_index must advance exactly to {expected_index}"
+            )
+        elapsed = context.time - self._last_context.time
+        if not math.isclose(
+            elapsed,
+            context.dt,
+            rel_tol=1.0e-12,
+            abs_tol=1.0e-15,
+        ):
+            raise RuntimeError("physical step time increment must match dt")

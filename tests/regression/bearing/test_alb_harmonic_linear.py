@@ -169,8 +169,8 @@ def test_rs_rotor_bearing_couple_accepts_harmonic_linear_bearing():
     couple = RsRotorBearingCouple(rotor, time_iter, bearing)
 
     couple.init()
-    couple.advance(StepContext(0, 0.0, bearing.dt, "dimensional"))
     couple.advance(StepContext(1, bearing.dt, bearing.dt, "dimensional"))
+    couple.advance(StepContext(2, 2.0 * bearing.dt, bearing.dt, "dimensional"))
 
     assert rotor.last_force is not None
     assert rotor.last_force.shape == (1, 2)

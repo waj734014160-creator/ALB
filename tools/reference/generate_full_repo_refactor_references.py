@@ -833,7 +833,12 @@ def _dynamics_coupling_case() -> CaseData:
     coupling.init()
     for index in range(3):
         coupling.advance(
-            StepContext(index, index * bearing.dt, bearing.dt, "dimensional")
+            StepContext(
+                index + 1,
+                (index + 1) * bearing.dt,
+                bearing.dt,
+                "dimensional",
+            )
         )
     arrays = {
         "rotor_forces": rotor_forces,

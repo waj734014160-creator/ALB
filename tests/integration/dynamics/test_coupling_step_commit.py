@@ -64,12 +64,14 @@ def test_duplicate_context_is_rejected_before_second_mutation():
     rotor = _Rotor()
     coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.01, 1), _Bearing())
     coupling.init()
-    with pytest.raises(RuntimeError, match="unavailable"):
-        coupling.output()
+    initial = coupling.output()
+    assert initial.metadata["step_index"] == 0
+    assert initial.metadata["time"] == 0.0
+    assert initial.metadata["initial_snapshot"] is True
 
-    context = StepContext(0, 0.0, 0.01, "dimensional")
+    context = StepContext(1, 0.01, 0.01, "dimensional")
     first = coupling.advance(context)
-    assert first.metadata["step_index"] == 0
+    assert first.metadata["step_index"] == 1
     assert rotor.input_calls == 1
 
     with pytest.raises(RuntimeError, match="already"):
