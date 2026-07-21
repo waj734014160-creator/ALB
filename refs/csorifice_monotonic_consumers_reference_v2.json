@@ -1,0 +1,506 @@
+{
+  "reference_name": "csorifice_monotonic_consumers_reference_v2",
+  "created_at": "2026-07-21T13:41:21.789529+00:00",
+  "oracle_source_commit": "765b9b6",
+  "oracle_reference": "refs/csorifice_monotonic_reference_v2.json",
+  "supersedes_numeric_expectations": [
+    "refs/albsv_direct_spool_reference_v1.npz",
+    "refs/albsv_convergence_state_reference_v2.npz",
+    "refs/thermal_segregated_newton_reference_v2.npz:s0011_*"
+  ],
+  "environment": {
+    "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+    "python_version": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.26200-SP0"
+  },
+  "direct_spool": {
+    "bearing_input": {
+      "displacement": [
+        0.1,
+        -0.2
+      ],
+      "velocity": [
+        0.03,
+        -0.04
+      ],
+      "time": 0.0
+    },
+    "spool_cases": {
+      "zero": [
+        0.0,
+        0.0
+      ],
+      "nonzero": [
+        0.2,
+        -0.3
+      ],
+      "reversed": [
+        -0.2,
+        0.3
+      ]
+    },
+    "status": {
+      "zero": {
+        "block_converged": true,
+        "status_first_query": true,
+        "status_second_query": true,
+        "thermal_converged_by_pad": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "nonzero": {
+        "block_converged": true,
+        "status_first_query": true,
+        "status_second_query": true,
+        "thermal_converged_by_pad": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "reversed": {
+        "block_converged": true,
+        "status_first_query": true,
+        "status_second_query": true,
+        "thermal_converged_by_pad": [
+          true,
+          true,
+          true,
+          true
+        ]
+      }
+    }
+  },
+  "s0011": {
+    "sample_ids": [
+      30,
+      33,
+      162946
+    ],
+    "config_provenance": {
+      "historical_alb12_sha256": "893141e7243013d533c831e1a2063c8c3511a6bb09bdeb72db7374e95525d348",
+      "replay_alb12_sha256": "893141e7243013d533c831e1a2063c8c3511a6bb09bdeb72db7374e95525d348",
+      "historical_share_sha256": "44dba49bc59827255190eeecc23abc0dffe5235b25b49dfedd77ea99f3985886",
+      "replay_share_sha256": "604eb7d5d4db8ead06b877218a40f3cfef12d9bb41a6d79fc4f212f773229cd8",
+      "historical_share_available": false,
+      "policy": "The historical share.json5 is unavailable. The v2 arrays freeze the embedded current effective config and must not be described as an exact replay of the original S0011 configuration."
+    }
+  },
+  "arrays": {
+    "direct_spool.nonzero.history_lengths_after_first_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "direct_spool.nonzero.history_lengths_after_second_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "direct_spool.nonzero.history_lengths_before_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "direct_spool.nonzero.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "96acd5e9efd5340c72f28be4bb3d160367a3d5731e7dd471358bc9347552ec4f"
+    },
+    "direct_spool.nonzero.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "539e3fce6e0f1d2c101b9f23d7f4447dc207eebc5de5965b352140d8a6847144"
+    },
+    "direct_spool.nonzero.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "864d2470c4d063a974757b972dbf2851b8f191467bda5f38c182b0346c6031cf"
+    },
+    "direct_spool.nonzero.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "20a95c74aaecf3509ad7c685a0105ac745348d9ac66b9e2970988bfbe2c51074"
+    },
+    "direct_spool.nonzero.output.servovalve_spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "539e3fce6e0f1d2c101b9f23d7f4447dc207eebc5de5965b352140d8a6847144"
+    },
+    "direct_spool.nonzero.pressure_at_completion": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "88a24828789c6d5d4ad83d3c9983776d7a61ffac873fbcd7b95721f41ea67274"
+    },
+    "direct_spool.nonzero.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "18979467483760aa75af65140f22e370a7b929126795ec724f1c38d09dd8e52a"
+    },
+    "direct_spool.nonzero.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "9f2c07daa512a18967ec311097fb5bb600ad7cd2c5d8161e1b82215dc0d45199"
+    },
+    "direct_spool.nonzero.thermal.viscosity": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "738e178a7b418e42b40d7351fd3bcb6447c1019879d1d95994ac9caaa971a399"
+    },
+    "direct_spool.nonzero.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "5ed6d8d297b761c5ce9f7cb71067177083e7bb946aea176fcec3c2a7da78a255"
+    },
+    "direct_spool.reversed.history_lengths_after_first_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "direct_spool.reversed.history_lengths_after_second_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "direct_spool.reversed.history_lengths_before_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "direct_spool.reversed.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "96acd5e9efd5340c72f28be4bb3d160367a3d5731e7dd471358bc9347552ec4f"
+    },
+    "direct_spool.reversed.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "74dd72797e368bb9f4d0e5b66478203faf64764262c441fd1d80f6305e45d249"
+    },
+    "direct_spool.reversed.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "864d2470c4d063a974757b972dbf2851b8f191467bda5f38c182b0346c6031cf"
+    },
+    "direct_spool.reversed.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7a25e108583594145a3cb2e42f4ab89abcd311d38e1ec97f899fc62fe3aaa005"
+    },
+    "direct_spool.reversed.output.servovalve_spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "74dd72797e368bb9f4d0e5b66478203faf64764262c441fd1d80f6305e45d249"
+    },
+    "direct_spool.reversed.pressure_at_completion": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "cabf98d74fe033977e11181372d07a849ddca95c29ba2cf5467e5b1215acb840"
+    },
+    "direct_spool.reversed.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "9a49a9b318db661e09f7428913ffc36da8c3e011b0ce4eab18e119bf3356d8ca"
+    },
+    "direct_spool.reversed.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "a366b184001f999d410cc21ccdb678253253663c82033dcb69f885c4c3d7c688"
+    },
+    "direct_spool.reversed.thermal.viscosity": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "d375eac99eb5434abe4d5a2a89da02da625952e971001ed58afc00e53a0de226"
+    },
+    "direct_spool.reversed.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "c66253b12887d0276cc98de35a12973d35e6c85a6d414e26dc1d1c11eda0f4ff"
+    },
+    "direct_spool.zero.history_lengths_after_first_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "direct_spool.zero.history_lengths_after_second_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "direct_spool.zero.history_lengths_before_query": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "direct_spool.zero.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "96acd5e9efd5340c72f28be4bb3d160367a3d5731e7dd471358bc9347552ec4f"
+    },
+    "direct_spool.zero.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "direct_spool.zero.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "864d2470c4d063a974757b972dbf2851b8f191467bda5f38c182b0346c6031cf"
+    },
+    "direct_spool.zero.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "4a4158a4384a8990c92a138c659e044d9a7d8fea2a604ed47082f5cf5383afc7"
+    },
+    "direct_spool.zero.output.servovalve_spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "direct_spool.zero.pressure_at_completion": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "cb45d09fa58229ad0cc007c993c1e96f75e563e02925db6312388654dc616580"
+    },
+    "direct_spool.zero.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "9a49a9b318db661e09f7428913ffc36da8c3e011b0ce4eab18e119bf3356d8ca"
+    },
+    "direct_spool.zero.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "9395254a7ce8a8d5fccd333f03c1ad61939c0281bad1245b44e6a2afd494b2a4"
+    },
+    "direct_spool.zero.thermal.viscosity": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "8c14721dcb0353f07d90c5dd1aedee4abd3d87acb82c4b752e8a66078d3f270d"
+    },
+    "direct_spool.zero.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        3200
+      ],
+      "dtype": "float64",
+      "sha256": "dbb79c625b78aaad4e18d34a4f7e0dbf915a1a3b9bb9fd3247a9abdc3024a2bf"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_162946.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "afc036375cc6c266825d1690b8ffc31401efc5a38958e27b09afe0d61f7f79b1"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_162946.force_dim": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "5ec0475a84370e9e1798ddd9a1dd2c33502ab83037da91a915f5bae006f92dcb"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_162946.temperature_summary": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "0a1fd48558c9521d01b13e0bf885f04d40cad61c53674af61decc75db3c8d3f7"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_162946.thermal_converged_by_pad": {
+      "shape": [
+        4
+      ],
+      "dtype": "bool",
+      "sha256": "252c0b6b080fa045acfcd1437f693f3be2be2ac8223ea525d492fa19ab028942"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_162946.thermal_iterations_by_pad": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "e92ed1a528b46134d08f92e014c6c694c1b6292202221c7fe59a14ec613f772d"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_162946.viscosity_summary": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "777845cad92deed8864a0196c12454cfc87f7df4142896344b890381459d5f02"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_30.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "6105def0ea9bc4d1a57b8ca7c1a2b81562b9c39f6ebab6d5e89a6e9c0ce30e9e"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_30.force_dim": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "1f9c89da181020cd632fefeade4fbe38009807831603d6c2560f2ea26b27c6a7"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_30.temperature_summary": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "7c09bddee94a9d7c1c01efbfb967f6e9123653de538bb8073a8c778c561b5c0e"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_30.thermal_converged_by_pad": {
+      "shape": [
+        4
+      ],
+      "dtype": "bool",
+      "sha256": "252c0b6b080fa045acfcd1437f693f3be2be2ac8223ea525d492fa19ab028942"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_30.thermal_iterations_by_pad": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "a9609210a6e2ed464f1b18624c4ded85b6db9c19bc26594b81fd46af0c78eacc"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_30.viscosity_summary": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "a021067e74c9581bec0ad4d90be88ef898dc0e91d827d0aefb46dd63f38f2b57"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_33.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "c99b799d40f3605747e39d7cfb73a2e958d6d04ce4d5ae087ec5d9d3c8c588e5"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_33.force_dim": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "74c8e03953d531abed885a4c09c9e8d2ecbda2a7a6b47d6e3867900b157b8161"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_33.temperature_summary": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "b6314bdb9d19185d12e41ae634b79f116b4bdbbe7d7b3c6818c508d8d59123b7"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_33.thermal_converged_by_pad": {
+      "shape": [
+        4
+      ],
+      "dtype": "bool",
+      "sha256": "252c0b6b080fa045acfcd1437f693f3be2be2ac8223ea525d492fa19ab028942"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_33.thermal_iterations_by_pad": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "e92ed1a528b46134d08f92e014c6c694c1b6292202221c7fe59a14ec613f772d"
+    },
+    "s0011.s0011_diagnostic_fixed_point.sample_33.viscosity_summary": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "0bbdbe197e56029c94ebfe4f8e6a878d4942509ec5f735e80bc08cc3c7a29371"
+    }
+  }
+}

@@ -3,7 +3,7 @@ import os.path
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import fsolve
+from scipy.optimize import brentq
 from scipy.sparse import coo_matrix
 
 from ALB.core.component import BaseSimpleModel
@@ -13,6 +13,11 @@ from ALB.config import CsoArgs
 # from ALB.infrastructure.logging import logger
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.physics.film.model_utils import get_primary_film_model
+
+
+_CSORIFICE_ROOT_XTOL = np.nextafter(0.0, 1.0)
+_CSORIFICE_ROOT_RTOL = 4.0 * np.finfo(float).eps
+_CSORIFICE_RESIDUAL_TOL = 1e-10
 
 __all__ = [
     "BaseOrifice",
@@ -356,9 +361,10 @@ class NodimCSOrifice(BaseOrifice):
         :param cq2: nondimensional pipe resistance coefficient.
         :param ps: nondimensional supply pressure for positive valve opening.
         :param p0: nondimensional return pressure for negative valve opening.
-        :param q_leak: nondimensional leakage flow.
+        :param q_leak: retained configuration field; only zero is supported.
         """
         super().__init__(*args, **kwargs)
+        _require_zero_leakage(q_leak)
         self.position = np.array(position).reshape(-1, 2)
         self.args = None
         self.xv = 0
@@ -527,27 +533,16 @@ class NodimCSOrifice(BaseOrifice):
     def _cal_qdp(self, pn):
         if self.xv == 0:
             return np.zeros((len(pn), len(pn)))
-        xv = np.abs(self.xv)
-        pn = self._node_pressure_for_equations(pn)
-        dp = np.abs(self.psv - pn)
-        cq4 = self.cq0 * xv * np.sqrt(self.cq2**2 + 4 * self.cq1_h2 * dp) / 2
-        ps = self._supply_pressure_for_equations()
-        A = np.ones((len(pn), len(pn))) * np.sqrt(np.abs(ps - self.psv))
-        B = np.diag(cq4)
-        d = -self.cq0 * xv / 2
-        A += B
-        qdp = np.zeros((len(pn), len(pn)))
-        for i in range(len(pn)):
-            E = np.zeros_like(pn)
-            E[i] += d
-            rank = np.linalg.matrix_rank(A)
-            if rank == len(pn):
-                qdp[i] = np.linalg.solve(A, E)
-            else:
-                qdp[i] = np.zeros_like(pn)
-        qdp = np.array(qdp)
-
-        return -qdp
+        pn = _as_numeric_vector(self._node_pressure_for_equations(pn), "pn")
+        return _assembly_flow_jacobian(
+            self.cq0,
+            self.cq1_h2,
+            self.cq2,
+            pn,
+            np.abs(self.xv),
+            self._supply_pressure_for_equations(),
+            self.psv,
+        )
 
     def _add_result(self, result, p, q):
         sr = np.concatenate([p, q])
@@ -778,6 +773,102 @@ def _match_numeric_length(value, length, name):
     return values
 
 
+def _require_zero_leakage(q_leak):
+    """Validate the fixed zero-leakage CSOrifice contract."""
+    leakage = _as_scalar_float(q_leak, "q_leak")
+    if not np.isfinite(leakage):
+        raise ValueError("q_leak must be finite")
+    if leakage != 0.0:
+        raise ValueError("q_leak must be 0.0 for CSOrifice")
+    return leakage
+
+
+def _validated_flow_parameters(cq0, cq1_h2, cq2, pn, xv, ps, q_leak):
+    """Return finite, shape-consistent parameters for scalar flow solving."""
+    pn = _as_numeric_vector(pn, "pn")
+    cq0 = _as_scalar_float(cq0, "cq0")
+    cq1_h2 = _match_numeric_length(cq1_h2, len(pn), "cq1_h2")
+    cq2 = _as_scalar_float(cq2, "cq2")
+    xv = abs(_as_scalar_float(xv, "xv"))
+    ps = _as_scalar_float(ps, "ps")
+    _require_zero_leakage(q_leak)
+    if (
+        not np.all(np.isfinite(pn))
+        or not np.all(np.isfinite(cq1_h2))
+        or not all(np.isfinite(value) for value in (cq0, cq2, xv, ps))
+    ):
+        raise ValueError("CSOrifice flow parameters must be finite")
+    if cq0 <= 0.0:
+        raise ValueError("cq0 must be > 0")
+    if np.any(cq1_h2 < 0.0) or cq2 < 0.0:
+        raise ValueError("cq1_h2 and cq2 must be >= 0")
+    return cq0, cq1_h2, cq2, pn, xv, ps
+
+
+def _node_flows_from_pressure(psv, pn, cq1_h2, cq2):
+    """Return signed node flows from one valve-chamber pressure.
+
+    Rationalizing the quadratic root avoids cancellation when the pressure
+    difference is close to zero.  The expression is algebraically identical
+    to the original capillary-slot relation for either flow direction.
+    """
+    pressure_delta = float(psv) - pn
+    absolute_delta = np.abs(pressure_delta)
+    denominator = np.sqrt(cq2**2 + 4.0 * cq1_h2 * absolute_delta) + cq2
+    flows = np.zeros_like(pressure_delta)
+    active = absolute_delta > 0.0
+    if np.any(active & (denominator == 0.0)):
+        raise ValueError(
+            "cq1_h2 and cq2 cannot both vanish for nonzero pressure difference"
+        )
+    flows[active] = 2.0 * pressure_delta[active] / denominator[active]
+    return flows
+
+
+def _source_flow_from_pressure(psv, cq0, xv, ps):
+    """Return the signed zero-leakage source flow at chamber pressure psv."""
+    pressure_delta = ps - float(psv)
+    return float(
+        np.sign(pressure_delta)
+        * cq0
+        * xv
+        * np.sqrt(abs(pressure_delta))
+    )
+
+
+def _node_flow_jacobian(cq0, cq1_h2, cq2, pn, xv, ps, psv):
+    """Return ``d(qn)/d(pn)`` from the scalar balance by implicit calculus."""
+    pressure_delta = np.abs(float(psv) - pn)
+    conductance_denominator = np.sqrt(cq2**2 + 4.0 * cq1_h2 * pressure_delta)
+    singular = conductance_denominator == 0.0
+    if np.any(singular):
+        if np.all(singular) and ps == float(psv):
+            # Preserve the historical zero stiffness convention at the fully
+            # closed, zero-pressure, zero-linear-resistance endpoint.
+            return np.zeros((len(pn), len(pn)), dtype=float)
+        raise RuntimeError(
+            "CSOrifice flow derivative is singular; use cq2 > 0 near zero pressure"
+        )
+    node_conductance = 1.0 / conductance_denominator
+    source_delta = abs(ps - float(psv))
+    if source_delta == 0.0:
+        dpsv_dpn = np.zeros_like(node_conductance)
+    else:
+        source_conductance = cq0 * xv / (2.0 * np.sqrt(source_delta))
+        dpsv_dpn = node_conductance / (
+            source_conductance + float(np.sum(node_conductance))
+        )
+    return np.outer(node_conductance, dpsv_dpn) - np.diag(node_conductance)
+
+
+def _assembly_flow_jacobian(cq0, cq1_h2, cq2, pn, xv, ps, psv):
+    """Return the positive ``-d(qn)/d(pn)`` film-matrix contribution."""
+    cq0, cq1_h2, cq2, pn, xv, ps = _validated_flow_parameters(
+        cq0, cq1_h2, cq2, pn, xv, ps, 0.0
+    )
+    return -_node_flow_jacobian(cq0, cq1_h2, cq2, pn, xv, ps, psv)
+
+
 def define_equations(cq0, cq1, cq2, pn, xv, ps, q_leak):
     """
     :param cq0: the coefficient of the orifice
@@ -795,7 +886,7 @@ def define_equations(cq0, cq1, cq2, pn, xv, ps, q_leak):
     cq2 = _as_scalar_float(cq2, "cq2")
     xv = _as_scalar_float(xv, "xv")
     ps = _as_scalar_float(ps, "ps")
-    q_leak = _as_scalar_float(q_leak, "q_leak")
+    q_leak = _require_zero_leakage(q_leak)
 
     def equations(x):
         x = _match_numeric_length(x, len(pn) + 2, "x")
@@ -831,15 +922,12 @@ def define_equations(cq0, cq1, cq2, pn, xv, ps, q_leak):
 
 
 def define_qprime(cq0, cq1_h2, cq2, pn, xv, ps):
-    """
-    :param cq0: the coefficient of the orifice
-    :param cq1_h2: the coefficient of the orifice
-    :param cq2: the coefficient of the orifice
-    :param pn: the pressure of the nodes
-    :param xv: the opening of the servo valve
-    :param ps: the supply pressure
-    """
+    """Return the legacy full-system Jacobian for diagnostic compatibility.
 
+    The production CSOrifice solver no longer consumes this Jacobian; it is
+    retained because it was migrated as an explicit hydraulics namespace API.
+    New code should use :func:`solve_q` and the implicit scalar derivative.
+    """
     pn = _as_numeric_vector(pn, "pn")
     cq0 = _as_scalar_float(cq0, "cq0")
     cq1_h2 = _match_numeric_length(cq1_h2, len(pn), "cq1_h2")
@@ -859,38 +947,76 @@ def define_qprime(cq0, cq1_h2, cq2, pn, xv, ps):
             x1 = np.hstack([1, 0, np.zeros(lpn)])
         xs = np.vstack([x0, x1])
         pt0 = np.zeros((lpn, 1))
-        pt1 = -1 / np.sqrt(cq2**2 + 4 * cq1_h2 * (np.abs(x[1] - pn)))
-        pt1 = pt1.reshape(-1, 1)
+        pt1 = -1 / np.sqrt(cq2**2 + 4 * cq1_h2 * np.abs(x[1] - pn))
         pt2 = np.eye(lpn)
-        pt = np.hstack([pt0, pt1, pt2])
-        xs = np.vstack([xs, pt])
-        return xs
+        return np.vstack([xs, np.hstack([pt0, pt1.reshape(-1, 1), pt2])])
 
     return prime
 
 
 def solve_q(cq0, cq1_h2, cq2, pn, xv, ps, q_leak, init=None):
+    """Solve all zero-leakage CSOrifice states through one monotonic root.
+
+    The node flows are explicit functions of the common chamber pressure
+    ``psv``.  Eliminating them leaves one continuous, strictly decreasing mass
+    balance whose root is enclosed by the minimum and maximum external/node
+    pressures.  The same bracketed solve handles supply, return, and reversed
+    flow without an initial guess or a solver-selection branch.
+
+    ``init`` remains in the call signature for source compatibility but is not
+    used because the bracket follows directly from the pressure inputs.
     """
-    :param cq0: the coefficient of the orifice
-    :param cq1_h2: the coefficient of the orifice
-    :param cq2: the coefficient of the orifice
-    :param pn: the pressure of the nodes
-    :param xv: the opening of the servo valve
-    :param ps: the supply pressure
-    :param q_leak: the leakage flow
-    :param init: the initial value of the iteration
-    return: the result of the iteration
-    """
-    pn = _as_numeric_vector(pn, "pn")
-    eqs = define_equations(cq0, cq1_h2, cq2, pn, xv, ps, q_leak)
-    if init is None:
-        init = np.zeros(len(pn) + 2)
+    del init
+    cq0, cq1_h2, cq2, pn, xv, ps = _validated_flow_parameters(
+        cq0, cq1_h2, cq2, pn, xv, ps, q_leak
+    )
+
+    def balance(psv):
+        return _source_flow_from_pressure(psv, cq0, xv, ps) - float(
+            np.sum(_node_flows_from_pressure(psv, pn, cq1_h2, cq2))
+        )
+
+    lower = min(ps, float(np.min(pn)))
+    upper = max(ps, float(np.max(pn)))
+    lower_value = balance(lower)
+    upper_value = balance(upper)
+    if lower_value < 0.0 or upper_value > 0.0:
+        raise RuntimeError(
+            "CSOrifice monotonic balance is not enclosed by pressure bounds"
+        )
+    if lower == upper or lower_value == 0.0:
+        psv = lower
+    elif upper_value == 0.0:
+        psv = upper
     else:
-        init = _match_numeric_length(init, len(pn) + 2, "init")
-    prime = define_qprime(cq0, cq1_h2, cq2, pn, xv, ps)
-    ans = fsolve(eqs, init, fprime=prime)
-    # ans = fsolve(eqs, init)
-    return ans
+        psv = float(
+            brentq(
+                balance,
+                lower,
+                upper,
+                xtol=_CSORIFICE_ROOT_XTOL,
+                rtol=_CSORIFICE_ROOT_RTOL,
+                maxiter=300,
+            )
+        )
+    node_flows = _node_flows_from_pressure(psv, pn, cq1_h2, cq2)
+    total_flow = float(np.sum(node_flows))
+    answer = np.concatenate(([total_flow, psv], node_flows))
+    source_residual = total_flow - _source_flow_from_pressure(psv, cq0, xv, ps)
+    node_pressure_residual = (
+        cq1_h2 * node_flows * np.abs(node_flows)
+        + cq2 * node_flows
+        - (psv - pn)
+    )
+    residual_norm = max(
+        abs(source_residual), float(np.max(np.abs(node_pressure_residual)))
+    )
+    if not np.all(np.isfinite(answer)) or residual_norm > _CSORIFICE_RESIDUAL_TOL:
+        raise RuntimeError(
+            "CSOrifice monotonic solve failed residual check: "
+            f"{residual_norm:.17g} > {_CSORIFICE_RESIDUAL_TOL:.1e}"
+        )
+    return answer
 
 
 csorifice_args = CsoArgs()

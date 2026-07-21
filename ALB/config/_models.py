@@ -1293,6 +1293,12 @@ class NodimOrificeConfig(ConfigData):
             raise ValueError("cq1 and cq2 must be >= 0")
         if self.ps < 0 or self.p0 < 0:
             raise ValueError("ps and p0 must be >= 0")
+        try:
+            self.q_leak = float(self.q_leak)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("q_leak must be 0.0 for CSOrifice") from exc
+        if not np.isfinite(self.q_leak) or self.q_leak != 0.0:
+            raise ValueError("q_leak must be 0.0 for CSOrifice")
 
     @classmethod
     def from_dict(cls, config_dict):

@@ -23,6 +23,10 @@ ROOT = Path(__file__).resolve().parents[3]
 REF_DIR = ROOT / "refs"
 REF_JSON = REF_DIR / "thermal_segregated_newton_reference_v2.json"
 REF_NPZ = REF_DIR / "thermal_segregated_newton_reference_v2.npz"
+CSORIFICE_CONSUMER_JSON = (
+    REF_DIR / "csorifice_monotonic_consumers_reference_v2.json"
+)
+CSORIFICE_CONSUMER_NPZ = REF_DIR / "csorifice_monotonic_consumers_reference_v2.npz"
 
 
 def _dataclass_args(cls, payload):
@@ -297,17 +301,23 @@ def test_fixed_point_reference_snapshot_matches_pre_change_results_exactly():
 
 def test_s0011_current_replay_reference_v2_matches_exactly():
     metadata = json.loads(REF_JSON.read_text(encoding="utf-8"))
+    corrected = json.loads(CSORIFICE_CONSUMER_JSON.read_text(encoding="utf-8"))
+    assert corrected["oracle_reference"] == "refs/csorifice_monotonic_reference_v2.json"
     s0011_case = metadata["cases"]["s0011_diagnostic_fixed_point"]
     assert not s0011_case["config_provenance"]["historical_share_available"]
     actual = _run_s0011_reference(metadata)
 
-    with np.load(REF_NPZ) as reference:
+    with np.load(CSORIFICE_CONSUMER_NPZ) as reference:
         expected_keys = {
-            key for key in reference.files if key.startswith("s0011_")
+            key.removeprefix("s0011.")
+            for key in reference.files
+            if key.startswith("s0011.")
         }
         assert set(actual) == expected_keys
         for key in expected_keys:
-            np.testing.assert_array_equal(actual[key], reference[key], err_msg=key)
+            np.testing.assert_array_equal(
+                actual[key], reference[f"s0011.{key}"], err_msg=key
+            )
 
 
 def test_thermal_config_accepts_and_validates_iter_method_options():

@@ -64,7 +64,7 @@ def replayed_cases():
 
 @pytest.mark.parametrize("domain", DOMAIN_ORDER)
 def test_domain_arrays_match_reference_exactly(domain, replayed_cases):
-    """Every frozen array must preserve dtype, shape, and every bit."""
+    """Preserve v1 exactly except the explicitly superseded hydraulics result."""
 
     metadata = json.loads(
         (REFERENCE_DIR / f"{domain}.json").read_text(encoding="utf-8")
@@ -83,6 +83,11 @@ def test_domain_arrays_match_reference_exactly(domain, replayed_cases):
             assert list(actual_array.shape) == metadata["arrays"][key]["shape"]
             assert str(actual_array.dtype) == metadata["arrays"][key]["dtype"]
             assert _array_digest(reference_array) == metadata["arrays"][key]["sha256"]
+            if domain == "hydraulics_orifice":
+                # The immutable v1 archive remains an integrity record of the
+                # fsolve implementation. Production hydraulics is now gated by
+                # csorifice_monotonic_reference_v2 instead of this old output.
+                continue
             assert _array_digest(actual_array) == metadata["arrays"][key]["sha256"]
             np.testing.assert_array_equal(
                 actual_array,

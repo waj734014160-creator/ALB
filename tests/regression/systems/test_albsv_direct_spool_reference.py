@@ -16,12 +16,15 @@ from ALB.systems.alb.assembly import nodim_alb
 
 ROOT = Path(__file__).resolve().parents[3]
 REFERENCE_JSON = ROOT / "refs" / "albsv_direct_spool_reference_v1.json"
-REFERENCE_NPZ = ROOT / "refs" / "albsv_direct_spool_reference_v1.npz"
+CORRECTED_JSON = ROOT / "refs" / "csorifice_monotonic_consumers_reference_v2.json"
+CORRECTED_NPZ = ROOT / "refs" / "csorifice_monotonic_consumers_reference_v2.npz"
 
 
 @pytest.mark.parametrize("case_id", ["zero", "nonzero", "reversed"])
 def test_direct_spool_adapter_replays_frozen_numerics_exactly(case_id):
     metadata = json.loads(REFERENCE_JSON.read_text(encoding="utf-8"))
+    corrected = json.loads(CORRECTED_JSON.read_text(encoding="utf-8"))
+    assert corrected["reference_name"] == "csorifice_monotonic_consumers_reference_v2"
     config = NodimALBConfig.from_dict(metadata["config"])
     model = nodim_alb(config, thermal_config=config.thermal_config)
     model.init()
@@ -61,11 +64,13 @@ def test_direct_spool_adapter_replays_frozen_numerics_exactly(case_id):
             [np.asarray(item["viscosity_field"], dtype=float) for item in thermal]
         ),
     }
-    with np.load(REFERENCE_NPZ, allow_pickle=False) as frozen:
+    with np.load(CORRECTED_NPZ, allow_pickle=False) as frozen:
         for name, value in actual.items():
-            np.testing.assert_array_equal(value, frozen[f"{case_id}.{name}"])
+            np.testing.assert_array_equal(
+                value, frozen[f"direct_spool.{case_id}.{name}"]
+            )
 
-    expected_status = metadata["status"][case_id]
+    expected_status = corrected["direct_spool"]["status"][case_id]
     assert block.convergence_status.converged is True
     assert bool(model.calc_is_finished()) is True
     assert [bool(item["converged"]) for item in thermal] == expected_status[
@@ -75,9 +80,7 @@ def test_direct_spool_adapter_replays_frozen_numerics_exactly(case_id):
 
 @pytest.mark.parametrize("case_id", ["zero", "nonzero", "reversed"])
 def test_direct_spool_completion_snapshot_and_status_are_read_only(case_id):
-    reference_json = ROOT / "refs" / "albsv_convergence_state_reference_v2.json"
-    reference_npz = ROOT / "refs" / "albsv_convergence_state_reference_v2.npz"
-    metadata = json.loads(reference_json.read_text(encoding="utf-8"))
+    metadata = json.loads(CORRECTED_JSON.read_text(encoding="utf-8"))
     source = json.loads(REFERENCE_JSON.read_text(encoding="utf-8"))
     config = NodimALBConfig.from_dict(source["config"])
     model = nodim_alb(config, thermal_config=config.thermal_config)
@@ -115,10 +118,19 @@ def test_direct_spool_completion_snapshot_and_status_are_read_only(case_id):
         list(pad.bearing.main_model.adaptive_damp_history) for pad in model.pads
     ]
 
-    with np.load(reference_npz, allow_pickle=False) as frozen:
-        np.testing.assert_array_equal(result.force, frozen[f"{case_id}.force"])
+    with np.load(CORRECTED_NPZ, allow_pickle=False) as frozen:
+        prefix = f"direct_spool.{case_id}"
+        np.testing.assert_array_equal(result.force, frozen[f"{prefix}.output.force"])
         np.testing.assert_array_equal(
-            pressure, frozen[f"{case_id}.pressure_at_completion"]
+            pressure, frozen[f"{prefix}.pressure_at_completion"]
+        )
+        np.testing.assert_array_equal(
+            [len(item) for item in histories_before],
+            frozen[f"{prefix}.history_lengths_before_query"],
+        )
+        np.testing.assert_array_equal(
+            [len(item) for item in histories_after],
+            frozen[f"{prefix}.history_lengths_after_second_query"],
         )
     assert histories_after == histories_before
-    assert metadata["cases"][case_id]["expected_status_after_fix"] is True
+    assert metadata["direct_spool"]["status"][case_id]["block_converged"] is True

@@ -88,6 +88,11 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 
 配置从 `ALB.config.<domain>` 显式导入。`alb-migrate-config` 和 `tools/migrations/migrate_config_0_2.py` 只读旧 JSON5，并把 0.2 schema 另存为 UTF-8 文件；不会覆盖源配置。
 
+`ALB.physics.hydraulics.CSOrifice` 与 `NodimCSOrifice` 的 0.2 契约固定为零泄漏，
+`q_leak` 只能取 `0.0`；配置或直接求解传入非零值会立即抛出 `ValueError`。公共腔压力通过同一
+单调质量守恒标量方程求解，供油、回油、反向流和零供油压力不再切换求解器；油膜装配使用该
+标量方程的隐式解析导数。
+
 ### ALBNN
 
 部署入口位于 `ALB.surrogate`。0.2 model package 使用 manifest、固定 artifact 名和 SHA-256 校验；加载 pickle scaler 时必须显式声明信任。旧 `ALB.nn` pickle 不作为运行时兼容面，先使用带 `--trust-legacy-pickle` 的 `alb-migrate-surrogate` 或 `tools/migrations/migrate_surrogate_0_2.py` 迁移可信本地文件。迁移器把已知旧 scaler 类重写到当前 namespace，默认不覆盖源文件。

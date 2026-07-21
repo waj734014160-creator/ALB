@@ -30,7 +30,8 @@
 - 热 Newton 修正参考：`refs/thermal_segregated_newton_reference_v2.{json,npz}`，33 个数组；commit `d9d37de` 先于测试修正建立，v1 保持不变。S0011 部分冻结的是当前代码和当前 shared config 回放，不是缺失的历史 `share.json5` 精确重建。
 - 转子时步修正参考：`refs/ross_rotor_time_validation_reference_v2.{json,npz}`，14 个数组；commit `4713eec` 先建立修正前合法轨迹，commit `e375d2d` 再修复校验，既有 v1 未改动。
 - ALBSV 状态修正参考：`refs/albsv_convergence_state_reference_v2.{json,npz}`；重复收敛查询已改为纯读取，完成时压力和力保持精确一致。
-- 当前阶段：0.2.0 全仓库重构、发布后数值与转子修正、SURROGATE_TRAIN 和 PAPER_WORK 消费者迁移均已落地；下一阶段是完整验收与处理明确保留的 DTO/config 边界。
+- CSOrifice 单调求解参考：commit `765b9b6` 先创建 `refs/csorifice_monotonic_reference_v2.{json,npz}`，冻结局部供油、零供油回流、反向流、端点及完整热耦合共 38 个数组；`refs/csorifice_monotonic_consumers_reference_v2.{json,npz}` 另冻结 ALBSV direct-spool 与 S0011 的 57 个下游数组。既有 v1/v2 参考均未覆盖。
+- 当前阶段：0.2.0 全仓库重构、发布后数值/转子/CSOrifice 修正、SURROGATE_TRAIN 和 PAPER_WORK 消费者迁移均已落地；下一阶段是处理明确保留的 DTO/config 边界。
 
 ## 已完成的 0.2.0 边界
 
@@ -44,6 +45,7 @@
 8. generic remote engine 位于 `ALB.infrastructure.remote`；ALBNN 专用队列位于 `ALB.surrogate.training.remote`。
 9. 邮件能力改为 `SmtpNotifier`，只读取注入配置或环境变量；tracked example 不含私人默认信息。
 10. 正式 pytest 只从 `tests/` 收集；诊断和手动工具分别位于 `tools/diagnostics` 与 `tools/manual`。
+11. CSOrifice 的 `q_leak` 固定为 `0.0`；所有压力方向共用一个带压力物理边界的单调标量根，不再通过 `fsolve` 初值或工况分支选择解法，装配导数改为隐式解析式。
 
 ## 当前验收结论
 
@@ -55,6 +57,7 @@
 | 发布后数值修正验收 | 297 passed、30 skipped、12 warnings、7 subtests passed；4 个 S0011 节点全部 passed，mypy 19 个文件无问题，tracked 状态增量为 0 | `docs/migrations/0.2.0_post_release_numeric_acceptance.json` |
 | 发布后转子时步验收 | 300 passed、30 skipped、12 warnings、7 subtests passed；3 个 RossRotor 时步节点和 4 个 S0011 节点全部 passed，mypy 19 个文件无问题，tracked 状态增量为 0 | `docs/migrations/0.2.0_post_release_rotor_acceptance.json` |
 | SURROGATE_TRAIN 消费者迁移及后续修复 | 329 passed、13 skipped、12 warnings、7 subtests passed；23 个 declared 文件中 20 个迁移改写、3 个 context 文件按计划不改；热力 `sx/sy` 四瓦参考另有 4 项精确回归通过；旧平铺 import 为 0 | `docs/migrations/0.2.0_surrogate_train_post_migration_audit.json` |
+| CSOrifice 单调求解修正 | 339 passed、13 skipped、1 warning、7 subtests passed；352 个节点全部收集，测试前后 tracked 状态增量为 0；局部、完整热耦合、ALBSV 与 S0011 共 95 个修正参考数组精确通过 | `refs/csorifice_monotonic_reference_v2.json`、`refs/csorifice_monotonic_consumers_reference_v2.json`、`tests/regression/hydraulics/test_csorifice_monotonic_reference.py` |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
@@ -82,6 +85,7 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - `RossRotor._check_time()` 已改为在状态变更前拒绝非有限或不匹配 `dt` 的时间；合法 global/node 轨迹对修正前 v2 参考精确一致，被拒绝调用的时间、载荷和状态保持不变。
 - `task/task_albnn_data.py` 已通过 `DirectSpoolBearingInput/DirectSpoolBearingBlock` 传递 `sx/sy`，三个冻结工况的力值逐元素精确相等。`task/task_alb_data2.py` 仍有 dimensional 模型配合 `input(nodim=True)`、`output(nodim=False)` 的混合单位边界，严格端口化前必须另建尺度适配器和冻结参考。
 - direct-spool 的旧完成信号已修复：`FilmSystem` 锁存最近一次求解状态，公开查询不再推进自适应阻尼；诊断必须读取 `latest_result` 快照而不是调用会继续迭代的 `output()`。
+- CSOrifice 现只接受 `q_leak == 0.0`；旧配置若保存了任何非零泄漏量会在构造阶段失败，必须先明确其物理含义，不能静默忽略。统一单调解在零供油压力、节点负压时仍求同一质量守恒根，避免“结果已收敛但 `fsolve` 因方程尺度继续重复迭代”的假停滞。
 - `task/task_thermal_forces.py` 已通过独立 v2 参考修复 `sx/sy`：`sy` 驱动 up/down，`sx` 驱动 right/left，标签为四瓦总力、平均有效温度和全瓦收敛。声明的 `pooln` 仍未接入串行循环。
 - 当前实际引用的 M0031、M0035 和 KNN 基线已生成默认不覆盖源文件的 `package_v0_2`；未来 base/expert/residual 训练仍输出松散 checkpoint/scaler，自动生成 0.2 package 尚待独立实现。
 - 旧 `ALB.nn` pickle 不属于 0.2 运行时兼容面。必须先使用显式迁移工具生成新的 model package，并只对可信 pickle 启用加载。
@@ -107,6 +111,7 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - 发布后 S0011/lambda 修正门禁：`docs/migrations/0.2.0_post_release_numeric_acceptance.json`。
 - 发布后 RossRotor 时步修正门禁：`docs/migrations/0.2.0_post_release_rotor_acceptance.json`。
 - RossRotor 合法轨迹参考：`refs/ross_rotor_time_validation_reference_v2.json`。
+- CSOrifice 单调求解参考：`refs/csorifice_monotonic_reference_v2.json`、`refs/csorifice_monotonic_consumers_reference_v2.json`。
 - 热收敛补充参考：`refs/full_repo_refactor_addendum_v1/thermal_convergence.json`。
 - 外部调用：`docs/migrations/0.2.0_external_consumer_audit.md`。
 - SURROGATE_TRAIN 迁移后证据：`docs/migrations/0.2.0_surrogate_train_post_migration_audit.md`。
