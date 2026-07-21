@@ -40,6 +40,7 @@
 | `ALB_MAIN/docs/migrations/0.2.0.md` | 稳定版本迁移手册 | 0.1 到 0.2 的 namespace、生命周期、DTO、持久化、配置和模型包迁移规则。 | 0.2 公共契约、导入映射、迁移工具、正式不兼容项和稳定验收入口。 | 实时任务状态、临时日志、未经验证的数值结论。 | 0.2 公共接口、迁移工具或正式验收结论变化时。 |
 | `ALB_MAIN/docs/migrations/0.2.0_release_acceptance.json` | 版本化机器验收证据 | 记录最终 pytest、mypy、冻结参考和 tracked 工作树前后门禁。 | 只能由正式发布验收工具按真实执行结果重建。 | 手工填写通过结论、实时任务状态、未经执行的测试结果。 | 0.2 发布候选重新验收时。 |
 | `ALB_MAIN/docs/migrations/0.2.0_post_release_numeric_acceptance.json` | 发布后数值修正机器验收证据 | 记录 S0011/lambda 修正后的 pytest、mypy、S0011 节点和 tracked 工作树门禁。 | 只能由正式验收工具按真实执行结果新建。 | 手工填写通过结论、覆盖原始发布验收、实时任务状态和未经执行的测试结果。 | 发布后数值修正重新验收时。 |
+| `ALB_MAIN/docs/migrations/0.2.0_post_release_rotor_acceptance.json` | 发布后转子时步修正机器验收证据 | 记录 RossRotor 时步修正后的 pytest、mypy、转子节点、冻结参考和 tracked 工作树门禁。 | 只能由正式验收工具按真实执行结果新建。 | 手工填写通过结论、覆盖既有验收、实时任务状态和未经执行的测试结果。 | 发布后 RossRotor 时步修正重新验收时。 |
 | `ALB_MAIN/docs/migrations/0.2.0_external_consumer_audit.md` | 版本化只读迁移证据 | declared 外部调用者的路径、哈希、旧 import 和迁移目标汇总。 | 外部只读快照口径、文件清单、迁移门槛和证据指针。 | 修改外部文件、记录外部实时任务状态、复制原始日志。 | declared 快照或 0.2 迁移目标变化时。 |
 | `ALB_MAIN/docs/file_classification.md` | ALB_MAIN 文件归属和清理策略 | 文件组、归属边界、归档/删除策略。 | 文件类别、代表路径、保留/归档规则、清理风险说明。 | 实时运行状态、模型进度、详细 run 历史。 | 主要文件组、归档类别或清理策略变化时。 |
 | `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS 全局 run 规则和路径索引 | 项目前缀 run 编号、run ID、current-status 归属和规范路径指针。 | run 编号规则、项目前缀映射、current-status 指针、规范路径和归档指针规则。 | 原始日志、详细进度尾部、模型指标、实时 tick、清理动作。 | run 编号、项目前缀、current-status 归属、路径族或归档指针规则变化时。 |
@@ -92,6 +93,7 @@
 | `ALB_MAIN/docs/current_state.md` | ALB_MAIN 当前开发阶段、基线、验证状态、风险、下一步和证据指针。 |
 | `ALB_MAIN/docs/migrations/0.2.0_release_acceptance.json` | 0.2 最终 pytest、mypy、冻结参考与 tracked 工作树门禁。 |
 | `ALB_MAIN/docs/migrations/0.2.0_post_release_numeric_acceptance.json` | S0011/lambda 发布后修正的 pytest、mypy、节点结果与 tracked 工作树门禁。 |
+| `ALB_MAIN/docs/migrations/0.2.0_post_release_rotor_acceptance.json` | RossRotor 时步发布后修正的 pytest、mypy、节点结果、冻结参考与 tracked 工作树门禁。 |
 | `ALB_MAIN/refs/full_repo_refactor_addendum_v1/` | 从重构前隔离源码生成的 thermal direct/Newton/transient 不可覆盖补充参考。 |
 | `ALB_MAIN/docs/run_index.md` | 人类可读的工作区全局 run 编号和路径策略。 |
 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` | 论文任务文件管理、路径命名和证据保留规则。 |

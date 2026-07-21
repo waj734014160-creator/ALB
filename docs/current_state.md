@@ -28,7 +28,8 @@
 - 冻结参考：`refs/full_repo_refactor_v1/`，11 个领域、121 个冻结数组；现有 v1 参考不得覆盖。
 - 热收敛补充参考：`refs/full_repo_refactor_addendum_v1/`，3 个自包含 case、40 个冻结数组；由重构前 commit `a4b2be1` 的隔离源码生成，并由 annotated tag `full-repo-refactor-thermal-addendum-v1-20260721` 固定。
 - 热 Newton 修正参考：`refs/thermal_segregated_newton_reference_v2.{json,npz}`，33 个数组；commit `d9d37de` 先于测试修正建立，v1 保持不变。S0011 部分冻结的是当前代码和当前 shared config 回放，不是缺失的历史 `share.json5` 精确重建。
-- 当前阶段：0.2.0 全仓库重构、迁移资料、性能门禁和 wheel 隔离安装均已完成；发布后已完成 S0011/lambda 独立数值修正，下一阶段仍是外部消费者迁移。
+- 转子时步修正参考：`refs/ross_rotor_time_validation_reference_v2.{json,npz}`，14 个数组；commit `4713eec` 先建立修正前合法轨迹，commit `e375d2d` 再修复校验，既有 v1 未改动。
+- 当前阶段：0.2.0 全仓库重构、迁移资料、性能门禁和 wheel 隔离安装均已完成；发布后 S0011/lambda 与 RossRotor 时步校验已分别完成，下一阶段仍是外部消费者迁移。
 
 ## 已完成的 0.2.0 边界
 
@@ -51,6 +52,7 @@
 | 242 节点迁移 | 242 个基线节点全部映射；另有 19 个原非收集文件明确分类 | `docs/migrations/0.2.0_test_map.json` |
 | 0.2.0 标签验收 | 293 passed、33 skipped、12 warnings、7 subtests passed；测试前后 tracked 状态增量为 0 | `docs/migrations/0.2.0_release_acceptance.json` |
 | 发布后数值修正验收 | 297 passed、30 skipped、12 warnings、7 subtests passed；4 个 S0011 节点全部 passed，mypy 19 个文件无问题，tracked 状态增量为 0 | `docs/migrations/0.2.0_post_release_numeric_acceptance.json` |
+| 发布后转子时步验收 | 300 passed、30 skipped、12 warnings、7 subtests passed；3 个 RossRotor 时步节点和 4 个 S0011 节点全部 passed，mypy 19 个文件无问题，tracked 状态增量为 0 | `docs/migrations/0.2.0_post_release_rotor_acceptance.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
 | 严格类型 | mypy 2.3.0 检查 `ALB/contracts` 与 `ALB/core`，19 个源文件无问题 | `docs/migrations/0.2.0_release_acceptance.json` |
@@ -75,7 +77,8 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - `SURROGATE_TRAIN` 的 17 项中，16 项确需外部旧 namespace 迁移；M0031 的 1 项是本仓库测试把 sibling 项目错误拼成 `ALB_MAIN/SURROGATE_TRAIN`，实际 5 个 artifact 存在，尚待独立修正。
 - 两个 liquid-film 测试曾用 `6.0 * miu * omega * l**2 / (ps*c**2)`，把 Reynolds bearing number 放大 4 倍；现统一通过 `FilmNondimScales` 使用生产定义 `1.5`。`ALB.physics.gas` 中的 `6.0` 属于另一套气体轴承定义，不在此次修正范围。
 - S0011 v2 已嵌入三条输入、当前 resolved source config 和 fixed-point config，不再读取外部 84.3 MB CSV。历史 `alb12.json5` 哈希一致，但原 `share.json5` 已缺失且当前 hash 不同；因此 v1 到 v2 的 dimensional/S0011 漂移不能归因于 lambda 修正，也不能宣称完成历史配置精确复现。
-- `RossRotor._check_time()` 仍保留重构前先追加时间、再用末项检查步长的逻辑，因而不能识别错误 `dt`。按本轮约束只记录，不修正；修正时必须另建提交和 v2 参考。
+- `RossRotor._check_time()` 已改为在状态变更前拒绝非有限或不匹配 `dt` 的时间；合法 global/node 轨迹对修正前 v2 参考精确一致，被拒绝调用的时间、载荷和状态保持不变。
+- `task/task_albnn_data.py` 的 `sx/sy` 需要作为直接 `sv` 输入传入 `NodimALBSV`，但当前严格 `BearingInput/BearingBlock` 不携带阀芯量。外部迁移前必须先补严格 ALBSV adapter 或明确受控内部边界，不能直接套用 `BearingBlock` 导致零阀芯和样本力漂移。
 - 旧 `ALB.nn` pickle 不属于 0.2 运行时兼容面。必须先使用显式迁移工具生成新的 model package，并只对可信 pickle 启用加载。
 - 删除当前工作树中的私人邮件默认值不会抹除 Git 历史；相关 SMTP 凭据仍需在外部轮换。
 - thermal 主参考的 direct/Newton/transient 收敛证据已由 addendum 补齐；但现有性能与热参考仍主要是小算例，且 orifice cooling、非零导热、生产尺寸 M0035 和大型 ROSS 性能不在当前精确门禁覆盖内。
@@ -84,9 +87,9 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 
 ## 发布后下一步
 
-1. 在 `SURROGATE_TRAIN` 独立分支按 23 文件清单迁移 import、model package 和 remote wrapper，并执行训练/推理 smoke。
+1. 在 `SURROGATE_TRAIN` 独立分支按 `docs/migrations/0.2.0_external_consumer_audit.md` 的 8 步、23 文件计划迁移 remote、训练、model package、推理和物理调用；先解决 ALBSV 严格端口缺口，再执行固定样本与 CLI smoke。
 2. 在 `PAPER_WORK` 独立分支按 27 文件清单迁移脚本，保持论文任务配置和结果资产原地。
-3. `RossRotor._check_time()` 如需修正，继续遵循“先生成新参考、再独立提交”；不得改写任何既有 v1 或本次 thermal v2。
+3. 在 ALB_MAIN 单独修正 M0031 测试的 sibling-root 路径；它不是外部源码迁移，不能混入 `SURROGATE_TRAIN` 提交。
 4. 如需发布 wheel 到外部位置，先重新执行 `tools/validation/validate_wheel_0_2.py` 并核对 SHA-256。
 
 ## 证据入口
@@ -96,6 +99,8 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - 测试映射：`docs/migrations/0.2.0_test_map.json`。
 - 最终 pytest、mypy、冻结参考和 tracked 工作树门禁：`docs/migrations/0.2.0_release_acceptance.json`。
 - 发布后 S0011/lambda 修正门禁：`docs/migrations/0.2.0_post_release_numeric_acceptance.json`。
+- 发布后 RossRotor 时步修正门禁：`docs/migrations/0.2.0_post_release_rotor_acceptance.json`。
+- RossRotor 合法轨迹参考：`refs/ross_rotor_time_validation_reference_v2.json`。
 - 热收敛补充参考：`refs/full_repo_refactor_addendum_v1/thermal_convergence.json`。
 - 外部调用：`docs/migrations/0.2.0_external_consumer_audit.md`。
 - 性能：`docs/migrations/0.2.0_performance.json`。
