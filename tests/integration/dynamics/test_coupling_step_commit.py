@@ -75,3 +75,22 @@ def test_duplicate_context_is_rejected_before_second_mutation():
     with pytest.raises(RuntimeError, match="already"):
         coupling.advance(context)
     assert rotor.input_calls == 1
+
+
+def test_add_unbalance_forwards_soft_start_selection():
+    rotor = _Rotor()
+    coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.01, 1), _Bearing())
+
+    coupling.add_unbalance(
+        node_link=0,
+        phase=0.0,
+        t_max=1.0,
+        m=1.0,
+        freq=1.0,
+        e=1.0,
+        no_step=True,
+    )
+
+    excitation = coupling.forces[-1]
+    assert excitation._no_step_set is True
+    np.testing.assert_array_equal(excitation(0.0), [0.0, 0.0])

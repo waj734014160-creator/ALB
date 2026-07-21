@@ -55,6 +55,12 @@ def test_rotor_ports_validate_node_axis_shape_and_links():
     assert load.force.shape == state.displacement.shape == (2, 2)
 
 
+@pytest.mark.parametrize("spool", [[1.01, 0.0], [0.0, -1.01]])
+def test_valve_output_rejects_out_of_range_normalized_spool(spool):
+    with pytest.raises(ValueError, match=r"\[-1, 1\]"):
+        ValveOutput(spool, 0.0, "nondimensional")
+
+
 @pytest.mark.parametrize(
     "factory",
     [

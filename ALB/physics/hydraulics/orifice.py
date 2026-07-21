@@ -412,8 +412,16 @@ class NodimCSOrifice(BaseOrifice):
         """
         :param xv: the opening of the servo valve
         """
-        if xv is not None and -1 <= xv <= 1:
-            self.xv = xv
+        if xv is not None:
+            values = _as_numeric_vector(xv, "xv")
+            if values.size != 1:
+                raise ValueError("xv must be a scalar")
+            candidate = float(values[0])
+            if not np.isfinite(candidate):
+                raise ValueError("xv must be finite")
+            if not -1.0 <= candidate <= 1.0:
+                raise ValueError("xv must be within [-1, 1]")
+            self.xv = candidate
         if self.xv >= 0:
             self.ps = self.pa
         elif self.xv < 0:

@@ -140,7 +140,10 @@ class ValveOutput(_PortDto):
 
     def __post_init__(self) -> None:
         self._normalize_common()
-        object.__setattr__(self, "spool", _finite_axis_vector(self.spool, "spool"))
+        spool = _finite_axis_vector(self.spool, "spool")
+        if np.any(np.abs(spool) > 1.0):
+            raise ValueError("spool values must be within [-1, 1]")
+        object.__setattr__(self, "spool", spool)
 
 
 @dataclass(frozen=True, slots=True)

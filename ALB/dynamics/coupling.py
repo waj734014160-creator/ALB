@@ -158,7 +158,7 @@ class RsRotorBearingCouple(BaseCSystem):
         :param e: Eccentricity radius of the unbalance mass.
         :param no_step: Whether to disable step gating in excitation profile.
         """
-        ube = UnbalancedExcitation(phase, t_max, m, freq, e, no_step=False)
+        ube = UnbalancedExcitation(phase, t_max, m, freq, e, no_step=no_step)
         ube.node_link = node_link
         self.forces.append(ube)
 

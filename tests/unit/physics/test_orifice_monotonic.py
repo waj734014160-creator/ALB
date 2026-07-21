@@ -80,3 +80,19 @@ def test_zero_leakage_contract_rejects_nonzero_values():
 def test_degenerate_node_resistance_is_rejected():
     with pytest.raises(ValueError, match="cannot both vanish"):
         solve_q(1.0, 0.0, 0.0, np.array([0.2]), 0.5, 1.0, 0.0)
+
+
+@pytest.mark.parametrize("invalid", [1.01, -1.01, np.nan, [0.1, 0.2]])
+def test_nodim_orifice_rejects_invalid_spool_without_reusing_old_state(invalid):
+    orifice = NodimCSOrifice(
+        position=np.array([[0.5, 0.5]]),
+        cq0=1.0,
+        cq1=1.0,
+        cq2=0.3,
+    )
+    orifice.input(0.4)
+
+    with pytest.raises(ValueError, match="xv"):
+        orifice.input(invalid)
+
+    assert orifice.xv == pytest.approx(0.4)

@@ -61,13 +61,15 @@ class ALB(BaseCSystem):
         pads: Iterable,
         servovalves: list,
         controller=None,
-        alb_config: ALBConfig = ALBConfig(),
+        alb_config: ALBConfig | None = None,
     ):
         """
         This class represents an Active Lubricated Bearing (ALB) system.
         It takes pre-defined servovalves, controllers, orifices, and pads to establish the connections within the ALB.
         """
         super().__init__()
+        if alb_config is None:
+            alb_config = ALBConfig()
         self._t = None
         self.pads = list(pads)
         self.signal.children = [pad.signal for pad in self.pads]
@@ -132,7 +134,8 @@ class ALB(BaseCSystem):
             pad.init()
         for servovalve in self.servovalves:
             servovalve.init()
-        self.controller.init()
+        if self.controller is not None:
+            self.controller.init()
         self._results = pd.DataFrame(
             columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
         )
@@ -938,11 +941,16 @@ class ALBBuilder:
             raise ValueError("Orifice configuration is missing.")
 
         ps = self.orifice_config.ps
+        p0 = self.orifice_config.p0
         position = self.orifice_config.position
-        csorifice_args = CsoArgs()
+        csorifice_args = CsoArgs(cq1_nondim=self.orifice_config.cq1_nondim)
 
-        soa_x = CSOrifice(ps=ps, cso_args=csorifice_args, position=position)
-        sob_x = CSOrifice(ps=0, p0=ps, cso_args=csorifice_args, position=position)
+        soa_x = CSOrifice(
+            ps=ps, p0=p0, cso_args=csorifice_args, position=position
+        )
+        sob_x = CSOrifice(
+            ps=p0, p0=ps, cso_args=csorifice_args, position=position
+        )
         soa_y = copy.deepcopy(soa_x)
         sob_y = copy.deepcopy(sob_x)
 
