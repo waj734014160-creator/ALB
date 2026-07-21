@@ -17,10 +17,24 @@ DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.2.0_release_acceptance.jso
 RUNTIME_ROOT = REPOSITORY_ROOT / "outputs/release_acceptance"
 DEVTOOLS_ROOT = REPOSITORY_ROOT / "outputs/.devtools"
 PYTHON = Path("E:/Anaconda2023/envs/ALB/python.exe")
-NEWTON_NODEID = (
-    "tests/unit/bearing/test_thermal_segregated_newton.py::"
-    "test_fixed_point_reference_snapshot_matches_pre_change_results_exactly"
-)
+S0011_NODEIDS = {
+    (
+        "tests/unit/bearing/test_thermal_segregated_newton.py::"
+        "test_fixed_point_reference_snapshot_matches_pre_change_results_exactly"
+    ),
+    (
+        "tests/unit/bearing/test_thermal_segregated_newton.py::"
+        "test_s0011_current_replay_reference_v2_matches_exactly"
+    ),
+    (
+        "tests/unit/bearing/test_thermal_segregated_newton.py::"
+        "test_direct_then_newton_reports_s0011_sample_30_without_false_convergence"
+    ),
+    (
+        "tests/unit/bearing/test_thermal_segregated_newton.py::"
+        "test_direct_then_newton_does_not_false_converge_s0011_sample_162946"
+    ),
+}
 
 
 def _run(command: list[str], *, environment: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -113,9 +127,13 @@ def run_acceptance() -> dict[str, Any]:
         )
     reports = json.loads(pytest_report.read_text(encoding="utf-8"))
     skipped = [item for item in reports["reports"] if item["outcome"] == "skipped"]
-    known_newton = [item for item in skipped if item["nodeid"] == NEWTON_NODEID]
-    if len(known_newton) != 1:
-        raise AssertionError("Known external-fixture Newton node was not recorded as one skip")
+    s0011_reports = [
+        item for item in reports["reports"] if item["nodeid"] in S0011_NODEIDS
+    ]
+    if {item["nodeid"] for item in s0011_reports} != S0011_NODEIDS:
+        raise AssertionError("The complete self-contained S0011 v2 node set was not recorded")
+    if any(item["outcome"] != "passed" for item in s0011_reports):
+        raise AssertionError("A self-contained S0011 v2 node did not pass")
 
     mypy_environment = environment.copy()
     mypy_environment["PYTHONPATH"] = str(DEVTOOLS_ROOT)
@@ -167,7 +185,7 @@ def run_acceptance() -> dict[str, Any]:
             "summary": _summary_counts(combined_output),
             "summary_tail": combined_output.splitlines()[-20:],
             "skipped": skipped,
-            "known_newton_skip": known_newton[0],
+            "s0011_reports": s0011_reports,
         },
         "mypy": {
             "command": subprocess.list2cmdline(mypy_command),
@@ -186,6 +204,9 @@ def run_acceptance() -> dict[str, Any]:
         "references": {
             "full_repo_refactor_v1_unchanged_from_tag": True,
             "thermal_addendum": "refs/full_repo_refactor_addendum_v1",
+            "thermal_segregated_newton_v2": (
+                "refs/thermal_segregated_newton_reference_v2.json"
+            ),
         },
         "overall_status": "passed",
     }
