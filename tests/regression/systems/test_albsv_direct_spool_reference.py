@@ -60,12 +60,6 @@ def test_direct_spool_adapter_replays_frozen_numerics_exactly(case_id):
         "thermal.viscosity_fields": np.vstack(
             [np.asarray(item["viscosity_field"], dtype=float) for item in thermal]
         ),
-        "film.pressure_fields": np.vstack(
-            [
-                np.asarray(pad.bearing.main_model.output(), dtype=float)
-                for pad in model.pads
-            ]
-        ),
     }
     with np.load(REFERENCE_NPZ, allow_pickle=False) as frozen:
         for name, value in actual.items():
@@ -73,7 +67,58 @@ def test_direct_spool_adapter_replays_frozen_numerics_exactly(case_id):
 
     expected_status = metadata["status"][case_id]
     assert block.convergence_status.converged is True
-    assert bool(model.calc_is_finished()) is expected_status["calculation_finished"]
+    assert bool(model.calc_is_finished()) is True
     assert [bool(item["converged"]) for item in thermal] == expected_status[
         "thermal_converged_by_pad"
     ]
+
+
+@pytest.mark.parametrize("case_id", ["zero", "nonzero", "reversed"])
+def test_direct_spool_completion_snapshot_and_status_are_read_only(case_id):
+    reference_json = ROOT / "refs" / "albsv_convergence_state_reference_v2.json"
+    reference_npz = ROOT / "refs" / "albsv_convergence_state_reference_v2.npz"
+    metadata = json.loads(reference_json.read_text(encoding="utf-8"))
+    source = json.loads(REFERENCE_JSON.read_text(encoding="utf-8"))
+    config = NodimALBConfig.from_dict(source["config"])
+    model = nodim_alb(config, thermal_config=config.thermal_config)
+    model.init()
+    bearing_data = source["bearing_input"]
+    block = DirectSpoolBearingBlock(model)
+    result = block.step(
+        DirectSpoolBearingInput(
+            BearingInput(
+                bearing_data["displacement"],
+                bearing_data["velocity"],
+                bearing_data["time"],
+                "nondimensional",
+            ),
+            ValveOutput(
+                source["spool_cases"][case_id],
+                bearing_data["time"],
+                "nondimensional",
+            ),
+        )
+    )
+    pressure = np.vstack(
+        [
+            np.asarray(pad.bearing.main_model.latest_result, dtype=float).copy()
+            for pad in model.pads
+        ]
+    )
+    histories_before = [
+        list(pad.bearing.main_model.adaptive_damp_history) for pad in model.pads
+    ]
+
+    assert model.calc_is_finished() is True
+    assert model.calc_is_finished() is True
+    histories_after = [
+        list(pad.bearing.main_model.adaptive_damp_history) for pad in model.pads
+    ]
+
+    with np.load(reference_npz, allow_pickle=False) as frozen:
+        np.testing.assert_array_equal(result.force, frozen[f"{case_id}.force"])
+        np.testing.assert_array_equal(
+            pressure, frozen[f"{case_id}.pressure_at_completion"]
+        )
+    assert histories_after == histories_before
+    assert metadata["cases"][case_id]["expected_status_after_fix"] is True

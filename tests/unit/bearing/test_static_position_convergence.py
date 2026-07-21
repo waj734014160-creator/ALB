@@ -49,6 +49,8 @@ class _DummyMainModel:
         self.signal = _FakeSignal()
         self.finished = finished
         self.output_count = 0
+        self.damp_update_count = 0
+        self.errors = 0.0
 
     def init(self):
         pass
@@ -61,6 +63,9 @@ class _DummyMainModel:
 
     def calc_is_finished(self):
         return self.finished
+
+    def update_adaptive_damp(self, error=None):
+        self.damp_update_count += 1
 
     def update_to_nodes(self):
         pass
@@ -206,6 +211,23 @@ class TestStaticPositionConvergence(unittest.TestCase):
         self.assertFalse(film_system.last_converged)
         self.assertEqual(film_system.final_iter, 2)
         self.assertEqual(model.output_count, 2)
+        self.assertEqual(model.damp_update_count, 2)
+
+    def test_film_system_status_query_is_latched_and_side_effect_free(self):
+        model = _DummyMainModel(finished=True)
+        film_system = object.__new__(FilmSystem)
+        film_system.main_model = model
+        film_system.simple_models = []
+        film_system.max_iter = 2
+        film_system.final_iter = 0
+        film_system.last_converged = None
+
+        film_system.solve()
+
+        self.assertTrue(film_system.calc_is_finished())
+        self.assertTrue(film_system.calc_is_finished())
+        self.assertEqual(model.output_count, 1)
+        self.assertEqual(model.damp_update_count, 1)
 
     def test_thermal_status_requires_latest_thermal_convergence(self):
         wrapper = object.__new__(NodimThermalHydroBearing)

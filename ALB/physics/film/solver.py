@@ -794,12 +794,20 @@ class NodimNewtonFilm(FilmModel):
         return op
 
     def calc_is_finished(self):
-        """Check convergence status against the configured error threshold."""
+        """Return convergence without advancing the adaptive damping state."""
         error = self.calc_error()
         # Save the current scalar error for external diagnostics.
         self.errors = error
-        self._adaptive_damp.update(error)
         return error <= self._error_set
+
+    def update_adaptive_damp(self, error=None):
+        """Update damping once from the latest residual inside a solve loop."""
+
+        if error is None:
+            error = self.calc_error()
+        self.errors = error
+        self._adaptive_damp.update(error)
+        return error
 
     def set_reynold_boundary(self, sw: bool):
         """
@@ -1719,6 +1727,7 @@ class FilmSystem(BaseSystem):
         self._temp_res = {}
         self._result = pd.DataFrame()
         self.final_iter = 0
+        self.last_converged = None
 
     @property
     def postprocess(self):
@@ -1752,6 +1761,7 @@ class FilmSystem(BaseSystem):
     def init(self):
         """Initialize solver state and cache data for iterative updates."""
         self._result = pd.DataFrame()
+        self.last_converged = None
         self.main_model.init()
         for simple_model in self.simple_models:
             if hasattr(simple_model, "init"):
@@ -1779,20 +1789,35 @@ class FilmSystem(BaseSystem):
                 simple_model.input()
                 simple_model.output(self.main_model)
             self.main_model.output(**kwargs)
-            if self.calc_is_finished():
+            converged = self._evaluate_convergence(update_adaptive_damp=True)
+            self.last_converged = converged
+            if converged:
                 self.final_iter = i
                 break
         else:
             self.final_iter = self.max_iter
+            self.last_converged = False
             print("iter of filmsystem is max")
         self.main_model.update_to_nodes()
 
     def calc_is_finished(self):
+        """Return the status latched by the latest solve without side effects."""
+
+        if getattr(self, "last_converged", None) is not None:
+            return bool(self.last_converged)
+        return self._evaluate_convergence(update_adaptive_damp=False)
+
+    def _evaluate_convergence(self, *, update_adaptive_damp: bool):
+        """Evaluate coupled convergence, optionally advancing damping once."""
+
         simple_flags = [
             simple_model.calc_is_finished() for simple_model in self.simple_models
         ]
         simple_flag = all(simple_flags) if simple_flags else True
-        return self.main_model.calc_is_finished() and simple_flag
+        main_flag = self.main_model.calc_is_finished()
+        if update_adaptive_damp and hasattr(self.main_model, "update_adaptive_damp"):
+            self.main_model.update_adaptive_damp(getattr(self.main_model, "errors", None))
+        return main_flag and simple_flag
 
     def _input_rotoru(self, uxy: np.ndarray, *args, **kwargs):
         """
@@ -1859,6 +1884,7 @@ class FilmSystem(BaseSystem):
         # Keep optional logging disabled by default.
 
     def input(self, uxy, uxyt, *args, **kwargs):
+        self.last_converged = None
         self._input_rotoru(uxy, *args, **kwargs)
         self._input_rotorut(uxyt, *args, **kwargs)
 
