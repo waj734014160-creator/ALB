@@ -54,6 +54,24 @@ def test_lqg_config_supports_per_channel_output_limits():
     assert controller.eso_enable is False
 
 
+def test_empty_lqg_history_returns_a_typed_dataframe():
+    controller = ALBLQGController(SimpleNamespace(), dt=1.0e-3)
+    _attach_runtime_system(controller, [2.0, -3.0])
+
+    history = controller.get_history(to_dataframe=True)
+
+    assert history.empty
+    assert list(history.columns) == [
+        "t",
+        "y_0",
+        "u_raw_0",
+        "u_raw_1",
+        "u_0",
+        "u_1",
+        "x_hat_0",
+    ]
+
+
 @pytest.mark.parametrize(
     ("output_min", "output_max"),
     [

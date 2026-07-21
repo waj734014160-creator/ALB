@@ -144,22 +144,28 @@ class BaseLti(BaseSimpleModel):
         Check whether the time step matches the configured sampling time.
         tol: Tolerance, default 1e-7.
         """
+        t = float(t)
+        if not np.isfinite(t):
+            raise ValueError("Input time must be finite")
         if len(self.ts) > 0:
             dt = t - self.ts[-1]
             if np.abs(dt - self._dt) > tol:
                 raise ValueError(
                     "Input time interval does not match the system sampling time"
                 )
+        return t
 
     def _check_input(self, u):
-        u = np.array(u)
+        u = np.asarray(u, dtype=float)
         u = u.reshape([-1, 1])
-        if u.shape[1] != self._Bd1.shape[0]:
-            raise Exception("Input vector dimension mismatch")
+        if u.shape[0] != self._Bd1.shape[0]:
+            raise ValueError("Input vector dimension mismatch")
+        if not np.all(np.isfinite(u)):
+            raise ValueError("Input vector must be finite")
         return u
 
     def input(self, t, u, *args, **kwargs):
-        # self._check_time(t)
+        t = self._check_time(t)
         u = self._check_input(u)
         self.ts.append(t)
         self.u1 = u
@@ -167,31 +173,31 @@ class BaseLti(BaseSimpleModel):
         self.u.append(u)
 
     def output(self):
-        # For the first call, u0 is None and the initial state output is returned.
-        if self.u0 is None:
-            self.u0 = np.zeros(self._Bd0.shape[0])
-            self.xout.append(np.squeeze(self.xk0))
-            self.yout.append(np.squeeze(np.dot(self.xk0, np.transpose(self._c))))
-            return self.xk0
-        # For the second call, if u1 is None, use zero-input by default.
         if self.u1 is None:
-            self.u1 = np.zeros(self._Bd1.shape[0])
+            self.u1 = np.zeros((self._Bd1.shape[0], 1), dtype=float)
+        current_input = np.asarray(self.u1, dtype=float).reshape(-1)
+        # The first call publishes y(0) without advancing the state.
+        if self.u0 is None:
+            self.u0 = np.zeros(self._Bd0.shape[0], dtype=float)
+            self.xout.append(np.squeeze(self.xk0))
+            yout = self._c @ np.asarray(self.xk0).reshape(-1) + self._d @ current_input
+            self.yout.append(np.squeeze(yout))
+            return np.asarray(yout, dtype=float).reshape(-1).copy()
+
         self.xk1 = (
-            np.dot(self.xk0, self._a)
-            + np.dot(self.u0, self._Bd0)
-            + np.dot(self.u1, self._Bd1)
+            np.asarray(self.xk0).reshape(-1) @ self._a
+            + np.asarray(self.u0).reshape(-1) @ self._Bd0
+            + current_input @ self._Bd1
         )
 
         # Save the current input as the previous input for the next step.
-        self.u0 = self.u1
-        yout = np.squeeze(np.dot(self.xk1, np.transpose(self._c))) + np.squeeze(
-            np.dot(self.u1, np.transpose(self._d))
-        )
+        self.u0 = current_input.copy()
+        yout = self._c @ np.asarray(self.xk1).reshape(-1) + self._d @ current_input
         self.yout.append(np.squeeze(yout))
         self.xk0 = self.xk1
         self.xout.append(np.squeeze(self.xk0))
 
-        return self.yout
+        return np.asarray(yout, dtype=float).reshape(-1).copy()
 
     def plot_output(self):
         plt.plot(self.ts, self.yout)
@@ -235,22 +241,25 @@ class BaseDlti(BaseLti):
         self._d = args[3]
 
     def _check_input(self, u):
-        u = np.array(u)
+        u = np.asarray(u, dtype=float)
         u = u.reshape([-1, 1])
         if u.shape[0] != self._b.shape[1]:
-            raise Exception("Input vector dimension mismatch")
+            raise ValueError("Input vector dimension mismatch")
+        if not np.all(np.isfinite(u)):
+            raise ValueError("Input vector must be finite")
         return u
 
     def output(self):
-        self.xk1 = np.squeeze(np.dot(self._a, self.xk0)) + np.squeeze(
-            np.dot(self._b, self.u1)
-        )
-        yout = np.dot(self._c, self.xk1) + np.dot(self._d, self.u1)
+        if self.u1 is None:
+            self.u1 = np.zeros((self._b.shape[1], 1), dtype=float)
+        current_input = np.asarray(self.u1, dtype=float).reshape(-1)
+        self.xk1 = self._a @ np.asarray(self.xk0).reshape(-1) + self._b @ current_input
+        yout = self._c @ self.xk1 + self._d @ current_input
         self.yout.append(np.squeeze(yout))
         self.xk0 = self.xk1
         self.xout.append(np.squeeze(self.xk0))
 
-        return self.yout
+        return np.asarray(yout, dtype=float).reshape(-1).copy()
 
 
 def get_space_matrix_from_sys(system):

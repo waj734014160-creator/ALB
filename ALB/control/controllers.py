@@ -93,6 +93,7 @@ class PID(BaseSimpleModel):
         """
         Initializes the controller, clearing any saved data.
         """
+        self._reset_runtime_state()
         self._results = pd.DataFrame(
             columns=[
                 "t",
@@ -106,6 +107,17 @@ class PID(BaseSimpleModel):
             ]
         )
         return True
+
+    def _reset_runtime_state(self):
+        """Clear all latched PID inputs, errors, terms, and integral memory."""
+        self.error = None
+        self.delta_error = None
+        self.inp = None
+        self.t = None
+        self.ki_intergral = 0
+        self.kp_calc = 0
+        self.ki_calc = 0
+        self.kd_calc = 0
 
     def input(self, t, error, *args, **kwargs):
         """
@@ -316,37 +328,52 @@ class FuzzyPID(PID):
         # create the fuzzy args
         error = ctrl.Antecedent(np.sort(self.error_range), "error")
         delta_error = ctrl.Antecedent(np.sort(self.delta_error_range), "delta_error")
-        Kp = ctrl.Consequent(np.sort(self.kp_range), "kp")
-        Ki = ctrl.Consequent(np.sort(self.ki_range), "ki")
-        Kd = ctrl.Consequent(np.sort(self.kd_range), "kd")
 
         error_means = np.linspace(min(self.error_range), max(self.error_range), 5)
         delta_error_means = np.linspace(
             min(self.delta_error_range), max(self.delta_error_range), 5
         )
-        kp_means = np.linspace(self.kp_range[0], self.kp_range[-1], 3)
-        ki_means = np.linspace(self.ki_range[0], self.ki_range[-1], 3)
-        kd_means = np.linspace(self.kd_range[0], self.kd_range[-1], 3)
         error_length, delta_error_length = map(
             lambda x: (np.max(x) - np.min(x)) / 12,
             [self.error_range, self.delta_error_range],
-        )
-        kp_length, ki_length, kd_length = map(
-            lambda x: (np.max(x) - np.min(x)) / 6,
-            [self.kp_range, self.ki_range, self.kd_range],
         )
         self._assign_gaussmf(error, self.input_fuzzy_define, error_means, error_length)
         self._assign_gaussmf(
             delta_error, self.input_fuzzy_define, delta_error_means, delta_error_length
         )
-        self._assign_gaussmf(Kp, self.output_fuzzy_define, kp_means, kp_length)
-        self._assign_gaussmf(Ki, self.output_fuzzy_define, ki_means, ki_length)
-        self._assign_gaussmf(Kd, self.output_fuzzy_define, kd_means, kd_length)
 
+        output_specs = {
+            "kp": (self.kp_range, 2),
+            "ki": (self.ki_range, 3),
+            "kd": (self.kd_range, 4),
+        }
+        self._fixed_fuzzy_outputs = {}
+        self._variable_fuzzy_outputs = {}
+        for name, (values, _) in output_specs.items():
+            minimum = float(np.min(values))
+            maximum = float(np.max(values))
+            if minimum == maximum:
+                self._fixed_fuzzy_outputs[name] = minimum
+                continue
+            consequent = ctrl.Consequent(np.sort(values), name)
+            means = np.linspace(minimum, maximum, 3)
+            self._assign_gaussmf(
+                consequent,
+                self.output_fuzzy_define,
+                means,
+                (maximum - minimum) / 6,
+            )
+            self._variable_fuzzy_outputs[name] = consequent
+
+        if not self._variable_fuzzy_outputs:
+            return None
         rules = [
             ctrl.rule.Rule(
                 error[rule[0]] & delta_error[rule[1]],
-                (Kp[rule[2]], Ki[rule[3]], Kd[rule[4]]),
+                tuple(
+                    consequent[rule[output_specs[name][1]]]
+                    for name, consequent in self._variable_fuzzy_outputs.items()
+                ),
             )
             for rule in self.rules.values
         ]
@@ -355,10 +382,32 @@ class FuzzyPID(PID):
         return pid_sim
 
     def init(self):
-        """
-        Initializes the Fuzzy PID controller.
-        TODO: Rewrite the initialization function.
-        """
+        """Reset fuzzy inference, gains, PID memory, and result history."""
+        self._reset_runtime_state()
+        self.kp = np.asarray(0.0)
+        self.ki = np.asarray(0.0)
+        self.kd = np.asarray(0.0)
+        self.ki_nodim = np.asarray(0.0)
+        self.kd_nodim = np.asarray(0.0)
+        if self.pid_sim is not None:
+            self.pid_sim.reset()
+        self._results = pd.DataFrame(
+            columns=[
+                "t",
+                "input",
+                "output",
+                "error",
+                "delta_error",
+                "kp_calc",
+                "ki_calc",
+                "kd_calc",
+                "kp",
+                "ki",
+                "kd",
+                "ki_nodim",
+                "kd_nodim",
+            ]
+        )
         return True
 
     def output(self, *args, **kwargs):
@@ -391,17 +440,19 @@ class FuzzyPID(PID):
         :param error: The current error.
         :param delta_error: The change in error.
         """
-        kp = np.zeros_like(error)
-        ki = np.zeros_like(error)
-        kd = np.zeros_like(error)
+        gains = {
+            name: np.full_like(error, self._fixed_fuzzy_outputs.get(name, 0.0))
+            for name in ("kp", "ki", "kd")
+        }
         for i, (err, delta_err) in enumerate(zip(error, delta_error)):
-            self.pid_sim.input["error"] = err
-            # notice: input of delta_error should be non-dimensional
-            self.pid_sim.input["delta_error"] = delta_err / (self.dt / self.t0)
-            self.pid_sim.compute()
-            kp[i] = self.pid_sim.output["kp"]
-            ki[i] = self.pid_sim.output["ki"]
-            kd[i] = self.pid_sim.output["kd"]
+            if self.pid_sim is not None:
+                self.pid_sim.input["error"] = err
+                # notice: input of delta_error should be non-dimensional
+                self.pid_sim.input["delta_error"] = delta_err / (self.dt / self.t0)
+                self.pid_sim.compute()
+                for name in self._variable_fuzzy_outputs:
+                    gains[name][i] = self.pid_sim.output[name]
+        kp, ki, kd = (gains[name] for name in ("kp", "ki", "kd"))
         kp, ki, kd = map(lambda x: np.nan_to_num(x), [kp, ki, kd])
         self.kp = kp
         self.ki = ki
@@ -1121,13 +1172,20 @@ class ALBLQGController(BaseSimpleModel):
         to_dataframe : bool
             If True, return a flattened pandas DataFrame.
         """
-        res = {
-            "t": np.array(self._history["t"]),
-            "y": np.array(self._history["y"]),
-            "u_raw": np.array(self._history["u_raw"]),
-            "u": np.array(self._history["u"]),
-            "x_hat": np.array(self._history["x_hat"]),
+        widths = {
+            "y": self.y_current.shape[0],
+            "u_raw": self.u_raw_current.shape[0],
+            "u": self.u_current.shape[0],
+            "x_hat": self.x_hat.shape[0],
         }
+        res = {"t": np.asarray(self._history["t"], dtype=float)}
+        for name, width in widths.items():
+            values = self._history[name]
+            res[name] = (
+                np.asarray(values, dtype=float).reshape(-1, width)
+                if values
+                else np.empty((0, width), dtype=float)
+            )
 
         if to_dataframe:
             import pandas as pd
