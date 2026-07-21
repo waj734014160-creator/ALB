@@ -1,0 +1,13 @@
+{
+  "reference_name": "encoding_repair_reference_v2",
+  "purpose": "Supersede the executable AST hash for source files intentionally changed after the encoding-only repair.",
+  "supersedes": "refs/encoding_repair_reference_v1.json",
+  "source_commit": "2eebe3ffbc9b69fa5393f8295f428ca14777355f",
+  "source_files": {
+    "ALB/physics/hydraulics/orifice.py": {
+      "normalized_ast_sha256": "9d8f27e1491e10098078291e7620b8c25a3e284912dafc6a1e56a4f6f55985b6",
+      "compile_success": true,
+      "reason": "CSOrifice monotonic solver and strict spool validation intentionally changed executable behavior after the encoding-only reference."
+    }
+  }
+}
