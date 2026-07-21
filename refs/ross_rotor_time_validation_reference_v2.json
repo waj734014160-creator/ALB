@@ -1,0 +1,147 @@
+{
+  "schema": "alb.ross-rotor-time-validation-reference.v2",
+  "reference_name": "ross_rotor_time_validation_reference_v2",
+  "created_at": "2026-07-21T09:07:34.167147+00:00",
+  "created_before_time_validation_fix": true,
+  "baseline_commit": "638e4c106b9c421aad45013e3faa251c39aca506",
+  "random_seed": null,
+  "environment": {
+    "python": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "numpy": "1.24.3",
+    "scipy": "1.10.1",
+    "ross-rotordynamics": "1.4.2"
+  },
+  "cases": {
+    "global_force": {
+      "speed_rad_s": 314.1592653589793,
+      "dt": 0.001,
+      "discrete": false
+    },
+    "node_force": {
+      "speed_rad_s": 10.0,
+      "dt": 0.002,
+      "node": [
+        0
+      ],
+      "discrete": false
+    }
+  },
+  "observed_defect": {
+    "global_invalid_time": 0.0005,
+    "global_invalid_time_accepted_pre_fix": true,
+    "node_invalid_time": 0.0015,
+    "node_invalid_time_accepted_pre_fix": true,
+    "root_cause": "input_force and input_force2node appended t before _check_time; the check then compared t with the just-appended final element.",
+    "post_fix_contract": "Reject non-finite or non-dt timestamps before mutating time, force, or lifecycle state."
+  },
+  "arrays": {
+    "global.times": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "ca2616ffaab18a63340a150f12bb93818471dbd79213d5400b65669ac70083fe"
+    },
+    "global.forces": {
+      "shape": [
+        4,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "8973d05d50122ec06def9b5bc27fe3d9d1978bb88144db0f400a95ec7c5346d4"
+    },
+    "global.states": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "aad2496dd94b56eb88069b5241e54c3463f91cd42d27f3a75cb3ac77354755ce"
+    },
+    "global.time_history": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "ca2616ffaab18a63340a150f12bb93818471dbd79213d5400b65669ac70083fe"
+    },
+    "global.state_history": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "aad2496dd94b56eb88069b5241e54c3463f91cd42d27f3a75cb3ac77354755ce"
+    },
+    "global.output_history": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "aad2496dd94b56eb88069b5241e54c3463f91cd42d27f3a75cb3ac77354755ce"
+    },
+    "global.Ad": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8a3d35ae7115c547823a3668d60456d96edff5c4fe17d8767a6f17d519a8a3d7"
+    },
+    "global.Bd0": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "9ce5339462c3a0846a019d9734e632925ae24081c6fc4f3e938edc75c594980d"
+    },
+    "global.Bd1": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "0661350d5c41d60258ec7e5eb925e362bc3cce65a75b2cd4de3af122909e591e"
+    },
+    "node.times": {
+      "shape": [
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "d47b11efcb53eea1894a54ab419aefb22e005cb2c8818e54c8fa28e9d0e47d62"
+    },
+    "node.input_forces": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "92d98975aa4de0b8d0488a161e5bc64cd232fc6cf657ee64bcf91348bbb257fd"
+    },
+    "node.global_forces": {
+      "shape": [
+        3,
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "697e3c17bc9b44850b0fcb9c1db6e40a883e08b06f52a14083b7fd3b036b31cd"
+    },
+    "node.states": {
+      "shape": [
+        3,
+        8
+      ],
+      "dtype": "float64",
+      "sha256": "9aec297bb209da2a67148d90b88f9447f50f77fe26295269c9561d4ce041e894"
+    },
+    "node.time_history": {
+      "shape": [
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "d47b11efcb53eea1894a54ab419aefb22e005cb2c8818e54c8fa28e9d0e47d62"
+    }
+  }
+}
