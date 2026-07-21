@@ -35,7 +35,7 @@
 | 包和测试配置 | `pyproject.toml`、`.editorconfig`、`.gitignore` | 保留；`testpaths` 只能指向 `tests`。 |
 | 维护脚本 | `scripts/` | 保留；注释、docstring 和 CLI help 使用英文。 |
 | 稳定调用配置 | `paper_config/` | 保留；只存稳定配置，不写论文实时任务状态。 |
-| 历史图件和配置 | `test/bearing/_gas_bearing/`、`test/bearing/_thermal_plots/`、`test/bearing/alb_fuzzy/dynamic_config/` | 作为迁移后遗留资产保留；不参与 pytest 收集，清理需单独确认。 |
+| 历史图件和配置 | `test/bearing/_gas_bearing/`、`test/bearing/_thermal_plots/full_vs_half_coupling.png`、`test/bearing/alb_fuzzy/dynamic_config/` | 作为迁移后遗留资产保留；不参与 pytest 收集，清理需单独确认。两张会被本地运行反复覆盖的 thermal 图已改为 local-only。 |
 
 ## 测试与工具边界
 
@@ -67,17 +67,16 @@
 
 即使生成物 ignored，也不能在不了解目标绝对路径时递归删除。清理前必须解析并核对路径位于预期工作区。
 
-## 当前受保护的用户工作
+## 本地忽略的实验资产
 
-0.2.0 重构明确不暂存、不移动以下内容：
+以下内容按用户确认保留在本机，但不再进入 Git 工作树状态或后续提交：
 
 - `test/bearing/_thermal_plots/alb_thermal_4pads.png`
 - `test/bearing/_thermal_plots/orifice_thermal_comparison.png`
 - `.codex/`
-- `test/control/LQG/albnn_rotor0_lqg_small_signal.py`
-- `test/control/LQG/output/`
+- `test/control/LQG/`
 
-这些路径的修改或未跟踪状态不应被误报为测试副作用，也不应包含在重构提交或版本标签指向的 commit 中。
+两张 thermal 图从 tracked 集合解除，但本地文件不删除；可从 `v0.2.0` 或更早提交恢复历史版本。`.codex/` 和 LQG 脚本/输出继续原地保留。以上路径均由根 `.gitignore` 的精确规则覆盖，不应再被误报为测试副作用。
 
 ## 外部项目归属
 

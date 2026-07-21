@@ -32,3 +32,11 @@ temp/
 
 # Local-only email credential (SMTP password); never commit
 paper_config/email.json5
+
+# Local Codex state and manual LQG experiments.
+/.codex/
+/test/control/LQG/
+
+# Regenerated legacy thermal plots kept only in the local workspace.
+/test/bearing/_thermal_plots/alb_thermal_4pads.png
+/test/bearing/_thermal_plots/orifice_thermal_comparison.png
