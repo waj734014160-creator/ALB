@@ -16,6 +16,7 @@ from ALB.surrogate.inference import (
     c4_canonicalize_albnn_frame,
     c4_restore_albnn_force,
 )
+from ALB.surrogate.package import load_albnn_package
 
 
 class IdentityScaler:
@@ -172,10 +173,13 @@ def test_albnn_c4_wrapper_matches_manual_rotation_for_vector_pairs():
     np.testing.assert_allclose(actual, manual, rtol=0.0, atol=1e-12)
     assert (canonical["ex"] >= 0.0).all()
     assert (canonical["ey"] >= 0.0).all()
+    np.testing.assert_array_equal(
+        wrapped.transform_inputs(frame), base.transform_inputs(canonical)
+    )
 
 
 def test_m0031_c4_wrapper_matches_manual_rotation_on_ten_validation_samples():
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = Path(__file__).resolve().parents[3]
     model_dir = (
         project_root
         / "SURROGATE_TRAIN"
@@ -192,24 +196,22 @@ def test_m0031_c4_wrapper_matches_manual_rotation_on_ten_validation_samples():
         / "validation_s8b_s0011_allvalid_base12_20260609.csv"
     )
     required = [
-        model_dir / "best_albnn.pth",
-        model_dir / "scaler_X.pkl",
-        model_dir / "scaler_y.pkl",
-        model_dir / "metadata.json",
+        model_dir / "package_v0_2" / "manifest.json",
         validation_csv,
     ]
     missing = [path for path in required if not path.exists()]
     if missing:
         pytest.skip(f"M0031 C4 integration artifacts are not available: {missing}")
 
+    package_dir = model_dir / "package_v0_2"
     config = SimpleNamespace(
-        model=str(model_dir / "best_albnn.pth"),
-        scaler_X=str(model_dir / "scaler_X.pkl"),
-        scaler_y=str(model_dir / "scaler_y.pkl"),
-        metadata=str(model_dir / "metadata.json"),
+        model=str(package_dir / "model.pt"),
+        scaler_X=str(package_dir / "input_scaler.pkl"),
+        scaler_y=str(package_dir / "output_scaler.pkl"),
+        metadata=str(package_dir / "metadata.json"),
     )
     base_config = SimpleNamespace(**vars(config), inference_symmetry="none")
-    wrapped_model = albnn(config)
+    wrapped_model = load_albnn_package(package_dir, trust_pickle=True)
     base_model = albnn(base_config)
 
     validation = pd.read_csv(validation_csv, usecols=ALBNN_BASE_INPUT_COLS)
@@ -235,6 +237,23 @@ def test_m0031_c4_wrapper_matches_manual_rotation_on_ten_validation_samples():
     actual = wrapped_model.predict_nondim(external_frame)
 
     np.testing.assert_allclose(actual, manual, rtol=0.0, atol=1e-6)
+
+    reference_root = Path(__file__).resolve().parents[2] / "refs"
+    with np.load(
+        reference_root / "albnn_input_transform_reference_v1.npz",
+        allow_pickle=False,
+    ) as transformed_reference, np.load(
+        project_root
+        / "SURROGATE_TRAIN"
+        / "refs"
+        / "alb_0_2_consumer_migration_v1"
+        / "consumer_migration_reference_v1.npz",
+        allow_pickle=False,
+    ) as consumer_reference:
+        np.testing.assert_array_equal(
+            wrapped_model.transform_inputs(consumer_reference["m31.inputs"]),
+            transformed_reference["m31.transformed_inputs"],
+        )
 
 
 def test_cq2_sig_log_minmax01_maps_inputs_to_unit_range():

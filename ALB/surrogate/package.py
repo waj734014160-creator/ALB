@@ -78,8 +78,13 @@ def load_albnn_package(
     *,
     trust_pickle: bool = False,
     use_augment: bool | None = None,
+    runtime_config: object | None = None,
 ):
-    """Load a validated package only after explicit pickle trust consent."""
+    """Load a validated package only after explicit pickle trust consent.
+
+    ``runtime_config`` may provide dimensional scales or fixed inference
+    parameters. Package artifact paths always replace any paths on that object.
+    """
 
     if not trust_pickle:
         raise PermissionError(
@@ -88,10 +93,21 @@ def load_albnn_package(
     package = open_model_package(path)
     from .inference import albnn
 
-    config = SimpleNamespace(
-        model=str(package.model),
-        scaler_X=str(package.input_scaler),
-        scaler_y=str(package.output_scaler),
-        metadata=str(package.metadata),
+    values = {}
+    if runtime_config is not None:
+        try:
+            values.update(vars(runtime_config))
+        except TypeError as exc:
+            raise TypeError(
+                "runtime_config must expose instance attributes"
+            ) from exc
+    values.update(
+        {
+            "model": str(package.model),
+            "scaler_X": str(package.input_scaler),
+            "scaler_y": str(package.output_scaler),
+            "metadata": str(package.metadata),
+        }
     )
+    config = SimpleNamespace(**values)
     return albnn(config, use_augment=use_augment)

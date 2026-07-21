@@ -2,7 +2,7 @@
 
 import pickle
 import sys
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -112,3 +112,41 @@ def test_model_package_migration_refuses_overwrite(tmp_path):
         migrate_legacy_model_package(
             *artifacts, destination, trust_legacy_pickle=True
         )
+
+
+def test_package_loader_merges_runtime_config_and_owns_artifact_paths(
+    tmp_path, monkeypatch
+):
+    artifacts, *_ = _legacy_artifacts(tmp_path)
+    destination = tmp_path / "package"
+    migrate_legacy_model_package(
+        *artifacts, destination, trust_legacy_pickle=True
+    )
+    captured = {}
+
+    def fake_albnn(config, *, use_augment=None):
+        captured["config"] = config
+        captured["use_augment"] = use_augment
+        return "loaded"
+
+    import ALB.surrogate.inference as inference
+
+    monkeypatch.setattr(inference, "albnn", fake_albnn)
+    result = load_albnn_package(
+        destination,
+        trust_pickle=True,
+        use_augment=False,
+        runtime_config=SimpleNamespace(
+            ps=7.0,
+            model="ignored.pth",
+            scaler_X="ignored.pkl",
+        ),
+    )
+
+    assert result == "loaded"
+    assert captured["config"].ps == 7.0
+    assert captured["config"].model == str((destination / "model.pt").resolve())
+    assert captured["config"].scaler_X == str(
+        (destination / "input_scaler.pkl").resolve()
+    )
+    assert captured["use_augment"] is False

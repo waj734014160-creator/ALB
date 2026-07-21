@@ -691,6 +691,16 @@ class ALBNN:
             raise ValueError(f"ALBNN scaled input is missing columns: {missing}")
         return frame[expected]
 
+    def transform_inputs(self, x) -> np.ndarray:
+        """Return the exact numeric input matrix presented to the network.
+
+        Analysis workflows should use this method instead of reaching into the
+        private feature-frame builder or the persisted scaler directly.
+        """
+
+        frame = self._model_frame(x)
+        return np.asarray(self.scaler_X.transform(frame), dtype=float)
+
     def input(
         self,
         uxy,
@@ -895,6 +905,17 @@ class ALBNNC4Canonical:
         force_canonical = self.base_model.predict_nondim(canonical)
         return c4_restore_albnn_force(force_canonical, steps)
 
+    def transform_inputs(self, x) -> np.ndarray:
+        """Return canonicalized network inputs for distance-based analysis."""
+
+        if not hasattr(self.base_model, "_base_frame"):
+            raise TypeError(
+                "C4 canonical transform requires an ALBNN-style base model"
+            )
+        frame = self.base_model._base_frame(x)
+        canonical, _ = c4_canonicalize_albnn_frame(frame)
+        return self.base_model.transform_inputs(canonical)
+
     def predict(self, x, nodim: bool = True):
         """Predict force and optionally convert it to dimensional units."""
         force = self.predict_nondim(x)
@@ -951,6 +972,11 @@ class ALBNNResidualCorrector:
     def _model_frame(self, x) -> pd.DataFrame:
         """Return the frozen main model's scaled-input feature frame."""
         return self.main_model._model_frame(x)
+
+    def transform_inputs(self, x) -> np.ndarray:
+        """Return the frozen main model's exact numeric network inputs."""
+
+        return self.main_model.transform_inputs(x)
 
     def input(
         self,

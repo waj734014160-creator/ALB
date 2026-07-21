@@ -93,6 +93,7 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 部署入口位于 `ALB.surrogate`。0.2 model package 使用 manifest、固定 artifact 名和 SHA-256 校验；加载 pickle scaler 时必须显式声明信任。旧 `ALB.nn` pickle 不作为运行时兼容面，先使用带 `--trust-legacy-pickle` 的 `alb-migrate-surrogate` 或 `tools/migrations/migrate_surrogate_0_2.py` 迁移可信本地文件。迁移器把已知旧 scaler 类重写到当前 namespace，默认不覆盖源文件。
 
 thermal ALBNN 的实际输入列、feature set、target transform 和模型选择以 model package metadata 及 `../SURROGATE_TRAIN/docs/albnn_training_brief.md` 为准，不在 package 根硬编码。
+距离搜索、局部回归等分析若需要网络的真实缩放输入，应调用已加载模型的 `transform_inputs(frame)`；不得依赖私有 `_model_frame` 或自行重复 scaler/feature 逻辑。C4 wrapper 会先完成规范象限变换。
 
 ### 结果与持久化
 
