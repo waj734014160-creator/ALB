@@ -7,14 +7,14 @@ if __name__ == "__main__":
     ctrl3 = _test_lqg(eso=True)
 
     # ---------------------------------------------------------
-    #  1 ″ ＄
+    # Encoding-repaired comment.
     # ---------------------------------------------------------
     method = balanced_truncation
     kwargs = {"order": 16, "alpha": 1e-4}
     ctrl3.build_plant()
 
     # ---------------------------------------------------------
-    #  2 ㈤ € € ? ╅
+    # Encoding-repaired comment.
     # ---------------------------------------------------------
     dims = ctrl3.get_built_dimensions()
 
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     Rn = np.eye(dims["n_outputs"]) * 1e-2
 
     # ---------------------------------------------------------
-    #  3 ユ €  ￠ ?# ---------------------------------------------------------
+    # Encoding-repaired comment.
     ctrl3.design_controller(
         Q,
         R,

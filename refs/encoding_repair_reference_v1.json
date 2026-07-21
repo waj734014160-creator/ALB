@@ -1,0 +1,36 @@
+{
+  "reference_name": "encoding_repair_reference_v1",
+  "purpose": "Preserve executable AST structure while repairing source text and converting legacy configuration encodings.",
+  "source_files": {
+    "ALB/physics/hydraulics/orifice.py": {
+      "normalized_ast_sha256": "c0bbd838866fb18957356a9e476f753df22493c6bf9b6eac972a28c5c91388ee",
+      "compile_success": true
+    },
+    "tools/manual/control/LQG/alb_lqg_controller.py": {
+      "normalized_ast_sha256": "0b2eec6868931cb72115a5537d85d7f1016d224df3c6a55e8e5caf4125c00045",
+      "compile_success": true
+    },
+    "tools/manual/control/LQG/model_reduction.py": {
+      "normalized_ast_sha256": "19b1d27e41691ac18f4174c86afc259a953f402558ba91537fc09db0b9e40a35",
+      "compile_success": true
+    },
+    "tools/manual/control/LQG/test_alblqg.py": {
+      "normalized_ast_sha256": "3fe275ae11dbb73de48062b63b123db544c89e6559d714303d7eed578d210812",
+      "compile_success": true
+    },
+    "tools/manual/experiments/run_legacy/test_env.py": {
+      "normalized_ast_sha256": "9e9877fda6442dcb72d28244b2fa3da137aae0c6d0118bc1fdf03ec2b2ba127b",
+      "compile_success": true
+    }
+  },
+  "legacy_config_files": {
+    "test/bearing/alb_fuzzy/dynamic_config/albfuzzy12.json5": {
+      "source_encoding": "gbk",
+      "decoded_text_sha256": "268e2e006a816a52ab113b93afe67a7c4f61742b3adea32e05569ba5bd004495"
+    },
+    "test/bearing/alb_fuzzy/dynamic_config/share.json5": {
+      "source_encoding": "gbk",
+      "decoded_text_sha256": "e47a716365c22054a381509e2d12e8711ede44864e844256dda88b41dd6b88f2"
+    }
+  }
+}

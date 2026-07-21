@@ -111,7 +111,7 @@ class Orifice(BaseOrifice):
         if len(position) == dim:
             self._position = position
         else:
-            raise ValueError("position的维度应该为2")
+            raise ValueError("position must have dimension 2.")
         self._cq = cq
         self._results = pd.DataFrame()
         self._information = pd.DataFrame()
@@ -254,7 +254,7 @@ class Orifice(BaseOrifice):
         elif dp == 0:
             self.nq = 0
         else:
-            raise Exception("璁＄畻鏃犻噺绾叉祦閲忛敊璇紒璇蜂紶鍏loat绫诲瀷鏁版嵁")
+            raise Exception("Invalid nondimensional flow input; pass a float value.")
         return self.nq
 
     def _cal_qdp(self, dp):
