@@ -92,6 +92,9 @@ ALB 装配和谐波控制路径通过同一个控制器生命周期适配器接�
 或自定义控制器只调用一次 `output()`，不会因缺少 `evaluate()` 而失败。`ALBHarmonicLinear`
 可以通过 `controller=` 注入带 `init()` 的控制器实例，也可以通过 `controller_factory=` 在每次
 初始化时创建新的旧式控制器；二者都经过完整的构造、基态预热、多步运行和重新初始化门禁。
+harmonic 重新初始化从入口即使旧运行时失效，只有控制器创建/复位和阀预热全部成功后才恢复
+有效状态；任一步失败后，`input()`、`output()`、`results`、`save()`、`xv` 和 `t` 都拒绝暴露
+可能混合的新旧状态，必须再次成功调用 `init()`。
 
 `ALBConfig.switch` 是永久控制许可：配置为 `False` 后，非负时间输入不会自动把控制重新打开。
 `turn_on_at()` 只在永久许可为 `True` 时安排延迟启动，并在每次输入时重新计算当前启用状态。
@@ -113,7 +116,11 @@ direct-spool 端口。
 `ALBConfig.to_dict()` 与 `NodimALBConfig.to_dict()` 固定写出
 `"controller": "PID" | "FuzzyPID" | "none"` 类型标签；`from_dict()` 据此恢复具体配置类型和
 非默认参数。`controller_config=None` 能稳定往返为无控制器配置，缺少显式标签的旧配置仍保留
-历史默认 PID。
+历史默认 PID。带标签的嵌套 `controller_config` 使用严格字段白名单：标签、对象类型或字段集合
+冲突时立即报错；只有没有嵌套 payload 的旧式顶层平铺配置保留宽松迁移解析。
+
+`ALBSV`、`NodimALB` 和 `NodimALBSV` 省略 `alb_config` 时会为每个实例新建配置，配置中的
+`gxy`、`gxyt` 和嵌套对象不会通过函数默认参数在实例之间共享。
 
 `ALB.physics.hydraulics.CSOrifice` 与 `NodimCSOrifice` 的 0.2 契约固定为零泄漏，
 `q_leak` 只能取 `0.0`；配置或直接求解传入非零值会立即抛出 `ValueError`。公共腔压力通过同一

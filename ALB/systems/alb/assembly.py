@@ -331,8 +331,10 @@ class ALBSV(ALB):
         pads: Iterable,
         servovalves: list,
         controller=None,
-        alb_config: ALBConfig = ALBConfig(),
+        alb_config: ALBConfig | None = None,
     ):
+        if alb_config is None:
+            alb_config = ALBConfig()
         super().__init__(pads, servovalves, controller, alb_config)
         self._sv = None
 
@@ -380,8 +382,10 @@ class NodimALB(ALB):
         pads: Iterable,
         servovalves: list,
         controller=None,
-        alb_config: NodimALBConfig = NodimALBConfig(),
+        alb_config: NodimALBConfig | None = None,
     ):
+        if alb_config is None:
+            alb_config = NodimALBConfig()
         super().__init__(pads, servovalves, controller, alb_config)
 
     def input(self, uxy: np.ndarray, uxyt: np.ndarray, t: float, *args, **kwargs):
@@ -434,8 +438,10 @@ class NodimALBSV(NodimALB):
         pads: Iterable,
         servovalves: list,
         controller=None,
-        alb_config: NodimALBConfig = NodimALBConfig(),
+        alb_config: NodimALBConfig | None = None,
     ):
+        if alb_config is None:
+            alb_config = NodimALBConfig()
         super().__init__(pads, servovalves, controller, alb_config)
         self._sv = None
 

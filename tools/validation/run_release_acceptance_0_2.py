@@ -170,6 +170,48 @@ FOURTH_REVIEW_NODEIDS = {
         "test_release_acceptance_rejects_dirty_tracked_worktree_before_tests"
     ),
 }
+FIFTH_REVIEW_NODEIDS = {
+    (
+        "tests/regression/test_fifth_review_release_reference.py::"
+        "test_fifth_review_valid_behavior_matches_v5_reference_exactly"
+    ),
+    *{
+        (
+            "tests/unit/systems/test_controller_compatibility.py::"
+            "test_failed_harmonic_reinitialization_invalidates_runtime"
+            f"[{failure_point}]"
+        )
+        for failure_point in ("factory", "controller-init", "warm-up")
+    },
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_public_alb_subclass_defaults_are_fresh_per_instance"
+    ),
+    (
+        "tests/unit/config/test_config_validate.py::TestALBConfigValidation::"
+        "test_controller_tag_and_nested_payload_type_must_agree"
+    ),
+    (
+        "tests/unit/config/test_config_validate.py::TestALBConfigValidation::"
+        "test_nested_controller_payload_rejects_unknown_fields"
+    ),
+    (
+        "tests/unit/config/test_config_validate.py::TestALBConfigValidation::"
+        "test_legacy_flat_controller_payload_remains_permissive"
+    ),
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_release_acceptance_rejects_sensitive_untracked_or_ignored_inputs"
+    ),
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_sensitive_runtime_input_filter_ignores_cache_and_output_artifacts"
+    ),
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_candidate_head_must_remain_unchanged"
+    ),
+}
 
 
 def _run(command: list[str], *, environment: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -191,12 +233,76 @@ def _git(*args: str) -> str:
         cwd=REPOSITORY_ROOT,
         text=True,
         encoding="utf-8",
+        stderr=subprocess.PIPE,
     ).rstrip("\r\n")
 
 
 def _tracked_status() -> list[str]:
     output = _git("status", "--porcelain=v1", "--untracked-files=no")
     return output.splitlines() if output else []
+
+
+def _is_sensitive_runtime_input(path: str) -> bool:
+    """Return whether an uncommitted path can alter imports or test execution."""
+
+    normalized = path.replace("\\", "/").lstrip("./")
+    parts = normalized.split("/")
+    if "__pycache__" in parts or normalized.endswith((".pyc", ".pyo")):
+        return False
+    if normalized.startswith(("ALB/", "tests/")):
+        return True
+    if normalized.startswith("tools/") and normalized.endswith((".py", ".pyi")):
+        return True
+    if "/" not in normalized and normalized.endswith((".py", ".pyi")):
+        return True
+    return normalized in {"pytest.ini", "tox.ini", "setup.cfg", "pyproject.toml"}
+
+
+def _sensitive_uncommitted_inputs() -> dict[str, list[str]]:
+    """List untracked and ignored files that can influence acceptance."""
+
+    pathspecs = (
+        "ALB",
+        "tests",
+        "tools",
+        ":(top,glob)*.py",
+        ":(top,glob)*.pyi",
+        "pytest.ini",
+        "tox.ini",
+        "setup.cfg",
+        "pyproject.toml",
+    )
+    groups = {
+        "untracked": _git(
+            "ls-files", "--others", "--exclude-standard", "--", *pathspecs
+        ),
+        "ignored": _git(
+            "ls-files",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+            "--",
+            *pathspecs,
+        ),
+    }
+    return {
+        name: sorted(
+            path for path in output.splitlines() if _is_sensitive_runtime_input(path)
+        )
+        for name, output in groups.items()
+    }
+
+
+def _assert_candidate_head(candidate_commit: str) -> str:
+    """Require HEAD to remain pinned to the candidate throughout acceptance."""
+
+    current = _git("rev-parse", "HEAD")
+    if current != candidate_commit:
+        raise AssertionError(
+            "Candidate HEAD changed during acceptance: "
+            f"before={candidate_commit}, after={current}"
+        )
+    return current
 
 
 def _status_digest(lines: list[str]) -> str:
@@ -250,6 +356,12 @@ def run_acceptance() -> dict[str, Any]:
         raise RuntimeError(
             "Release acceptance requires a clean tracked worktree before tests:\n"
             + json.dumps(before, ensure_ascii=False, indent=2)
+        )
+    sensitive_before = _sensitive_uncommitted_inputs()
+    if any(sensitive_before.values()):
+        raise RuntimeError(
+            "Release acceptance requires committed runtime and test inputs:\n"
+            + json.dumps(sensitive_before, ensure_ascii=False, indent=2)
         )
     candidate_commit = _git("rev-parse", "HEAD")
     pytest_command = [
@@ -308,6 +420,13 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("The complete fourth-review regression node set was not recorded")
     if any(item["outcome"] != "passed" for item in fourth_review_reports):
         raise AssertionError("A fourth-review regression node did not pass")
+    fifth_review_reports = [
+        item for item in reports["reports"] if item["nodeid"] in FIFTH_REVIEW_NODEIDS
+    ]
+    if {item["nodeid"] for item in fifth_review_reports} != FIFTH_REVIEW_NODEIDS:
+        raise AssertionError("The complete fifth-review regression node set was not recorded")
+    if any(item["outcome"] != "passed" for item in fifth_review_reports):
+        raise AssertionError("A fifth-review regression node did not pass")
 
     mypy_environment = environment.copy()
     mypy_environment["PYTHONPATH"] = str(DEVTOOLS_ROOT)
@@ -332,6 +451,17 @@ def run_acceptance() -> dict[str, Any]:
             "Tracked worktree changed during acceptance:\n"
             + json.dumps({"before": before, "after": after}, ensure_ascii=False, indent=2)
         )
+    sensitive_after = _sensitive_uncommitted_inputs()
+    if any(sensitive_after.values()):
+        raise AssertionError(
+            "Runtime or test inputs changed during acceptance:\n"
+            + json.dumps(
+                {"before": sensitive_before, "after": sensitive_after},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    candidate_commit_after = _assert_candidate_head(candidate_commit)
 
     v1_diff = subprocess.run(
         [
@@ -364,6 +494,7 @@ def run_acceptance() -> dict[str, Any]:
             "second_review_reports": second_review_reports,
             "third_review_reports": third_review_reports,
             "fourth_review_reports": fourth_review_reports,
+            "fifth_review_reports": fifth_review_reports,
         },
         "mypy": {
             "command": subprocess.list2cmdline(mypy_command),
@@ -378,6 +509,10 @@ def run_acceptance() -> dict[str, Any]:
             "before_sha256": _status_digest(before),
             "after_sha256": _status_digest(after),
             "tracked_status_delta": 0,
+            "sensitive_inputs_before": sensitive_before,
+            "sensitive_inputs_after": sensitive_after,
+            "candidate_head_before": candidate_commit,
+            "candidate_head_after": candidate_commit_after,
         },
         "references": {
             "full_repo_refactor_v1_unchanged_from_tag": True,
@@ -395,6 +530,9 @@ def run_acceptance() -> dict[str, Any]:
             ),
             "fourth_review_release_v4": (
                 "refs/fourth_review_release_reference_v4.json"
+            ),
+            "fifth_review_release_v5": (
+                "refs/fifth_review_release_reference_v5.json"
             ),
         },
         "overall_status": "passed",

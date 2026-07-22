@@ -401,6 +401,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         self._last_input: tuple[np.ndarray, np.ndarray] | None = None
         self._last_recorded_time: float | None = None
         self._has_input = False
+        self._valid = False
         self.init()
 
     @property
@@ -431,13 +432,52 @@ class ALBHarmonicLinear(BearingComponentBase):
     def xv(self) -> np.ndarray:
         """Return the current normalized spool state."""
 
+        self._require_valid("read xv")
         return self.spool.copy()
 
     @property
     def t(self) -> float | None:
         """Return the latest public coupling timestamp."""
 
+        self._require_valid("read t")
         return self._last_time
+
+    @property
+    def results(self) -> pd.DataFrame:
+        """Return completed results only while the runtime is valid."""
+
+        self._require_valid("read results")
+        return self._results
+
+    def _require_valid(self, operation: str) -> None:
+        """Reject state access after a failed runtime initialization."""
+
+        if not self._valid:
+            raise RuntimeError(
+                f"Cannot {operation}: harmonic bearing runtime is invalid; "
+                "call init() successfully before reuse"
+            )
+
+    def _reset_public_state(self) -> None:
+        """Reset public snapshots to a deterministic non-computed base state."""
+
+        self.force = self.coefficients.static_force.copy()
+        self.uxy = self.coefficients.equilibrium_position.copy()
+        self.uxyt = np.zeros(2, dtype=float)
+        self.spool_command = self.coefficients.base_spool.copy()
+        self.spool = self.coefficients.base_spool.copy()
+        self.spool_quadrature = np.zeros(2, dtype=float)
+        self.controller_saturated = False
+        self.servovalve_saturated = False
+        self.warmup_audit = {}
+        self._force_stiffness = np.zeros(2, dtype=float)
+        self._force_damping = np.zeros(2, dtype=float)
+        self._force_spool = np.zeros(2, dtype=float)
+        self._previous_delta_spool = np.zeros(2, dtype=float)
+        self._last_time = None
+        self._last_input = None
+        self._last_recorded_time = None
+        self._has_input = False
 
     def _sensor_matrix(self) -> np.ndarray:
         """Return the project two-channel controller sensor projection."""
@@ -584,28 +624,44 @@ class ALBHarmonicLinear(BearingComponentBase):
         }
 
     def init(self, *args, **kwargs) -> bool:
-        """Reset results and initialize a strictly matched controller/valve base."""
+        """Initialize the runtime, exposing state only after complete success."""
 
-        self._results = pd.DataFrame(columns=self._RESULT_COLUMNS)
-        self._build_runtime()
-        self._warm_strict_base()
-        self.force = self.coefficients.static_force.copy()
-        self.uxy = self.coefficients.equilibrium_position.copy()
-        self.uxyt = np.zeros(2, dtype=float)
-        self.spool_quadrature = np.zeros(2, dtype=float)
-        self._force_stiffness = np.zeros(2, dtype=float)
-        self._force_damping = np.zeros(2, dtype=float)
-        self._force_spool = np.zeros(2, dtype=float)
-        self._previous_delta_spool = self.spool - self.coefficients.base_spool
+        self._valid = False
+        self._has_input = False
         self._last_time = None
         self._last_input = None
         self._last_recorded_time = None
-        self._has_input = False
+        self._results = pd.DataFrame(columns=self._RESULT_COLUMNS)
+        self.controller = None
+        self.servovalves = []
+        self._reset_public_state()
+        try:
+            self._build_runtime()
+            self._warm_strict_base()
+            self.force = self.coefficients.static_force.copy()
+            self.uxy = self.coefficients.equilibrium_position.copy()
+            self.uxyt = np.zeros(2, dtype=float)
+            self.spool_quadrature = np.zeros(2, dtype=float)
+            self._force_stiffness = np.zeros(2, dtype=float)
+            self._force_damping = np.zeros(2, dtype=float)
+            self._force_spool = np.zeros(2, dtype=float)
+            self._previous_delta_spool = self.spool - self.coefficients.base_spool
+            self._last_time = None
+            self._last_input = None
+            self._last_recorded_time = None
+            self._has_input = False
+        except Exception:
+            self.controller = None
+            self.servovalves = []
+            self._reset_public_state()
+            raise
+        self._valid = True
         return True
 
     def input(self, uxy, uxyt, t, *args, **kwargs) -> bool:
         """Accept dimensional rotor position and velocity for one coupling step."""
 
+        self._require_valid("accept input")
         if kwargs.get("nodim", False):
             raise ValueError("ALBHarmonicLinear accepts dimensional bearing inputs")
         position = _finite_vector("uxy", uxy)
@@ -647,6 +703,7 @@ class ALBHarmonicLinear(BearingComponentBase):
     def output(self, *args, **kwargs) -> dict[str, Any]:
         """Return total dimensional bearing force and component diagnostics."""
 
+        self._require_valid("read output")
         if kwargs.get("nodim", False):
             raise ValueError("ALBHarmonicLinear only outputs dimensional force")
         if not self._has_input:
@@ -679,6 +736,7 @@ class ALBHarmonicLinear(BearingComponentBase):
     def finish_signal(self) -> None:
         """Record the latest completed coupling state once per timestamp."""
 
+        self._require_valid("record results")
         if self._last_time is None or (
             self._last_recorded_time is not None
             and np.isclose(
@@ -718,11 +776,13 @@ class ALBHarmonicLinear(BearingComponentBase):
     def calc_error(self, *args, **kwargs) -> bool:
         """Return true because this explicit local model has no inner iteration."""
 
+        self._require_valid("read convergence status")
         return True
 
     def calc_is_finished(self, *args, **kwargs) -> bool:
         """Return true because one input/output evaluation completes the step."""
 
+        self._require_valid("read completion status")
         return True
 
     def save(
@@ -735,6 +795,7 @@ class ALBHarmonicLinear(BearingComponentBase):
     ) -> SaveTreeNode:
         """Return or persist standard bearing results and coefficient metadata."""
 
+        self._require_valid("save results")
         if path is None:
             path = "alb_harmonic_linear"
         if name is None:

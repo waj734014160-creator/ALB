@@ -8,7 +8,7 @@ import pytest
 from ALB.config import ALBConfig, Moog2ndServoConfig
 from ALB.control.controllers import ALBLQGController, RCConfig, RepetitiveController
 from ALB.core import Signal
-from ALB.systems.alb.assembly import ALB
+from ALB.systems.alb.assembly import ALB, ALBSV, NodimALB, NodimALBSV
 from ALB.systems.alb.harmonic import ALBHarmonicCoefficients, ALBHarmonicLinear
 
 
@@ -92,6 +92,29 @@ class _FactoryLegacyController:
 
     def output(self) -> np.ndarray:
         return 0.25 * self.error
+
+
+class _ReinitializationFailureController(_FactoryLegacyController):
+    """Resettable controller that fails once at a selected reinit phase."""
+
+    def __init__(self, failure_point: str) -> None:
+        self.failure_point = failure_point
+        self.init_calls = 0
+        self.fail_during_output = False
+
+    def init(self) -> None:
+        self.init_calls += 1
+        if self.failure_point == "controller-init" and self.init_calls == 2:
+            raise RuntimeError("controller reset failed")
+        self.fail_during_output = (
+            self.failure_point == "warm-up" and self.init_calls == 2
+        )
+
+    def output(self) -> np.ndarray:
+        if self.fail_during_output:
+            self.fail_during_output = False
+            raise RuntimeError("controller warm-up failed")
+        return super().output()
 
 
 def _lqg_controller() -> ALBLQGController:
@@ -257,6 +280,79 @@ def test_harmonic_public_lifecycle_supports_injected_controllers(controller_kind
         assert second_controller is not first_controller
     else:
         assert second_controller is first_controller
+
+
+@pytest.mark.parametrize(
+    "failure_point", ["factory", "controller-init", "warm-up"]
+)
+def test_failed_harmonic_reinitialization_invalidates_runtime(
+    failure_point, tmp_path
+):
+    """Failed reset must block every public state consumer until recovery."""
+
+    controller = None
+    controller_factory = None
+    if failure_point == "factory":
+        factory_calls = 0
+
+        def controller_factory():
+            nonlocal factory_calls
+            factory_calls += 1
+            if factory_calls == 2:
+                raise RuntimeError("controller factory failed")
+            return _FactoryLegacyController()
+
+    else:
+        controller = _ReinitializationFailureController(failure_point)
+
+    bearing = ALBHarmonicLinear(
+        _zero_base_coefficients(),
+        node_link=3,
+        servo_config=Moog2ndServoConfig(dt=0.001),
+        controller=controller,
+        controller_factory=controller_factory,
+        warmup_steps=24,
+    )
+    bearing.input(np.asarray([1.0e-6, -2.0e-6]), np.zeros(2), 0.0)
+    bearing.output()
+    assert len(bearing.results) == 1
+
+    with pytest.raises(RuntimeError, match="failed"):
+        bearing.init()
+
+    assert bearing._valid is False
+    assert bearing._has_input is False
+    invalid_operations = (
+        bearing.output,
+        lambda: bearing.input(np.zeros(2), np.zeros(2), 0.0),
+        lambda: bearing.results,
+        lambda: bearing.save(tofile=False, path=tmp_path),
+        lambda: bearing.xv,
+        lambda: bearing.t,
+    )
+    for operation in invalid_operations:
+        with pytest.raises(RuntimeError, match="runtime is invalid"):
+            operation()
+
+    assert bearing.init() is True
+    bearing.input(np.zeros(2), np.zeros(2), 0.0)
+    assert bearing.output()["force"].shape == (2,)
+
+
+def test_public_alb_subclass_defaults_are_fresh_per_instance():
+    """Omitted mutable configs must not be shared between public instances."""
+
+    for model_type in (ALBSV, NodimALB, NodimALBSV):
+        first = model_type(
+            [_ReadOnlyPad()], [_ReadOnlyValve(), _ReadOnlyValve()]
+        )
+        second = model_type(
+            [_ReadOnlyPad()], [_ReadOnlyValve(), _ReadOnlyValve()]
+        )
+        first.gxy[0, 0] = 9.0
+        first.gxyt[0, 0] = 8.0
+        np.testing.assert_array_equal(second.gxy, np.eye(2))
+        np.testing.assert_array_equal(second.gxyt, np.zeros((2, 2)))
 
 
 def _make_alb(*, switch: bool, controller):

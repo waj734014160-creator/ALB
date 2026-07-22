@@ -67,6 +67,55 @@ def _alb_controller_tag(controller_config: object) -> str:
     )
 
 
+def _build_alb_controller_config(
+    config_dict: dict,
+    selected_controller: Optional[str],
+) -> Optional[Union["PIDConfig", "FuzzyPIDConfig"]]:
+    """Build a tagged nested controller config without silently changing type."""
+
+    payload_is_present = "controller_config" in config_dict
+    payload = config_dict.get("controller_config")
+    if selected_controller is None:
+        if payload_is_present and payload is not None:
+            raise ValueError(
+                "controller='none' conflicts with a non-null controller_config"
+            )
+        return None
+
+    controller_class = (
+        PIDConfig if selected_controller == "PID" else FuzzyPIDConfig
+    )
+    other_class = (
+        FuzzyPIDConfig if selected_controller == "PID" else PIDConfig
+    )
+    if payload_is_present:
+        if payload is None:
+            raise ValueError(
+                f"controller='{selected_controller}' requires controller_config"
+            )
+        if isinstance(payload, other_class):
+            raise ValueError(
+                f"controller='{selected_controller}' conflicts with "
+                f"{type(payload).__name__}"
+            )
+        if isinstance(payload, controller_class):
+            return payload
+        if isinstance(payload, dict):
+            allowed = {config_field.name for config_field in fields(controller_class)}
+            unknown = sorted(set(payload) - allowed)
+            if unknown:
+                raise ValueError(
+                    f"Unknown {selected_controller} controller_config fields: {unknown}"
+                )
+            return controller_class(**payload)
+        raise TypeError(
+            "controller_config must be a matching config object, dictionary, or None"
+        )
+
+    # Historical flat task dictionaries remain permissive for migration only.
+    return ConfigData.set_config(controller_class, config_dict)
+
+
 @dataclass
 class ConfigData:
     """Base class for configuration data, providing dictionary-like access."""
@@ -1168,33 +1217,9 @@ class ALBConfig(ConfigData):
             if isinstance(tank_payload, dict)
             else cls.set_config(TankConfig, config_dict)
         )
-        controller_payload = config_dict.get("controller_config")
-        if selected_controller is None:
-            controller_instance = None
-        elif selected_controller == "PID":
-            controller_class = PIDConfig
-            controller_instance = (
-                controller_payload
-                if isinstance(controller_payload, PIDConfig)
-                else cls.set_config(
-                    controller_class,
-                    controller_payload
-                    if isinstance(controller_payload, dict)
-                    else config_dict,
-                )
-            )
-        elif selected_controller == "FuzzyPID":
-            controller_class = FuzzyPIDConfig
-            controller_instance = (
-                controller_payload
-                if isinstance(controller_payload, FuzzyPIDConfig)
-                else cls.set_config(
-                    controller_class,
-                    controller_payload
-                    if isinstance(controller_payload, dict)
-                    else config_dict,
-                )
-            )
+        controller_instance = _build_alb_controller_config(
+            config_dict, selected_controller
+        )
 
         # Extract fields that directly belong to ALBConfig
         direct_keys = [
@@ -1456,11 +1481,6 @@ class NodimALBConfig(ConfigData):
         if servo not in {"moog_2nd", "moog", "static"}:
             raise ValueError("servo must be 'moog_2nd', 'moog', or 'static'")
 
-        controller_class = (
-            None
-            if selected_controller is None
-            else PIDConfig if selected_controller == "PID" else FuzzyPIDConfig
-        )
         direct_keys = [
             "dt",
             "node_link",
@@ -1512,7 +1532,9 @@ class NodimALBConfig(ConfigData):
             if isinstance(tank_payload, dict)
             else cls.set_config(TankConfig, config_dict)
         )
-        controller_payload = config_dict.get("controller_config")
+        controller_instance = _build_alb_controller_config(
+            config_dict, selected_controller
+        )
 
         # Mirror ALBConfig.from_dict by rebuilding the nested nodim config
         # objects from a shared flat configuration payload.
@@ -1521,18 +1543,7 @@ class NodimALBConfig(ConfigData):
             orifice_config=orifice_config_instance,
             servo_config=servo_config_instance,
             tank_config=tank_config_instance,
-            controller_config=(
-                None
-                if controller_class is None
-                else controller_payload
-                if isinstance(controller_payload, controller_class)
-                else cls.set_config(
-                    controller_class,
-                    controller_payload
-                    if isinstance(controller_payload, dict)
-                    else config_dict,
-                )
-            ),
+            controller_config=controller_instance,
             **direct_args,
         )
 

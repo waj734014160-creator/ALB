@@ -113,6 +113,58 @@ class TestALBConfigValidation(unittest.TestCase):
                         else:
                             self.assertEqual(actual, expected)
 
+    def test_controller_tag_and_nested_payload_type_must_agree(self):
+        for config_class in (ALBConfig, NodimALBConfig):
+            conflicts = (
+                {
+                    "controller": "PID",
+                    "controller_config": FuzzyPIDConfig(),
+                },
+                {
+                    "controller": "FuzzyPID",
+                    "controller_config": PIDConfig(),
+                },
+                {
+                    "controller": "none",
+                    "controller_config": PIDConfig(),
+                },
+                {"controller": "PID", "controller_config": None},
+            )
+            for payload in conflicts:
+                with self.subTest(
+                    config_class=config_class.__name__,
+                    controller=payload["controller"],
+                ):
+                    with self.assertRaisesRegex(ValueError, "conflicts|requires"):
+                        config_class.from_dict(payload)
+
+    def test_nested_controller_payload_rejects_unknown_fields(self):
+        for config_class in (ALBConfig, NodimALBConfig):
+            with self.subTest(config_class=config_class.__name__):
+                with self.assertRaisesRegex(ValueError, "Unknown PID"):
+                    config_class.from_dict(
+                        {
+                            "controller": "PID",
+                            "controller_config": {
+                                "kp": 0.5,
+                                "fuzzy_only_field": 12.0,
+                            },
+                        }
+                    )
+
+    def test_legacy_flat_controller_payload_remains_permissive(self):
+        for config_class in (ALBConfig, NodimALBConfig):
+            with self.subTest(config_class=config_class.__name__):
+                restored = config_class.from_dict(
+                    {
+                        "controller": "PID",
+                        "kp": 0.75,
+                        "legacy_unrelated_field": "ignored",
+                    }
+                )
+                self.assertIsInstance(restored.controller_config, PIDConfig)
+                self.assertEqual(restored.controller_config.kp, 0.75)
+
     def test_alb_config_invalid_alb(self):
         with self.assertRaises(ValueError):
             ALBConfig.from_dict({"alb": "BAD"})
