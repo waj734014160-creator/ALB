@@ -1,9 +1,17 @@
 # -- coding: utf-8 --
 import unittest
+from dataclasses import fields
 
 import numpy as np
 
-from ALB.config import ALBConfig, HydConfig, NodimALBConfig, ThermalConfig
+from ALB.config import (
+    ALBConfig,
+    FuzzyPIDConfig,
+    HydConfig,
+    NodimALBConfig,
+    PIDConfig,
+    ThermalConfig,
+)
 
 
 class TestHydConfigValidation(unittest.TestCase):
@@ -50,11 +58,60 @@ class TestALBConfigValidation(unittest.TestCase):
                 self.assertIsNone(explicit.controller_config)
 
                 serialized = config_class(controller_config=None).to_dict()
+                self.assertEqual(serialized["controller"], "none")
                 restored = config_class.from_dict(serialized)
                 self.assertIsNone(restored.controller_config)
 
                 default = config_class.from_dict({})
                 self.assertIsNotNone(default.controller_config)
+
+    def test_controller_type_and_nondefault_values_round_trip_exactly(self):
+        controller_cases = (
+            (
+                "PID",
+                PIDConfig(
+                    dt=0.002,
+                    kp=0.45,
+                    ki=0.15,
+                    kd=0.08,
+                    uf=0.3,
+                    freq=37.0,
+                    sensor_angles=np.asarray([25.0, 115.0]),
+                ),
+            ),
+            (
+                "FuzzyPID",
+                FuzzyPIDConfig(
+                    dt=0.003,
+                    freq=41.0,
+                    error_range=[-0.8, 0.9, 0.05],
+                    delta_error_range=[-0.4, 0.7, 0.02],
+                    kp_range=[0.1, 0.9, 0.04],
+                    ki_range=[0.0, 0.2, 0.01],
+                    kd_range=[0.05, 0.6, 0.025],
+                    rule_path="rules/custom.csv",
+                    sensor_angles=[30.0, 120.0],
+                ),
+            ),
+        )
+        for config_class in (ALBConfig, NodimALBConfig):
+            for tag, source_controller in controller_cases:
+                with self.subTest(config_class=config_class.__name__, tag=tag):
+                    source = config_class(controller_config=source_controller)
+                    serialized = source.to_dict()
+                    self.assertEqual(serialized["controller"], tag)
+
+                    restored = config_class.from_dict(serialized)
+                    self.assertIsInstance(
+                        restored.controller_config, type(source_controller)
+                    )
+                    for config_field in fields(source_controller):
+                        expected = getattr(source_controller, config_field.name)
+                        actual = getattr(restored.controller_config, config_field.name)
+                        if isinstance(expected, np.ndarray):
+                            np.testing.assert_array_equal(actual, expected)
+                        else:
+                            self.assertEqual(actual, expected)
 
     def test_alb_config_invalid_alb(self):
         with self.assertRaises(ValueError):

@@ -89,20 +89,30 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 历史分别从 `xout`、`yout` 读取。`PID.init()` 与 `FuzzyPID.init()` 会恢复到新实例等价状态。
 ALB 装配和谐波控制路径通过同一个控制器生命周期适配器接入：提供 `evaluate()` 的严格控制器按
 `input()`、`evaluate()`、`output()` 执行；仅提供旧式 `input()`、`output()` 的 LQG、重复控制器
-或自定义控制器只调用一次 `output()`，不会因缺少 `evaluate()` 而失败。
+或自定义控制器只调用一次 `output()`，不会因缺少 `evaluate()` 而失败。`ALBHarmonicLinear`
+可以通过 `controller=` 注入带 `init()` 的控制器实例，也可以通过 `controller_factory=` 在每次
+初始化时创建新的旧式控制器；二者都经过完整的构造、基态预热、多步运行和重新初始化门禁。
+
+`ALBConfig.switch` 是永久控制许可：配置为 `False` 后，非负时间输入不会自动把控制重新打开。
+`turn_on_at()` 只在永久许可为 `True` 时安排延迟启动，并在每次输入时重新计算当前启用状态。
+普通 `ALB` 没有控制器时输出零阀命令；需要直接指定阀芯位置时使用 `ALBSV` 或对应的
+direct-spool 端口。
 
 `RsRotorBearingCouple.init()` 把时间网格首点登记为只读初始快照，`solve()` 只对后续目标时刻
 推进。时步 ledger 要求序号恰好加 1、时间增量与固定 `dt` 一致，因此 `t=0` 不再对应
 已经推进到 `dt` 的转子状态。
 中途异常会使 coupler 整体失效；此后 `advance()`、`output()`、`results` 和 `save()` 都拒绝
 暴露可能只推进了一部分的状态，必须显式 `init()` 后才能继续。
+初始化后调用 `add_bearing()`、`add_static_force()`、`add_unbalance()` 或 `add_gravity()` 修改
+耦合拓扑也会立即使 coupler 失效；重新 `init()` 会重建节点映射后才允许读取或推进。
 
 ### 配置
 
 配置从 `ALB.config.<domain>` 显式导入。`alb-migrate-config` 和 `tools/migrations/migrate_config_0_2.py` 只读旧 JSON5，并把 0.2 schema 另存为 UTF-8 文件；不会覆盖源配置。旧文件若无法按 UTF-8 解码，迁移器会显式警告并临时尝试 GBK/CP936，输出仍统一写为 UTF-8。
 
-`ALBConfig.from_dict()` 与 `NodimALBConfig.from_dict()` 支持 `{"controller": "none"}`；
-`controller_config=None` 经 `to_dict()` 序列化后也能恢复为无控制器配置。缺少上述显式标记时仍保留
+`ALBConfig.to_dict()` 与 `NodimALBConfig.to_dict()` 固定写出
+`"controller": "PID" | "FuzzyPID" | "none"` 类型标签；`from_dict()` 据此恢复具体配置类型和
+非默认参数。`controller_config=None` 能稳定往返为无控制器配置，缺少显式标签的旧配置仍保留
 历史默认 PID。
 
 `ALB.physics.hydraulics.CSOrifice` 与 `NodimCSOrifice` 的 0.2 契约固定为零泄漏，

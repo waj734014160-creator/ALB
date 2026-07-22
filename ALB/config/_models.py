@@ -53,6 +53,20 @@ def _select_alb_controller(config_dict: dict, default: Optional[str]) -> Optiona
     return selected
 
 
+def _alb_controller_tag(controller_config: object) -> str:
+    """Return the stable serialized discriminator for an ALB controller config."""
+
+    if controller_config is None:
+        return "none"
+    if isinstance(controller_config, PIDConfig):
+        return "PID"
+    if isinstance(controller_config, FuzzyPIDConfig):
+        return "FuzzyPID"
+    raise TypeError(
+        "controller_config must be PIDConfig, FuzzyPIDConfig, or None"
+    )
+
+
 @dataclass
 class ConfigData:
     """Base class for configuration data, providing dictionary-like access."""
@@ -1090,6 +1104,13 @@ class ALBConfig(ConfigData):
         """Forward ``pad_config.thermal_config`` for convenience."""
         return self.pad_config.thermal_config
 
+    def to_dict(self) -> dict:
+        """Serialize nested values with an explicit controller type tag."""
+
+        data = super().to_dict()
+        data["controller"] = _alb_controller_tag(self.controller_config)
+        return data
+
     @classmethod
     def from_dict(cls, config_dict, controller: Optional[str] = "PID"):
         """
@@ -1415,6 +1436,13 @@ class NodimALBConfig(ConfigData):
     @property
     def thermal_config(self) -> Optional[ThermalConfig]:
         return self.pad_config.thermal_config
+
+    def to_dict(self) -> dict:
+        """Serialize nested values with an explicit controller type tag."""
+
+        data = super().to_dict()
+        data["controller"] = _alb_controller_tag(self.controller_config)
+        return data
 
     @classmethod
     def from_dict(cls, config_dict, controller: Optional[str] = "PID"):

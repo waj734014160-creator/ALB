@@ -137,3 +137,45 @@ def test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization():
 
     assert rotor.input_calls == 1
     assert result.metadata["step_index"] == 1
+
+
+@pytest.mark.parametrize(
+    "mutate_topology",
+    [
+        lambda coupling: coupling.add_bearing(_Bearing()),
+        lambda coupling: coupling.add_static_force([1.0, -2.0], node_link=0),
+        lambda coupling: coupling.add_unbalance(
+            node_link=0,
+            phase=0.0,
+            t_max=1.0,
+            m=0.1,
+            freq=2.0,
+            e=0.01,
+            no_step=True,
+        ),
+    ],
+    ids=["bearing", "static-force", "unbalance"],
+)
+def test_topology_change_requires_reinitialization(mutate_topology):
+    coupling = RsRotorBearingCouple(
+        _Rotor(), TimeIterDt(0.01, 1), _Bearing()
+    )
+    coupling.init()
+    assert coupling.output().metadata["initial_snapshot"] is True
+
+    mutate_topology(coupling)
+
+    with pytest.raises(RuntimeError, match="invalid"):
+        coupling.output()
+    with pytest.raises(RuntimeError, match="invalid"):
+        _ = coupling.results
+    with pytest.raises(RuntimeError, match="invalid"):
+        coupling.save(tofile=False)
+    with pytest.raises(RuntimeError, match="invalid"):
+        coupling.advance(StepContext(1, 0.01, 0.01, "dimensional"))
+
+    coupling.init()
+    restored = coupling.output()
+
+    assert restored.metadata["initial_snapshot"] is True
+    assert coupling._fnode_links is not None

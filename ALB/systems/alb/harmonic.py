@@ -13,7 +13,7 @@ import json
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 import numpy as np
 import pandas as pd
@@ -273,8 +273,10 @@ class ALBHarmonicLinear(BearingComponentBase):
         coefficients: ALBHarmonicCoefficients,
         *,
         node_link: int,
-        controller_config: PIDConfig,
         servo_config: Moog2ndServoConfig,
+        controller_config: PIDConfig | None = None,
+        controller: Any | None = None,
+        controller_factory: Callable[[], Any] | None = None,
         warmup_steps: int = 64,
         base_tolerance: float = 1.0e-8,
     ) -> None:
@@ -288,6 +290,15 @@ class ALBHarmonicLinear(BearingComponentBase):
             ROSS rotor node consumed by :class:`RsRotorBearingCouple`.
         controller_config:
             Project PID configuration. ``ki`` must be zero for the PD base.
+            Supply exactly one of ``controller_config``, ``controller``, or
+            ``controller_factory``.
+        controller:
+            Resettable controller instance. Its ``init()`` method is called on
+            every bearing initialization.
+        controller_factory:
+            Factory used to create a fresh strict or legacy controller on
+            every bearing initialization. This is the compatibility path for
+            legacy controllers that do not expose ``init()``.
         servo_config:
             Project second-order Moog configuration.
         warmup_steps:
@@ -300,32 +311,65 @@ class ALBHarmonicLinear(BearingComponentBase):
             raise TypeError("coefficients must be ALBHarmonicCoefficients")
         if isinstance(node_link, bool) or not isinstance(node_link, (int, np.integer)):
             raise TypeError("node_link must be an integer")
-        if not isinstance(controller_config, PIDConfig):
-            raise TypeError("controller_config must be PIDConfig")
         if not isinstance(servo_config, Moog2ndServoConfig):
             raise TypeError("servo_config must be Moog2ndServoConfig")
+        controller_source_count = sum(
+            source is not None
+            for source in (controller_config, controller, controller_factory)
+        )
+        if controller_source_count != 1:
+            raise ValueError(
+                "provide exactly one of controller_config, controller, or "
+                "controller_factory"
+            )
+        if controller_config is not None and not isinstance(
+            controller_config, PIDConfig
+        ):
+            raise TypeError("controller_config must be PIDConfig or None")
+        if controller_factory is not None and not callable(controller_factory):
+            raise TypeError("controller_factory must be callable")
+        if controller is not None:
+            self._validate_controller(controller)
+            if not callable(getattr(controller, "init", None)):
+                raise TypeError(
+                    "controller instances must provide init(); use "
+                    "controller_factory for controllers without reset support"
+                )
         if int(warmup_steps) < 2:
             raise ValueError("warmup_steps must be >= 2")
 
         super().__init__()
         self.coefficients = coefficients
         self.node_link = int(node_link)
-        self.controller_config = copy.deepcopy(controller_config)
+        self.controller_config = (
+            copy.deepcopy(controller_config) if controller_config is not None else None
+        )
+        self._controller_instance = controller
+        self._controller_factory = controller_factory
         self.servo_config = copy.deepcopy(servo_config)
         self.warmup_steps = int(warmup_steps)
         self.base_tolerance = _positive_float("base_tolerance", base_tolerance)
-        self.dt = _positive_float("controller_config.dt", controller_config.dt)
+        self.dt = _positive_float("servo_config.dt", servo_config.dt)
         if not np.isclose(self.dt, float(servo_config.dt), rtol=0.0, atol=1.0e-15):
             raise ValueError("controller and servovalve dt values must match")
-        if not np.isclose(
-            float(controller_config.freq),
-            coefficients.shaft_frequency_hz,
-            rtol=0.0,
-            atol=1.0e-12,
-        ):
-            raise ValueError("controller frequency must match coefficient shaft frequency")
-        if not np.isclose(float(controller_config.ki), 0.0, rtol=0.0, atol=0.0):
-            raise ValueError("ALBHarmonicLinear requires a PD controller with ki=0")
+        if controller_config is not None:
+            if not np.isclose(
+                float(controller_config.dt), self.dt, rtol=0.0, atol=1.0e-15
+            ):
+                raise ValueError("controller and servovalve dt values must match")
+            if not np.isclose(
+                float(controller_config.freq),
+                coefficients.shaft_frequency_hz,
+                rtol=0.0,
+                atol=1.0e-12,
+            ):
+                raise ValueError(
+                    "controller frequency must match coefficient shaft frequency"
+                )
+            if not np.isclose(
+                float(controller_config.ki), 0.0, rtol=0.0, atol=0.0
+            ):
+                raise ValueError("ALBHarmonicLinear requires a PD controller with ki=0")
 
         self.phase_step = coefficients.whirl_omega_rad_s * self.dt
         if not 0.0 < self.phase_step < np.pi:
@@ -335,7 +379,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         if abs(self._phase_sine) < 1.0e-10:
             raise ValueError("harmonic phase step is singular for quadrature recovery")
 
-        self.controller: PID | None = None
+        self.controller: Any | None = None
         self.servovalves: list = []
         self.static_force = coefficients.static_force.copy()
         self.uxy0 = coefficients.equilibrium_position.copy()
@@ -398,6 +442,8 @@ class ALBHarmonicLinear(BearingComponentBase):
     def _sensor_matrix(self) -> np.ndarray:
         """Return the project two-channel controller sensor projection."""
 
+        if self.controller_config is None:
+            raise RuntimeError("sensor projection is only defined for PID config")
         angles = np.deg2rad(
             np.asarray(self.controller_config.sensor_angles, dtype=float)
         )
@@ -405,11 +451,41 @@ class ALBHarmonicLinear(BearingComponentBase):
             raise ValueError("controller sensor_angles must contain two values")
         return np.column_stack((np.cos(angles), np.sin(angles)))
 
-    def _build_runtime(self) -> None:
-        """Create fresh controller and valve instances for deterministic reset."""
+    @staticmethod
+    def _validate_controller(controller: Any) -> None:
+        """Validate the minimum controller integration contract."""
 
-        self.controller = PID(copy.deepcopy(self.controller_config))
-        self.controller.init()
+        for method_name in ("input", "output"):
+            if not callable(getattr(controller, method_name, None)):
+                raise TypeError(f"controller must provide {method_name}()")
+
+    def _build_runtime(self) -> None:
+        """Create or reset controller and valve instances deterministically."""
+
+        if self.controller_config is not None:
+            controller = PID(copy.deepcopy(self.controller_config))
+        elif self._controller_factory is not None:
+            controller = self._controller_factory()
+        else:
+            controller = self._controller_instance
+        self._validate_controller(controller)
+        controller_dt = getattr(controller, "dt", None)
+        if controller_dt is not None and not np.isclose(
+            float(controller_dt), self.dt, rtol=0.0, atol=1.0e-15
+        ):
+            raise ValueError("controller and servovalve dt values must match")
+        controller_freq = getattr(controller, "freq", None)
+        if controller_freq is not None and not np.isclose(
+            float(controller_freq),
+            self.coefficients.shaft_frequency_hz,
+            rtol=0.0,
+            atol=1.0e-12,
+        ):
+            raise ValueError("controller frequency must match coefficient shaft frequency")
+        reset = getattr(controller, "init", None)
+        if callable(reset):
+            reset()
+        self.controller = controller
         self.servovalves = [
             moog_2nd_servovalve(
                 self.dt,
@@ -432,7 +508,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         return float(output[0])
 
     def _advance_control(self, time_s: float, uxy: np.ndarray) -> None:
-        """Advance the project PD and two second-order Moog servovalves."""
+        """Advance the injected controller and two second-order Moog valves."""
 
         assert self.controller is not None
         command = np.asarray(
@@ -460,22 +536,33 @@ class ALBHarmonicLinear(BearingComponentBase):
         """Settle controller and valve states at the coefficient base."""
 
         base_position = self.coefficients.equilibrium_position
-        expected_command = float(self.controller_config.kp) * (
-            self._sensor_matrix()
-            @ (base_position / self.coefficients.clearance_m)
-        )
-        if not np.allclose(
-            expected_command,
-            self.coefficients.base_spool,
-            rtol=0.0,
-            atol=1.0e-12,
-        ):
-            raise ValueError(
-                "PD static command does not match the coefficient base spool"
+        expected_command = self.coefficients.base_spool.copy()
+        if self.controller_config is not None:
+            expected_command = float(self.controller_config.kp) * (
+                self._sensor_matrix()
+                @ (base_position / self.coefficients.clearance_m)
             )
+            if not np.allclose(
+                expected_command,
+                self.coefficients.base_spool,
+                rtol=0.0,
+                atol=1.0e-12,
+            ):
+                raise ValueError(
+                    "PD static command does not match the coefficient base spool"
+                )
         for step in range(self.warmup_steps):
             time_s = -(self.warmup_steps - step) * self.dt
             self._advance_control(time_s, base_position)
+        if not np.allclose(
+            self.spool_command,
+            self.coefficients.base_spool,
+            rtol=0.0,
+            atol=self.base_tolerance,
+        ):
+            raise RuntimeError(
+                "Controller warm-up did not reach the coefficient base command"
+            )
         error = self.spool - self.coefficients.base_spool
         if not np.allclose(
             self.spool,
@@ -497,7 +584,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         }
 
     def init(self, *args, **kwargs) -> bool:
-        """Reset results and initialize a strictly matched PD/valve base."""
+        """Reset results and initialize a strictly matched controller/valve base."""
 
         self._results = pd.DataFrame(columns=self._RESULT_COLUMNS)
         self._build_runtime()
@@ -680,6 +767,8 @@ def alb_harmonic_linear(
     *,
     dt: float | None = None,
     warmup_steps: int | None = None,
+    controller: Any | None = None,
+    controller_factory: Callable[[], Any] | None = None,
 ) -> ALBHarmonicLinear:
     """Build the packaged documented harmonic-linear ALB bearing.
 
@@ -714,10 +803,13 @@ def alb_harmonic_linear(
     steps = int(
         runtime["warmup_steps"] if warmup_steps is None else warmup_steps
     )
+    injected_controller = controller is not None or controller_factory is not None
     return ALBHarmonicLinear(
         coefficients,
         node_link=node_link,
-        controller_config=controller_config,
         servo_config=servo_config,
+        controller_config=None if injected_controller else controller_config,
+        controller=controller,
+        controller_factory=controller_factory,
         warmup_steps=steps,
     )

@@ -5,15 +5,20 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from ALB.config import ALBConfig, Moog2ndServoConfig
 from ALB.control.controllers import ALBLQGController, RCConfig, RepetitiveController
+from ALB.core import Signal
 from ALB.systems.alb.assembly import ALB
-from ALB.systems.alb.harmonic import ALBHarmonicLinear
+from ALB.systems.alb.harmonic import ALBHarmonicCoefficients, ALBHarmonicLinear
 
 
 class _LegacyController:
     """Historical controller whose output method owns calculation."""
 
     def __init__(self) -> None:
+        self.init()
+
+    def init(self) -> None:
         self.error = np.zeros(2, dtype=float)
         self.time = 0.0
         self.output_calls = 0
@@ -31,16 +36,62 @@ class _ReadOnlyValve:
     """Small valve that exposes the command supplied by the harmonic path."""
 
     def __init__(self) -> None:
+        self.signal = Signal(sys=self)
+        self.simple_models = []
         self.command = 0.0
         self.input_calls = 0
+        self.commands = []
+
+    def init(self) -> None:
+        self.command = 0.0
+        self.input_calls = 0
+        self.commands = []
 
     def input(self, time, command) -> None:
         del time
         self.command = float(command)
         self.input_calls += 1
+        self.commands.append(self.command)
 
     def output(self) -> float:
         return self.command
+
+    def finish_signal(self) -> None:
+        return None
+
+
+class _ReadOnlyPad:
+    """Small deterministic pad for the public ALB lifecycle tests."""
+
+    def __init__(self) -> None:
+        self.signal = Signal(sys=self)
+        self.main_model = SimpleNamespace(args={"c": 1.0, "w": 60.0, "vf": 1.0})
+        self.position = np.zeros(2, dtype=float)
+
+    def init(self) -> None:
+        self.position = np.zeros(2, dtype=float)
+
+    def input(self, *, t, uxy, uxyt, nodim=False) -> None:
+        del t, uxyt, nodim
+        self.position = np.asarray(uxy, dtype=float).reshape(2)
+
+    def output(self, *, nodim=False) -> dict[str, object]:
+        del nodim
+        return {"force": self.position.copy(), "friction": 0.0}
+
+    def finish_signal(self) -> None:
+        return None
+
+
+class _FactoryLegacyController:
+    """Legacy controller without init support, intended for factory injection."""
+
+    def input(self, time, error) -> None:
+        del time
+        self.error = np.asarray(error, dtype=float).reshape(2)
+
+    def output(self) -> np.ndarray:
+        return 0.25 * self.error
 
 
 def _lqg_controller() -> ALBLQGController:
@@ -64,6 +115,50 @@ def _repetitive_controller() -> RepetitiveController:
             q_filter=0.95,
             m_lead=1,
         )
+    )
+
+
+def _harmonic_lqg_controller() -> ALBLQGController:
+    controller = ALBLQGController(
+        SimpleNamespace(), dt=0.001, freq=50.0, eso_enable=False
+    )
+    controller.active_ctrl_sys_d = SimpleNamespace(
+        A=np.asarray([[0.8]], dtype=float),
+        B=np.asarray([[0.2, -0.1]], dtype=float),
+        C=np.asarray([[2.0], [-3.0]], dtype=float),
+        D=np.zeros((2, 2), dtype=float),
+    )
+    controller._init_runtime_state()
+    return controller
+
+
+def _harmonic_repetitive_controller() -> RepetitiveController:
+    return RepetitiveController(
+        RCConfig(
+            dt=0.001,
+            freq=50.0,
+            k_rc=np.asarray([0.4, -0.2]),
+            q_filter=0.95,
+            m_lead=1,
+        )
+    )
+
+
+def _zero_base_coefficients() -> ALBHarmonicCoefficients:
+    return ALBHarmonicCoefficients(
+        name="controller-injection-test",
+        static_force=np.asarray([10.0, -20.0]),
+        stiffness=np.asarray([[2.0e5, 1.0e4], [-3.0e4, 1.5e5]]),
+        damping=np.asarray([[25.0, 2.0], [-4.0, 18.0]]),
+        spool_transfer=np.asarray(
+            [[100.0 + 20.0j, -10.0j], [5.0j, 80.0 - 15.0j]]
+        ),
+        equilibrium_position=np.zeros(2),
+        base_spool=np.zeros(2),
+        clearance_m=1.0e-4,
+        shaft_frequency_hz=50.0,
+        whirl_ratio=1.0,
+        source="unit-test",
     )
 
 
@@ -114,3 +209,108 @@ def test_harmonic_control_path_accepts_strict_and_legacy_controllers(factory):
     assert [valve.input_calls for valve in bearing.servovalves] == [1, 1]
     if isinstance(controller, _LegacyController):
         assert controller.output_calls == 1
+
+
+@pytest.mark.parametrize("controller_kind", ["legacy", "lqg", "repetitive"])
+def test_harmonic_public_lifecycle_supports_injected_controllers(controller_kind):
+    controller = None
+    controller_factory = None
+    if controller_kind == "legacy":
+        controller_factory = _FactoryLegacyController
+    elif controller_kind == "lqg":
+        controller = _harmonic_lqg_controller()
+    else:
+        controller = _harmonic_repetitive_controller()
+
+    bearing = ALBHarmonicLinear(
+        _zero_base_coefficients(),
+        node_link=3,
+        servo_config=Moog2ndServoConfig(dt=0.001),
+        controller=controller,
+        controller_factory=controller_factory,
+        warmup_steps=24,
+    )
+    first_controller = bearing.controller
+
+    def run_trajectory() -> np.ndarray:
+        rows = []
+        for step in range(24):
+            phase = 2.0 * np.pi * step / 20.0
+            position = 1.0e-6 * np.asarray([np.cos(phase), np.sin(phase)])
+            velocity = 1.0e-3 * np.asarray([-np.sin(phase), np.cos(phase)])
+            bearing.input(position, velocity, step * bearing.dt)
+            output = bearing.output()
+            rows.append(
+                np.hstack(
+                    (output["spool_command"], output["spool"], output["force"])
+                )
+            )
+        return np.asarray(rows, dtype=float)
+
+    first = run_trajectory()
+    bearing.init()
+    second_controller = bearing.controller
+    second = run_trajectory()
+
+    np.testing.assert_array_equal(second, first)
+    if controller_kind == "legacy":
+        assert second_controller is not first_controller
+    else:
+        assert second_controller is first_controller
+
+
+def _make_alb(*, switch: bool, controller):
+    valves = [_ReadOnlyValve(), _ReadOnlyValve()]
+    config = ALBConfig(
+        controller_config=None,
+        switch=switch,
+        c=1.0,
+        w=60.0,
+        gxy=np.eye(2),
+        gxyt=np.zeros((2, 2)),
+    )
+    model = ALB([_ReadOnlyPad()], valves, controller=controller, alb_config=config)
+    model.init()
+    return model, valves
+
+
+def test_switch_false_stays_disabled_for_nonnegative_times():
+    controller = _LegacyController()
+    model, valves = _make_alb(switch=False, controller=controller)
+
+    for time in (0.0, 0.01, 1.0):
+        model.input(np.asarray([0.4, -0.2]), np.zeros(2), time)
+        model.output()
+
+    np.testing.assert_array_equal(
+        np.column_stack([valve.commands for valve in valves]), np.zeros((3, 2))
+    )
+    assert controller.output_calls == 0
+
+
+def test_missing_controller_produces_zero_command():
+    model, valves = _make_alb(switch=True, controller=None)
+
+    model.input(np.asarray([0.4, -0.2]), np.zeros(2), 0.0)
+    model.output()
+
+    np.testing.assert_array_equal([valve.command for valve in valves], [0.0, 0.0])
+
+
+def test_timed_start_is_recomputed_after_reinitialization():
+    controller = _LegacyController()
+    model, valves = _make_alb(switch=True, controller=controller)
+    model.turn_on_at(0.01)
+
+    model.input(np.asarray([0.4, -0.2]), np.zeros(2), 0.0)
+    model.output()
+    model.input(np.asarray([0.4, -0.2]), np.zeros(2), 0.01)
+    model.output()
+    assert np.any(np.asarray([valve.commands for valve in valves])[:, 1] != 0.0)
+
+    model.init()
+    model.input(np.asarray([0.4, -0.2]), np.zeros(2), 0.0)
+    model.output()
+
+    np.testing.assert_array_equal([valve.command for valve in valves], [0.0, 0.0])
+    assert controller.output_calls == 0

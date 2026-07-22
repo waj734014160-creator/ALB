@@ -129,6 +129,47 @@ THIRD_REVIEW_NODEIDS = {
         for node_id in ("-1", "2")
     },
 }
+FOURTH_REVIEW_NODEIDS = {
+    (
+        "tests/regression/test_fourth_review_release_reference.py::"
+        "test_fourth_review_valid_behavior_matches_v4_reference_exactly"
+    ),
+    *{
+        (
+            "tests/unit/systems/test_controller_compatibility.py::"
+            "test_harmonic_public_lifecycle_supports_injected_controllers"
+            f"[{controller}]"
+        )
+        for controller in ("legacy", "lqg", "repetitive")
+    },
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_switch_false_stays_disabled_for_nonnegative_times"
+    ),
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_missing_controller_produces_zero_command"
+    ),
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_timed_start_is_recomputed_after_reinitialization"
+    ),
+    (
+        "tests/unit/config/test_config_validate.py::TestALBConfigValidation::"
+        "test_controller_type_and_nondefault_values_round_trip_exactly"
+    ),
+    *{
+        (
+            "tests/integration/dynamics/test_coupling_step_commit.py::"
+            f"test_topology_change_requires_reinitialization[{topology}]"
+        )
+        for topology in ("bearing", "static-force", "unbalance")
+    },
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_release_acceptance_rejects_dirty_tracked_worktree_before_tests"
+    ),
+}
 
 
 def _run(command: list[str], *, environment: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -205,6 +246,12 @@ def run_acceptance() -> dict[str, Any]:
     environment["PYTHONIOENCODING"] = "utf-8"
     environment["ALB_RELEASE_PYTEST_REPORT"] = str(pytest_report)
     before = _tracked_status()
+    if before:
+        raise RuntimeError(
+            "Release acceptance requires a clean tracked worktree before tests:\n"
+            + json.dumps(before, ensure_ascii=False, indent=2)
+        )
+    candidate_commit = _git("rev-parse", "HEAD")
     pytest_command = [
         str(PYTHON),
         "-m",
@@ -254,6 +301,13 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("The complete third-review regression node set was not recorded")
     if any(item["outcome"] != "passed" for item in third_review_reports):
         raise AssertionError("A third-review regression node did not pass")
+    fourth_review_reports = [
+        item for item in reports["reports"] if item["nodeid"] in FOURTH_REVIEW_NODEIDS
+    ]
+    if {item["nodeid"] for item in fourth_review_reports} != FOURTH_REVIEW_NODEIDS:
+        raise AssertionError("The complete fourth-review regression node set was not recorded")
+    if any(item["outcome"] != "passed" for item in fourth_review_reports):
+        raise AssertionError("A fourth-review regression node did not pass")
 
     mypy_environment = environment.copy()
     mypy_environment["PYTHONPATH"] = str(DEVTOOLS_ROOT)
@@ -273,7 +327,7 @@ def run_acceptance() -> dict[str, Any]:
     if mypy_run.returncode != 0:
         raise RuntimeError("Strict mypy acceptance failed:\n" + mypy_run.stdout + mypy_run.stderr)
     after = _tracked_status()
-    if before != after:
+    if after:
         raise AssertionError(
             "Tracked worktree changed during acceptance:\n"
             + json.dumps({"before": before, "after": after}, ensure_ascii=False, indent=2)
@@ -298,7 +352,7 @@ def run_acceptance() -> dict[str, Any]:
     return {
         "schema": "alb.release-acceptance.v1",
         "version": "0.2.0",
-        "candidate_commit": _git("rev-parse", "HEAD"),
+        "candidate_commit": candidate_commit,
         "pytest": {
             "command": subprocess.list2cmdline(pytest_command),
             "returncode": pytest_run.returncode,
@@ -309,6 +363,7 @@ def run_acceptance() -> dict[str, Any]:
             "ross_rotor_time_reports": ross_rotor_time_reports,
             "second_review_reports": second_review_reports,
             "third_review_reports": third_review_reports,
+            "fourth_review_reports": fourth_review_reports,
         },
         "mypy": {
             "command": subprocess.list2cmdline(mypy_command),
@@ -337,6 +392,9 @@ def run_acceptance() -> dict[str, Any]:
             "rotor_dof_coupling_v4": "refs/rotor_dof_coupling_reference_v4.json",
             "third_review_compatibility_v3": (
                 "refs/third_review_compatibility_reference_v3.json"
+            ),
+            "fourth_review_release_v4": (
+                "refs/fourth_review_release_reference_v4.json"
             ),
         },
         "overall_status": "passed",

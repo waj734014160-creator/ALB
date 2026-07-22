@@ -34,7 +34,8 @@
 - 重构后审查参考：`refs/control_state_contract_reference_v1.{json,npz}` 含 22 个控制状态数组；`refs/rotor_bearing_coupling_time_reference_v3.{json,npz}` 含 10 个旧/新耦合时序数组；有意改变的 orifice AST 由 `encoding_repair_reference_v2.json` 接管，既有编码 v1 未覆盖。
 - 二轮审查参考：commit `1ef2ee8` 先创建 `refs/rotor_dof_coupling_reference_v4.{json,npz}`，以真实 ROSS 4/6-DOF 转子、非零状态相关轴承力和 `force0/force1` 插值冻结 40 个数组，并创建 `refs/control_lifecycle_reference_v2.{json,npz}` 冻结旧重复 `output()` 缺陷和 21 个修正目标；commit `1eb9538` 再实施生产修正。既有参考未覆盖。
 - 三轮审查参考：`refs/third_review_compatibility_reference_v3.{json,npz}` 在生产修正前冻结 LQG、重复控制器、旧式控制器、ServoValve2、合法 6-DOF 状态读取和默认配置共 17 个数组；修正后逐元素精确相等。
-- 当前阶段：0.2.0 全仓库重构、消费者迁移和三轮共 23 项代码审查修正均已落地；下一阶段是按领域处理单体模块、剩余旧类生命周期和类型覆盖三个结构性欠账。
+- 四轮审查参考：`refs/fourth_review_release_reference_v4.{json,npz}` 在生产修正前冻结默认 harmonic-PID 的构造、运行和重新初始化轨迹、普通 ALB 启用控制时的阀命令，以及非默认 PID 配置回读，共 13 个数组；当前工作树逐元素精确相等。
+- 当前阶段：第四轮审查的 4 个发布阻塞问题和 1 个 P2 拓扑问题已在工作树修复，定向门禁为 77 passed、10 subtests passed；仍处于 `Request changes`，必须先形成代码提交，再从干净 tracked 工作树运行正式验收并单独提交证据。
 
 ## 已完成的 0.2.0 边界
 
@@ -52,6 +53,7 @@
 12. 重构后审查确认的 13 个具体问题已修复：Python 3.11+ 配置导入、耦合时间轴、LTI MIMO/时间/输出、控制器复位、ROSS 节点载荷、阀芯边界、`no_step`、空控制器、固定 Ki、builder 参数、ledger、LQG 空历史和 legacy 编码回退。
 13. 二轮审查确认的 5 个问题已修复：ROSS 4/6-DOF 统一布局、真实 coupling 精确门禁、无控制器保存及无量纲装配、中途异常后的 coupling 强制失效，以及 LTI/PID/FuzzyPID 的只读 `output()` 生命周期。
 14. 三轮审查确认的 5 个问题已修复：ALB/harmonic 对严格及旧式控制器的共享适配、coupler 失效后的 `results/save` 封锁、`current_state()` 严格节点校验、无控制器配置的显式表达与回读，以及 ServoValve2 单次 evaluate。
+15. 第四轮审查修正已在当前工作树完成：harmonic 真实公共生命周期支持控制器实例/工厂注入；永久控制许可与定时启动分离；无控制器普通 ALB 输出零命令；PID/FuzzyPID/none 带类型标签精确回读；coupler 改拓扑后立即失效；正式发布证据改为测试前必须是干净 tracked 工作树。
 
 ## 当前验收结论
 
@@ -66,7 +68,8 @@
 | CSOrifice 单调求解修正 | 339 passed、13 skipped、1 warning、7 subtests passed；352 个节点全部收集，测试前后 tracked 状态增量为 0；局部、完整热耦合、ALBSV 与 S0011 共 95 个修正参考数组精确通过 | `refs/csorifice_monotonic_reference_v2.json`、`refs/csorifice_monotonic_consumers_reference_v2.json`、`tests/regression/hydraulics/test_csorifice_monotonic_reference.py` |
 | 重构后代码审查修正 | 368 passed、13 skipped、0 warnings、9 subtests passed；381 个节点全部收集；mypy 19 个文件无问题；测试前后 tracked 状态增量为 0 | `docs/migrations/0.2.0_post_refactor_review_acceptance.json` |
 | 二轮代码审查修正 | 375 passed、13 skipped、0 warnings、9 subtests passed；388 个节点全部收集；contracts/core 的 19 个文件 mypy 无问题；真实 4/6-DOF coupling、LQG 映射和控制生命周期按新参考逐元素精确通过；测试前后 tracked 状态增量为 0 | `docs/migrations/0.2.0_second_review_acceptance.json` |
-| 三轮代码审查修正 | 390 passed、13 skipped、0 warnings、11 subtests passed；403 个节点全部收集；contracts/core 的 19 个文件 mypy 无问题；第三轮 16 个关键节点全部通过，17 个兼容参考数组逐元素精确相等；测试前后 tracked 状态增量为 0 | `docs/migrations/0.2.0_third_review_acceptance.json` |
+| 三轮工作树验收（非发布绑定证据） | 390 passed、13 skipped、0 warnings、11 subtests passed；17 个兼容参考数组逐元素精确相等；但 `candidate_commit=e2313c7`，测试时 tracked 工作树已包含第三轮修改，不能证明提交 `7910eaa` 的干净树通过 | `docs/migrations/0.2.0_third_review_acceptance.json` |
+| 四轮修正定向验证 | 77 passed、10 subtests passed；13 个 v4 有效行为数组逐元素精确相等；覆盖 harmonic 完整注入生命周期、永久/定时开关、无控制器零命令、三种配置类型往返和拓扑失效 | 尚未生成正式发布证据；等待代码提交后的干净树验收 |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
@@ -102,18 +105,20 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - thermal 主参考的 direct/Newton/transient 收敛证据已由 addendum 补齐；但现有性能与热参考仍主要是小算例，且 orifice cooling、非零导热、生产尺寸 M0035 和大型 ROSS 性能不在当前精确门禁覆盖内。
 - 性能门禁使用固定的小型 film、thermal、ALB、ALBNN 和合成 coupling case，能约束本次重构，不代表生产尺寸 M0035 或大型 ROSS 模型的绝对性能。
 - 两张会被重生成的 thermal 热图已解除 Git 跟踪但保留本地文件；`.codex/` 与 `test/control/LQG/` 也保留原地。四类路径均由根 `.gitignore` 精确忽略。
-- 三轮审查的 23 个具体缺陷已经关闭，但三个结构性欠账仍在：`thermal/solver.py` 等 6 个主要模块仍为约 1269-3259 行的单体；ServoValve2 仍以兼容方式保留 `input()` 内计算，LQG 和 RepetitiveController 也尚未原生迁入严格状态机；mypy 严格门禁仍只覆盖 contracts/core 的 19 个文件。这些属于分阶段重构工作，不能用本轮局部修复宣称完成。
+- 第三轮验收 JSON 只证明带未提交修改的工作树通过测试，不绑定提交 `7910eaa`；第四轮已经让验收工具在测试前强制 `tracked_status_before == []`。由于当前修复尚未提交，正式验收按设计会拒绝运行；必须使用“代码提交、干净树验收、证据提交”的两提交顺序闭环。
+- 四轮审查涉及的具体缺陷已在当前工作树关闭，但三个结构性欠账仍在：`thermal/solver.py` 等 6 个主要模块仍为约 1269-3259 行的单体；ServoValve2 仍以兼容方式保留 `input()` 内计算，LQG 和 RepetitiveController 也尚未原生迁入严格状态机；mypy 严格门禁仍只覆盖 contracts/core 的 19 个文件。这些属于分阶段重构工作，不能用本轮局部修复宣称完成。
 
 ## 发布后下一步
 
-1. 按依赖顺序逐个拆分 6 个千行级模块，每个领域先建精确参考，禁止再次进行无参考的全仓机械搬迁。
-2. 盘点仍在 `output()` 中计算、推进或写历史的公开旧类，逐一迁到严格 block/adapter，避免双生命周期继续扩散。
-3. 在 contracts/core 已通过的基础上，按 control、dynamics、systems 顺序扩大 mypy 严格覆盖。
-4. 为 `task/task_alb_data2.py` 的混合单位调用先建立参考与显式尺度适配器；不要直接套用 nondimensional strict port。
-5. 将新 base/expert/residual 训练输出自动封装为 0.2 model package；residual 的主模型嵌套关系需先定义 manifest 语义。
-6. 为 PAPER_WORK 四个顶层执行脚本增加主入口隔离，并为两个 M0035 内部代理建立 DTO block 参考后再迁移。
-7. 为 `task/task_thermal_forces.py` 接入真实 `pooln` 并单独验证并行输出次序和确定性。
-8. 如需重新发布 wheel，先执行完整 wheel 隔离安装门禁并核对新 SHA-256。
+1. 先提交第四轮代码、参考、测试和文档；随后从干净 tracked 工作树运行正式验收，确认报告的 `candidate_commit` 等于该代码提交，再把机器证据作为独立提交保存。
+2. 按依赖顺序逐个拆分 6 个千行级模块，每个领域先建精确参考，禁止再次进行无参考的全仓机械搬迁。
+3. 盘点仍在 `output()` 中计算、推进或写历史的公开旧类，逐一迁到严格 block/adapter，避免双生命周期继续扩散。
+4. 在 contracts/core 已通过的基础上，按 control、dynamics、systems 顺序扩大 mypy 严格覆盖。
+5. 为 `task/task_alb_data2.py` 的混合单位调用先建立参考与显式尺度适配器；不要直接套用 nondimensional strict port。
+6. 将新 base/expert/residual 训练输出自动封装为 0.2 model package；residual 的主模型嵌套关系需先定义 manifest 语义。
+7. 为 PAPER_WORK 四个顶层执行脚本增加主入口隔离，并为两个 M0035 内部代理建立 DTO block 参考后再迁移。
+8. 为 `task/task_thermal_forces.py` 接入真实 `pooln` 并单独验证并行输出次序和确定性。
+9. 如需重新发布 wheel，先执行完整 wheel 隔离安装门禁并核对新 SHA-256。
 
 ## 证据入口
 
@@ -126,8 +131,10 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - 重构后代码审查修正门禁：`docs/migrations/0.2.0_post_refactor_review_acceptance.json`。
 - 二轮代码审查修正门禁：`docs/migrations/0.2.0_second_review_acceptance.json`。
 - 三轮代码审查修正门禁：`docs/migrations/0.2.0_third_review_acceptance.json`。
+- 四轮代码审查修正门禁（待代码与测试映射提交后生成）：`docs/migrations/0.2.0_fourth_review_acceptance.json`。
 - 控制状态和耦合时序参考：`refs/control_state_contract_reference_v1.json`、`refs/control_lifecycle_reference_v2.json`、`refs/rotor_bearing_coupling_time_reference_v3.json`、`refs/rotor_dof_coupling_reference_v4.json`。
 - 三轮兼容性参考：`refs/third_review_compatibility_reference_v3.json`。
+- 四轮发布阻塞修正参考：`refs/fourth_review_release_reference_v4.json`。
 - RossRotor 合法轨迹参考：`refs/ross_rotor_time_validation_reference_v2.json`。
 - CSOrifice 单调求解参考：`refs/csorifice_monotonic_reference_v2.json`、`refs/csorifice_monotonic_consumers_reference_v2.json`。
 - 热收敛补充参考：`refs/full_repo_refactor_addendum_v1/thermal_convergence.json`。

@@ -105,11 +105,20 @@ class RsRotorBearingCouple(BaseCSystem):
                 f"coupling state is invalid; call init() before {operation}"
             )
 
+    def _invalidate_topology(self) -> None:
+        """Require a fresh init after the coupled component graph changes."""
+
+        self._valid = False
+        self._last_output = None
+        self._fnode_links = None
+        self._bnode_links = None
+
     def add_bearing(self, bearing):
         self._validate_bearing(bearing)
         self.bearings.append(bearing)
         self.signal.children.append(bearing.signal)
         bearing.signal.father = self.signal
+        self._invalidate_topology()
 
     @staticmethod
     def _validate_bearing(bearing):
@@ -201,11 +210,13 @@ class RsRotorBearingCouple(BaseCSystem):
         ube = UnbalancedExcitation(phase, t_max, m, freq, e, no_step=no_step)
         ube.node_link = node_link
         self.forces.append(ube)
+        self._invalidate_topology()
 
     def add_static_force(self, force, node_link):
         force = StaticLoad(force)
         force.node_link = node_link
         self.forces.append(force)
+        self._invalidate_topology()
 
     def add_gravity(self, g=9.8):
         rotor = self.rotor._rotor
@@ -221,6 +232,7 @@ class RsRotorBearingCouple(BaseCSystem):
         gravity = Gravity(g, node_m)
         self.forces.append(gravity)
         gravity.node_link = she_n
+        self._invalidate_topology()
 
     def solve(self, **kwargs):
         """

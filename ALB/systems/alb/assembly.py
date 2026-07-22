@@ -99,8 +99,9 @@ class ALB(BaseCSystem):
             self._w = w_scale
         self._w_rad = self._w / 60 * 2 * np.pi
         self._vf = self.pads[0].main_model.args["vf"]
-        self._switch = alb_config.switch
-        self._t_on = 0
+        self._control_enabled = bool(alb_config.switch)
+        self._t_on: float | None = None
+        self._switch = self._control_enabled
         self._results = pd.DataFrame(
             columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
         )
@@ -137,6 +138,7 @@ class ALB(BaseCSystem):
             servovalve.init()
         if self.controller is not None:
             self.controller.init()
+        self._switch = self._control_enabled and self._t_on is None
         self._results = pd.DataFrame(
             columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
         )
@@ -155,20 +157,25 @@ class ALB(BaseCSystem):
         return svs
 
     def turn_on_at(self, t_on: float):
+        """Schedule control activation when the permanent config switch is enabled.
+
+        ``ALBConfig.switch=False`` always wins over this schedule. Positive
+        infinity is accepted as an explicit never-enable schedule.
         """
-        if this method is called, the control program will be set to open at t_on in time iter,
-        and closed at other times
-        :param t_on: float, the time to turn on the control program
-        """
-        self._t_on = t_on
+        activation_time = float(t_on)
+        if np.isnan(activation_time):
+            raise ValueError("t_on must not be NaN")
+        self._t_on = activation_time
         self._switch = False
 
     def _turn_on(self, t: float):
-        """
-        Switch for the control program.
-        """
-        if t >= self._t_on:
+        """Recompute the active control state from config and schedule."""
+        if not self._control_enabled:
+            self._switch = False
+        elif self._t_on is None:
             self._switch = True
+        else:
+            self._switch = t >= self._t_on
 
     def input(self, uxy: np.ndarray, uxyt: np.ndarray, t: float, *args, **kwargs):
         """
@@ -230,15 +237,12 @@ class ALB(BaseCSystem):
         return {"force": self.force, "friction": frictions}
 
     def _control_process(self, uxy: np.ndarray, uxyt: np.ndarray, t: np.float64):
-        """
-        Control process, receives rotor displacement and velocity. Dimensionality is determined by the input.
-        """
+        """Return one controller command, or zero when no controller is installed."""
         uv = np.dot(self._gxy, uxy) + np.dot(self._gxyt, uxyt)
         u0 = np.zeros_like(uv)
         if self.controller is not None:
             return run_controller_step(self.controller, t, uv - u0)
-        else:
-            return uv
+        return np.zeros_like(uv)
 
     def calc_is_finished(self):
         return all([pad.calc_is_finished() for pad in self.pads]) and all(
