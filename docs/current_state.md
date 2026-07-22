@@ -40,7 +40,7 @@
 - 七轮审查参考：`refs/seventh_review_release_reference_v7.{json,npz}` 在 commit `908abd7` 的生产修正前冻结 harmonic 合法控制器、阀、位移/速度、力和重新初始化路径共 27 个数组；修正后逐元素精确相等，既有 v1-v6 参考均未覆盖。
 - 八轮制品身份参考：commit `a29290e` 在工具修正前创建 `refs/eighth_review_wheel_identity_reference_v8.json`，冻结 candidate `4d6e609` 的 119 个 release Git blob、规范源码摘要 `39bece7c…`、v7 行为参考哈希，以及两份旧 wheel 证据的差异；生产 `ALB/**` 与运行时 `pyproject.toml` 内容保持精确一致。
 - 原生控制生命周期参考：commit `00a842b` 创建 `refs/native_control_lifecycle_reference_v9.{json,npz}`，在生产修改前冻结 LQG、重复控制器和二阶伺服阀的 18 个多步数组；迁移后逐元素精确相等，既有 v1-v8 参考均未覆盖。
-- 当前阶段：P2-1 至 P2-12 已完成实现、分阶段提交、498 节点测试映射、canonical import map、可复现 wheel 和 detached 正式验收。验收候选为 `46cf6a6`；本次只剩把机器证据与最终状态文档作为证据提交，不再改动候选运行时源码。
+- 当前阶段：P2-1 至 P2-12 已完成实现、分阶段提交、498 节点测试映射、canonical import map、可复现 wheel 和 detached 正式验收。P2 运行时候选为 `46cf6a6`；包含 P2 证据和默认报告兼容校验的 canonical 候选 `c6f23fa` 也已完整复验，二者的 release 源摘要和 wheel SHA 完全相同。当前只剩提交 canonical 机器报告与本状态摘要，不再改动运行时源码。
 
 ## 已完成的 0.2.0 边界
 
@@ -88,7 +88,7 @@
 | 六轮代码审查修正 | 候选提交 `66fe326`：421 passed、13 skipped、0 warnings、27 subtests passed；434 个节点全部收集；第六轮 8 个关键节点全部通过；27 个 v6 有效行为数组逐元素精确相等；contracts/core 19 个文件和独立 runtime 1 个文件严格 mypy 通过；detached worktree 测试前后 HEAD、tracked 状态及敏感输入均保持不变 | `docs/migrations/0.2.0_sixth_review_acceptance.json` |
 | 七轮代码审查修正 | 候选提交 `728b198`：436 passed、13 skipped、0 warnings、27 subtests passed；449 个节点全部收集；27 个 v7 合法行为数组逐元素精确相等；pytest 9.0.3、37 个最终插件、精确 skip allowlist、contracts/core 及 harmonic runtime 严格 mypy、现场 wheel 和 detached worktree 前后状态全部通过 | `docs/migrations/0.2.0_seventh_review_acceptance.json` |
 | 八轮 wheel 制品身份修正 | 候选提交 `62b53be`：438 passed、13 skipped、0 warnings、27 subtests passed；451 个节点全部收集；4 个制品身份关键节点通过；Git blob 规范摘要、两次构建、detached 安装、最终发布文件、构建报告和验收报告的 wheel SHA 全部一致 | `docs/migrations/0.2.0_eighth_review_acceptance.json` |
-| P2 架构正式验收 | 候选 `46cf6a6`：485 passed、13 skipped、0 warnings、27 subtests passed；498 个节点全部收集，84 个历史与 P2 关键 nodeid 构建前预检通过；18 个 strict 目标通过，56 个领域文件的 221 条历史诊断精确匹配；detached 前后 HEAD 和 launcher tracked 状态不变 | `docs/migrations/0.2.0_p2_architecture_acceptance.json`、`docs/migrations/0.2.0_p2_architecture_closure.md` |
+| P2 架构正式验收 | 运行时候选 `46cf6a6` 与 canonical 候选 `c6f23fa` 均为 485 passed、13 skipped、0 warnings、27 subtests passed；498 个节点全部收集，84 个历史与 P2 关键 nodeid 构建前预检通过；18 个 strict 目标通过，56 个领域文件的 221 条历史诊断精确匹配；detached 前后 HEAD 和 launcher tracked 状态不变 | `docs/migrations/0.2.0_p2_architecture_acceptance.json`、`docs/migrations/0.2.0_release_acceptance.json`、`docs/migrations/0.2.0_p2_architecture_closure.md` |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
