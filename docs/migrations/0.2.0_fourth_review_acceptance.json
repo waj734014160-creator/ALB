@@ -1,0 +1,489 @@
+{
+  "schema": "alb.release-acceptance.v1",
+  "version": "0.2.0",
+  "candidate_commit": "0abf6dd231ddab379c9ab907286f9591101a1a14",
+  "pytest": {
+    "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -m pytest tests -q -p no:cacheprovider -p tools.validation.release_pytest_plugin --basetemp=G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\pytest_tmp_27044_39fdcb3a",
+    "returncode": 0,
+    "summary": {
+      "passed": 402,
+      "skipped": 13,
+      "warnings": 0,
+      "subtests_passed": 15
+    },
+    "summary_tail": [
+      "........................................................................ [ 17%]",
+      "........................................................................ [ 34%]",
+      ".............................................................. [ 49%]",
+      "........................................................................ [ 66%]",
+      "........................................................................ [ 84%]",
+      "........................sssssssssssss............................   [100%]",
+      "402 passed, 13 skipped, 15 subtests passed in 265.91s (0:04:25)",
+      ""
+    ],
+    "skipped": [
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_validation_import_ignores_param_scan_run_first_on_sys_path",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_nondim_thermal_field_case_uses_thermal_config_input",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_nondim_pressure_field_matches_dimensional_scaling",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_zero_heat_partition_gives_zero_nondim_temperature_rise",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_dimensional_and_nondim_parameter_sets_match_viscosity_field_evolution",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_extract_last_cycle_excludes_repeated_endpoint",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_three_case_configs_match_refactor_intent",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_three_cases_run_on_short_orbit",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_viscosity_skfem_degenerates_to_skfem_when_miu_ratio_is_one",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_case_bearing_uses_fixed_zero_opening_without_control",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_requested_orbit_matches_user_spec_and_is_valid",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_short_kc_identification_returns_finite_coefficients_for_three_cases",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_validation_dependency_ignores_param_scan_run_first_on_sys_path",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport"
+      }
+    ],
+    "s0011_reports": [
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_fixed_point_reference_snapshot_matches_pre_change_results_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_s0011_current_replay_reference_v2_matches_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_direct_then_newton_reports_s0011_sample_30_without_false_convergence",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_direct_then_newton_does_not_false_converge_s0011_sample_162946",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      }
+    ],
+    "ross_rotor_time_reports": [
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_rotor_valid_time_trajectories_match_v2_reference_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_input_force_rejects_invalid_time_without_mutating_state",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_input_force2node_rejects_invalid_time_without_mutating_state",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      }
+    ],
+    "second_review_reports": [
+      {
+        "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/regression/control/test_control_lifecycle_reference_v2.py::test_pid_and_fuzzy_outputs_are_read_only_after_one_evaluation",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/regression/control/test_control_lifecycle_reference_v2.py::test_lti_output_is_read_only_after_one_evaluation",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/regression/dynamics/test_rotor_dof_coupling_reference.py::test_real_ross_coupling_and_lqg_mapping_match_v4_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_six_dof_result_and_mapping_use_ross_local_layout",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_alb_builder_boundaries.py::test_alb_save_accepts_explicitly_absent_controller",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_alb_builder_boundaries.py::test_nondimensional_factory_accepts_explicitly_absent_controller",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      }
+    ],
+    "third_review_reports": [
+      {
+        "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/regression/test_third_review_compatibility_reference.py::test_third_review_valid_behavior_matches_v3_reference_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_no_controller_config_is_explicit_and_round_trippable",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport"
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_no_controller_config_is_explicit_and_round_trippable",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport"
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_no_controller_config_is_explicit_and_round_trippable",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/control/test_blocks.py::test_servo_valve_input_then_solve_does_not_evaluate_twice",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_non_integer_node_indices_without_truncation[0.9]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_non_integer_node_indices_without_truncation[-0.1]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_non_integer_node_indices_without_truncation[True]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_non_integer_node_indices_without_truncation[node3]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_out_of_range_node_indices[-1]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_out_of_range_node_indices[2]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_alb_control_process_accepts_strict_and_legacy_controllers[legacy]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_alb_control_process_accepts_strict_and_legacy_controllers[lqg]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_alb_control_process_accepts_strict_and_legacy_controllers[repetitive]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_control_path_accepts_strict_and_legacy_controllers[legacy]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_control_path_accepts_strict_and_legacy_controllers[lqg]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_control_path_accepts_strict_and_legacy_controllers[repetitive]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      }
+    ],
+    "fourth_review_reports": [
+      {
+        "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_topology_change_requires_reinitialization[bearing]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_topology_change_requires_reinitialization[static-force]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_topology_change_requires_reinitialization[unbalance]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/regression/test_fourth_review_release_reference.py::test_fourth_review_valid_behavior_matches_v4_reference_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_type_and_nondefault_values_round_trip_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport"
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_type_and_nondefault_values_round_trip_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport"
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_type_and_nondefault_values_round_trip_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport"
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_type_and_nondefault_values_round_trip_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport"
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_type_and_nondefault_values_round_trip_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_public_lifecycle_supports_injected_controllers[legacy]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_public_lifecycle_supports_injected_controllers[lqg]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_public_lifecycle_supports_injected_controllers[repetitive]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_switch_false_stays_disabled_for_nonnegative_times",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_missing_controller_produces_zero_command",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_timed_start_is_recomputed_after_reinitialization",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      },
+      {
+        "nodeid": "tests/unit/workflows/test_release_acceptance_gate.py::test_release_acceptance_rejects_dirty_tracked_worktree_before_tests",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport"
+      }
+    ]
+  },
+  "mypy": {
+    "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -m mypy ALB/contracts ALB/core --config-file pyproject.toml --no-incremental --cache-dir G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\mypy_cache_27044_39fdcb3a",
+    "returncode": 0,
+    "version": "2.3.0",
+    "stdout": "Success: no issues found in 19 source files",
+    "stderr": ""
+  },
+  "worktree": {
+    "tracked_status_before": [],
+    "tracked_status_after": [],
+    "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tracked_status_delta": 0
+  },
+  "references": {
+    "full_repo_refactor_v1_unchanged_from_tag": true,
+    "thermal_addendum": "refs/full_repo_refactor_addendum_v1",
+    "thermal_segregated_newton_v2": "refs/thermal_segregated_newton_reference_v2.json",
+    "ross_rotor_time_validation_v2": "refs/ross_rotor_time_validation_reference_v2.json",
+    "control_lifecycle_v2": "refs/control_lifecycle_reference_v2.json",
+    "rotor_dof_coupling_v4": "refs/rotor_dof_coupling_reference_v4.json",
+    "third_review_compatibility_v3": "refs/third_review_compatibility_reference_v3.json",
+    "fourth_review_release_v4": "refs/fourth_review_release_reference_v4.json"
+  },
+  "overall_status": "passed"
+}
