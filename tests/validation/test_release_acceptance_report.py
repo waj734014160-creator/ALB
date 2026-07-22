@@ -23,9 +23,15 @@ def test_release_acceptance_reports_real_pytest_mypy_and_status_gates() -> None:
     assert report["pytest"]["summary"]["skipped"] == len(
         report["pytest"]["skipped"]
     )
-    assert report["pytest"]["known_newton_skip"]["nodeid"].endswith(
-        "test_fixed_point_reference_snapshot_matches_pre_change_results_exactly"
-    )
+    known_newton_skip = report["pytest"].get("known_newton_skip")
+    if known_newton_skip is not None:
+        assert known_newton_skip["nodeid"].endswith(
+            "test_fixed_point_reference_snapshot_matches_pre_change_results_exactly"
+        )
+    else:
+        s0011_reports = report["pytest"]["s0011_reports"]
+        assert len(s0011_reports) == 4
+        assert all(item["outcome"] == "passed" for item in s0011_reports)
     assert report["mypy"]["returncode"] == 0
     layered_summary = report["mypy"].get("layered_summary")
     if layered_summary is None:
