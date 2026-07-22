@@ -133,7 +133,7 @@ THIRD_REVIEW_NODEIDS = {
     ),
     (
         "tests/unit/control/test_blocks.py::"
-        "test_servo_valve_input_then_solve_does_not_evaluate_twice"
+        "test_servo_valve_requires_evaluate_and_repeated_reads_do_not_advance"
     ),
     *{
         (
@@ -321,6 +321,71 @@ EIGHTH_REVIEW_NODEIDS = {
 }
 
 
+P2_ARCHITECTURE_NODEIDS = {
+    (
+        "tests/regression/control/test_native_control_lifecycle_reference_v9.py::"
+        "test_native_control_trajectories_match_pre_migration_reference_exactly"
+    ),
+    (
+        "tests/unit/control/test_native_lifecycle.py::"
+        "test_native_controller_output_is_read_only[_lqg_controller]"
+    ),
+    (
+        "tests/unit/control/test_native_lifecycle.py::"
+        "test_native_controller_output_is_read_only[_repetitive_controller]"
+    ),
+    (
+        "tests/unit/control/test_native_lifecycle.py::"
+        "test_legacy_controller_adapter_contains_calculation_in_evaluate"
+    ),
+    (
+        "tests/unit/control/test_native_lifecycle.py::"
+        "test_servovalve_input_does_not_advance_and_output_is_read_only"
+    ),
+    (
+        "tests/unit/control/test_native_lifecycle.py::"
+        "test_pid_failure_is_terminal_until_explicit_init"
+    ),
+    (
+        "tests/unit/config/test_versioned_schema.py::"
+        "test_current_loader_rejects_unversioned_flat_payload"
+    ),
+    (
+        "tests/unit/config/test_versioned_schema.py::"
+        "test_legacy_migration_is_non_mutating_and_one_way"
+    ),
+    (
+        "tests/unit/contracts/test_numeric_boundaries.py::"
+        "test_scalar_and_vector_validators_do_not_silently_change_shape"
+    ),
+    (
+        "tests/unit/workflows/test_layered_mypy_gate.py::"
+        "test_layered_gate_covers_every_python_file_in_target_namespaces"
+    ),
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_release_candidate_and_source_export_are_independent_phases"
+    ),
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_build_install_test_and_evidence_phases_have_explicit_boundaries"
+    ),
+}
+
+REQUIRED_NODESETS = {
+    "s0011": S0011_NODEIDS,
+    "ross_rotor_time": ROSS_ROTOR_TIME_NODEIDS,
+    "second_review": SECOND_REVIEW_NODEIDS,
+    "third_review": THIRD_REVIEW_NODEIDS,
+    "fourth_review": FOURTH_REVIEW_NODEIDS,
+    "fifth_review": FIFTH_REVIEW_NODEIDS,
+    "sixth_review": SIXTH_REVIEW_NODEIDS,
+    "seventh_review": SEVENTH_REVIEW_NODEIDS,
+    "eighth_review": EIGHTH_REVIEW_NODEIDS,
+    "p2_architecture": P2_ARCHITECTURE_NODEIDS,
+}
+
+
 def _run(command: list[str], *, environment: dict[str, str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         command,
@@ -452,6 +517,30 @@ def _summary_counts(output: str) -> dict[str, int]:
         matches = re.findall(pattern, output)
         counts[name] = int(matches[-1]) if matches else 0
     return counts
+
+
+def _validate_required_nodeid_collection(output: str) -> dict[str, int]:
+    """Fail before the expensive build when a required nodeid has drifted."""
+
+    collected = {
+        line.strip().replace("\\", "/")
+        for line in output.splitlines()
+        if line.strip().startswith("tests/") and "::" in line
+    }
+    missing = {
+        name: sorted(expected - collected)
+        for name, expected in REQUIRED_NODESETS.items()
+        if expected - collected
+    }
+    if missing:
+        raise AssertionError(
+            "Required release nodeids are absent from collection:\n"
+            + json.dumps(missing, ensure_ascii=False, indent=2)
+        )
+    return {
+        "collected": len(collected),
+        "required_unique": len(set().union(*REQUIRED_NODESETS.values())),
+    }
 
 
 def _python_module_command(
@@ -657,6 +746,22 @@ def run_acceptance() -> dict[str, Any]:
     mypy_install_command, mypy_install = _install_fresh_validation_tools(
         fresh_devtools, mypy_environment
     )
+    collection_command = _python_module_command(
+        "pytest",
+        "tests",
+        "--collect-only",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        prepend_path=fresh_devtools,
+    )
+    collection_run = run_test_phase(
+        collection_command,
+        repository_root=REPOSITORY_ROOT,
+        environment=environment,
+        phase="required_nodeid_collection",
+    ).require_success()
+    collection_summary = _validate_required_nodeid_collection(collection_run.stdout)
     wheel_gate = build_and_validate_wheel(
         python=PYTHON,
         repository_root=REPOSITORY_ROOT,
@@ -781,6 +886,15 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("The complete eighth-review artifact node set was not recorded")
     if any(item["outcome"] != "passed" for item in eighth_review_reports):
         raise AssertionError("An eighth-review artifact identity node did not pass")
+    p2_architecture_reports = [
+        item for item in reports["reports"] if item["nodeid"] in P2_ARCHITECTURE_NODEIDS
+    ]
+    if {
+        item["nodeid"] for item in p2_architecture_reports
+    } != P2_ARCHITECTURE_NODEIDS:
+        raise AssertionError("The complete P2 architecture node set was not recorded")
+    if any(item["outcome"] != "passed" for item in p2_architecture_reports):
+        raise AssertionError("A P2 architecture node did not pass")
 
     mypy_command = [
         str(PYTHON),
@@ -865,6 +979,11 @@ def run_acceptance() -> dict[str, Any]:
             "command": subprocess.list2cmdline(pytest_command),
             "returncode": pytest_run.returncode,
             "summary": pytest_summary,
+            "collection_preflight": {
+                "command": subprocess.list2cmdline(collection_command),
+                "returncode": collection_run.returncode,
+                **collection_summary,
+            },
             "summary_tail": combined_output.splitlines()[-20:],
             "version": reports.get("pytest_version"),
             "policy": ACCEPTANCE_POLICY.relative_to(REPOSITORY_ROOT).as_posix(),
@@ -881,6 +1000,7 @@ def run_acceptance() -> dict[str, Any]:
             "sixth_review_reports": sixth_review_reports,
             "seventh_review_reports": seventh_review_reports,
             "eighth_review_reports": eighth_review_reports,
+            "p2_architecture_reports": p2_architecture_reports,
         },
         "mypy": {
             "install_command": subprocess.list2cmdline(mypy_install_command),
@@ -943,6 +1063,7 @@ def run_acceptance() -> dict[str, Any]:
             "build": wheel_gate.payload["phases"]["build"],
             "install": wheel_gate.payload["phases"]["install"],
             "test": pytest_run.evidence(),
+            "required_nodeid_collection": collection_run.evidence(),
             "layered_type_check": mypy_run.evidence(),
             "evidence_generation": {
                 "phase": "evidence_generation",

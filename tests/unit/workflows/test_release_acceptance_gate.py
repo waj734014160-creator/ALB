@@ -268,6 +268,25 @@ def test_detached_acceptance_command_is_isolated_and_internal():
     assert command[-1] == str(output)
 
 
+def test_required_nodeid_preflight_detects_renamed_nodes_before_build():
+    """Required nodeid drift must fail before wheel construction starts."""
+
+    all_required = set().union(*acceptance.REQUIRED_NODESETS.values())
+    summary = acceptance._validate_required_nodeid_collection(
+        "\n".join(sorted(all_required))
+    )
+    assert summary == {
+        "collected": len(all_required),
+        "required_unique": len(all_required),
+    }
+
+    renamed = sorted(all_required)[0]
+    with pytest.raises(AssertionError, match="absent from collection"):
+        acceptance._validate_required_nodeid_collection(
+            "\n".join(sorted(all_required - {renamed}))
+        )
+
+
 def test_python_module_commands_ignore_environment_and_user_site():
     """Every worker Python module command carries explicit isolation flags."""
 
