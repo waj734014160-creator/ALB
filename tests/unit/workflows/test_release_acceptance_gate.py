@@ -135,3 +135,87 @@ def test_detached_acceptance_command_is_isolated_and_internal():
     assert command[1] == "-I"
     assert "--internal-detached" in command
     assert command[-1] == str(output)
+
+
+def test_python_module_commands_ignore_environment_and_user_site():
+    """Every worker Python module command carries explicit isolation flags."""
+
+    command = acceptance._python_module_command("pytest", "tests", "-q")
+    assert command[1:4] == ["-E", "-s", "-m"]
+    assert command[4:] == ["pytest", "tests", "-q"]
+
+    target = Path("C:/fresh-mypy")
+    bootstrap = acceptance._python_module_command(
+        "mypy", "ALB/core", prepend_path=target
+    )
+    assert bootstrap[1:4] == ["-E", "-s", "-c"]
+    assert repr(str(target)) in bootstrap[4]
+
+
+def _valid_pytest_evidence():
+    policy = acceptance._load_acceptance_policy()
+    skip_policy = policy["allowed_skip"]
+    reports = [
+        {
+            "nodeid": nodeid,
+            "when": skip_policy["when"],
+            "outcome": "skipped",
+            "reason": skip_policy["reason"],
+            "report_type": "TestReport",
+            "wasxfail": None,
+        }
+        for nodeid in skip_policy["nodeids"]
+    ]
+    return policy, {
+        "pytest_version": "9.0.3",
+        "active_plugins": policy["active_plugins"],
+        "warnings": [],
+        "reports": reports,
+    }
+
+
+@pytest.mark.parametrize("drift", ["skip", "warning", "xfail"])
+def test_pytest_policy_rejects_skip_warning_and_xfail_drift(drift):
+    """Release evidence fails for any unapproved outcome or warning drift."""
+
+    policy, evidence = _valid_pytest_evidence()
+    if drift == "skip":
+        evidence["reports"].append(
+            {
+                "nodeid": "tests/unit/test_injected.py::test_hidden",
+                "when": "call",
+                "outcome": "skipped",
+                "reason": "Skipped: injected",
+                "report_type": "TestReport",
+                "wasxfail": None,
+            }
+        )
+    elif drift == "warning":
+        evidence["warnings"] = [
+            {
+                "category": "builtins.RuntimeWarning",
+                "message": "injected warning",
+                "when": "runtest",
+                "nodeid": "tests/unit/test_injected.py::test_hidden",
+                "location": None,
+            }
+        ]
+    else:
+        evidence["reports"][0]["wasxfail"] = "known failure"
+
+    with pytest.raises(AssertionError, match="skip|warning|xfail"):
+        acceptance._validate_pytest_evidence(evidence, policy)
+
+
+@pytest.mark.parametrize("drift", ["pytest-version", "plugin"])
+def test_pytest_policy_rejects_version_or_plugin_drift(drift):
+    """An old pytest or an auto-loaded plugin cannot certify a release."""
+
+    policy, evidence = _valid_pytest_evidence()
+    if drift == "pytest-version":
+        evidence["pytest_version"] = "8.4.2"
+    else:
+        evidence["active_plugins"] = [*evidence["active_plugins"], "injected"]
+
+    with pytest.raises(AssertionError, match="pytest major|plugin"):
+        acceptance._validate_pytest_evidence(evidence, policy)

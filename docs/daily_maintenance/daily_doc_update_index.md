@@ -47,6 +47,7 @@
 | `ALB_MAIN/docs/migrations/0.2.0_fourth_review_acceptance.json` | 四轮代码审查机器验收证据 | 记录 harmonic 真实控制器注入、永久/定时开关、控制器类型标签、coupler 拓扑失效及干净候选提交门禁。 | 只能在代码与测试映射提交后，由正式验收工具从干净 tracked 工作树生成。 | 手工填写通过结论、用脏工作树运行、覆盖既有验收或记录未经执行的结果。 | 四轮修正形成干净候选提交后。 |
 | `ALB_MAIN/docs/migrations/0.2.0_fifth_review_acceptance.json` | 五轮代码审查机器验收证据 | 记录 harmonic 失败重初始化失效、严格嵌套控制器配置、独立默认配置、敏感 untracked/ignored 输入和 HEAD 固定门禁。 | 只能在代码与测试映射提交后，由正式验收工具从无敏感未提交输入的候选提交生成。 | 手工填写通过结论、用未提交源码/测试运行、覆盖既有验收或记录未经执行的结果。 | 五轮修正形成干净候选提交后。 |
 | `ALB_MAIN/docs/migrations/0.2.0_sixth_review_acceptance.json` | 六轮代码审查机器验收证据 | 记录 harmonic 运行中异常失效、detached candidate、Python 环境清理、fresh mypy 和全局 shadow 输入门禁。 | 只能在代码与测试映射提交后，由正式验收工具从 candidate SHA 的临时 detached worktree 生成。 | 手工填写通过结论、直接使用开发工作树或复用本地 `.devtools`、覆盖既有验收。 | 六轮修正形成候选提交后。 |
+| `ALB_MAIN/docs/migrations/0.2.0_seventh_review_acceptance.json` | 七轮代码审查机器验收证据 | 记录 harmonic 复杂数拒绝、pytest 版本/插件/skip/warning 策略、隔离子进程和现场 wheel 源码绑定门禁。 | 只能在代码、测试映射和构建证据提交后，由正式验收工具从 candidate SHA 的临时 detached worktree 生成。 | 手工填写通过结论、复用旧 wheel、允许策略外 skip/warning/plugin 或覆盖既有验收。 | 七轮修正形成候选提交后。 |
 | `ALB_MAIN/docs/migrations/0.2.0_external_consumer_audit.md` | 版本化只读迁移证据 | declared 外部调用者的路径、哈希、旧 import 和迁移目标汇总。 | 外部只读快照口径、文件清单、迁移门槛和证据指针。 | 修改外部文件、记录外部实时任务状态、复制原始日志。 | declared 快照或 0.2 迁移目标变化时。 |
 | `ALB_MAIN/docs/file_classification.md` | ALB_MAIN 文件归属和清理策略 | 文件组、归属边界、归档/删除策略。 | 文件类别、代表路径、保留/归档规则、清理风险说明。 | 实时运行状态、模型进度、详细 run 历史。 | 主要文件组、归档类别或清理策略变化时。 |
 | `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS 全局 run 规则和路径索引 | 项目前缀 run 编号、run ID、current-status 归属和规范路径指针。 | run 编号规则、项目前缀映射、current-status 指针、规范路径和归档指针规则。 | 原始日志、详细进度尾部、模型指标、实时 tick、清理动作。 | run 编号、项目前缀、current-status 归属、路径族或归档指针规则变化时。 |
@@ -106,6 +107,7 @@
 | `ALB_MAIN/docs/migrations/0.2.0_fourth_review_acceptance.json` | 四轮代码审查修正的干净候选提交、pytest、mypy、控制器真实生命周期、开关、配置标签和拓扑门禁。 |
 | `ALB_MAIN/docs/migrations/0.2.0_fifth_review_acceptance.json` | 五轮代码审查修正的固定候选 HEAD、敏感未提交输入、harmonic 失效边界、严格配置和独立默认值门禁。 |
 | `ALB_MAIN/docs/migrations/0.2.0_sixth_review_acceptance.json` | 六轮代码审查修正的 detached candidate、harmonic 半推进失效、环境隔离、fresh mypy 和 shadow 输入门禁。 |
+| `ALB_MAIN/docs/migrations/0.2.0_seventh_review_acceptance.json` | 七轮代码审查修正的复杂数失效、pytest 证据策略、隔离工具链和现场 wheel 源码绑定门禁。 |
 | `ALB_MAIN/refs/full_repo_refactor_addendum_v1/` | 从重构前隔离源码生成的 thermal direct/Newton/transient 不可覆盖补充参考。 |
 | `ALB_MAIN/docs/run_index.md` | 人类可读的工作区全局 run 编号和路径策略。 |
 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` | 论文任务文件管理、路径命名和证据保留规则。 |

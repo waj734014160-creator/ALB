@@ -10,15 +10,28 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 from typing import Any
 import uuid
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from tools.validation.release_wheel_gate import build_and_validate_wheel
+
+
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.2.0_release_acceptance.json"
 RUNTIME_ROOT = REPOSITORY_ROOT / "outputs/release_acceptance"
 PYTHON = Path("E:/Anaconda2023/envs/ALB/python.exe")
 MYPY_VERSION = "2.3.0"
+BUILD_VERSION = "1.5.0"
+IMPORT_LINTER_VERSION = "2.13"
+PYTEST_VERSION = "9.0.3"
+ACCEPTANCE_POLICY = (
+    REPOSITORY_ROOT / "tools/validation/release_acceptance_policy_v7.json"
+)
 S0011_NODEIDS = {
     (
         "tests/unit/bearing/test_thermal_segregated_newton.py::"
@@ -247,6 +260,23 @@ SIXTH_REVIEW_NODEIDS = {
 
 SEVENTH_REVIEW_NODEIDS = {
     (
+        "tests/regression/test_seventh_review_release_reference.py::"
+        "test_seventh_review_valid_behavior_matches_v7_reference_exactly"
+    ),
+    *{
+        (
+            "tests/unit/systems/test_controller_compatibility.py::"
+            "test_harmonic_complex_runtime_input_requires_reinitialization"
+            f"[{failure_source}]"
+        )
+        for failure_source in (
+            "controller",
+            "valve",
+            "bearing-position",
+            "bearing-velocity",
+        )
+    },
+    (
         "tests/unit/systems/test_controller_compatibility.py::"
         "test_harmonic_runtime_failure_invalidates_partial_step"
         "[controller-nonfinite]"
@@ -359,6 +389,8 @@ def _detached_acceptance_command(worktree: Path, output: Path) -> list[str]:
         str(PYTHON),
         "-I",
         str(worktree / "tools/validation/run_release_acceptance_0_2.py"),
+        "--python",
+        str(PYTHON),
         "--internal-detached",
         "--output",
         str(output),
@@ -385,7 +417,6 @@ def _summary_counts(output: str) -> dict[str, int]:
     patterns = {
         "passed": r"(\d+) passed",
         "skipped": r"(\d+) skipped",
-        "warnings": r"(\d+) warnings?",
         "subtests_passed": r"(\d+) subtests? passed",
     }
     counts: dict[str, int] = {}
@@ -395,12 +426,36 @@ def _summary_counts(output: str) -> dict[str, int]:
     return counts
 
 
-def _mypy_version(environment: dict[str, str]) -> str:
+def _python_module_command(
+    module: str,
+    *args: str,
+    prepend_path: Path | None = None,
+) -> list[str]:
+    """Run one module with caller Python variables and user site disabled."""
+
+    if prepend_path is None:
+        return [str(PYTHON), "-E", "-s", "-m", module, *args]
+    bootstrap = (
+        "import runpy,sys;"
+        f"sys.path.insert(0, {str(prepend_path)!r});"
+        f"sys.argv=[{module!r}, *sys.argv[1:]];"
+        f"runpy.run_module({module!r}, run_name='__main__')"
+    )
+    return [str(PYTHON), "-E", "-s", "-c", bootstrap, *args]
+
+
+def _mypy_version(target: Path, environment: dict[str, str]) -> str:
     completed = _run(
         [
             str(PYTHON),
+            "-E",
+            "-s",
             "-c",
-            "import importlib.metadata; print(importlib.metadata.version('mypy'))",
+            (
+                "import importlib.metadata,sys;"
+                f"sys.path.insert(0, {str(target)!r});"
+                "print(importlib.metadata.version('mypy'))"
+            ),
         ],
         environment=environment,
     )
@@ -409,18 +464,16 @@ def _mypy_version(environment: dict[str, str]) -> str:
     return completed.stdout.strip()
 
 
-def _install_fresh_mypy(
+def _install_fresh_validation_tools(
     target: Path,
     environment: dict[str, str],
 ) -> tuple[list[str], subprocess.CompletedProcess[str]]:
-    """Install the pinned type checker into a new run-owned directory."""
+    """Install pinned build and type-check tools into a new run-owned directory."""
 
     if target.exists() and any(target.iterdir()):
         raise RuntimeError(f"Fresh mypy target is not empty: {target}")
     target.mkdir(parents=True, exist_ok=True)
-    command = [
-        str(PYTHON),
-        "-m",
+    command = _python_module_command(
         "pip",
         "install",
         "--isolated",
@@ -430,7 +483,10 @@ def _install_fresh_mypy(
         "--target",
         str(target),
         f"mypy=={MYPY_VERSION}",
-    ]
+        f"build=={BUILD_VERSION}",
+        f"import-linter=={IMPORT_LINTER_VERSION}",
+        f"pytest=={PYTEST_VERSION}",
+    )
     completed = _run(command, environment=environment)
     if completed.returncode != 0:
         raise RuntimeError(
@@ -439,6 +495,90 @@ def _install_fresh_mypy(
             + completed.stderr
         )
     return command, completed
+
+
+def _load_acceptance_policy() -> dict[str, Any]:
+    """Load the versioned pytest evidence policy committed with the candidate."""
+
+    policy = json.loads(ACCEPTANCE_POLICY.read_text(encoding="utf-8"))
+    if policy.get("schema") != "alb.release-acceptance-policy.v1":
+        raise ValueError("Unsupported release acceptance policy schema")
+    return policy
+
+
+def _validate_pytest_evidence(
+    evidence: dict[str, Any],
+    policy: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Require exact pytest version, plugin, skip, xfail, and warning evidence."""
+
+    pytest_version = str(evidence.get("pytest_version", ""))
+    try:
+        pytest_major = int(pytest_version.split(".", maxsplit=1)[0])
+    except ValueError as exc:
+        raise AssertionError(f"Invalid pytest version evidence: {pytest_version!r}") from exc
+    if pytest_major != int(policy["pytest_major"]):
+        raise AssertionError(
+            f"pytest major mismatch: expected={policy['pytest_major']}, "
+            f"actual={pytest_version}"
+        )
+    if pytest_version != policy["pytest_version"]:
+        raise AssertionError(
+            f"pytest version mismatch: expected={policy['pytest_version']}, "
+            f"actual={pytest_version}"
+        )
+
+    active_plugins = sorted(evidence.get("active_plugins", []))
+    expected_plugins = sorted(policy["active_plugins"])
+    if active_plugins != expected_plugins:
+        raise AssertionError(
+            "Active pytest plugin set differs from the release allowlist:\n"
+            + json.dumps(
+                {"expected": expected_plugins, "actual": active_plugins},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+
+    reports = evidence.get("reports", [])
+    xfail_reports = [item for item in reports if item.get("wasxfail") is not None]
+    if xfail_reports:
+        raise AssertionError(
+            "Release acceptance does not permit xfail/xpass reports:\n"
+            + json.dumps(xfail_reports, ensure_ascii=False, indent=2)
+        )
+
+    skipped = [item for item in reports if item.get("outcome") == "skipped"]
+    skip_policy = policy["allowed_skip"]
+    expected_skips = sorted(
+        (
+            nodeid,
+            skip_policy["when"],
+            skip_policy["reason"],
+        )
+        for nodeid in skip_policy["nodeids"]
+    )
+    actual_skips = sorted(
+        (item.get("nodeid"), item.get("when"), item.get("reason"))
+        for item in skipped
+    )
+    if actual_skips != expected_skips:
+        raise AssertionError(
+            "Observed pytest skips differ from the exact release allowlist:\n"
+            + json.dumps(
+                {"expected": expected_skips, "actual": actual_skips},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+
+    warnings = evidence.get("warnings", [])
+    if warnings != policy["allowed_warnings"]:
+        raise AssertionError(
+            "Observed pytest warnings differ from the release allowlist:\n"
+            + json.dumps(warnings, ensure_ascii=False, indent=2)
+        )
+    return skipped, warnings
 
 
 def _cleanup_runtime_paths(*paths: Path) -> None:
@@ -482,9 +622,21 @@ def run_acceptance() -> dict[str, Any]:
             + json.dumps(sensitive_before, ensure_ascii=False, indent=2)
         )
     candidate_commit = _git("rev-parse", "HEAD")
-    pytest_command = [
-        str(PYTHON),
-        "-m",
+    mypy_environment = environment.copy()
+    mypy_install_command, mypy_install = _install_fresh_validation_tools(
+        fresh_devtools, mypy_environment
+    )
+    wheel_gate = build_and_validate_wheel(
+        python=PYTHON,
+        repository_root=REPOSITORY_ROOT,
+        runtime_root=runtime_root,
+        run_token=run_token,
+        environment=environment,
+        dependency_paths=(fresh_devtools,),
+    )
+    environment["ALB_BUILD_ACCEPTANCE_REPORT"] = str(wheel_gate.report_path)
+    environment["ALB_BUILD_ACCEPTANCE_REQUIRE_WHEEL"] = "1"
+    pytest_command = _python_module_command(
         "pytest",
         "tests",
         "-q",
@@ -493,7 +645,8 @@ def run_acceptance() -> dict[str, Any]:
         "-p",
         "tools.validation.release_pytest_plugin",
         f"--basetemp={pytest_basetemp}",
-    ]
+        prepend_path=fresh_devtools,
+    )
     pytest_run = _run(pytest_command, environment=environment)
     if pytest_run.returncode != 0:
         raise RuntimeError(
@@ -502,8 +655,13 @@ def run_acceptance() -> dict[str, Any]:
             + (pytest_run.stderr or "")
         )
     reports = json.loads(pytest_report.read_text(encoding="utf-8"))
+    acceptance_policy = _load_acceptance_policy()
+    skipped, recorded_warnings = _validate_pytest_evidence(
+        reports, acceptance_policy
+    )
     python_runtime = reports.get("python_runtime", {})
     expected_runtime = {
+        "ignore_environment": 1,
         "no_user_site": 1,
         "optimize": 0,
         "warnoptions": [],
@@ -519,7 +677,6 @@ def run_acceptance() -> dict[str, Any]:
             "Pytest interpreter was not isolated from caller injection:\n"
             + json.dumps(runtime_mismatches, ensure_ascii=False, indent=2)
         )
-    skipped = [item for item in reports["reports"] if item["outcome"] == "skipped"]
     s0011_reports = [
         item for item in reports["reports"] if item["nodeid"] in S0011_NODEIDS
     ]
@@ -577,14 +734,7 @@ def run_acceptance() -> dict[str, Any]:
     if any(item["outcome"] != "passed" for item in seventh_review_reports):
         raise AssertionError("A seventh-review regression node did not pass")
 
-    mypy_environment = environment.copy()
-    mypy_install_command, mypy_install = _install_fresh_mypy(
-        fresh_devtools, mypy_environment
-    )
-    mypy_environment["PYTHONPATH"] = str(fresh_devtools)
-    mypy_command = [
-        str(PYTHON),
-        "-m",
+    mypy_command = _python_module_command(
         "mypy",
         "ALB/contracts",
         "ALB/core",
@@ -593,13 +743,12 @@ def run_acceptance() -> dict[str, Any]:
         "--no-incremental",
         "--cache-dir",
         str(mypy_cache),
-    ]
+        prepend_path=fresh_devtools,
+    )
     mypy_run = _run(mypy_command, environment=mypy_environment)
     if mypy_run.returncode != 0:
         raise RuntimeError("Strict mypy acceptance failed:\n" + mypy_run.stdout + mypy_run.stderr)
-    runtime_mypy_command = [
-        str(PYTHON),
-        "-m",
+    runtime_mypy_command = _python_module_command(
         "mypy",
         "ALB/systems/alb/_harmonic_runtime.py",
         "--config-file",
@@ -608,7 +757,8 @@ def run_acceptance() -> dict[str, Any]:
         "--follow-imports=skip",
         "--cache-dir",
         str(runtime_mypy_cache),
-    ]
+        prepend_path=fresh_devtools,
+    )
     runtime_mypy_run = _run(runtime_mypy_command, environment=mypy_environment)
     if runtime_mypy_run.returncode != 0:
         raise RuntimeError(
@@ -616,7 +766,7 @@ def run_acceptance() -> dict[str, Any]:
             + runtime_mypy_run.stdout
             + runtime_mypy_run.stderr
         )
-    mypy_version = _mypy_version(mypy_environment)
+    mypy_version = _mypy_version(fresh_devtools, mypy_environment)
     if mypy_version != MYPY_VERSION:
         raise AssertionError(
             f"Fresh mypy version mismatch: expected={MYPY_VERSION}, "
@@ -628,6 +778,9 @@ def run_acceptance() -> dict[str, Any]:
         mypy_cache,
         runtime_mypy_cache,
         fresh_devtools,
+        wheel_gate.report_path,
+        wheel_gate.installed_root,
+        wheel_gate.wheel_root,
     )
     after = _tracked_status()
     if after:
@@ -663,6 +816,8 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("Frozen refs/full_repo_refactor_v1 differs from its tag")
 
     combined_output = pytest_run.stdout + "\n" + pytest_run.stderr
+    pytest_summary = _summary_counts(combined_output)
+    pytest_summary["warnings"] = len(recorded_warnings)
     return {
         "schema": "alb.release-acceptance.v1",
         "version": "0.2.0",
@@ -670,10 +825,13 @@ def run_acceptance() -> dict[str, Any]:
         "pytest": {
             "command": subprocess.list2cmdline(pytest_command),
             "returncode": pytest_run.returncode,
-            "summary": _summary_counts(combined_output),
+            "summary": pytest_summary,
             "summary_tail": combined_output.splitlines()[-20:],
+            "version": reports.get("pytest_version"),
+            "policy": ACCEPTANCE_POLICY.relative_to(REPOSITORY_ROOT).as_posix(),
             "python_runtime": python_runtime,
             "active_plugins": reports.get("active_plugins", []),
+            "warnings": recorded_warnings,
             "skipped": skipped,
             "s0011_reports": s0011_reports,
             "ross_rotor_time_reports": ross_rotor_time_reports,
@@ -702,6 +860,7 @@ def run_acceptance() -> dict[str, Any]:
                 "stderr": runtime_mypy_run.stderr.strip(),
             },
         },
+        "wheel": wheel_gate.payload,
         "worktree": {
             "tracked_status_before": before,
             "tracked_status_after": after,
@@ -735,6 +894,9 @@ def run_acceptance() -> dict[str, Any]:
             ),
             "sixth_review_runtime_v6": (
                 "refs/sixth_review_runtime_reference_v6.json"
+            ),
+            "seventh_review_release_v7": (
+                "refs/seventh_review_release_reference_v7.json"
             ),
         },
         "overall_status": "passed",
@@ -839,7 +1001,9 @@ def run_acceptance_in_detached_worktree() -> dict[str, Any]:
         "mode": "detached_worktree",
         "python_isolated_mode": True,
         "python_subprocess_environment_sanitized": True,
+        "python_subprocess_flags": ["-E", "-s"],
         "pytest_plugin_autoload_disabled": True,
+        "python": str(PYTHON),
         "candidate_head_before": candidate_commit,
         "candidate_head_after": candidate_after,
         "launcher_tracked_status_before": before,
@@ -849,11 +1013,22 @@ def run_acceptance_in_detached_worktree() -> dict[str, Any]:
 
 
 def main() -> int:
+    global PYTHON
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--python",
+        type=Path,
+        default=PYTHON,
+        help="Python interpreter used for every release subprocess.",
+    )
     parser.add_argument("--overwrite-output", action="store_true")
     parser.add_argument("--internal-detached", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    PYTHON = args.python.resolve()
+    if not PYTHON.is_file():
+        raise FileNotFoundError(f"Release Python interpreter not found: {PYTHON}")
     output = args.output.resolve()
     if output.exists() and not args.overwrite_output:
         raise FileExistsError(f"Refusing to overwrite release evidence: {output}")

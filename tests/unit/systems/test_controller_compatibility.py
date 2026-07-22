@@ -1,6 +1,7 @@
 """Compatibility tests for ALB controller lifecycle integration points."""
 
 from types import SimpleNamespace
+import warnings
 
 import numpy as np
 import pytest
@@ -149,6 +150,20 @@ class _NonfiniteValve(_ReadOnlyValve):
 
     def output(self) -> float:
         return float("inf")
+
+
+class _ComplexController(_FactoryLegacyController):
+    """Controller double that exposes an invalid complex command."""
+
+    def output(self) -> np.ndarray:
+        return np.asarray([0.25 + 0.5j, 0.0j])
+
+
+class _ComplexValve(_ReadOnlyValve):
+    """Valve double that exposes an invalid complex spool value."""
+
+    def output(self) -> complex:
+        return 0.25 + 0.5j
 
 
 def _lqg_controller() -> ALBLQGController:
@@ -414,7 +429,7 @@ def test_harmonic_runtime_failure_invalidates_partial_step(failure_point):
 
     with pytest.raises(
         (RuntimeError, ValueError, FloatingPointError),
-        match="failed|exactly|finite",
+        match="failed|exactly|finite|shape",
     ):
         bearing.input(np.asarray([1.0e-6, -2.0e-6]), np.zeros(2), 0.0)
 
@@ -429,6 +444,48 @@ def test_harmonic_runtime_failure_invalidates_partial_step(failure_point):
     ):
         with pytest.raises(RuntimeError, match="runtime is invalid"):
             operation()
+
+    assert bearing.init() is True
+    bearing.input(np.zeros(2), np.zeros(2), 0.0)
+    assert bearing.output()["force"].shape == (2,)
+
+
+@pytest.mark.parametrize(
+    "failure_source",
+    ["controller", "valve", "bearing-position", "bearing-velocity"],
+)
+def test_harmonic_complex_runtime_input_requires_reinitialization(failure_source):
+    """Complex runtime values are rejected before any imaginary part is lost."""
+
+    bearing = ALBHarmonicLinear(
+        _zero_base_coefficients(),
+        node_link=3,
+        servo_config=Moog2ndServoConfig(dt=0.001),
+        controller_factory=_FactoryLegacyController,
+        warmup_steps=24,
+    )
+    position = np.zeros(2)
+    velocity = np.zeros(2)
+    if failure_source == "controller":
+        bearing.controller = _ComplexController()
+    elif failure_source == "valve":
+        bearing.controller = _RuntimeFailureController(output_size=2)
+        bearing.servovalves = [_ReadOnlyValve(), _ComplexValve()]
+    elif failure_source == "bearing-position":
+        position = np.asarray([1.0e-6 + 2.0e-6j, 0.0j])
+    else:
+        velocity = np.asarray([0.0j, 1.0e-4 + 2.0e-4j])
+
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        with pytest.raises(ValueError, match="complex|real"):
+            bearing.input(position, velocity, 0.0)
+    assert recorded == []
+
+    assert bearing._valid is False
+    assert bearing._has_input is False
+    with pytest.raises(RuntimeError, match="runtime is invalid"):
+        bearing.output()
 
     assert bearing.init() is True
     bearing.input(np.zeros(2), np.zeros(2), 0.0)

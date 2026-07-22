@@ -12,12 +12,19 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 test environment
+    import tomli as tomllib
+
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WHEEL = REPOSITORY_ROOT / "dist/re_alb-0.2.0-py3-none-any.whl"
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.2.0_build_acceptance.json"
 EXPECTED_EXTRAS = {"all", "control", "dynamics", "film", "io", "surrogate", "test"}
-DEVTOOLS_ROOT = REPOSITORY_ROOT / "outputs/.devtools"
 EXTRA_SMOKES = {
     "core": {
         "symbols": [
@@ -106,21 +113,88 @@ def _git_head() -> str:
     ).strip()
 
 
-def _isolated_environment(installed_root: Path) -> dict[str, str]:
+def _tracked_release_files() -> list[Path]:
+    """Return tracked package and metadata inputs that define the wheel source."""
+
+    completed = subprocess.run(
+        ["git", "ls-files", "-z", "--", "ALB", "pyproject.toml"],
+        cwd=REPOSITORY_ROOT,
+        capture_output=True,
+        check=True,
+    )
+    return [
+        REPOSITORY_ROOT / path.decode("utf-8")
+        for path in completed.stdout.split(b"\0")
+        if path
+    ]
+
+
+def source_tree_evidence() -> dict[str, Any]:
+    """Hash every tracked release input with stable repository-relative names."""
+
+    digest = hashlib.sha256()
+    files = _tracked_release_files()
+    for path in files:
+        relative = path.relative_to(REPOSITORY_ROOT).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return {
+        "tree_sha256": digest.hexdigest(),
+        "file_count": len(files),
+        "pyproject_sha256": hashlib.sha256(
+            (REPOSITORY_ROOT / "pyproject.toml").read_bytes()
+        ).hexdigest(),
+    }
+
+
+def _isolated_environment() -> dict[str, str]:
     environment = os.environ.copy()
-    paths = [str(installed_root)]
-    if DEVTOOLS_ROOT.is_dir():
-        paths.append(str(DEVTOOLS_ROOT))
-    environment["PYTHONPATH"] = os.pathsep.join(paths)
+    for name in tuple(environment):
+        if name.startswith(("PYTHON", "PYTEST")):
+            environment.pop(name, None)
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONIOENCODING"] = "utf-8"
+    environment["PYTHONNOUSERSITE"] = "1"
     return environment
 
 
-def _run_python(installed_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+def _run_python(
+    installed_root: Path,
+    *args: str,
+    dependency_paths: tuple[Path, ...] = (),
+) -> subprocess.CompletedProcess[str]:
+    if not args:
+        raise ValueError("An isolated wheel command is required")
+    import_paths = [str(installed_root), *(str(path) for path in dependency_paths)]
+    path_bootstrap = "".join(
+        f"sys.path.insert({index}, {path!r});"
+        for index, path in reversed(list(enumerate(import_paths)))
+    )
+    if args[0] == "-c":
+        code = args[1]
+        command_args = args[2:]
+        bootstrap = (
+            "import sys;"
+            f"{path_bootstrap}"
+            f"exec(compile({code!r}, '<wheel-smoke>', 'exec'))"
+        )
+    elif args[0] == "-m":
+        module = args[1]
+        command_args = args[2:]
+        bootstrap = (
+            "import runpy,sys;"
+            f"{path_bootstrap}"
+            f"sys.argv=[{module!r}, *sys.argv[1:]];"
+            f"runpy.run_module({module!r}, run_name='__main__')"
+        )
+    else:
+        raise ValueError(f"Unsupported isolated wheel command: {args[0]}")
     return subprocess.run(
-        [sys.executable, *args],
+        [sys.executable, "-I", "-c", bootstrap, *command_args],
         cwd=installed_root.parent,
-        env=_isolated_environment(installed_root),
+        env=_isolated_environment(),
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -128,7 +202,11 @@ def _run_python(installed_root: Path, *args: str) -> subprocess.CompletedProcess
     )
 
 
-def _extra_smokes(installed_root: Path, wheel: Path) -> dict[str, Any]:
+def _extra_smokes(
+    installed_root: Path,
+    wheel: Path,
+    dependency_paths: tuple[Path, ...],
+) -> dict[str, Any]:
     smoke_code = r'''
 import importlib
 import importlib.metadata
@@ -162,6 +240,7 @@ print(json.dumps({
             "-c",
             smoke_code,
             json.dumps(specification),
+            dependency_paths=dependency_paths,
         )
         if completed.returncode != 0:
             raise RuntimeError(f"{extra} extra smoke failed:\n{completed.stderr}")
@@ -177,7 +256,65 @@ print(json.dumps({
     return results
 
 
-def validate(wheel: Path, installed_root: Path) -> dict[str, Any]:
+def _requirement_key(value: str | Requirement) -> str:
+    """Return a marker-free canonical requirement key for exact comparison."""
+
+    requirement = value if isinstance(value, Requirement) else Requirement(value)
+    extras = (
+        f"[{','.join(sorted(requirement.extras))}]" if requirement.extras else ""
+    )
+    url = f"@{requirement.url}" if requirement.url else ""
+    return f"{canonicalize_name(requirement.name)}{extras}{requirement.specifier}{url}"
+
+
+def _pyproject_requirements() -> dict[str, list[str]]:
+    """Read canonical core and extra requirements from the release metadata input."""
+
+    with (REPOSITORY_ROOT / "pyproject.toml").open("rb") as stream:
+        project = tomllib.load(stream)["project"]
+    requirements = {
+        "core": sorted(_requirement_key(item) for item in project["dependencies"])
+    }
+    requirements.update(
+        {
+            extra: sorted(_requirement_key(item) for item in values)
+            for extra, values in project["optional-dependencies"].items()
+        }
+    )
+    return requirements
+
+
+def _metadata_requirements(metadata_lines: list[str]) -> dict[str, list[str]]:
+    """Group wheel requirements by the extras whose markers activate them."""
+
+    parsed = [
+        Requirement(line.removeprefix("Requires-Dist: "))
+        for line in metadata_lines
+        if line.startswith("Requires-Dist: ")
+    ]
+    grouped: dict[str, list[str]] = {
+        "core": sorted(
+            _requirement_key(requirement)
+            for requirement in parsed
+            if requirement.marker is None
+        )
+    }
+    for extra in sorted(EXPECTED_EXTRAS):
+        grouped[extra] = sorted(
+            _requirement_key(requirement)
+            for requirement in parsed
+            if requirement.marker is not None
+            and requirement.marker.evaluate({"extra": extra})
+        )
+    return grouped
+
+
+def validate(
+    wheel: Path,
+    installed_root: Path,
+    *,
+    dependency_paths: tuple[Path, ...] = (),
+) -> dict[str, Any]:
     wheel = wheel.resolve()
     installed_root = installed_root.resolve()
     if not wheel.is_file():
@@ -185,12 +322,33 @@ def validate(wheel: Path, installed_root: Path) -> dict[str, Any]:
     if not (installed_root / "ALB/__init__.py").is_file():
         raise FileNotFoundError(f"isolated ALB install missing under {installed_root}")
 
+    tracked_package_files = [
+        path
+        for path in _tracked_release_files()
+        if path.relative_to(REPOSITORY_ROOT).as_posix().startswith("ALB/")
+    ]
     with zipfile.ZipFile(wheel) as archive:
         members = set(archive.namelist())
         metadata_member = next(
             name for name in members if name.endswith(".dist-info/METADATA")
         )
         metadata = archive.read(metadata_member).decode("utf-8")
+        missing_source_members = sorted(
+            path.relative_to(REPOSITORY_ROOT).as_posix()
+            for path in tracked_package_files
+            if path.relative_to(REPOSITORY_ROOT).as_posix() not in members
+        )
+        mismatched_source_members = sorted(
+            relative
+            for path in tracked_package_files
+            if (relative := path.relative_to(REPOSITORY_ROOT).as_posix()) in members
+            and archive.read(relative) != path.read_bytes()
+        )
+    if missing_source_members or mismatched_source_members:
+        raise AssertionError(
+            "Wheel package files do not match the current tracked source: "
+            f"missing={missing_source_members}, mismatched={mismatched_source_members}"
+        )
     forbidden_present = sorted(FORBIDDEN_WHEEL_MEMBERS & members)
     if forbidden_present:
         raise AssertionError(f"removed modules present in wheel: {forbidden_present}")
@@ -223,6 +381,19 @@ def validate(wheel: Path, installed_root: Path) -> dict[str, Any]:
         raise AssertionError("wheel metadata Requires-Python is not >=3.10")
     if extras != EXPECTED_EXTRAS:
         raise AssertionError(f"wheel extras mismatch: {sorted(extras)}")
+    pyproject_requirements = _pyproject_requirements()
+    metadata_requirements = _metadata_requirements(metadata_lines)
+    if metadata_requirements != pyproject_requirements:
+        raise AssertionError(
+            "Wheel Requires-Dist metadata differs from pyproject.toml:\n"
+            + json.dumps(
+                {
+                    "pyproject": pyproject_requirements,
+                    "wheel": metadata_requirements,
+                },
+                indent=2,
+            )
+        )
 
     smoke_code = r'''
 import importlib.util
@@ -256,7 +427,12 @@ print(json.dumps({
     ],
 }))
 '''
-    smoke = _run_python(installed_root, "-c", smoke_code)
+    smoke = _run_python(
+        installed_root,
+        "-c",
+        smoke_code,
+        dependency_paths=dependency_paths,
+    )
     if smoke.returncode != 0:
         raise RuntimeError(f"isolated import smoke failed:\n{smoke.stderr}")
     smoke_payload = json.loads(smoke.stdout)
@@ -272,7 +448,13 @@ print(json.dumps({
         "alb-migrate-config": "ALB.config.cli",
         "alb-migrate-surrogate": "ALB.surrogate.cli",
     }.items():
-        completed = _run_python(installed_root, "-m", module, "--help")
+        completed = _run_python(
+            installed_root,
+            "-m",
+            module,
+            "--help",
+            dependency_paths=dependency_paths,
+        )
         cli_results[name] = {
             "module": module,
             "returncode": completed.returncode,
@@ -284,13 +466,19 @@ print(json.dumps({
         if completed.returncode != 0 or not cli_results[name]["usage"]:
             raise RuntimeError(f"{name} --help failed:\n{completed.stderr}")
 
-    extra_smokes = _extra_smokes(installed_root, wheel)
+    extra_smokes = _extra_smokes(installed_root, wheel, dependency_paths)
 
     wheel_payload = wheel.read_bytes()
     return {
         "schema": "alb.build-acceptance.v1",
         "version": "0.2.0",
         "candidate_commit": _git_head(),
+        "source": {
+            **source_tree_evidence(),
+            "wheel_source_files_checked": len(tracked_package_files),
+            "missing_wheel_members": missing_source_members,
+            "mismatched_wheel_members": mismatched_source_members,
+        },
         "wheel": {
             "path": wheel.relative_to(REPOSITORY_ROOT).as_posix(),
             "size_bytes": len(wheel_payload),
@@ -303,14 +491,17 @@ print(json.dumps({
             "version": version_values[0],
             "requires_python": python_values[0],
             "extras": sorted(extras),
+            "requirements_by_extra": metadata_requirements,
+            "matches_pyproject": True,
         },
         "isolated_install": {
             "root": installed_root.relative_to(REPOSITORY_ROOT).as_posix(),
-            "dependency_path": (
-                DEVTOOLS_ROOT.relative_to(REPOSITORY_ROOT).as_posix()
-                if DEVTOOLS_ROOT.is_dir()
-                else None
-            ),
+            "dependency_paths": [
+                path.relative_to(REPOSITORY_ROOT).as_posix()
+                if path.resolve().is_relative_to(REPOSITORY_ROOT)
+                else str(path.resolve())
+                for path in dependency_paths
+            ],
             **smoke_payload,
         },
         "extra_smokes": extra_smokes,
@@ -328,10 +519,21 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--wheel", type=Path, default=DEFAULT_WHEEL)
     parser.add_argument("--installed-root", type=Path, required=True)
+    parser.add_argument(
+        "--dependency-path",
+        type=Path,
+        action="append",
+        default=[],
+        help="Additional isolated dependency root; may be repeated.",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--overwrite-output", action="store_true")
     args = parser.parse_args()
-    payload = validate(args.wheel, args.installed_root)
+    payload = validate(
+        args.wheel,
+        args.installed_root,
+        dependency_paths=tuple(path.resolve() for path in args.dependency_path),
+    )
     output = args.output.resolve()
     if output.exists() and not args.overwrite_output:
         raise FileExistsError(f"Refusing to overwrite acceptance evidence: {output}")

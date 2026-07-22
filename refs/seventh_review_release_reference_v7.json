@@ -1,0 +1,215 @@
+{
+  "reference_name": "seventh_review_release_reference_v7",
+  "created_at": "2026-07-22T14:43:48.455937+00:00",
+  "baseline_commit": "908abd774f3cf2dec68d4d183a7180d6e51b93b8",
+  "random_seed": 20260722,
+  "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+  "python_version": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "scope": "Successful real-valued harmonic controller and valve progression, force output, reinitialization, controller config restoration, and ALB defaults before complex-input and release-evidence hardening",
+  "arrays": {
+    "sixth.fifth.config.albconfig.fuzzy.numeric": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d070a8c97bf24cec9262484fe9327e18ff3c30d25128d9e84a951f7038dfc0a7"
+    },
+    "sixth.fifth.config.albconfig.fuzzy.sensor_angles": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "22b7339dc4fc715291ec5464c517df87c0e060df7bece45495bc5c9794853e71"
+    },
+    "sixth.fifth.config.albconfig.pid.numeric": {
+      "shape": [
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "b3bcc4bcfb4c496b358e84a6f8564aab47c9731412bceaea80e9530bc24f0d34"
+    },
+    "sixth.fifth.config.albconfig.pid.sensor_angles": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "81214e5dd1ebb5518f9f79336f42ccf001c6681704c3798d2075dd62189fdd23"
+    },
+    "sixth.fifth.config.nodimalbconfig.fuzzy.numeric": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d070a8c97bf24cec9262484fe9327e18ff3c30d25128d9e84a951f7038dfc0a7"
+    },
+    "sixth.fifth.config.nodimalbconfig.fuzzy.sensor_angles": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "22b7339dc4fc715291ec5464c517df87c0e060df7bece45495bc5c9794853e71"
+    },
+    "sixth.fifth.config.nodimalbconfig.pid.numeric": {
+      "shape": [
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "b3bcc4bcfb4c496b358e84a6f8564aab47c9731412bceaea80e9530bc24f0d34"
+    },
+    "sixth.fifth.config.nodimalbconfig.pid.sensor_angles": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "81214e5dd1ebb5518f9f79336f42ccf001c6681704c3798d2075dd62189fdd23"
+    },
+    "sixth.fifth.defaults.albsv.gxy": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7b38b86d9a7e623764dc234b5d8aa67afbf388f139b4dc5a266ed0b4b7a258ea"
+    },
+    "sixth.fifth.defaults.albsv.gxyt": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "sixth.fifth.defaults.nodimalb.gxy": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7b38b86d9a7e623764dc234b5d8aa67afbf388f139b4dc5a266ed0b4b7a258ea"
+    },
+    "sixth.fifth.defaults.nodimalb.gxyt": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "sixth.fifth.defaults.nodimalbsv.gxy": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7b38b86d9a7e623764dc234b5d8aa67afbf388f139b4dc5a266ed0b4b7a258ea"
+    },
+    "sixth.fifth.defaults.nodimalbsv.gxyt": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "sixth.fifth.fourth.alb_enabled.forces": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "79ff70dc4cd94c3613d2f50700d878787b286d12437b1c9d2a7801e1c968df30"
+    },
+    "sixth.fifth.fourth.alb_enabled.output_calls": {
+      "shape": [
+        1
+      ],
+      "dtype": "int64",
+      "sha256": "35be322d094f9d154a8aba4733b8497f180353bd7ae7b0a15f90b586b549f28b"
+    },
+    "sixth.fifth.fourth.alb_enabled.valve_commands": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "63aa75e977ef0642bd53e74d287b8d52d1d2fdf8bee045f4e89ad90e5f77b704"
+    },
+    "sixth.fifth.fourth.config.pid_scalars": {
+      "shape": [
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "b3bcc4bcfb4c496b358e84a6f8564aab47c9731412bceaea80e9530bc24f0d34"
+    },
+    "sixth.fifth.fourth.config.pid_sensor_angles": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "81214e5dd1ebb5518f9f79336f42ccf001c6681704c3798d2075dd62189fdd23"
+    },
+    "sixth.fifth.fourth.config.switch": {
+      "shape": [
+        1
+      ],
+      "dtype": "int8",
+      "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+    },
+    "sixth.fifth.fourth.harmonic.first_commands": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "a1dbec4a4fc21c5939943aaa541d9a05e761149ff080f11fcf6b08523badadfd"
+    },
+    "sixth.fifth.fourth.harmonic.first_forces": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "cb9bd43f842ad163fe41ca6a1696d58968e5c264352d8c341b2b79a74d4923a7"
+    },
+    "sixth.fifth.fourth.harmonic.first_spools": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "794b3a3293e9d40c605564ffcc284b8ad6b6c73f4ee412c8f43f4a50c0bb54b2"
+    },
+    "sixth.fifth.fourth.harmonic.result_rows": {
+      "shape": [
+        2
+      ],
+      "dtype": "int64",
+      "sha256": "60aade2bc7d803d24bceca5832090f3e23d06c1ca7f736e1a1578f3e04e8a3fa"
+    },
+    "sixth.fifth.fourth.harmonic.second_commands": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "a1dbec4a4fc21c5939943aaa541d9a05e761149ff080f11fcf6b08523badadfd"
+    },
+    "sixth.fifth.fourth.harmonic.second_forces": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "cb9bd43f842ad163fe41ca6a1696d58968e5c264352d8c341b2b79a74d4923a7"
+    },
+    "sixth.fifth.fourth.harmonic.second_spools": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "794b3a3293e9d40c605564ffcc284b8ad6b6c73f4ee412c8f43f4a50c0bb54b2"
+    }
+  }
+}

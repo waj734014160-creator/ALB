@@ -25,7 +25,11 @@ from ALB.core import BearingComponentBase
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve
 
-from ._harmonic_runtime import RuntimeFailureGuard
+from ._harmonic_runtime import (
+    RuntimeFailureGuard,
+    finite_real_array,
+    finite_real_scalar,
+)
 
 
 BUILTIN_COEFFICIENT_RESOURCE = "data/alb_harmonic_linear_gamma1_50hz.json"
@@ -34,17 +38,14 @@ BUILTIN_COEFFICIENT_RESOURCE = "data/alb_harmonic_linear_gamma1_50hz.json"
 def _finite_vector(name: str, value: Any) -> np.ndarray:
     """Return a copied finite two-component float vector."""
 
-    vector = np.asarray(value, dtype=float)
-    if vector.shape != (2,):
-        raise ValueError(f"{name} must have shape (2,)")
-    if not np.all(np.isfinite(vector)):
-        raise ValueError(f"{name} must contain only finite values")
-    return vector.copy()
+    return finite_real_array(name, value, shape=(2,))
 
 
 def _finite_matrix(name: str, value: Any, *, complex_values: bool) -> np.ndarray:
     """Return a copied finite 2 x 2 coefficient matrix."""
 
+    if not complex_values:
+        return finite_real_array(name, value, shape=(2, 2))
     dtype = complex if complex_values else float
     matrix = np.asarray(value, dtype=dtype)
     if matrix.shape != (2, 2):
@@ -68,9 +69,9 @@ def _complex_matrix_from_payload(name: str, payload: Mapping[str, Any]) -> np.nd
 
     if not isinstance(payload, Mapping) or "real" not in payload or "imag" not in payload:
         raise ValueError(f"{name} must contain real and imag arrays")
-    matrix = np.asarray(payload["real"], dtype=float) + 1j * np.asarray(
-        payload["imag"], dtype=float
-    )
+    real = finite_real_array(f"{name}.real", payload["real"], shape=(2, 2))
+    imag = finite_real_array(f"{name}.imag", payload["imag"], shape=(2, 2))
+    matrix = real + 1j * imag
     return _finite_matrix(name, matrix, complex_values=True)
 
 
@@ -553,13 +554,7 @@ class ALBHarmonicLinear(BearingComponentBase):
     def _scalar_output(value: Any) -> float:
         """Convert a finite scalar-like servovalve output to float."""
 
-        output = np.asarray(value, dtype=float).reshape(-1)
-        if output.size != 1:
-            raise ValueError("Each servovalve must produce one scalar output")
-        scalar = float(output[0])
-        if not np.isfinite(scalar):
-            raise ValueError("Each servovalve must produce a finite scalar output")
-        return scalar
+        return finite_real_scalar("servovalve output", value)
 
     def _advance_control(self, time_s: float, uxy: np.ndarray) -> None:
         """Advance the injected controller and two second-order Moog valves."""
@@ -570,19 +565,15 @@ class ALBHarmonicLinear(BearingComponentBase):
         normalized_position = _finite_vector(
             "normalized controller input", normalized_position
         )
-        command = np.asarray(
+        command = finite_real_array(
+            "controller command",
             run_controller_step(
                 self.controller,
                 time_s,
                 normalized_position,
             ),
-            dtype=float,
-        ).reshape(-1)
-        if command.shape != (2,):
-            raise ValueError("controller command must contain exactly two values")
-        if not np.all(np.isfinite(command)):
-            raise ValueError("controller command must contain only finite values")
-        command = command.copy()
+            shape=(2,),
+        )
         spool = np.zeros(2, dtype=float)
         for axis, valve in enumerate(self.servovalves):
             valve.input(time_s, command[axis])
@@ -679,40 +670,43 @@ class ALBHarmonicLinear(BearingComponentBase):
         self._require_valid("accept input")
         if kwargs.get("nodim", False):
             raise ValueError("ALBHarmonicLinear accepts dimensional bearing inputs")
-        position = _finite_vector("uxy", uxy)
-        velocity = _finite_vector("uxyt", uxyt)
-        time_s = float(t)
-        if not np.isfinite(time_s):
-            raise ValueError("t must be finite")
-
-        if self._last_time is not None:
-            elapsed = time_s - self._last_time
-            tolerance = max(1.0e-12, 1.0e-9 * self.dt)
-            if abs(elapsed) <= tolerance:
-                assert self._last_input is not None
-                previous_position, previous_velocity = self._last_input
-                if not (
-                    np.allclose(position, previous_position, rtol=0.0, atol=1.0e-15)
-                    and np.allclose(
-                        velocity, previous_velocity, rtol=0.0, atol=1.0e-12
-                    )
-                ):
-                    raise ValueError("Repeated timestamp received different bearing input")
-                return True
-            if not np.isclose(elapsed, self.dt, rtol=0.0, atol=tolerance):
-                raise ValueError("Bearing input time step does not match configured dt")
-
         with self._runtime_guard.phase():
+            position = _finite_vector("uxy", uxy)
+            velocity = _finite_vector("uxyt", uxyt)
+            time_s = finite_real_scalar("t", t)
+
+            if self._last_time is not None:
+                elapsed = time_s - self._last_time
+                tolerance = max(1.0e-12, 1.0e-9 * self.dt)
+                if abs(elapsed) <= tolerance:
+                    assert self._last_input is not None
+                    previous_position, previous_velocity = self._last_input
+                    if not (
+                        np.allclose(
+                            position, previous_position, rtol=0.0, atol=1.0e-15
+                        )
+                        and np.allclose(
+                            velocity, previous_velocity, rtol=0.0, atol=1.0e-12
+                        )
+                    ):
+                        raise ValueError(
+                            "Repeated timestamp received different bearing input"
+                        )
+                    return True
+                if not np.isclose(elapsed, self.dt, rtol=0.0, atol=tolerance):
+                    raise ValueError(
+                        "Bearing input time step does not match configured dt"
+                    )
+
             self._advance_control(time_s, position)
             delta_spool = self.spool - self.coefficients.base_spool
             with np.errstate(over="raise", invalid="raise"):
                 self.spool_quadrature = (
                     delta_spool * self._phase_cosine - self._previous_delta_spool
                 ) / self._phase_sine
-            if not np.all(np.isfinite(self.spool_quadrature)):
-                raise FloatingPointError(
-                    "servovalve quadrature must contain only finite values"
-                )
+            self.spool_quadrature = finite_real_array(
+                "servovalve quadrature", self.spool_quadrature, shape=(2,)
+            )
             self._previous_delta_spool = delta_spool.copy()
             self.uxy = position
             self.uxyt = velocity
@@ -755,10 +749,7 @@ class ALBHarmonicLinear(BearingComponentBase):
                 "bearing force": self.force,
             }
             for name, vector in runtime_vectors.items():
-                if not np.all(np.isfinite(vector)):
-                    raise FloatingPointError(
-                        f"{name} must contain only finite values"
-                    )
+                finite_real_array(name, vector, shape=(2,))
             self.signal.lead_loop("finish_signal")
             return {
                 "force": self.force.copy(),
