@@ -551,25 +551,38 @@ class ALBHarmonicLinear(BearingComponentBase):
 
     @staticmethod
     def _scalar_output(value: Any) -> float:
-        """Convert a scalar-like servovalve output to float."""
+        """Convert a finite scalar-like servovalve output to float."""
 
         output = np.asarray(value, dtype=float).reshape(-1)
         if output.size != 1:
             raise ValueError("Each servovalve must produce one scalar output")
-        return float(output[0])
+        scalar = float(output[0])
+        if not np.isfinite(scalar):
+            raise ValueError("Each servovalve must produce a finite scalar output")
+        return scalar
 
     def _advance_control(self, time_s: float, uxy: np.ndarray) -> None:
         """Advance the injected controller and two second-order Moog valves."""
 
         assert self.controller is not None
+        with np.errstate(over="raise", invalid="raise"):
+            normalized_position = uxy / self.coefficients.clearance_m
+        normalized_position = _finite_vector(
+            "normalized controller input", normalized_position
+        )
         command = np.asarray(
             run_controller_step(
                 self.controller,
                 time_s,
-                uxy / self.coefficients.clearance_m,
+                normalized_position,
             ),
             dtype=float,
-        ).reshape(2)
+        ).reshape(-1)
+        if command.shape != (2,):
+            raise ValueError("controller command must contain exactly two values")
+        if not np.all(np.isfinite(command)):
+            raise ValueError("controller command must contain only finite values")
+        command = command.copy()
         spool = np.zeros(2, dtype=float)
         for axis, valve in enumerate(self.servovalves):
             valve.input(time_s, command[axis])
@@ -692,9 +705,14 @@ class ALBHarmonicLinear(BearingComponentBase):
         with self._runtime_guard.phase():
             self._advance_control(time_s, position)
             delta_spool = self.spool - self.coefficients.base_spool
-            self.spool_quadrature = (
-                delta_spool * self._phase_cosine - self._previous_delta_spool
-            ) / self._phase_sine
+            with np.errstate(over="raise", invalid="raise"):
+                self.spool_quadrature = (
+                    delta_spool * self._phase_cosine - self._previous_delta_spool
+                ) / self._phase_sine
+            if not np.all(np.isfinite(self.spool_quadrature)):
+                raise FloatingPointError(
+                    "servovalve quadrature must contain only finite values"
+                )
             self._previous_delta_spool = delta_spool.copy()
             self.uxy = position
             self.uxyt = velocity
@@ -714,18 +732,33 @@ class ALBHarmonicLinear(BearingComponentBase):
         with self._runtime_guard.phase():
             delta_position = self.uxy - self.coefficients.equilibrium_position
             delta_spool = self.spool - self.coefficients.base_spool
-            self._force_stiffness = -self.coefficients.stiffness @ delta_position
-            self._force_damping = -self.coefficients.damping @ self.uxyt
-            self._force_spool = (
-                self.coefficients.spool_transfer.real @ delta_spool
-                + self.coefficients.spool_transfer.imag @ self.spool_quadrature
-            )
-            self.force = (
-                self.coefficients.static_force
-                + self._force_stiffness
-                + self._force_damping
-                + self._force_spool
-            )
+            with np.errstate(over="raise", invalid="raise"):
+                self._force_stiffness = (
+                    -self.coefficients.stiffness @ delta_position
+                )
+                self._force_damping = -self.coefficients.damping @ self.uxyt
+                self._force_spool = (
+                    self.coefficients.spool_transfer.real @ delta_spool
+                    + self.coefficients.spool_transfer.imag
+                    @ self.spool_quadrature
+                )
+                self.force = (
+                    self.coefficients.static_force
+                    + self._force_stiffness
+                    + self._force_damping
+                    + self._force_spool
+                )
+            runtime_vectors = {
+                "stiffness force": self._force_stiffness,
+                "damping force": self._force_damping,
+                "servovalve force": self._force_spool,
+                "bearing force": self.force,
+            }
+            for name, vector in runtime_vectors.items():
+                if not np.all(np.isfinite(vector)):
+                    raise FloatingPointError(
+                        f"{name} must contain only finite values"
+                    )
             self.signal.lead_loop("finish_signal")
             return {
                 "force": self.force.copy(),
