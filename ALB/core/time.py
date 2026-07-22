@@ -1,12 +1,12 @@
 """Constant-step time-grid implementations."""
 
-from typing import Any, Iterator, cast
+from typing import Any, Iterator, TypeAlias, cast
 
 import numpy as np
 import numpy.typing as npt
 
 
-FloatArray = npt.NDArray[np.float64]
+FloatArray: TypeAlias = npt.NDArray[np.float64]
 
 
 class TimeIter:

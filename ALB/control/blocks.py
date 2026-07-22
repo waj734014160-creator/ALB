@@ -12,22 +12,26 @@ from ALB.contracts import (
     ValveOutput,
 )
 from ALB.core import CommandComputingBlock, EvaluatingBlock
+from .adapters import adapt_controller
 
 
 def run_controller_step(controller: Any, time: float, error: Any) -> Any:
-    """Run one controller step across strict and legacy lifecycle variants.
+    """Run one native controller step, adapting legacy objects explicitly."""
 
-    Strict controllers compute in ``evaluate()`` and expose a read-only
-    ``output()``. Historical controllers compute directly in ``output()`` and
-    do not define ``evaluate()``. This adapter calls ``output()`` exactly once
-    in both cases so legacy controllers are not advanced twice.
-    """
+    native = adapt_controller(controller)
+    native.input(time, error)
+    native.evaluate()
+    return native.output()
 
-    controller.input(time, error)
-    evaluate = getattr(controller, "evaluate", None)
+
+def run_valve_step(valve: Any, time: float, command: Any) -> Any:
+    """Run one valve step while retaining an isolated legacy valve boundary."""
+
+    valve.input(time, command)
+    evaluate = getattr(valve, "evaluate", None)
     if callable(evaluate):
         evaluate()
-    return controller.output()
+    return valve.output()
 
 
 class ControllerBlock(CommandComputingBlock[ControlInput, ControlOutput]):
@@ -70,6 +74,5 @@ class ValveBlock(EvaluatingBlock[ValveInput, ValveOutput]):
 
     def evaluate(self) -> None:
         dto = self._require_input()
-        self.valve.input(dto.time, dto.command)
-        spool = self.valve.output()
+        spool = run_valve_step(self.valve, dto.time, dto.command)
         self._publish_output(ValveOutput(spool, dto.time, self.unit_system))

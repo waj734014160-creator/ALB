@@ -190,6 +190,7 @@ def build_warmed_pd_servo(
         command = np.asarray(controller.output(), dtype=float).reshape(2)
         for index, valve in enumerate(valves):
             valve.input(t, command[index])
+            valve.evaluate()
             spool[index] = scalar_output(valve.output())
 
     warmup_error = spool - base_spool
@@ -312,6 +313,7 @@ def run_direction(
         spool = np.zeros(2, dtype=float)
         for index, valve in enumerate(valves):
             valve.input(t, controller_command[index])
+            valve.evaluate()
             spool[index] = scalar_output(valve.output())
         delta_spool = spool - analytic.SPOOL_NONDIM
         delta_input[4:6] = delta_spool

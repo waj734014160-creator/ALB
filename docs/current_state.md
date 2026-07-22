@@ -39,7 +39,8 @@
 - 六轮审查参考：`refs/sixth_review_runtime_reference_v6.{json,npz}` 在第六轮生产修正前继续冻结第五轮 27 个合法行为数组；当前工作树逐元素精确相等。
 - 七轮审查参考：`refs/seventh_review_release_reference_v7.{json,npz}` 在 commit `908abd7` 的生产修正前冻结 harmonic 合法控制器、阀、位移/速度、力和重新初始化路径共 27 个数组；修正后逐元素精确相等，既有 v1-v6 参考均未覆盖。
 - 八轮制品身份参考：commit `a29290e` 在工具修正前创建 `refs/eighth_review_wheel_identity_reference_v8.json`，冻结 candidate `4d6e609` 的 119 个 release Git blob、规范源码摘要 `39bece7c…`、v7 行为参考哈希，以及两份旧 wheel 证据的差异；生产 `ALB/**` 与运行时 `pyproject.toml` 内容保持精确一致。
-- 当前阶段：最后一项 wheel 制品身份 P1 已关闭。候选 `62b53be` 从 Git blob 规范源连续构建两次 build tag `1` wheel，均得到 SHA-256 `a6750b0d…`；detached 正式验收安装的 wheel、发布到 `dist/` 的文件、构建报告和八轮验收报告均为同一 SHA。正式结果为 438 passed、13 skipped、0 warnings、27 subtests passed，451 个节点全部收集。因此当前审查提出的发布阻塞项已全部关闭，可解除 `Request changes`。
+- 原生控制生命周期参考：commit `00a842b` 创建 `refs/native_control_lifecycle_reference_v9.{json,npz}`，在生产修改前冻结 LQG、重复控制器和二阶伺服阀的 18 个多步数组；迁移后逐元素精确相等，既有 v1-v8 参考均未覆盖。
+- 当前阶段：wheel 制品身份 P1 已关闭，现进入 P2 架构欠账分阶段收敛。第一批已把 `ALBLQGController`、`RepetitiveController` 和 `ServoValve2` 原生迁入 `input()` → `evaluate()` → `output()`，并以显式 `LegacyControllerAdapter` 隔离旧自定义控制器。除测试映射自校验待在代码提交后重建外，全仓为 441 passed、13 skipped、27 subtests passed；contracts/core/harmonic runtime 的 21 个文件及新增生命周期边界通过严格 mypy。
 
 ## 已完成的 0.2.0 边界
 
@@ -62,6 +63,7 @@
 17. 第六轮审查修正已提交并验收：`input()`/`output()` 的控制器、命令整形、双阀和记录阶段由严格 runtime guard 封锁半推进异常；正式验收从 detached candidate 执行，不再依赖本地 `outputs/.devtools`。旧热参考生成器固定为 LF checkout，历史构建证据路径采用可移植的后缀校验。
 18. 第七轮审查修正已提交并验收：harmonic 在任何 float 转换前拒绝 complex，并对控制器命令、阀芯、轴承输入、quadrature 和最终力执行形状与有限性校验；pytest 使用固定 9.0.3、禁用插件自动加载并精确校验 skip/warning/xfail/插件；wheel 从运行专属 tracked 源码副本构建并核对候选源码和 METADATA，不再污染 detached 候选树。
 19. 八轮制品身份修正已提交并验收：wheel 输入改由 `git cat-file` 读取 candidate blob，不再复制受换行、smudge 或文件时间影响的工作树字节；`SOURCE_DATE_EPOCH` 固定为最近一次 release 输入提交时间；同一候选必须连续两次生成相同 build tag `1` wheel；外层只发布 detached 实际安装验证的那一份精确字节。
+20. P2 控制生命周期第一批已完成：LQG、重复控制器和 `ServoValve2` 的状态推进全部移入 `evaluate()`，重复 `output()` 只读；direct-spool 使用显式 `set_spool()`，旧控制器只经限期 `LegacyControllerAdapter` 接入；共享状态名采用 `NEW/READY/RUNNING/FAILED`，复杂数和非有限输入共用 core 校验。
 
 ## 当前验收结论
 
@@ -82,6 +84,7 @@
 | 六轮代码审查修正 | 候选提交 `66fe326`：421 passed、13 skipped、0 warnings、27 subtests passed；434 个节点全部收集；第六轮 8 个关键节点全部通过；27 个 v6 有效行为数组逐元素精确相等；contracts/core 19 个文件和独立 runtime 1 个文件严格 mypy 通过；detached worktree 测试前后 HEAD、tracked 状态及敏感输入均保持不变 | `docs/migrations/0.2.0_sixth_review_acceptance.json` |
 | 七轮代码审查修正 | 候选提交 `728b198`：436 passed、13 skipped、0 warnings、27 subtests passed；449 个节点全部收集；27 个 v7 合法行为数组逐元素精确相等；pytest 9.0.3、37 个最终插件、精确 skip allowlist、contracts/core 及 harmonic runtime 严格 mypy、现场 wheel 和 detached worktree 前后状态全部通过 | `docs/migrations/0.2.0_seventh_review_acceptance.json` |
 | 八轮 wheel 制品身份修正 | 候选提交 `62b53be`：438 passed、13 skipped、0 warnings、27 subtests passed；451 个节点全部收集；4 个制品身份关键节点通过；Git blob 规范摘要、两次构建、detached 安装、最终发布文件、构建报告和验收报告的 wheel SHA 全部一致 | `docs/migrations/0.2.0_eighth_review_acceptance.json` |
+| P2 控制生命周期第一批（映射重建前） | 441 passed、13 skipped、27 subtests passed；LQG、重复控制器和伺服阀 18 个 v9 数组逐元素精确相等；S0011、CSOrifice、direct-spool 和无量纲等价 20 项通过；21 个基础/runtime 文件及 4 个新增边界文件 strict mypy 通过 | `refs/native_control_lifecycle_reference_v9.json`、`tests/regression/control/test_native_control_lifecycle_reference_v9.py` |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
@@ -123,13 +126,13 @@
 - 第七轮已完成“v7 合法行为参考、生产与验收门禁修正、449 节点测试映射、wheel 构建证据、detached 候选验收”的闭环。首次正式运行因构建后端在候选树生成 `build/lib/**` 被敏感输入门禁拒绝；修正为运行专属 tracked 源码副本后重跑通过，证明该门禁实际生效。正式报告的 `candidate_commit` 为 `728b198`。
 - 八轮已完成“Git blob 规范参考、可复现双构建、451 节点测试映射、detached 安装、最终制品发布和双报告同 SHA”的闭环。旧构建报告 `5266ca0…` 与七轮现场 wheel `6ae4436…` 只保留在 v8 参考中作为问题证据；当前构建报告和正式验收均绑定候选 `62b53be`、源码摘要 `39bece7…` 和发布 wheel `a6750b0d…`。首次八轮正式运行因内部过早清理已验证 wheel 而未生成证据，调整交接顺序后完整重跑通过。
 - 发布工具仍有结构性欠账：各轮节点集合尚未全部迁入版本化 manifest；launcher、detached worker 和测试清单仍集中在一个大脚本；fresh 工具只固定直接版本，传递依赖尚未使用带哈希 constraints/wheelhouse。它们不改变本轮通过结论，但下一版发布基础设施应继续拆分和固化。
-- 四轮审查涉及的具体缺陷已经关闭，但三个结构性欠账仍在：`thermal/solver.py` 等 6 个主要模块仍为约 1269-3259 行的单体；ServoValve2 仍以兼容方式保留 `input()` 内计算，LQG 和 RepetitiveController 也尚未原生迁入严格状态机；mypy 严格门禁仍只覆盖 contracts/core 的 19 个文件。这些属于分阶段重构工作，不能用本轮局部修复宣称完成。
+- P2 第一批已关闭 LQG、RepetitiveController、ServoValve2 和旧控制器兼容边界，但其余结构性欠账仍在：`thermal/solver.py` 等千行级单体尚未拆分；PID/LTI、harmonic、coupler 等运行时尚未全部复用同一个生命周期对象；strict mypy 尚未覆盖完整 `config/control/dynamics/systems`；当前配置模型与 legacy 迁移解析仍混在 `_models.py`。这些必须继续按参考、实现、映射、验收的顺序分阶段关闭。
 
 ## 发布后下一步
 
-1. 按依赖顺序逐个拆分 6 个千行级模块，每个领域先建精确参考，禁止再次进行无参考的全仓机械搬迁。
-2. 盘点仍在 `output()` 中计算、推进或写历史的公开旧类，逐一迁到严格 block/adapter，避免双生命周期继续扩散。
-3. 在 contracts/core 已通过的基础上，按 control、dynamics、systems 顺序扩大 mypy 严格覆盖。
+1. 把共享 `NEW/READY/RUNNING/FAILED` 生命周期和有限实数校验继续接入 PID/LTI、harmonic、coupler 等状态边界，并补齐失败恢复协议。
+2. 在 contracts/core 已通过的基础上，按 config、control、dynamics、systems 顺序扩大 mypy 严格覆盖。
+3. 按依赖顺序逐个拆分 `controllers.py`、配置 `_models.py` 和 systems assembly 等千行级模块，每个领域先建精确参考，禁止无参考机械搬迁。
 4. 为 `task/task_alb_data2.py` 的混合单位调用先建立参考与显式尺度适配器；不要直接套用 nondimensional strict port。
 5. 将新 base/expert/residual 训练输出自动封装为 0.2 model package；residual 的主模型嵌套关系需先定义 manifest 语义。
 6. 为 PAPER_WORK 四个顶层执行脚本增加主入口隔离，并为两个 M0035 内部代理建立 DTO block 参考后再迁移。
@@ -154,6 +157,7 @@
 - 八轮 wheel 制品身份门禁：`docs/migrations/0.2.0_eighth_review_acceptance.json`。
 - 控制状态和耦合时序参考：`refs/control_state_contract_reference_v1.json`、`refs/control_lifecycle_reference_v2.json`、`refs/rotor_bearing_coupling_time_reference_v3.json`、`refs/rotor_dof_coupling_reference_v4.json`。
 - 三轮兼容性参考：`refs/third_review_compatibility_reference_v3.json`。
+- 原生控制生命周期参考：`refs/native_control_lifecycle_reference_v9.json`。
 - 四轮发布阻塞修正参考：`refs/fourth_review_release_reference_v4.json`。
 - RossRotor 合法轨迹参考：`refs/ross_rotor_time_validation_reference_v2.json`。
 - CSOrifice 单调求解参考：`refs/csorifice_monotonic_reference_v2.json`、`refs/csorifice_monotonic_consumers_reference_v2.json`。

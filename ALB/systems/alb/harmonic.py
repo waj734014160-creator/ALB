@@ -19,7 +19,8 @@ import numpy as np
 import pandas as pd
 
 from ALB.config import Moog2ndServoConfig, PIDConfig
-from ALB.control.blocks import run_controller_step
+from ALB.control.adapters import adapt_controller
+from ALB.control.blocks import run_controller_step, run_valve_step
 from ALB.control.pid import PID
 from ALB.core import BearingComponentBase
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
@@ -521,6 +522,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         else:
             controller = self._controller_instance
         self._validate_controller(controller)
+        controller = adapt_controller(controller)
         controller_dt = getattr(controller, "dt", None)
         if controller_dt is not None and not np.isclose(
             float(controller_dt), self.dt, rtol=0.0, atol=1.0e-15
@@ -576,8 +578,9 @@ class ALBHarmonicLinear(BearingComponentBase):
         )
         spool = np.zeros(2, dtype=float)
         for axis, valve in enumerate(self.servovalves):
-            valve.input(time_s, command[axis])
-            spool[axis] = self._scalar_output(valve.output())
+            spool[axis] = self._scalar_output(
+                run_valve_step(valve, time_s, command[axis])
+            )
         self.spool_command = command
         self.spool = spool
         self.controller_saturated = bool(

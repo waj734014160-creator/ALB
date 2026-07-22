@@ -8,7 +8,7 @@ from .block import (
     EvaluableBlock,
     SolvableBlock,
 )
-from .control import ControllerProtocol, ServoValveProtocol
+from .control import ControllerProtocol, LegacyControllerProtocol, ServoValveProtocol
 from .dynamics import RotorProtocol
 from .model import (
     ConvergenceStatus,
@@ -57,6 +57,7 @@ __all__ = [
     "ConvergenceStatus",
     "EvaluableBlock",
     "LifecycleProtocol",
+    "LegacyControllerProtocol",
     "NotifierProtocol",
     "import_optional_module",
     "missing_optional_dependency",

@@ -8,7 +8,12 @@ import numpy as np
 import pandas as pd
 
 from ALB.core.component import BaseSystem
-from ALB.core.validation import limit_signal as _limit_signal
+from ALB.core.lifecycle import LifecycleState, RuntimeLifecycle
+from ALB.core.validation import (
+    finite_real_scalar,
+    finite_real_vector,
+    limit_signal as _limit_signal,
+)
 from .state_space import BaseLti, TSDlti
 
 # from ALB.infrastructure.logging import logger
@@ -53,6 +58,8 @@ class BaseValve(BaseSystem):
 
 
 class ServoValve2(BaseValve):
+    """Second-order servovalve with a strict input/evaluate/output lifecycle."""
+
     def __init__(self, lti, ofs=None):
         """
         Servo valve model based on a given LTI system with optional simple models in parallel.
@@ -66,6 +73,9 @@ class ServoValve2(BaseValve):
             super().__init__(lti)
         else:
             raise TypeError("lti must be BaseLti")
+        self._lifecycle = RuntimeLifecycle(type(self).__name__)
+        self._last_output = None
+        self._lifecycle.reset()
 
     @property
     def results(self):
@@ -74,35 +84,92 @@ class ServoValve2(BaseValve):
         yout = self.main_model.yout
         return pd.DataFrame({"t": t, "xout": xout, "yout": yout})
 
-    def input(self, t, uv, *args, **kwargs):
-        """Latch and evaluate one legacy servovalve input exactly once."""
+    @property
+    def lifecycle_state(self):
+        """Return the current strict runtime state."""
 
-        uv = np.array(uv)
-        uv = uv.reshape([-1, 1])
-        self.uv = limit_signal(uv)
-        self.main_model.input(t, uv, *args, **kwargs)
-        self.main_model.evaluate()
-        self.xv = self.yout[-1]
-        self.xv = limit_signal(self.xv)
+        return self._lifecycle.state
+
+    def init(self, *args, **kwargs):
+        """Reset valve dynamics and invalidate any previously readable spool."""
+
+        self.main_model.init(*args, **kwargs)
+        self.uv = 0
+        self.xv = 0
+        self._last_output = None
+        self._lifecycle.reset()
         return True
+
+    def input(self, t, uv, *args, **kwargs):
+        """Validate and latch one command without advancing valve state."""
+
+        self._lifecycle.require_input_slot()
+        time = finite_real_scalar(t, "servovalve time")
+        input_count = int(self.main_model.B.shape[1])
+        command = finite_real_vector(uv, "servovalve command", input_count)
+        limited = np.asarray(limit_signal(command), dtype=float).reshape(-1, 1)
+        self.main_model.input(time, limited, *args, **kwargs)
+        self.uv = limited.copy()
+        self._last_output = None
+        self._lifecycle.latch()
+        return True
+
+    def evaluate(self):
+        """Advance the valve and connected orifices exactly once."""
+
+        with self._lifecycle.evaluation():
+            self.main_model.evaluate()
+            output_count = int(self.main_model.C.shape[0])
+            completed = finite_real_vector(
+                self.main_model.output(), "servovalve spool", output_count
+            )
+            self.xv = np.asarray(limit_signal(completed), dtype=float)
+            for orifice in self.simple_models:
+                orifice.input(self.xv.copy())
+            self._last_output = self.xv.copy()
+        return self.output()
 
     def solve(self):
-        """Return the result already computed by ``input()`` without reevaluation."""
+        """Compatibility alias that evaluates only a pending input."""
 
-        return np.asarray(self.xv, dtype=float).copy()
+        if self._lifecycle.state is LifecycleState.RUNNING:
+            self.evaluate()
+        return self.output()
+
+    def set_spool(self, value):
+        """Publish an explicit direct-spool state without advancing valve dynamics.
+
+        This capability is reserved for ``ALBSV`` direct-input assemblies. It
+        still uses the lifecycle publication boundary and updates configured
+        orifices exactly once.
+        """
+
+        self._lifecycle.require_input_slot()
+        output_count = int(self.main_model.C.shape[0])
+        spool = finite_real_vector(value, "direct servovalve spool", output_count)
+        spool = np.asarray(limit_signal(spool), dtype=float)
+        self._lifecycle.latch()
+        with self._lifecycle.evaluation():
+            self.xv = float(spool[0]) if output_count == 1 else spool.copy()
+            for orifice in self.simple_models:
+                orifice.input(self.xv)
+            self._last_output = spool.copy()
+        return self.output()
 
     def output(self, *orifice, **kwargs):
-        # pada aseSystem pada ada.main_model
-        if len(orifice) == 0:
-            orifice = self.simple_models
-        else:
-            orifice = list(orifice)
-        for of in orifice:
-            of.input(self.xv)
-        return self.xv
+        """Read the completed spool without evaluating or mutating orifices."""
+
+        del kwargs
+        if orifice:
+            raise TypeError(
+                "output() no longer accepts orifices; configure simple_models before evaluate()"
+            )
+        self._lifecycle.require_output()
+        assert self._last_output is not None
+        return self._last_output.copy()
 
     def calc_is_finished(self):
-        return True
+        return self._lifecycle.state is LifecycleState.READY
 
 
 # class ServoOrifice(HybirdOrifice):

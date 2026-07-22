@@ -24,7 +24,8 @@ from ALB.config import (
     build_thermal_config,
 )
 from ALB.control.controllers import FuzzyPID, PID
-from ALB.control.blocks import run_controller_step
+from ALB.control.adapters import adapt_controller
+from ALB.control.blocks import run_controller_step, run_valve_step
 from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve, moog_servovalve, static_sv
@@ -79,7 +80,7 @@ class ALB(BaseCSystem):
         self.servovalves = servovalves
         self.static_sv = None
         self.node_link = alb_config.node_link
-        self.controller = controller
+        self.controller = adapt_controller(controller) if controller is not None else None
         self._uv = None
         self._uxy = None
         self._uxyt = None
@@ -215,8 +216,7 @@ class ALB(BaseCSystem):
         else:
             sv = self.servovalves
         for num, servovalve in enumerate(sv):
-            servovalve.input(self._t, self._uv[num], **kwargs)
-            servovalve.output()
+            run_valve_step(servovalve, self._t, self._uv[num])
         forces = []
         frictions = []
         for pad in self.pads:
@@ -352,8 +352,7 @@ class ALBSV(ALB):
     def output(self, *args, **kwargs) -> dict:
         nodim = kwargs.pop("nodim", False)
         for n, sv in enumerate(self.servovalves):
-            sv.xv = self._sv[n]
-            sv.output()
+            sv.set_spool(self._sv[n])
 
         forces = []
         frictions = []
@@ -414,8 +413,7 @@ class NodimALB(ALB):
         else:
             sv = self.servovalves
         for num, servovalve in enumerate(sv):
-            servovalve.input(self._t, self._uv[num], **kwargs)
-            servovalve.output()
+            run_valve_step(servovalve, self._t, self._uv[num])
         forces = []
         frictions = []
         for pad in self.pads:
@@ -461,8 +459,7 @@ class NodimALBSV(NodimALB):
         if not nodim:
             raise ValueError("NodimALBSV only outputs nondimensional force")
         for num, servovalve in enumerate(self.servovalves):
-            servovalve.xv = self._sv[num]
-            servovalve.output()
+            servovalve.set_spool(self._sv[num])
 
         forces = []
         frictions = []

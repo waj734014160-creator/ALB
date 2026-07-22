@@ -40,12 +40,14 @@ def test_valve_block_uses_explicit_evaluate():
     np.testing.assert_allclose(result.spool, [0.3, -0.3], rtol=0.0, atol=1e-15)
 
 
-def test_servo_valve_input_then_solve_does_not_evaluate_twice():
+def test_servo_valve_requires_evaluate_and_repeated_reads_do_not_advance():
     valve = moog_2nd_servovalve(dt=0.001)
     valve.input(0.0, 0.25)
-    expected = np.asarray(valve.output(), dtype=float).copy()
+    with pytest.raises(RuntimeError, match="unavailable"):
+        valve.output()
+    expected = np.asarray(valve.evaluate(), dtype=float).copy()
     history_lengths = (len(valve.ts), len(valve.xout), len(valve.yout))
 
-    np.testing.assert_array_equal(valve.solve(), expected)
+    np.testing.assert_array_equal(valve.output(), expected)
     np.testing.assert_array_equal(valve.solve(), expected)
     assert (len(valve.ts), len(valve.xout), len(valve.yout)) == history_lengths

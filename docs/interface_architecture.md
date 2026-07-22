@@ -66,8 +66,8 @@ result = block.output()  # 只读取已经完成的结果
 | Protocol | 显式计算方法 | 典型组件 |
 | --- | --- | --- |
 | `SolvableBlock` | `solve()` | 迭代求解器 |
-| `EvaluableBlock` | `evaluate()` | 轴承、阀和代数模型 |
-| `CommandBlock` | `compute_command()` | 控制器 |
+| `EvaluableBlock` | `evaluate()` | 轴承、阀、原生控制器和代数模型 |
+| `CommandBlock` | `compute_command()` | 接收 `ControlInput` DTO 的 `ControllerBlock` 端口适配器 |
 | `AdvancingBlock` | `advance()` | 带状态的转子或时间推进器 |
 
 `step(dto)` 只组合 `input()`、显式计算方法和 `output()`，不提交物理时步。以下情况必须抛出 `RuntimeError`：
@@ -124,7 +124,9 @@ nondimensional
 
 ## 控制、阀和转子
 
-- 控制器实现 `ControllerProtocol`，计算动作是 `compute_command()`。
+- 原生控制器实现 `ControllerProtocol`，运行时顺序是 `input(time, error)`、`evaluate()`、`output()`；`output()` 不计算。
+- 需要 DTO 端口时使用 `ControllerBlock`，由它以 `compute_command()` 封装原生控制器的一次严格运行。
+- 仅有计算型 `output()` 的旧自定义控制器不满足 `ControllerProtocol`，必须显式经 `LegacyControllerAdapter` 接入；该兼容层将在下一破坏式版本移除。
 - 伺服阀实现 `ServoValveProtocol`，计算动作是 `evaluate()`。
 - 转子实现 `RotorProtocol`，状态推进是 `advance()`。
 - `RossRotor.current_state()` 只读取当前状态，`output()` 不再隐藏推进。

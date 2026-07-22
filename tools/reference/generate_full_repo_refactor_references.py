@@ -785,6 +785,7 @@ def _control_valve_case() -> CaseData:
     servo_outputs = []
     for time_s, command in zip(times, commands):
         servo.input(time_s, [command])
+        servo.evaluate()
         servo_outputs.append(np.asarray(servo.output(), dtype=float).reshape(-1))
     lti = servo.main_model
     arrays = {

@@ -9,7 +9,7 @@ from ALB.config import LQGConfig
 from ALB.control.lqg import ALBLQGController
 
 
-def _attach_runtime_system(controller, raw_output):
+def _attach_runtime_system(controller, raw_output, *, evaluate=False):
     """Attach a minimal one-state runtime controller with a known output."""
     raw_output = np.asarray(raw_output, dtype=float).reshape(-1, 1)
     controller.active_ctrl_sys_d = SimpleNamespace(
@@ -19,14 +19,16 @@ def _attach_runtime_system(controller, raw_output):
         D=np.zeros((raw_output.shape[0], 1)),
     )
     controller._init_runtime_state()
-    controller.x_hat[:] = 1.0
-    controller.t_prev = 0.0
+    if evaluate:
+        controller.x_next[:] = 1.0
+        controller.input(0.0, [0.0])
+        controller.evaluate()
 
 
 def test_lqg_default_output_limits_are_minus_one_to_one():
     """Default LQG commands must be clipped and raw values must remain logged."""
     controller = ALBLQGController(SimpleNamespace(), dt=1.0e-3)
-    _attach_runtime_system(controller, [2.0, -3.0])
+    _attach_runtime_system(controller, [2.0, -3.0], evaluate=True)
 
     output = controller.output()
     history = controller.get_history(to_dataframe=False)
@@ -46,7 +48,7 @@ def test_lqg_config_supports_per_channel_output_limits():
         output_max=[0.3, 0.5],
     )
     controller = ALBLQGController(SimpleNamespace(), config=config)
-    _attach_runtime_system(controller, [2.0, -3.0])
+    _attach_runtime_system(controller, [2.0, -3.0], evaluate=True)
 
     np.testing.assert_allclose(controller.output(), [0.3, -0.4])
     assert controller.dt == pytest.approx(2.0e-3)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from numbers import Integral
-from typing import Any
+from typing import Any, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -12,7 +12,7 @@ import numpy.typing as npt
 from .types import UnitSystem
 
 
-FloatArray = npt.NDArray[np.float64]
+FloatArray: TypeAlias = npt.NDArray[np.float64]
 
 
 def _finite_time(value: Any) -> float:

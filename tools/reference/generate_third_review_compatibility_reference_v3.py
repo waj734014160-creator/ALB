@@ -103,6 +103,7 @@ def _lqg_arrays() -> dict[str, np.ndarray]:
         (0.02, [-0.3, 0.4]),
     ):
         controller.input(time, measurement)
+        controller.evaluate()
         outputs.append(controller.output())
     return {
         "lqg.outputs": np.asarray(outputs, dtype=float),
@@ -127,6 +128,7 @@ def _repetitive_controller_arrays() -> dict[str, np.ndarray]:
             [np.sin(0.3 * step), np.cos(0.2 * step)], dtype=float
         )
         controller.input(step * controller.dt, error)
+        controller.evaluate()
         outputs.append(controller.output())
     return {
         "repetitive.outputs": np.asarray(outputs, dtype=float),
@@ -146,6 +148,7 @@ def _servo_valve_arrays() -> dict[str, np.ndarray]:
         (0.003, 0.1),
     ):
         valve.input(time, command)
+        valve.evaluate()
         outputs.append(np.asarray(valve.output(), dtype=float).reshape(-1))
     return {
         "servo.outputs": np.asarray(outputs, dtype=float),

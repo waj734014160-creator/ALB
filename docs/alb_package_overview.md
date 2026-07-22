@@ -87,9 +87,11 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 `ValveOutput.spool` 和 direct-spool 节流器输入必须是 `[-1, 1]` 内的有限标量，非法值会立即失败，
 不会静默沿用旧阀芯状态。`BaseLti`/`BaseDlti.output()` 每次只返回当前输出向量；完整状态和输出
 历史分别从 `xout`、`yout` 读取。`PID.init()` 与 `FuzzyPID.init()` 会恢复到新实例等价状态。
-ALB 装配和谐波控制路径通过同一个控制器生命周期适配器接入：提供 `evaluate()` 的严格控制器按
-`input()`、`evaluate()`、`output()` 执行；仅提供旧式 `input()`、`output()` 的 LQG、重复控制器
-或自定义控制器只调用一次 `output()`，不会因缺少 `evaluate()` 而失败。`ALBHarmonicLinear`
+ALB 装配和谐波控制路径统一按 `input()`、`evaluate()`、`output()` 执行。`PID`、`FuzzyPID`、
+`ALBLQGController` 和 `RepetitiveController` 都原生实现该严格生命周期，重复 `output()` 只读取
+同一个已完成命令。只提供旧式 `input()`、`output()` 的自定义控制器必须经
+`ALB.control.LegacyControllerAdapter` 隔离接入；旧式计算型 `output()` 不再散落在系统装配代码中。
+`ALBHarmonicLinear`
 可以通过 `controller=` 注入带 `init()` 的控制器实例，也可以通过 `controller_factory=` 在每次
 初始化时创建新的旧式控制器；二者都经过完整的构造、基态预热、多步运行和重新初始化门禁。
 harmonic 重新初始化从入口即使旧运行时失效，只有控制器创建/复位和阀预热全部成功后才恢复
@@ -169,7 +171,7 @@ thermal ALBNN 的实际输入列、feature set、target transform 和模型选�
 - `RossRotor.current_state(node=...)` 与节点载荷入口共用严格节点规范化；布尔值和浮点数不会再被静默转换为整数节点。
 - `RsRotorBearingCouple` 的首点是初始快照，包含 `num + 1` 个采样点的网格只推进 `num` 次。
 - `BaseLti`、`BaseDlti`、`PID` 和 `FuzzyPID` 使用 `input()` → `evaluate()` → `output()`；`output()` 只读取已完成快照，重复读取不再推进状态、积分或写历史。
-- `ServoValve2` 仍保留旧式 `input()` 内计算语义以兼容既有调用者；其 `solve()` 只读取该次已完成结果，不会再次调用底层 LTI 的 `evaluate()`。严格阀端口继续使用 `ValveBlock`。
+- `ServoValve2` 原生使用 `input()` → `evaluate()` → `output()`；`input()` 只锁存阀命令，`evaluate()` 只推进一次阀状态并更新已配置节流器，`output()` 可重复只读。`solve()` 仅作为兼容别名：有待计算输入时执行一次 `evaluate()`，否则读取现有结果。
 - 4/6-DOF ROSS 节点映射统一通过 `RotorDofLayout`；`result_uxy()` 与 LQG 执行器、传感器和扰动映射不再假定固定 4-DOF 步长。
 - 旧结果树保存方法和数值模块内部 exporter 已删除；保存必须经过 artifact writer。
 - 数值实现内部仍可能保留用于冻结行为的旧参数解析或适配代码，但这些不是 0.2 推荐公共 import 面。

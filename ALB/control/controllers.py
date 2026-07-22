@@ -12,8 +12,9 @@ from control.matlab import c2d, lqe, lqr, ss
 from scipy.linalg import block_diag, pinv, schur
 
 from ALB.core.component import BaseSimpleModel
+from ALB.core.lifecycle import RuntimeLifecycle
 from ALB.config import FuzzyPIDConfig, LQGConfig, PIDConfig
-from ALB.core.validation import limit_signal
+from ALB.core.validation import finite_real_scalar, finite_real_vector, limit_signal
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from .valve import moog_servovalve
 
@@ -602,6 +603,7 @@ class ALBLQGController(BaseSimpleModel):
 
         # Build flag for runtime use.
         self.is_built = False
+        self._lifecycle = RuntimeLifecycle(type(self).__name__)
 
     # Configuration helpers.
 
@@ -1151,8 +1153,13 @@ class ALBLQGController(BaseSimpleModel):
         self.y_current = np.zeros((self.active_ctrl_sys_d.B.shape[1], 1))
         self.u_current = np.zeros((self.active_ctrl_sys_d.C.shape[0], 1))
         self.u_raw_current = self.u_current.copy()
+        self._pending_time = 0.0
+        self._pending_measurement = self.y_current.copy()
+        self._last_input_time = None
+        self._last_output = None
         # Logged per control step for analysis/debug.
         self._history = {"t": [], "y": [], "u_raw": [], "u": [], "x_hat": []}
+        self._lifecycle.reset()
 
     def _output_bound(self, bound, output_count, name):
         """Return one scalar or one value per actuator as a column vector."""
@@ -1182,35 +1189,73 @@ class ALBLQGController(BaseSimpleModel):
         self._init_runtime_state()
 
     def input(self, t, y_disp):
-        """Update measured displacement input for the current time step."""
-        self.y_current = np.array(y_disp).reshape(-1, 1)
-        if t > self.t_prev:
-            self.x_hat = self.x_next
-            self.t_prev = t
+        """Validate and latch one measurement without advancing the observer."""
+
+        self._lifecycle.require_input_slot()
+        if self.active_ctrl_sys_d is None:
+            raise RuntimeError("LQG controller must be built before input()")
+        time = finite_real_scalar(t, "controller time")
+        input_count = int(self.active_ctrl_sys_d.B.shape[1])
+        measurement = finite_real_vector(
+            y_disp, "controller measurement", input_count
+        ).reshape(-1, 1)
+        if self._last_input_time is not None and time <= self._last_input_time:
+            raise ValueError("controller time must increase strictly between inputs")
+        self._pending_time = time
+        self._pending_measurement = measurement
+        self._last_output = None
+        self._lifecycle.latch()
+
+    def evaluate(self):
+        """Compute one command and propagate the observer exactly once."""
+
+        with self._lifecycle.evaluation():
+            Ad = self.active_ctrl_sys_d.A
+            Bd = self.active_ctrl_sys_d.B
+            Cd = self.active_ctrl_sys_d.C
+            Dd = self.active_ctrl_sys_d.D
+
+            self.y_current = self._pending_measurement.copy()
+            self.x_hat = self.x_next.copy()
+            self.t_prev = self._pending_time
+            self._last_input_time = self._pending_time
+
+            # Static output equation followed by actuator command protection.
+            self.u_raw_current = Cd @ self.x_hat + Dd @ self.y_current
+            self.u_current = self._limit_output(self.u_raw_current)
+
+            # Save history after time has started advancing.
+            if self.t_prev >= 0:  # Skip initial pre-step state.
+                self._history["t"].append(self.t_prev)
+                self._history["y"].append(self.y_current.flatten())
+                self._history["u_raw"].append(self.u_raw_current.flatten())
+                self._history["u"].append(self.u_current.flatten())
+                self._history["x_hat"].append(self.x_hat.flatten())
+
+            # State update equation.
+            self.x_next = Ad @ self.x_hat + Bd @ self.y_current
+            self._last_output = self.u_current.flatten().copy()
+        return self.output()
 
     def output(self):
-        """Compute control output and propagate observer state one step ahead."""
-        Ad = self.active_ctrl_sys_d.A
-        Bd = self.active_ctrl_sys_d.B
-        Cd = self.active_ctrl_sys_d.C
-        Dd = self.active_ctrl_sys_d.D
+        """Read the completed command without advancing observer state."""
 
-        # Static output equation followed by actuator command protection.
-        self.u_raw_current = Cd @ self.x_hat + Dd @ self.y_current
-        self.u_current = self._limit_output(self.u_raw_current)
+        self._lifecycle.require_output()
+        assert self._last_output is not None
+        return self._last_output.copy()
 
-        # Save history after time has started advancing.
-        if self.t_prev >= 0:  # Skip initial pre-step state.
-            self._history["t"].append(self.t_prev)
-            self._history["y"].append(self.y_current.flatten())
-            self._history["u_raw"].append(self.u_raw_current.flatten())
-            self._history["u"].append(self.u_current.flatten())
-            self._history["x_hat"].append(self.x_hat.flatten())
+    def step(self, t, y_disp):
+        """Compose input, evaluation, and read-only output for one local step."""
 
-        # State update equation.
-        self.x_next = Ad @ self.x_hat + Bd @ self.y_current
+        self.input(t, y_disp)
+        self.evaluate()
+        return self.output()
 
-        return self.u_current.flatten()
+    @property
+    def lifecycle_state(self):
+        """Return the current strict runtime state."""
+
+        return self._lifecycle.state
 
     def get_history(self, to_dataframe=True):
         """
@@ -1392,35 +1437,71 @@ class RepetitiveController(BaseSimpleModel):
 
         self.error = None
         self.inp = None
+        self.t = None
+        self._last_output = None
+        self._lifecycle = RuntimeLifecycle(type(self).__name__)
+        self._lifecycle.reset()
 
     def init(self):
         self.u_buffer.fill(0)
         self.e_buffer.fill(0)
         self.ptr = 0
         self.error = None
+        self.inp = None
+        self.t = None
+        self._last_output = None
+        self._lifecycle.reset()
         return True
 
     def input(self, t, error, *args, **kwargs):
-        error = np.array(error).reshape(-1)
-        self.inp = error
-        self.error = limit_signal(error)
-        self.t = t
+        """Validate and latch one periodic error sample without mutation."""
+
+        del args, kwargs
+        self._lifecycle.require_input_slot()
+        self.t = finite_real_scalar(t, "controller time")
+        self.inp = finite_real_vector(error, "controller error", self.dim)
+        self.error = limit_signal(self.inp)
+        self._last_output = None
+        self._lifecycle.latch()
+
+    def evaluate(self, *args, **kwargs):
+        """Advance the repetitive buffers exactly once for the latched sample."""
+
+        del args, kwargs
+        with self._lifecycle.evaluation():
+            assert self.error is not None
+            u_prev = self.u_buffer[self.ptr]
+            lead_ptr = (self.ptr + self.m_lead) % self.N
+            e_lead = self.e_buffer[lead_ptr]
+
+            u_curr = self.q_filter * u_prev + self.k_rc * e_lead
+
+            self.u_buffer[self.ptr] = u_curr
+            self.e_buffer[self.ptr] = self.error
+            self.ptr = (self.ptr + 1) % self.N
+            self._last_output = np.asarray(limit_signal(u_curr), dtype=float).copy()
+        return self.output()
 
     def output(self, *args, **kwargs):
-        if self.error is None:
-            return np.zeros(self.dim)
+        """Read the completed repetitive command without moving its buffers."""
 
-        u_prev = self.u_buffer[self.ptr]
-        lead_ptr = (self.ptr + self.m_lead) % self.N
-        e_lead = self.e_buffer[lead_ptr]
+        del args, kwargs
+        self._lifecycle.require_output()
+        assert self._last_output is not None
+        return self._last_output.copy()
 
-        u_curr = self.q_filter * u_prev + self.k_rc * e_lead
+    def step(self, t, error):
+        """Compose input, evaluation, and output for one local sample."""
 
-        self.u_buffer[self.ptr] = u_curr
-        self.e_buffer[self.ptr] = self.error
-        self.ptr = (self.ptr + 1) % self.N
+        self.input(t, error)
+        self.evaluate()
+        return self.output()
 
-        return limit_signal(u_curr)
+    @property
+    def lifecycle_state(self):
+        """Return the current strict runtime state."""
+
+        return self._lifecycle.state
 
     def calc_error(self, *args, **kwargs):
         pass

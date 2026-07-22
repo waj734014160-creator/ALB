@@ -6,13 +6,13 @@ interface whose ``input`` and ``output`` meanings vary by domain.
 """
 
 from dataclasses import dataclass
-from typing import Any, Iterator, Optional, Protocol, runtime_checkable
+from typing import Any, Iterator, Optional, Protocol, TypeAlias, runtime_checkable
 
 import numpy as np
 import numpy.typing as npt
 
 
-FloatArray = npt.NDArray[np.float64]
+FloatArray: TypeAlias = npt.NDArray[np.float64]
 
 
 @runtime_checkable

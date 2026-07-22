@@ -5,9 +5,11 @@ from ALB.contracts.optional import import_optional_module
 
 _EXPORTS = {
     "ControllerBlock": ("ALB.control.blocks", "ControllerBlock"),
+    "LegacyControllerAdapter": ("ALB.control.adapters", "LegacyControllerAdapter"),
     "PID": ("ALB.control.pid", "PID"),
     "FuzzyPID": ("ALB.control.fuzzy", "FuzzyPID"),
     "ALBLQGController": ("ALB.control.lqg", "ALBLQGController"),
+    "RepetitiveController": ("ALB.control.controllers", "RepetitiveController"),
     "limit_signal": ("ALB.core.validation", "limit_signal"),
     "moog_servovalve": ("ALB.control.valve", "moog_servovalve"),
     "moog_2nd_servovalve": ("ALB.control.valve", "moog_2nd_servovalve"),

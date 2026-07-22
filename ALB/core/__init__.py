@@ -15,10 +15,14 @@ from .computation import (
     StateAdvancingBlock,
 )
 from .events import Signal
+from .lifecycle import LifecycleState, RuntimeLifecycle
 from .time import TimeIter, TimeIterDt
 from .steps import StepCommitLedger
 from .validation import (
     VALID_UNIT_SYSTEMS,
+    finite_real_array,
+    finite_real_scalar,
+    finite_real_vector,
     finite_vector,
     get_unit_system,
     limit_signal,
@@ -35,6 +39,8 @@ __all__ = [
     "ComponentBase",
     "EvaluatingBlock",
     "LatchedComputationalBlock",
+    "LifecycleState",
+    "RuntimeLifecycle",
     "Signal",
     "SolvingBlock",
     "StateAdvancingBlock",
@@ -42,6 +48,9 @@ __all__ = [
     "TimeIterDt",
     "StepCommitLedger",
     "VALID_UNIT_SYSTEMS",
+    "finite_real_array",
+    "finite_real_scalar",
+    "finite_real_vector",
     "finite_vector",
     "get_unit_system",
     "limit_signal",

@@ -77,6 +77,7 @@ def _lqg_arrays() -> dict[str, np.ndarray]:
     next_states = []
     for time, error in zip(times, errors):
         controller.input(float(time), error)
+        controller.evaluate()
         outputs.append(controller.output())
         states.append(np.asarray(controller.x_hat, dtype=float).reshape(-1))
         next_states.append(np.asarray(controller.x_next, dtype=float).reshape(-1))
@@ -111,6 +112,7 @@ def _repetitive_arrays() -> dict[str, np.ndarray]:
     pointers = []
     for time, error in zip(times, errors):
         controller.input(float(time), error)
+        controller.evaluate()
         outputs.append(controller.output())
         pointers.append(controller.ptr)
     return {
@@ -134,6 +136,7 @@ def _servovalve_arrays() -> dict[str, np.ndarray]:
     outputs = []
     for time, command in zip(times, commands):
         valve.input(float(time), float(command))
+        valve.evaluate()
         outputs.append(np.asarray(valve.output(), dtype=float).reshape(-1))
     return {
         "servovalve.times": times,

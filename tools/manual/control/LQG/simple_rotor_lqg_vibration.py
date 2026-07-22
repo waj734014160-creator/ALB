@@ -181,6 +181,7 @@ def _simulate(
 
         if controlled:
             controller.input(time_value, measured_output)
+            controller.evaluate()
             command = controller.output()
         else:
             command = np.zeros(2)
