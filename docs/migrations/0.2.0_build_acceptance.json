@@ -1,12 +1,20 @@
 {
   "schema": "alb.build-acceptance.v1",
   "version": "0.2.0",
-  "candidate_commit": "6751d7d509ced488bd63a896f7681b6572a11d96",
+  "candidate_commit": "365676a9067188e754c9222b85ff6b76de61a677",
+  "source": {
+    "tree_sha256": "94cd52a1568489191e5ae2a60bec5ebe7c8684a4f2d64860ae9d56e4d662c7af",
+    "file_count": 119,
+    "pyproject_sha256": "7e857aa8ec7ed3d76e822b37dffbc61a30255e44d4e7421b307cb98e6cea7021",
+    "wheel_source_files_checked": 118,
+    "missing_wheel_members": [],
+    "mismatched_wheel_members": []
+  },
   "wheel": {
-    "path": "dist/re_alb-0.2.0-py3-none-any.whl",
-    "size_bytes": 293544,
-    "sha256": "9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf197ebd8dea76",
-    "member_count": 122,
+    "path": "dist/re_alb-0.2.0-1-py3-none-any.whl",
+    "size_bytes": 305485,
+    "sha256": "5266ca0c4bc5bf07599e41445dbaeac6f9929577cd9e110e98da6398f0bc5bcc",
+    "member_count": 123,
     "forbidden_members_present": [],
     "required_members_present": [
       "ALB/contracts/block.py",
@@ -27,12 +35,61 @@
       "io",
       "surrogate",
       "test"
-    ]
+    ],
+    "requirements_by_extra": {
+      "core": [
+        "numba>=0.58",
+        "numpy>=1.24",
+        "pandas>=2.0",
+        "scipy>=1.10",
+        "tqdm>=4.65"
+      ],
+      "all": [
+        "control>=0.10",
+        "json5>=0.9",
+        "matplotlib>=3.7",
+        "ross-rotordynamics>=1.4",
+        "scikit-fem>=11",
+        "scikit-fuzzy>=0.4",
+        "scikit-learn>=1.3",
+        "torch>=2.1"
+      ],
+      "control": [
+        "control>=0.10",
+        "matplotlib>=3.7",
+        "scikit-fuzzy>=0.4"
+      ],
+      "dynamics": [
+        "matplotlib>=3.7",
+        "ross-rotordynamics>=1.4"
+      ],
+      "film": [
+        "matplotlib>=3.7",
+        "scikit-fem>=11"
+      ],
+      "io": [
+        "json5>=0.9"
+      ],
+      "surrogate": [
+        "matplotlib>=3.7",
+        "scikit-learn>=1.3",
+        "torch>=2.1"
+      ],
+      "test": [
+        "build>=1.2",
+        "import-linter>=2.0",
+        "mypy>=1.10",
+        "pytest>=9"
+      ]
+    },
+    "matches_pyproject": true
   },
   "isolated_install": {
-    "root": "outputs/wheel_smoke/installed_4d30324",
-    "dependency_path": "outputs/.devtools",
-    "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+    "root": "outputs/wheel_smoke/wheel_install_release_365676a",
+    "dependency_paths": [
+      "outputs/wheel_smoke/devtools_365676a"
+    ],
+    "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
     "version": "0.2.0",
     "root_exports": [
       "AdvancingBlock",
@@ -74,10 +131,10 @@
   },
   "extra_smokes": {
     "core": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl",
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
       "resolved": [
         "ALB.contracts.ResultBundle",
         "ALB.core.StepCommitLedger"
@@ -91,10 +148,10 @@
       }
     },
     "film": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[film]",
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[film]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
       "resolved": [
         "ALB.physics.film.SkfemNewtonFilm"
       ],
@@ -104,10 +161,10 @@
       }
     },
     "control": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[control]",
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[control]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
       "resolved": [
         "ALB.control.FuzzyPID",
         "ALB.control.PID"
@@ -119,10 +176,10 @@
       }
     },
     "dynamics": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[dynamics]",
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[dynamics]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
       "resolved": [
         "ALB.dynamics.RossRotor"
       ],
@@ -132,10 +189,10 @@
       }
     },
     "surrogate": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[surrogate]",
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[surrogate]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
       "resolved": [
         "ALB.surrogate.Net",
         "ALB.surrogate.training.TrainingConfig"
@@ -147,10 +204,10 @@
       }
     },
     "io": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[io]",
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[io]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
       "resolved": [
         "ALB.infrastructure.config_io.read_json5"
       ],
@@ -159,10 +216,10 @@
       }
     },
     "all": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[all]",
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[all]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
       "resolved": [
         "ALB.infrastructure.DirectoryArtifactWriter",
         "ALB.systems.alb.ALBHarmonicLinear"
@@ -179,10 +236,10 @@
       }
     },
     "test": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-py3-none-any.whl[test]",
+      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[test]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\installed_4d30324\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
       "resolved": [
         "ALB.contracts.ComputationalBlock",
         "build",
@@ -203,12 +260,12 @@
     "alb-migrate-config": {
       "module": "ALB.config.cli",
       "returncode": 0,
-      "usage": "usage: cli.py [-h] [--overwrite] source destination"
+      "usage": "usage: ALB.config.cli [-h] [--overwrite] source destination"
     },
     "alb-migrate-surrogate": {
       "module": "ALB.surrogate.cli",
       "returncode": 0,
-      "usage": "usage: cli.py [-h] [--metadata METADATA] [--overwrite]"
+      "usage": "usage: ALB.surrogate.cli [-h] [--metadata METADATA] [--overwrite]"
     }
   },
   "overall_status": "passed"
