@@ -803,6 +803,7 @@ def run_acceptance() -> dict[str, Any]:
             f"Fresh mypy version mismatch: expected={MYPY_VERSION}, "
             f"actual={mypy_version}"
         )
+    # Keep the first verified wheel until the outer launcher stages its exact bytes.
     _cleanup_runtime_paths(
         pytest_report,
         pytest_basetemp,
@@ -811,7 +812,6 @@ def run_acceptance() -> dict[str, Any]:
         fresh_devtools,
         wheel_gate.report_path,
         wheel_gate.installed_root,
-        wheel_gate.wheel_root,
         wheel_gate.build_source_root,
         wheel_gate.reproducibility_wheel_root,
         wheel_gate.reproducibility_build_source_root,
