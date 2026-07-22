@@ -213,6 +213,24 @@ FIFTH_REVIEW_NODEIDS = {
         "test_candidate_head_must_remain_unchanged"
     ),
 }
+SEVENTH_REVIEW_NODEIDS = {
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_harmonic_runtime_failure_invalidates_partial_step"
+        "[controller-nonfinite]"
+    ),
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_harmonic_runtime_failure_invalidates_partial_step"
+        "[valve-nonfinite]"
+    ),
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_harmonic_output_overflow_invalidates_runtime"
+    ),
+}
+
+
 SIXTH_REVIEW_NODEIDS = {
     (
         "tests/regression/test_sixth_review_runtime_reference.py::"
@@ -551,6 +569,13 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("The complete sixth-review regression node set was not recorded")
     if any(item["outcome"] != "passed" for item in sixth_review_reports):
         raise AssertionError("A sixth-review regression node did not pass")
+    seventh_review_reports = [
+        item for item in reports["reports"] if item["nodeid"] in SEVENTH_REVIEW_NODEIDS
+    ]
+    if {item["nodeid"] for item in seventh_review_reports} != SEVENTH_REVIEW_NODEIDS:
+        raise AssertionError("The complete seventh-review regression node set was not recorded")
+    if any(item["outcome"] != "passed" for item in seventh_review_reports):
+        raise AssertionError("A seventh-review regression node did not pass")
 
     mypy_environment = environment.copy()
     mypy_install_command, mypy_install = _install_fresh_mypy(
@@ -657,6 +682,7 @@ def run_acceptance() -> dict[str, Any]:
             "fourth_review_reports": fourth_review_reports,
             "fifth_review_reports": fifth_review_reports,
             "sixth_review_reports": sixth_review_reports,
+            "seventh_review_reports": seventh_review_reports,
         },
         "mypy": {
             "install_command": subprocess.list2cmdline(mypy_install_command),
