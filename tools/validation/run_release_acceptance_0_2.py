@@ -359,6 +359,18 @@ P2_ARCHITECTURE_NODEIDS = {
         "test_scalar_and_vector_validators_do_not_silently_change_shape"
     ),
     (
+        "tests/unit/dynamics/test_rotor_lifecycle.py::"
+        "test_rotor_advance_failure_requires_successful_reinitialization"
+    ),
+    (
+        "tests/unit/dynamics/test_rotor_lifecycle.py::"
+        "test_rotor_results_and_persistence_are_read_only_after_advance"
+    ),
+    (
+        "tests/regression/bearing/test_alb_harmonic_linear.py::"
+        "test_builtin_coefficient_contract_and_base_match"
+    ),
+    (
         "tests/unit/workflows/test_layered_mypy_gate.py::"
         "test_layered_gate_covers_every_python_file_in_target_namespaces"
     ),
