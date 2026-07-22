@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from tools.validation import run_release_acceptance_0_2 as acceptance
+from tools.validation.release_wheel_gate import _copy_tracked_build_inputs
 
 
 def test_release_acceptance_rejects_dirty_tracked_worktree_before_tests(monkeypatch):
@@ -62,6 +63,21 @@ def test_sensitive_runtime_input_filter_ignores_cache_and_output_artifacts():
     )
     assert not acceptance._is_sensitive_runtime_input("outputs/run/result.json")
     assert not acceptance._is_sensitive_runtime_input(".codex/settings.json")
+
+
+def test_wheel_build_uses_run_owned_tracked_source_copy(tmp_path: Path) -> None:
+    """Wheel builds must not create backend artifacts in the candidate tree."""
+
+    source_root = tmp_path / "wheel-source"
+    _copy_tracked_build_inputs(acceptance.REPOSITORY_ROOT, source_root)
+
+    assert (source_root / "pyproject.toml").read_bytes() == (
+        acceptance.REPOSITORY_ROOT / "pyproject.toml"
+    ).read_bytes()
+    assert (source_root / "ALB/__init__.py").read_bytes() == (
+        acceptance.REPOSITORY_ROOT / "ALB/__init__.py"
+    ).read_bytes()
+    assert not (source_root / "tests").exists()
 
 
 def test_candidate_head_must_remain_unchanged(monkeypatch):

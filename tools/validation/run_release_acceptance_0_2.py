@@ -781,6 +781,7 @@ def run_acceptance() -> dict[str, Any]:
         wheel_gate.report_path,
         wheel_gate.installed_root,
         wheel_gate.wheel_root,
+        wheel_gate.build_source_root,
     )
     after = _tracked_status()
     if after:
