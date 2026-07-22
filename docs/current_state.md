@@ -40,7 +40,7 @@
 - 七轮审查参考：`refs/seventh_review_release_reference_v7.{json,npz}` 在 commit `908abd7` 的生产修正前冻结 harmonic 合法控制器、阀、位移/速度、力和重新初始化路径共 27 个数组；修正后逐元素精确相等，既有 v1-v6 参考均未覆盖。
 - 八轮制品身份参考：commit `a29290e` 在工具修正前创建 `refs/eighth_review_wheel_identity_reference_v8.json`，冻结 candidate `4d6e609` 的 119 个 release Git blob、规范源码摘要 `39bece7c…`、v7 行为参考哈希，以及两份旧 wheel 证据的差异；生产 `ALB/**` 与运行时 `pyproject.toml` 内容保持精确一致。
 - 原生控制生命周期参考：commit `00a842b` 创建 `refs/native_control_lifecycle_reference_v9.{json,npz}`，在生产修改前冻结 LQG、重复控制器和二阶伺服阀的 18 个多步数组；迁移后逐元素精确相等，既有 v1-v8 参考均未覆盖。
-- 当前阶段：P2-1 至 P2-12 的实现和分阶段提交已完成，498 节点测试映射与 canonical import map 已重建；正在从最终候选执行全量、可复现 wheel 和 detached 发布验收。正式通过数字及新 wheel SHA 以 `0.2.0_p2_architecture_acceptance.json` 为准，在机器报告生成前不预填。
+- 当前阶段：P2-1 至 P2-12 已完成实现、分阶段提交、498 节点测试映射、canonical import map、可复现 wheel 和 detached 正式验收。验收候选为 `46cf6a6`；本次只剩把机器证据与最终状态文档作为证据提交，不再改动候选运行时源码。
 
 ## 已完成的 0.2.0 边界
 
@@ -88,7 +88,7 @@
 | 六轮代码审查修正 | 候选提交 `66fe326`：421 passed、13 skipped、0 warnings、27 subtests passed；434 个节点全部收集；第六轮 8 个关键节点全部通过；27 个 v6 有效行为数组逐元素精确相等；contracts/core 19 个文件和独立 runtime 1 个文件严格 mypy 通过；detached worktree 测试前后 HEAD、tracked 状态及敏感输入均保持不变 | `docs/migrations/0.2.0_sixth_review_acceptance.json` |
 | 七轮代码审查修正 | 候选提交 `728b198`：436 passed、13 skipped、0 warnings、27 subtests passed；449 个节点全部收集；27 个 v7 合法行为数组逐元素精确相等；pytest 9.0.3、37 个最终插件、精确 skip allowlist、contracts/core 及 harmonic runtime 严格 mypy、现场 wheel 和 detached worktree 前后状态全部通过 | `docs/migrations/0.2.0_seventh_review_acceptance.json` |
 | 八轮 wheel 制品身份修正 | 候选提交 `62b53be`：438 passed、13 skipped、0 warnings、27 subtests passed；451 个节点全部收集；4 个制品身份关键节点通过；Git blob 规范摘要、两次构建、detached 安装、最终发布文件、构建报告和验收报告的 wheel SHA 全部一致 | `docs/migrations/0.2.0_eighth_review_acceptance.json` |
-| P2 架构实现（正式候选验收前） | LQG、重复控制器和伺服阀 18 个 v9 数组逐元素精确相等；18 个 strict 目标通过；完整四领域 56 个文件的 221 条历史诊断精确匹配；接口、属性、失败恢复和发布阶段聚焦测试通过；498 个节点全部收集并映射 | `docs/migrations/0.2.0_p2_architecture_closure.md`、`refs/native_control_lifecycle_reference_v9.json`、`tools/validation/mypy_layer_baseline.json` |
+| P2 架构正式验收 | 候选 `46cf6a6`：485 passed、13 skipped、0 warnings、27 subtests passed；498 个节点全部收集，84 个历史与 P2 关键 nodeid 构建前预检通过；18 个 strict 目标通过，56 个领域文件的 221 条历史诊断精确匹配；detached 前后 HEAD 和 launcher tracked 状态不变 | `docs/migrations/0.2.0_p2_architecture_acceptance.json`、`docs/migrations/0.2.0_p2_architecture_closure.md` |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
@@ -97,7 +97,10 @@
 | 同机性能 | film 0.8943、thermal 0.9114、ALB 0.9098、ALBNN 0.9028、coupling 0.9550，均低于 1.15 阈值 | `docs/migrations/0.2.0_performance.json` |
 | Wheel | `re_alb-0.2.0-1-py3-none-any.whl` 从当前 tracked 源码构建；118 个 ALB 文件逐字节核对、METADATA 与 `pyproject.toml` 一致，隔离安装、8 组 extras import smoke、namespace smoke 和两个 CLI `--help` 通过 | `docs/migrations/0.2.0_build_acceptance.json` |
 
-当前发布 wheel SHA-256 为 `a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897`。它包含 123 个成员，不包含已删除的旧平铺模块；规范 release 源摘要为 `39bece7caecfaec5924578bc25f195447d2c6461dda00e3f3f223416c5e9ef52`。旧无 build tag 文件因本机 ACL 无法覆盖，仅作为本地历史文件，不属于发布脚本默认目标。
+当前发布 wheel 为 `dist/re_alb-0.2.0-1-py3-none-any.whl`，SHA-256 为
+`fb694ee1ef02fb61241de791b3a6b559aea18f4e511d6a783109241fdbdbac7f`。同一候选的两次规范构建、
+detached 实际安装制品、构建报告、验收报告和磁盘最终文件六处 SHA 完全一致；旧八轮 wheel 仅作为
+历史验收制品保留，不属于当前默认发布目标。
 
 ## 外部消费者状态
 
@@ -134,13 +137,12 @@
 
 ## 发布后下一步
 
-1. 完成 P2 最终候选的全量、分层 mypy、双 wheel 可复现构建、隔离安装和 detached 机器验收，并只从同一次验收发布精确 wheel 字节。
-2. 后续按文件逐步减少 221 条历史 mypy 诊断；每次只降低精确基线，不扩大 relaxations。
-3. 为 `task/task_alb_data2.py` 的混合单位调用先建立参考与显式尺度适配器；不要直接套用 nondimensional strict port。
-4. 将新 base/expert/residual 训练输出自动封装为 0.2 model package；residual 的主模型嵌套关系需先定义 manifest 语义。
-5. 为 PAPER_WORK 四个顶层执行脚本增加主入口隔离，并为两个 M0035 内部代理建立 DTO block 参考后再迁移。
-6. 为 `task/task_thermal_forces.py` 接入真实 `pooln` 并单独验证并行输出次序和确定性。
-7. 为 fresh 工具链增加带哈希 constraints 或 wheelhouse；版本专用关键 nodeid 集合可在 0.3 发布策略建立时迁入独立 manifest。
+1. 后续按文件逐步减少 221 条历史 mypy 诊断；每次只降低精确基线，不扩大 relaxations。
+2. 为 `task/task_alb_data2.py` 的混合单位调用先建立参考与显式尺度适配器；不要直接套用 nondimensional strict port。
+3. 将新 base/expert/residual 训练输出自动封装为 0.2 model package；residual 的主模型嵌套关系需先定义 manifest 语义。
+4. 为 PAPER_WORK 四个顶层执行脚本增加主入口隔离，并为两个 M0035 内部代理建立 DTO block 参考后再迁移。
+5. 为 `task/task_thermal_forces.py` 接入真实 `pooln` 并单独验证并行输出次序和确定性。
+6. 为 fresh 工具链增加带哈希 constraints 或 wheelhouse；版本专用关键 nodeid 集合可在 0.3 发布策略建立时迁入独立 manifest。
 
 ## 证据入口
 
@@ -158,7 +160,7 @@
 - 六轮代码审查修正门禁：`docs/migrations/0.2.0_sixth_review_acceptance.json`。
 - 七轮代码审查修正门禁：`docs/migrations/0.2.0_seventh_review_acceptance.json`。
 - 八轮 wheel 制品身份门禁：`docs/migrations/0.2.0_eighth_review_acceptance.json`。
-- P2 架构收敛：`docs/migrations/0.2.0_p2_architecture_closure.md`；正式机器验收将写入 `docs/migrations/0.2.0_p2_architecture_acceptance.json`。
+- P2 架构收敛：`docs/migrations/0.2.0_p2_architecture_closure.md`；正式机器验收与构建证据：`docs/migrations/0.2.0_p2_architecture_acceptance.json`、`docs/migrations/0.2.0_p2_architecture_build_acceptance.json`。
 - 控制状态和耦合时序参考：`refs/control_state_contract_reference_v1.json`、`refs/control_lifecycle_reference_v2.json`、`refs/rotor_bearing_coupling_time_reference_v3.json`、`refs/rotor_dof_coupling_reference_v4.json`。
 - 三轮兼容性参考：`refs/third_review_compatibility_reference_v3.json`。
 - 原生控制生命周期参考：`refs/native_control_lifecycle_reference_v9.json`。

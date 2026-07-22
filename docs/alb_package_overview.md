@@ -171,7 +171,7 @@ thermal ALBNN 的实际输入列、feature set、target transform 和模型选�
 | `all` | 全部运行时领域依赖 |
 | `test` | build、import-linter、mypy、pytest |
 
-缺少 optional dependency 时，namespace 会给出对应 extra 的安装提示。wheel 和隔离安装证据位于 `docs/migrations/0.2.0_build_acceptance.json`。
+缺少 optional dependency 时，namespace 会给出对应 extra 的安装提示。当前 P2 候选的 wheel 和隔离安装证据位于 `docs/migrations/0.2.0_p2_architecture_build_acceptance.json`。
 
 ## 类型与发布门禁
 
