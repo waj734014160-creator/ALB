@@ -117,6 +117,28 @@ class _ReinitializationFailureController(_FactoryLegacyController):
         return super().output()
 
 
+class _RuntimeFailureController(_FactoryLegacyController):
+    """Controller double that mutates once before a runtime output failure."""
+
+    def __init__(self, output_size: int | None = None) -> None:
+        self.output_size = output_size
+        self.output_calls = 0
+
+    def output(self) -> np.ndarray:
+        self.output_calls += 1
+        if self.output_size is None:
+            raise RuntimeError("controller runtime failed")
+        return np.zeros(self.output_size, dtype=float)
+
+
+class _FailingValve(_ReadOnlyValve):
+    """Valve double that fails after latching its command."""
+
+    def input(self, time, command) -> None:
+        super().input(time, command)
+        raise RuntimeError("second valve failed")
+
+
 def _lqg_controller() -> ALBLQGController:
     controller = ALBLQGController(SimpleNamespace(), dt=0.01, eso_enable=False)
     controller.active_ctrl_sys_d = SimpleNamespace(
@@ -337,6 +359,74 @@ def test_failed_harmonic_reinitialization_invalidates_runtime(
     assert bearing.init() is True
     bearing.input(np.zeros(2), np.zeros(2), 0.0)
     assert bearing.output()["force"].shape == (2,)
+
+
+@pytest.mark.parametrize(
+    "failure_point", ["controller", "command-shape", "second-valve"]
+)
+def test_harmonic_runtime_failure_invalidates_partial_step(failure_point):
+    """A partial controller/valve advance cannot be observed or retried."""
+
+    bearing = ALBHarmonicLinear(
+        _zero_base_coefficients(),
+        node_link=3,
+        servo_config=Moog2ndServoConfig(dt=0.001),
+        controller_factory=_FactoryLegacyController,
+        warmup_steps=24,
+    )
+    first_valve = None
+    if failure_point == "controller":
+        bearing.controller = _RuntimeFailureController()
+    elif failure_point == "command-shape":
+        bearing.controller = _RuntimeFailureController(output_size=3)
+    else:
+        first_valve = _ReadOnlyValve()
+        bearing.servovalves = [first_valve, _FailingValve()]
+
+    with pytest.raises((RuntimeError, ValueError), match="failed|reshape"):
+        bearing.input(np.asarray([1.0e-6, -2.0e-6]), np.zeros(2), 0.0)
+
+    assert bearing._valid is False
+    assert bearing._has_input is False
+    if first_valve is not None:
+        assert first_valve.input_calls == 1
+    for operation in (
+        lambda: bearing.input(np.zeros(2), np.zeros(2), 0.0),
+        bearing.output,
+        lambda: bearing.results,
+    ):
+        with pytest.raises(RuntimeError, match="runtime is invalid"):
+            operation()
+
+    assert bearing.init() is True
+    bearing.input(np.zeros(2), np.zeros(2), 0.0)
+    assert bearing.output()["force"].shape == (2,)
+
+
+def test_harmonic_output_failure_invalidates_partial_result(monkeypatch):
+    """A result-recording failure also invalidates the advanced runtime."""
+
+    bearing = ALBHarmonicLinear(
+        _zero_base_coefficients(),
+        node_link=3,
+        servo_config=Moog2ndServoConfig(dt=0.001),
+        controller_factory=_FactoryLegacyController,
+        warmup_steps=24,
+    )
+    bearing.input(np.asarray([1.0e-6, -2.0e-6]), np.zeros(2), 0.0)
+
+    def fail_recording(name):
+        del name
+        raise RuntimeError("result recording failed")
+
+    monkeypatch.setattr(bearing.signal, "lead_loop", fail_recording)
+    with pytest.raises(RuntimeError, match="result recording failed"):
+        bearing.output()
+
+    assert bearing._valid is False
+    assert bearing._has_input is False
+    with pytest.raises(RuntimeError, match="runtime is invalid"):
+        bearing.output()
 
 
 def test_public_alb_subclass_defaults_are_fresh_per_instance():

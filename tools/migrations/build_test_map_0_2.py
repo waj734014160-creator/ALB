@@ -185,7 +185,7 @@ def build_map() -> dict[str, Any]:
             "replacement_nodeids_sha256": _node_digest(replacement_nodeids),
             "all_replacements_collected": True,
             "full_suite_evidence": (
-                "docs/migrations/0.2.0_fifth_review_acceptance.json"
+                "docs/migrations/0.2.0_sixth_review_acceptance.json"
             ),
             "notes": [
                 "All 242 baseline nodes have an explicit replacement node.",

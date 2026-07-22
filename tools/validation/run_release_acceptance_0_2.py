@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 from typing import Any
 import uuid
@@ -16,8 +17,8 @@ import uuid
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.2.0_release_acceptance.json"
 RUNTIME_ROOT = REPOSITORY_ROOT / "outputs/release_acceptance"
-DEVTOOLS_ROOT = REPOSITORY_ROOT / "outputs/.devtools"
 PYTHON = Path("E:/Anaconda2023/envs/ALB/python.exe")
+MYPY_VERSION = "2.3.0"
 S0011_NODEIDS = {
     (
         "tests/unit/bearing/test_thermal_segregated_newton.py::"
@@ -212,6 +213,36 @@ FIFTH_REVIEW_NODEIDS = {
         "test_candidate_head_must_remain_unchanged"
     ),
 }
+SIXTH_REVIEW_NODEIDS = {
+    (
+        "tests/regression/test_sixth_review_runtime_reference.py::"
+        "test_sixth_review_valid_behavior_matches_v6_reference_exactly"
+    ),
+    *{
+        (
+            "tests/unit/systems/test_controller_compatibility.py::"
+            "test_harmonic_runtime_failure_invalidates_partial_step"
+            f"[{failure_point}]"
+        )
+        for failure_point in ("controller", "command-shape", "second-valve")
+    },
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_harmonic_output_failure_invalidates_partial_result"
+    ),
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_sensitive_scanner_catches_shadow_packages_and_devtools"
+    ),
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_acceptance_environment_removes_python_injection_variables"
+    ),
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_detached_acceptance_command_is_isolated_and_internal"
+    ),
+}
 
 
 def _run(command: list[str], *, environment: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -246,14 +277,7 @@ def _is_sensitive_runtime_input(path: str) -> bool:
     """Return whether an uncommitted path can alter imports or test execution."""
 
     normalized = path.replace("\\", "/").lstrip("./")
-    parts = normalized.split("/")
-    if "__pycache__" in parts or normalized.endswith((".pyc", ".pyo")):
-        return False
-    if normalized.startswith(("ALB/", "tests/")):
-        return True
-    if normalized.startswith("tools/") and normalized.endswith((".py", ".pyi")):
-        return True
-    if "/" not in normalized and normalized.endswith((".py", ".pyi")):
+    if normalized.endswith((".py", ".pyi", ".pyd", ".so")):
         return True
     return normalized in {"pytest.ini", "tox.ini", "setup.cfg", "pyproject.toml"}
 
@@ -262,11 +286,14 @@ def _sensitive_uncommitted_inputs() -> dict[str, list[str]]:
     """List untracked and ignored files that can influence acceptance."""
 
     pathspecs = (
-        "ALB",
-        "tests",
-        "tools",
+        ":(glob)**/*.py",
+        ":(glob)**/*.pyi",
+        ":(glob)**/*.pyd",
+        ":(glob)**/*.so",
         ":(top,glob)*.py",
         ":(top,glob)*.pyi",
+        ":(top,glob)*.pyd",
+        ":(top,glob)*.so",
         "pytest.ini",
         "tox.ini",
         "setup.cfg",
@@ -291,6 +318,37 @@ def _sensitive_uncommitted_inputs() -> dict[str, list[str]]:
         )
         for name, output in groups.items()
     }
+
+
+def _acceptance_environment() -> dict[str, str]:
+    """Return an environment without caller-controlled Python/test injection."""
+
+    environment = os.environ.copy()
+    for name in (
+        "PYTHONHOME",
+        "PYTHONPATH",
+        "PYTHONSTARTUP",
+        "PYTEST_ADDOPTS",
+        "PYTEST_PLUGINS",
+    ):
+        environment.pop(name, None)
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONIOENCODING"] = "utf-8"
+    environment["PYTHONNOUSERSITE"] = "1"
+    return environment
+
+
+def _detached_acceptance_command(worktree: Path, output: Path) -> list[str]:
+    """Return the isolated command executed inside a detached candidate tree."""
+
+    return [
+        str(PYTHON),
+        "-I",
+        str(worktree / "tools/validation/run_release_acceptance_0_2.py"),
+        "--internal-detached",
+        "--output",
+        str(output),
+    ]
 
 
 def _assert_candidate_head(candidate_commit: str) -> str:
@@ -337,6 +395,52 @@ def _mypy_version(environment: dict[str, str]) -> str:
     return completed.stdout.strip()
 
 
+def _install_fresh_mypy(
+    target: Path,
+    environment: dict[str, str],
+) -> tuple[list[str], subprocess.CompletedProcess[str]]:
+    """Install the pinned type checker into a new run-owned directory."""
+
+    if target.exists() and any(target.iterdir()):
+        raise RuntimeError(f"Fresh mypy target is not empty: {target}")
+    target.mkdir(parents=True, exist_ok=True)
+    command = [
+        str(PYTHON),
+        "-m",
+        "pip",
+        "install",
+        "--isolated",
+        "--disable-pip-version-check",
+        "--no-input",
+        "--no-compile",
+        "--target",
+        str(target),
+        f"mypy=={MYPY_VERSION}",
+    ]
+    completed = _run(command, environment=environment)
+    if completed.returncode != 0:
+        raise RuntimeError(
+            "Fresh mypy installation failed:\n"
+            + completed.stdout
+            + completed.stderr
+        )
+    return command, completed
+
+
+def _cleanup_runtime_paths(*paths: Path) -> None:
+    """Remove only run-owned paths beneath the validated runtime root."""
+
+    runtime_root = RUNTIME_ROOT.resolve()
+    for path in paths:
+        resolved = path.resolve()
+        if resolved == runtime_root or not resolved.is_relative_to(runtime_root):
+            raise RuntimeError(f"Refusing to clean path outside runtime root: {resolved}")
+        if resolved.is_dir():
+            shutil.rmtree(resolved)
+        elif resolved.exists():
+            resolved.unlink()
+
+
 def run_acceptance() -> dict[str, Any]:
     runtime_root = RUNTIME_ROOT.resolve()
     if not runtime_root.is_relative_to(REPOSITORY_ROOT / "outputs"):
@@ -346,10 +450,10 @@ def run_acceptance() -> dict[str, Any]:
     pytest_report = runtime_root / f"pytest_reports_{run_token}.json"
     pytest_basetemp = runtime_root / f"pytest_tmp_{run_token}"
     mypy_cache = runtime_root / f"mypy_cache_{run_token}"
+    runtime_mypy_cache = runtime_root / f"runtime_mypy_cache_{run_token}"
+    fresh_devtools = runtime_root / f"devtools_{run_token}"
 
-    environment = os.environ.copy()
-    environment["PYTHONDONTWRITEBYTECODE"] = "1"
-    environment["PYTHONIOENCODING"] = "utf-8"
+    environment = _acceptance_environment()
     environment["ALB_RELEASE_PYTEST_REPORT"] = str(pytest_report)
     before = _tracked_status()
     if before:
@@ -427,9 +531,19 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("The complete fifth-review regression node set was not recorded")
     if any(item["outcome"] != "passed" for item in fifth_review_reports):
         raise AssertionError("A fifth-review regression node did not pass")
+    sixth_review_reports = [
+        item for item in reports["reports"] if item["nodeid"] in SIXTH_REVIEW_NODEIDS
+    ]
+    if {item["nodeid"] for item in sixth_review_reports} != SIXTH_REVIEW_NODEIDS:
+        raise AssertionError("The complete sixth-review regression node set was not recorded")
+    if any(item["outcome"] != "passed" for item in sixth_review_reports):
+        raise AssertionError("A sixth-review regression node did not pass")
 
     mypy_environment = environment.copy()
-    mypy_environment["PYTHONPATH"] = str(DEVTOOLS_ROOT)
+    mypy_install_command, mypy_install = _install_fresh_mypy(
+        fresh_devtools, mypy_environment
+    )
+    mypy_environment["PYTHONPATH"] = str(fresh_devtools)
     mypy_command = [
         str(PYTHON),
         "-m",
@@ -445,6 +559,33 @@ def run_acceptance() -> dict[str, Any]:
     mypy_run = _run(mypy_command, environment=mypy_environment)
     if mypy_run.returncode != 0:
         raise RuntimeError("Strict mypy acceptance failed:\n" + mypy_run.stdout + mypy_run.stderr)
+    runtime_mypy_command = [
+        str(PYTHON),
+        "-m",
+        "mypy",
+        "ALB/systems/alb/_harmonic_runtime.py",
+        "--config-file",
+        "pyproject.toml",
+        "--no-incremental",
+        "--follow-imports=skip",
+        "--cache-dir",
+        str(runtime_mypy_cache),
+    ]
+    runtime_mypy_run = _run(runtime_mypy_command, environment=mypy_environment)
+    if runtime_mypy_run.returncode != 0:
+        raise RuntimeError(
+            "Harmonic runtime mypy acceptance failed:\n"
+            + runtime_mypy_run.stdout
+            + runtime_mypy_run.stderr
+        )
+    mypy_version = _mypy_version(mypy_environment)
+    _cleanup_runtime_paths(
+        pytest_report,
+        pytest_basetemp,
+        mypy_cache,
+        runtime_mypy_cache,
+        fresh_devtools,
+    )
     after = _tracked_status()
     if after:
         raise AssertionError(
@@ -495,13 +636,25 @@ def run_acceptance() -> dict[str, Any]:
             "third_review_reports": third_review_reports,
             "fourth_review_reports": fourth_review_reports,
             "fifth_review_reports": fifth_review_reports,
+            "sixth_review_reports": sixth_review_reports,
         },
         "mypy": {
+            "install_command": subprocess.list2cmdline(mypy_install_command),
+            "install_returncode": mypy_install.returncode,
+            "install_summary_tail": (
+                mypy_install.stdout + "\n" + mypy_install.stderr
+            ).splitlines()[-20:],
             "command": subprocess.list2cmdline(mypy_command),
             "returncode": mypy_run.returncode,
-            "version": _mypy_version(mypy_environment),
+            "version": mypy_version,
             "stdout": mypy_run.stdout.strip(),
             "stderr": mypy_run.stderr.strip(),
+            "incremental_runtime": {
+                "command": subprocess.list2cmdline(runtime_mypy_command),
+                "returncode": runtime_mypy_run.returncode,
+                "stdout": runtime_mypy_run.stdout.strip(),
+                "stderr": runtime_mypy_run.stderr.strip(),
+            },
         },
         "worktree": {
             "tracked_status_before": before,
@@ -534,20 +687,133 @@ def run_acceptance() -> dict[str, Any]:
             "fifth_review_release_v5": (
                 "refs/fifth_review_release_reference_v5.json"
             ),
+            "sixth_review_runtime_v6": (
+                "refs/sixth_review_runtime_reference_v6.json"
+            ),
         },
         "overall_status": "passed",
     }
+
+
+def _remove_detached_worktree(worktree: Path) -> None:
+    """Remove only the run-owned detached worktree under the project parent."""
+
+    resolved = worktree.resolve()
+    expected_parent = REPOSITORY_ROOT.resolve().parent
+    if (
+        resolved.parent != expected_parent
+        or not resolved.name.startswith(".alb_release_acceptance_")
+    ):
+        raise RuntimeError(f"Refusing to remove unexpected worktree: {resolved}")
+    completed = subprocess.run(
+        ["git", "worktree", "remove", "--force", str(resolved)],
+        cwd=REPOSITORY_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            "Detached acceptance worktree removal failed:\n"
+            + completed.stdout
+            + completed.stderr
+        )
+    if resolved.exists():
+        shutil.rmtree(resolved)
+
+
+def run_acceptance_in_detached_worktree() -> dict[str, Any]:
+    """Run acceptance only from a detached checkout of the candidate SHA."""
+
+    before = _tracked_status()
+    if before:
+        raise RuntimeError(
+            "Detached acceptance requires a clean tracked launcher worktree:\n"
+            + json.dumps(before, ensure_ascii=False, indent=2)
+        )
+    candidate_commit = _git("rev-parse", "HEAD")
+    worktree = REPOSITORY_ROOT.resolve().parent / (
+        f".alb_release_acceptance_{os.getpid()}_{uuid.uuid4().hex[:8]}"
+    )
+    if worktree.exists():
+        raise FileExistsError(f"Detached acceptance path already exists: {worktree}")
+
+    added = subprocess.run(
+        ["git", "worktree", "add", "--detach", str(worktree), candidate_commit],
+        cwd=REPOSITORY_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if added.returncode != 0:
+        raise RuntimeError(
+            "Detached acceptance worktree creation failed:\n"
+            + added.stdout
+            + added.stderr
+        )
+
+    internal_output = worktree / "outputs/release_acceptance/evidence.json"
+    command = _detached_acceptance_command(worktree, internal_output)
+    environment = _acceptance_environment()
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=worktree,
+            env=environment,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError(
+                "Detached release acceptance failed:\n"
+                + completed.stdout
+                + completed.stderr
+            )
+        payload = json.loads(internal_output.read_text(encoding="utf-8"))
+    finally:
+        _remove_detached_worktree(worktree)
+
+    after = _tracked_status()
+    if after != before:
+        raise AssertionError(
+            "Launcher worktree changed during detached acceptance:\n"
+            + json.dumps({"before": before, "after": after}, ensure_ascii=False)
+        )
+    candidate_after = _assert_candidate_head(candidate_commit)
+    if payload.get("candidate_commit") != candidate_commit:
+        raise AssertionError("Detached report is not bound to the launcher candidate")
+    payload["execution"] = {
+        "mode": "detached_worktree",
+        "python_isolated_mode": True,
+        "candidate_head_before": candidate_commit,
+        "candidate_head_after": candidate_after,
+        "launcher_tracked_status_before": before,
+        "launcher_tracked_status_after": after,
+    }
+    return payload
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--overwrite-output", action="store_true")
+    parser.add_argument("--internal-detached", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     output = args.output.resolve()
     if output.exists() and not args.overwrite_output:
         raise FileExistsError(f"Refusing to overwrite release evidence: {output}")
-    payload = run_acceptance()
+    payload = (
+        run_acceptance()
+        if args.internal_detached
+        else run_acceptance_in_detached_worktree()
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

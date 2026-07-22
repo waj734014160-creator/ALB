@@ -36,7 +36,8 @@
 - 三轮审查参考：`refs/third_review_compatibility_reference_v3.{json,npz}` 在生产修正前冻结 LQG、重复控制器、旧式控制器、ServoValve2、合法 6-DOF 状态读取和默认配置共 17 个数组；修正后逐元素精确相等。
 - 四轮审查参考：`refs/fourth_review_release_reference_v4.{json,npz}` 在生产修正前冻结默认 harmonic-PID 的构造、运行和重新初始化轨迹、普通 ALB 启用控制时的阀命令，以及非默认 PID 配置回读，共 13 个数组；当前工作树逐元素精确相等。
 - 五轮审查参考：`refs/fifth_review_release_reference_v5.{json,npz}` 在第五轮生产修正前冻结 harmonic 成功运行/重新初始化、PID/FuzzyPID 合法带标签回读和三个公开 ALB 子类的默认初始矩阵，共 27 个数组；当前工作树逐元素精确相等。
-- 当前阶段：第五轮发现的 2 个 P1 和 2 个 P2 已关闭；代码提交 `690d69a`、测试映射提交 `27729ee`，后者作为干净候选通过 413 passed、13 skipped、0 warnings、27 subtests passed。测试前后 tracked 状态、敏感 untracked/ignored 输入均为空且 HEAD 一致，本轮 `Request changes` 发布阻塞已解除。
+- 六轮审查参考：`refs/sixth_review_runtime_reference_v6.{json,npz}` 在第六轮生产修正前继续冻结第五轮 27 个合法行为数组；当前工作树逐元素精确相等。
+- 当前阶段：第六轮新发现的 2 个 P1 已在工作树修复：harmonic 运行中半推进异常立即使 runtime 失效；发布验收改为候选 SHA 的 detached worktree、清理 Python/pytest 注入环境并使用新建的固定版本 mypy 目录。全量工作树运行得到 420 passed、13 skipped、27 subtests passed，唯一失败是新增 8 个节点后旧测试映射 collection SHA 过期；聚焦门禁为 34 passed，contracts/core 19 个文件和独立 runtime 1 个文件严格 mypy 通过。尚未提交、未更新测试映射，也未生成第六轮正式验收，因此合并状态继续保持 `Request changes`。
 
 ## 已完成的 0.2.0 边界
 
@@ -56,6 +57,7 @@
 14. 三轮审查确认的 5 个问题已修复：ALB/harmonic 对严格及旧式控制器的共享适配、coupler 失效后的 `results/save` 封锁、`current_state()` 严格节点校验、无控制器配置的显式表达与回读，以及 ServoValve2 单次 evaluate。
 15. 第四轮审查修正已提交：harmonic 真实公共生命周期支持控制器实例/工厂注入；永久控制许可与定时启动分离；无控制器普通 ALB 输出零命令；PID/FuzzyPID/none 带类型标签精确回读；coupler 改拓扑后立即失效；正式发布证据改为测试前必须是干净 tracked 工作树。
 16. 第五轮审查修正已提交并验收：harmonic 重初始化失败后整体失效并封锁状态出口；正式验收拒绝敏感 untracked/ignored 输入并验证 HEAD 前后一致；带标签的嵌套控制器配置严格校验类型和字段；`ALBSV`、`NodimALB`、`NodimALBSV` 不再共享可变默认配置。
+17. 第六轮工作树修正已实现：`input()`/`output()` 的控制器、命令整形、双阀和记录阶段由严格 runtime guard 封锁半推进异常；正式验收从 detached candidate 执行，不再依赖本地 `outputs/.devtools`。上述结论待提交后全量验收绑定。
 
 ## 当前验收结论
 
@@ -73,6 +75,7 @@
 | 三轮工作树验收（非发布绑定证据） | 390 passed、13 skipped、0 warnings、11 subtests passed；17 个兼容参考数组逐元素精确相等；但 `candidate_commit=e2313c7`，测试时 tracked 工作树已包含第三轮修改，不能证明提交 `7910eaa` 的干净树通过 | `docs/migrations/0.2.0_third_review_acceptance.json` |
 | 四轮代码审查修正 | 候选提交 `0abf6dd`：402 passed、13 skipped、0 warnings、15 subtests passed；415 个节点全部收集；第四轮 12 个关键节点及 4 个子测试全部通过；13 个 v4 有效行为数组逐元素精确相等；contracts/core 的 19 个文件 mypy 无问题；测试前后 tracked 状态均为空 | `docs/migrations/0.2.0_fourth_review_acceptance.json` |
 | 五轮代码审查修正 | 候选提交 `27729ee`：413 passed、13 skipped、0 warnings、27 subtests passed；426 个节点全部收集；第五轮 11 个关键节点及相关子测试全部通过；27 个 v5 有效行为数组逐元素精确相等；contracts/core 的 19 个文件 mypy 无问题；测试前后 tracked、敏感 untracked/ignored 状态均为空且 HEAD 一致 | `docs/migrations/0.2.0_fifth_review_acceptance.json` |
+| 六轮工作树修正（非发布绑定证据） | 420 passed、13 skipped、27 subtests passed；唯一失败为待提交后重建的测试映射 collection SHA；聚焦 34 passed；27 个 v6 数组逐元素精确相等；contracts/core 19 个文件和独立 runtime 1 个文件严格 mypy 通过 | `refs/sixth_review_runtime_reference_v6.json`、`tests/regression/test_sixth_review_runtime_reference.py` |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
@@ -110,6 +113,7 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - 两张会被重生成的 thermal 热图已解除 Git 跟踪但保留本地文件；`.codex/` 与 `test/control/LQG/` 也保留原地。四类路径均由根 `.gitignore` 精确忽略。
 - 第三轮验收 JSON 只证明带未提交修改的工作树通过测试，不绑定提交 `7910eaa`，因此只保留为历史工作树证据。第四轮已完成“代码提交 `dc2de7f`、测试映射提交 `0abf6dd`、干净树验收、证据提交”的闭环；正式报告的 `candidate_commit` 为 `0abf6dd`，测试前后 tracked 状态均为空。
 - 第五轮已完成“代码提交 `690d69a`、测试映射提交 `27729ee`、干净候选验收、证据提交”的闭环。新的验收门禁会拒绝 `ALB/`、`tests/` 中未提交文件、`tools/` 中未提交 Python 输入和根目录 Python/config 输入（包括被 ignore 的文件），并要求测试前后 HEAD 不变；正式报告的 `candidate_commit` 为 `27729ee`。
+- 第六轮正式证据尚未生成。新的 detached 验收器会从候选 SHA 建立位于 `ALB_PROJECTS` 下的临时 worktree，使外部 `SURROGATE_TRAIN` 只读测试仍能找到兄弟目录；完成后删除该临时 worktree。候选内部仍扫描任意位置的未提交 `.py/.pyi/.pyd/.so`，并为 mypy 创建、使用和清理全新运行目录。
 - 四轮审查涉及的具体缺陷已经关闭，但三个结构性欠账仍在：`thermal/solver.py` 等 6 个主要模块仍为约 1269-3259 行的单体；ServoValve2 仍以兼容方式保留 `input()` 内计算，LQG 和 RepetitiveController 也尚未原生迁入严格状态机；mypy 严格门禁仍只覆盖 contracts/core 的 19 个文件。这些属于分阶段重构工作，不能用本轮局部修复宣称完成。
 
 ## 发布后下一步

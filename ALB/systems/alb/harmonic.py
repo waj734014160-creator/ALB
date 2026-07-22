@@ -25,6 +25,8 @@ from ALB.core import BearingComponentBase
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve
 
+from ._harmonic_runtime import RuntimeFailureGuard
+
 
 BUILTIN_COEFFICIENT_RESOURCE = "data/alb_harmonic_linear_gamma1_50hz.json"
 
@@ -402,6 +404,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         self._last_recorded_time: float | None = None
         self._has_input = False
         self._valid = False
+        self._runtime_guard = RuntimeFailureGuard(self._invalidate_runtime)
         self.init()
 
     @property
@@ -478,6 +481,14 @@ class ALBHarmonicLinear(BearingComponentBase):
         self._last_input = None
         self._last_recorded_time = None
         self._has_input = False
+
+    def _invalidate_runtime(self) -> None:
+        """Discard a partial controller/valve runtime and block state access."""
+
+        self._valid = False
+        self.controller = None
+        self.servovalves = []
+        self._reset_public_state()
 
     def _sensor_matrix(self) -> np.ndarray:
         """Return the project two-channel controller sensor projection."""
@@ -626,15 +637,8 @@ class ALBHarmonicLinear(BearingComponentBase):
     def init(self, *args, **kwargs) -> bool:
         """Initialize the runtime, exposing state only after complete success."""
 
-        self._valid = False
-        self._has_input = False
-        self._last_time = None
-        self._last_input = None
-        self._last_recorded_time = None
+        self._invalidate_runtime()
         self._results = pd.DataFrame(columns=self._RESULT_COLUMNS)
-        self.controller = None
-        self.servovalves = []
-        self._reset_public_state()
         try:
             self._build_runtime()
             self._warm_strict_base()
@@ -651,9 +655,7 @@ class ALBHarmonicLinear(BearingComponentBase):
             self._last_recorded_time = None
             self._has_input = False
         except Exception:
-            self.controller = None
-            self.servovalves = []
-            self._reset_public_state()
+            self._invalidate_runtime()
             raise
         self._valid = True
         return True
@@ -687,17 +689,18 @@ class ALBHarmonicLinear(BearingComponentBase):
             if not np.isclose(elapsed, self.dt, rtol=0.0, atol=tolerance):
                 raise ValueError("Bearing input time step does not match configured dt")
 
-        self._advance_control(time_s, position)
-        delta_spool = self.spool - self.coefficients.base_spool
-        self.spool_quadrature = (
-            delta_spool * self._phase_cosine - self._previous_delta_spool
-        ) / self._phase_sine
-        self._previous_delta_spool = delta_spool.copy()
-        self.uxy = position
-        self.uxyt = velocity
-        self._last_time = time_s
-        self._last_input = (position.copy(), velocity.copy())
-        self._has_input = True
+        with self._runtime_guard.phase():
+            self._advance_control(time_s, position)
+            delta_spool = self.spool - self.coefficients.base_spool
+            self.spool_quadrature = (
+                delta_spool * self._phase_cosine - self._previous_delta_spool
+            ) / self._phase_sine
+            self._previous_delta_spool = delta_spool.copy()
+            self.uxy = position
+            self.uxyt = velocity
+            self._last_time = time_s
+            self._last_input = (position.copy(), velocity.copy())
+            self._has_input = True
         return True
 
     def output(self, *args, **kwargs) -> dict[str, Any]:
@@ -708,30 +711,31 @@ class ALBHarmonicLinear(BearingComponentBase):
             raise ValueError("ALBHarmonicLinear only outputs dimensional force")
         if not self._has_input:
             raise RuntimeError("input() must be called before output()")
-        delta_position = self.uxy - self.coefficients.equilibrium_position
-        delta_spool = self.spool - self.coefficients.base_spool
-        self._force_stiffness = -self.coefficients.stiffness @ delta_position
-        self._force_damping = -self.coefficients.damping @ self.uxyt
-        self._force_spool = (
-            self.coefficients.spool_transfer.real @ delta_spool
-            + self.coefficients.spool_transfer.imag @ self.spool_quadrature
-        )
-        self.force = (
-            self.coefficients.static_force
-            + self._force_stiffness
-            + self._force_damping
-            + self._force_spool
-        )
-        self.signal.lead_loop("finish_signal")
-        return {
-            "force": self.force.copy(),
-            "friction": 0.0,
-            "force_stiffness": self._force_stiffness.copy(),
-            "force_damping": self._force_damping.copy(),
-            "force_spool": self._force_spool.copy(),
-            "spool": self.spool.copy(),
-            "spool_command": self.spool_command.copy(),
-        }
+        with self._runtime_guard.phase():
+            delta_position = self.uxy - self.coefficients.equilibrium_position
+            delta_spool = self.spool - self.coefficients.base_spool
+            self._force_stiffness = -self.coefficients.stiffness @ delta_position
+            self._force_damping = -self.coefficients.damping @ self.uxyt
+            self._force_spool = (
+                self.coefficients.spool_transfer.real @ delta_spool
+                + self.coefficients.spool_transfer.imag @ self.spool_quadrature
+            )
+            self.force = (
+                self.coefficients.static_force
+                + self._force_stiffness
+                + self._force_damping
+                + self._force_spool
+            )
+            self.signal.lead_loop("finish_signal")
+            return {
+                "force": self.force.copy(),
+                "friction": 0.0,
+                "force_stiffness": self._force_stiffness.copy(),
+                "force_damping": self._force_damping.copy(),
+                "force_spool": self._force_spool.copy(),
+                "spool": self.spool.copy(),
+                "spool_command": self.spool_command.copy(),
+            }
 
     def finish_signal(self) -> None:
         """Record the latest completed coupling state once per timestamp."""
