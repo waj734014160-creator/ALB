@@ -1,6 +1,6 @@
 """Controller and servovalve configuration contracts."""
 
-from ._models import (
+from .control_models import (
     FuzzyPIDConfig,
     LQGConfig,
     Moog2ndServoConfig,

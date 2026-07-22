@@ -1,0 +1,306 @@
+# coding: utf-8
+import copy
+from typing import TYPE_CHECKING, Iterable, Union
+
+import numpy as np
+import pandas as pd
+from scipy import sparse as sp
+from scipy.sparse import linalg as sl
+
+from ALB.core.component import BaseCSystem, BaseSimpleModel
+from ALB.core.events import Signal
+from ALB.physics.bearing import four_pads_bearings, nodim_four_pads_bearings
+from ALB.config import (
+    ALBConfig,
+    CsoArgs,
+    FPBConfig,
+    FuzzyPIDConfig,
+    NodimALBConfig,
+    OrificeConfig,
+    PIDConfig,
+    ServoConfig,
+    TankConfig,
+    ThermalConfig,
+    build_thermal_config,
+)
+from ALB.control.fuzzy import FuzzyPID
+from ALB.control.pid import PID
+from ALB.control.adapters import adapt_controller
+from ALB.control.blocks import run_controller_step, run_valve_step
+from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
+from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
+from ALB.control.valve import moog_2nd_servovalve, moog_servovalve, static_sv
+from ALB.physics.thermal import (
+    NodimThermalHydroBearing,
+    wrap_pad_collection_with_thermal,
+)
+
+if TYPE_CHECKING:
+    from ALB.surrogate.inference import ALBNet
+
+_NODIM_ALB_FORBIDDEN_PAD_KWARGS = {"miu", "c", "r", "l", "ps", "rho", "w", "w_rad"}
+_NODIM_ALB_LEGACY_REQUIRED_KEYS = [
+    "lambda_value",
+    "lr",
+    "lx",
+    "lz",
+    "position",
+    "cq0",
+    "cq1",
+    "cq2",
+]
+_NODIM_ALB_PAD_MAIN_KEYS = {"lambda_value", "lr", "lx", "lz", "nx", "nz", "bias"}
+
+from .runtime import ALB, ALBSV
+
+class ALBBuilder:
+    """
+    Builder class for constructing an ALB (Active Lubricated Bearing) system.
+    Refactored from ALBCreator to provide a robust, type-safe, and fluent interface.
+    """
+
+    def __init__(self, alb_config: ALBConfig = None):
+        """
+        Initialize the builder. If alb_config is provided, it populates the sub-configs automatically.
+        """
+        self.alb_config = alb_config
+
+        # Sub-configurations (can be overridden manually)
+        self.pad_config: Union[FPBConfig, None] = (
+            alb_config.pad_config if alb_config else None
+        )
+        self.servo_config: Union[ServoConfig, None] = (
+            alb_config.servo_config if alb_config else None
+        )
+        self.orifice_config: Union[OrificeConfig, None] = (
+            alb_config.orifice_config if alb_config else None
+        )
+        self.tank_config: Union[TankConfig, None] = (
+            alb_config.tank_config if alb_config else None
+        )
+        self.controller_config: Union[PIDConfig, FuzzyPIDConfig, None] = (
+            alb_config.controller_config if alb_config else None
+        )
+
+        # Internal components storage
+        self._pads = []
+        self._servovalves = []
+        self._static_svs = []
+        self._controller = None
+        self._orifices = {}  # stores soa_x, sob_x, etc.
+
+        self.wiring_strategy = None
+
+    # -------------------------- Configuration Steps --------------------------
+
+    def set_pads_config(self, config: FPBConfig):
+        self.pad_config = config
+        return self
+
+    def set_servo_config(self, config: ServoConfig):
+        self.servo_config = config
+        return self
+
+    def set_orifice_config(self, config: OrificeConfig):
+        self.orifice_config = config
+        return self
+
+    def set_tank_config(self, config: TankConfig):
+        self.tank_config = config
+        return self
+
+    def set_controller_config(self, config: Union[PIDConfig, FuzzyPIDConfig]):
+        self.controller_config = config
+        return self
+
+    def set_wiring_strategy(self, strategy_func):
+        """
+        Set a custom wiring strategy for pads, servos, and orifices.
+        Expected signature: (pads, servos, orifices) -> None.
+        """
+        self.wiring_strategy = strategy_func
+        return self
+
+    def _create_pads(self):
+        if not self.pad_config:
+            raise ValueError("Pad configuration is missing.")
+        return four_pads_bearings(self.pad_config)
+
+    def _create_servos(self, servo_type: str):
+        if not self.servo_config:
+            raise ValueError("Servo configuration is missing.")
+
+        # Create Dynamic Servos (for control)
+        if servo_type == "moog":
+            sv_x = moog_servovalve(
+                self.servo_config.dt,
+                self.servo_config.delay,
+                self.servo_config.tw,
+                self.servo_config.zeta,
+                self.servo_config.tp3,
+            )
+            sv_y = moog_servovalve(
+                self.servo_config.dt,
+                self.servo_config.delay,
+                self.servo_config.tw,
+                self.servo_config.zeta,
+                self.servo_config.tp3,
+            )
+        elif servo_type == "moog_2nd":
+            sv_x = moog_2nd_servovalve(
+                self.servo_config.dt,
+                self.servo_config.delay,
+                self.servo_config.tw,
+                self.servo_config.zeta,
+            )
+            sv_y = moog_2nd_servovalve(
+                self.servo_config.dt,
+                self.servo_config.delay,
+                self.servo_config.tw,
+                self.servo_config.zeta,
+            )
+        elif servo_type == "static":
+            sv_x = static_sv(self.servo_config.dt)
+            sv_y = static_sv(self.servo_config.dt)
+        else:
+            raise ValueError(f"Unknown servo type: {servo_type}")
+
+        # Create Static Servos (for static equilibrium calculation)
+        # Note: ALB class expects static_sv to be available implicitly or created internally,
+        # but creating them here ensures consistency.
+        # Logic matches original ALBCreator._static_servo
+        ssv_x = static_sv(self.servo_config.dt)
+        ssv_y = static_sv(self.servo_config.dt)
+
+        return [sv_x, sv_y], [ssv_x, ssv_y]
+
+    def _create_orifices(self):
+        if not self.orifice_config:
+            raise ValueError("Orifice configuration is missing.")
+
+        ps = self.orifice_config.ps
+        p0 = self.orifice_config.p0
+        position = self.orifice_config.position
+        csorifice_args = CsoArgs(cq1_nondim=self.orifice_config.cq1_nondim)
+
+        soa_x = CSOrifice(
+            ps=ps, p0=p0, cso_args=csorifice_args, position=position
+        )
+        sob_x = CSOrifice(
+            ps=p0, p0=ps, cso_args=csorifice_args, position=position
+        )
+        soa_y = copy.deepcopy(soa_x)
+        sob_y = copy.deepcopy(sob_x)
+
+        return {"soa_x": soa_x, "sob_x": sob_x, "soa_y": soa_y, "sob_y": sob_y}
+
+    def _create_controller(self):
+        if not self.controller_config:
+            # Return None or a dummy controller if allowed
+            return None
+
+        if isinstance(self.controller_config, FuzzyPIDConfig):
+            # Original code copied args before creation, keeping that behavior
+            fargs = copy.copy(self.controller_config)
+            return FuzzyPID(fargs)
+        elif isinstance(self.controller_config, PIDConfig):
+            return PID(self.controller_config)
+        else:
+            raise TypeError(
+                f"Unknown controller config type: {type(self.controller_config)}"
+            )
+
+    def _create_thermal_config(self):
+        """Resolve the pad-level thermal config and apply ALB-level defaults."""
+        thermal_config = getattr(self.alb_config.pad_config, "thermal_config", None)
+        if thermal_config is None:
+            return None
+        thermal_args = vars(thermal_config).copy()
+        if thermal_args.get("dt") is None:
+            thermal_args["dt"] = self.alb_config.dt
+        if not thermal_args.get("transient_enabled"):
+            thermal_args["transient_enabled"] = self.alb_config.servo != "static"
+        return ThermalConfig.from_dict(thermal_args)
+
+    # -------------------------- Wiring / Assembly --------------------------
+
+    def _apply_tank_settings(self, bearings: dict):
+        if self.tank_config:
+            for bearing in bearings.values():
+                bearing.set_thickness(
+                    method="add_tank",
+                    xrange=self.tank_config.xrange,
+                    zrange=self.tank_config.zrange,
+                    h_tank=self.tank_config.h_tank,
+                )
+        return bearings
+
+    def _couple_components(self, pads, servos, orifices):
+        if hasattr(self, "wiring_strategy") and self.wiring_strategy:
+            self.wiring_strategy(pads, servos, orifices)
+        else:
+            self._default_wiring(pads, servos, orifices)
+
+    @staticmethod
+    def _default_wiring(pads_dict, servos, orifices):
+        sv_x, sv_y = servos
+
+        # Couple Orifice to Servo
+        sv_x.add_simple_model([orifices["soa_x"], orifices["sob_x"]])
+        sv_y.add_simple_model([orifices["soa_y"], orifices["sob_y"]])
+
+        # Couple Orifice to Bearing Pads
+        pads_dict["up"].add_simple_model(orifices["soa_y"])
+        pads_dict["down"].add_simple_model(orifices["sob_y"])
+        pads_dict["right"].add_simple_model(orifices["soa_x"])
+        pads_dict["left"].add_simple_model(orifices["sob_x"])
+
+        return pads_dict
+
+    # -------------------------- Main Build Method --------------------------
+
+    def build(self) -> ALB:
+        """
+        Constructs the ALB system based on the current configuration.
+        """
+        if not self.alb_config:
+            raise ValueError("ALBConfig is required to build the final system.")
+
+        # 1. Create Components
+        pads_dict = self._create_pads()
+        servos, static_servos = self._create_servos(self.alb_config.servo)
+        orifices = self._create_orifices()
+        controller = self._create_controller()
+
+        # 2. Wire Components (Hydraulic connections)
+        self._couple_components(pads_dict, servos, orifices)
+
+        # 3. Apply Tank Settings (Geometry modification)
+        self._apply_tank_settings(pads_dict)
+
+        # 4. Instantiate ALB (System Assembly)
+        pads_list = wrap_pad_collection_with_thermal(
+            list(pads_dict.values()), self._create_thermal_config()
+        )
+
+        # Determine ALB Class type
+        alb_type = self.alb_config.alb
+        if alb_type == "ALB" or alb_type is None:
+            alb_system = ALB(
+                pads_list, servos, controller=controller, alb_config=self.alb_config
+            )
+        elif alb_type == "ALBSV":
+            alb_system = ALBSV(
+                pads_list, servos, controller=controller, alb_config=self.alb_config
+            )
+        else:
+            raise ValueError(f"Unknown ALB type: {alb_type}")
+
+        # Inject the static servos created earlier (optional, but maintains consistency with original logic)
+        # The ALB class creates its own static_sv internally in _create_static_sv,
+        # but if we wanted to enforce the ones we built:
+        # alb_system.static_sv = static_servos
+
+        return alb_system
+
+__all__ = ["ALBBuilder"]

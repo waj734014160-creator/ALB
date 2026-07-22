@@ -1,5 +1,5 @@
 """Common configuration and time-grid contracts."""
 
-from ._models import ConfigData, ResolvedTimeGrid, TimeGridConfig
+from .common_models import ConfigData, ResolvedTimeGrid, TimeGridConfig
 
 __all__ = ["ConfigData", "ResolvedTimeGrid", "TimeGridConfig"]

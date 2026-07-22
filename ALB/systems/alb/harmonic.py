@@ -23,14 +23,17 @@ from ALB.control.adapters import adapt_controller
 from ALB.control.blocks import run_controller_step, run_valve_step
 from ALB.control.pid import PID
 from ALB.core import BearingComponentBase, LifecycleState, RuntimeLifecycle
-from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
+from ALB.contracts import ArtifactManifest
+from ALB.contracts.result_tree import SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve
 
 from ._harmonic_runtime import (
+    HarmonicForceEvaluator,
     RuntimeFailureGuard,
     finite_real_array,
     finite_real_scalar,
 )
+from .harmonic_results import build_harmonic_save_tree
 
 
 BUILTIN_COEFFICIENT_RESOURCE = "data/alb_harmonic_linear_gamma1_50hz.json"
@@ -382,6 +385,13 @@ class ALBHarmonicLinear(BearingComponentBase):
         self._phase_cosine = float(np.cos(self.phase_step))
         if abs(self._phase_sine) < 1.0e-10:
             raise ValueError("harmonic phase step is singular for quadrature recovery")
+
+        self._force_evaluator = HarmonicForceEvaluator(
+            coefficients.static_force,
+            coefficients.stiffness,
+            coefficients.damping,
+            coefficients.spool_transfer,
+        )
 
         self.controller: Any | None = None
         self.servovalves: list = []
@@ -758,30 +768,16 @@ class ALBHarmonicLinear(BearingComponentBase):
         with self._runtime_guard.phase(), self._lifecycle.evaluation():
             delta_position = self.uxy - self.coefficients.equilibrium_position
             delta_spool = self.spool - self.coefficients.base_spool
-            with np.errstate(over="raise", invalid="raise"):
-                self._force_stiffness = (
-                    -self.coefficients.stiffness @ delta_position
-                )
-                self._force_damping = -self.coefficients.damping @ self.uxyt
-                self._force_spool = (
-                    self.coefficients.spool_transfer.real @ delta_spool
-                    + self.coefficients.spool_transfer.imag
-                    @ self.spool_quadrature
-                )
-                self.force = (
-                    self.coefficients.static_force
-                    + self._force_stiffness
-                    + self._force_damping
-                    + self._force_spool
-                )
-            runtime_vectors = {
-                "stiffness force": self._force_stiffness,
-                "damping force": self._force_damping,
-                "servovalve force": self._force_spool,
-                "bearing force": self.force,
-            }
-            for name, vector in runtime_vectors.items():
-                finite_real_array(name, vector, shape=(2,))
+            evaluated = self._force_evaluator.evaluate(
+                delta_position,
+                self.uxyt,
+                delta_spool,
+                self.spool_quadrature,
+            )
+            self._force_stiffness = evaluated.stiffness
+            self._force_damping = evaluated.damping
+            self._force_spool = evaluated.spool
+            self.force = evaluated.total
             self.signal.lead_loop("finish_signal")
             self._last_output = {
                 "force": self.force.copy(),
@@ -854,7 +850,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         name: str | None = None,
         *args,
         **kwargs,
-    ) -> SaveTreeNode:
+    ) -> SaveTreeNode | ArtifactManifest:
         """Return or persist standard bearing results and coefficient metadata."""
 
         self._require_valid("save results")
@@ -862,27 +858,24 @@ class ALBHarmonicLinear(BearingComponentBase):
             path = "alb_harmonic_linear"
         if name is None:
             name = "bearing"
-        coefficient_frame = pd.DataFrame(
-            [
-                {
-                    "name": self.coefficients.name,
-                    "source": self.coefficients.source,
-                    "node_link": self.node_link,
-                    "clearance_m": self.coefficients.clearance_m,
-                    "shaft_frequency_hz": self.coefficients.shaft_frequency_hz,
-                    "whirl_ratio": self.coefficients.whirl_ratio,
-                    "whirl_frequency_hz": self.coefficients.whirl_frequency_hz,
-                    "dt_s": self.dt,
-                }
-            ]
+        coefficient_metadata = {
+            "name": self.coefficients.name,
+            "source": self.coefficients.source,
+            "node_link": self.node_link,
+            "clearance_m": self.coefficients.clearance_m,
+            "shaft_frequency_hz": self.coefficients.shaft_frequency_hz,
+            "whirl_ratio": self.coefficients.whirl_ratio,
+            "whirl_frequency_hz": self.coefficients.whirl_frequency_hz,
+            "dt_s": self.dt,
+        }
+        return build_harmonic_save_tree(
+            self._results,
+            coefficient_metadata,
+            path,
+            name,
+            tofile=tofile,
+            writer=kwargs.get("writer"),
         )
-        result = DataFrameResult(
-            {name: self._results.copy(), f"{name}_configuration": coefficient_frame}
-        )
-        node = SaveTreeNode(str(path), result)
-        if tofile:
-            return node.persist(kwargs.get("writer"), path)
-        return node
 
 
 def alb_harmonic_linear(

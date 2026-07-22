@@ -8,7 +8,7 @@ import numpy as np
 import scipy.linalg as scipy_linalg
 from scipy.linalg import eigh
 
-from .controllers import (
+from .reduction_core import (
     alpha_shift,
     alpha_unshift,
     balanced_truncation,

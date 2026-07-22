@@ -7,16 +7,15 @@ import pandas as pd
 from tqdm import tqdm
 
 from ALB.core.component import BaseCSystem, BaseSystem
-from ALB.core.lifecycle import LifecycleState, RuntimeLifecycle
+from ALB.core.lifecycle import LifecycleState
 from ALB.core.validation import require_unit_system, validate_bearing_output
-from ALB.contracts import ResultBundle, StepContext, result_snapshot
+from ALB.contracts import ResultBundle, StepContext
 from ALB.dynamics.rotor import Gravity, StaticLoad
-from ALB.core.steps import StepCommitLedger
-
-from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 
 # from ALB.infrastructure.logging import logger
 from .rotor import RossRotor, SingleRotor, UnbalancedExcitation
+from .coupling_runtime import CouplingStepRuntime, coupling_snapshot
+from .coupling_results import build_coupling_save_tree
 from ALB.core.numerics.arrays import vertical_stack_nonempty
 
 
@@ -90,10 +89,8 @@ class RsRotorBearingCouple(BaseCSystem):
         self._nt = None
         self._ts = None
         self._last_output = None
-        self._step_ledger = StepCommitLedger()
-        self._lifecycle = RuntimeLifecycle(
-            "rotor-bearing coupling", input_label="step context"
-        )
+        self._runtime = CouplingStepRuntime()
+        self._step_ledger = self._runtime.ledger
         self._valid = False
 
     @property
@@ -104,7 +101,7 @@ class RsRotorBearingCouple(BaseCSystem):
     def _require_valid(self, operation: str) -> None:
         """Reject access to state that may contain a partially applied step."""
 
-        if not self._lifecycle.is_valid:
+        if not self._runtime.is_valid:
             raise RuntimeError(
                 f"coupling state is invalid; call init() before {operation}"
             )
@@ -113,12 +110,12 @@ class RsRotorBearingCouple(BaseCSystem):
     def lifecycle_state(self) -> LifecycleState:
         """Return the shared coupled-runtime state."""
 
-        return self._lifecycle.state
+        return self._runtime.state
 
     def _invalidate_runtime(self) -> None:
         """Block access after a partial step or a topology change."""
 
-        self._lifecycle.fail()
+        self._runtime.fail()
         self._valid = False
         self._last_output = None
 
@@ -189,29 +186,22 @@ class RsRotorBearingCouple(BaseCSystem):
                 [np.array(self._forceu0), np.array(self._forcef0)]
             )
             self._nt = 0
-            self._step_ledger = StepCommitLedger()
+            self._runtime.reset_ledger()
+            self._step_ledger = self._runtime.ledger
             initial_context = StepContext(
                 0, initial_time, self._time_iter.dt, "dimensional"
             )
-            self._last_output = result_snapshot(
-                {
-                    "rotor_displacement": self._rp["uxy"],
-                    "rotor_velocity": self._rp["uxyt"],
-                    "bearing_force": self._forcef0,
-                    "nodal_force": self._forcen0,
-                },
-                {
-                    "step_index": initial_context.step_index,
-                    "time": initial_context.time,
-                    "unit_system": initial_context.unit_system.value,
-                    "initial_snapshot": True,
-                },
+            self._last_output = coupling_snapshot(
+                self._rp,
+                self._forcef0,
+                self._forcen0,
+                initial_context,
+                initial=True,
             )
-            self._step_ledger.commit_step(initial_context)
+            self._runtime.publish_initial(initial_context)
         except BaseException:
             self._invalidate_runtime()
             raise
-        self._lifecycle.reset(output_available=True)
         self._valid = True
 
     def add_unbalance(
@@ -305,11 +295,9 @@ class RsRotorBearingCouple(BaseCSystem):
             raise TypeError("context must be StepContext")
         if context.unit_system.value != "dimensional":
             raise ValueError("rotor-bearing coupling requires dimensional units")
-        self._step_ledger.validate_next(context)
-        self._lifecycle.require_input_slot()
-        self._lifecycle.latch()
+        self._runtime.latch(context)
         try:
-            with self._lifecycle.evaluation():
+            with self._runtime.evaluation():
                 ts = context.time
                 self._ts = ts
                 uxy_n1 = self._rp["uxy"]
@@ -335,20 +323,13 @@ class RsRotorBearingCouple(BaseCSystem):
                 self._forcef0 = self._forcef1
 
                 self.signal.lead_loop("finish_signal")
-                self._last_output = result_snapshot(
-                    {
-                        "rotor_displacement": self._rp["uxy"],
-                        "rotor_velocity": self._rp["uxyt"],
-                        "bearing_force": self._forcef1,
-                        "nodal_force": self._forcen1,
-                    },
-                    {
-                        "step_index": context.step_index,
-                        "time": context.time,
-                        "unit_system": context.unit_system.value,
-                    },
+                self._last_output = coupling_snapshot(
+                    self._rp,
+                    self._forcef1,
+                    self._forcen1,
+                    context,
                 )
-                self._step_ledger.commit_step(context)
+                self._runtime.commit(context)
                 self._nt += 1
         except BaseException:
             self._invalidate_runtime()
@@ -359,7 +340,7 @@ class RsRotorBearingCouple(BaseCSystem):
         """Read the most recent completed coupled result without advancing."""
 
         self._require_valid("reading output")
-        self._lifecycle.require_output()
+        self._runtime.lifecycle.require_output()
         assert self._last_output is not None
         return self._last_output
 
@@ -374,23 +355,15 @@ class RsRotorBearingCouple(BaseCSystem):
             path = self._save_path
         if name is None:
             name = "RBC"
-        res = {name + "_" + key: data for key, data in self._result.items()}
-        res = DataFrameResult(res)
-        parent_node = SaveTreeNode(path, res)
-        rotor_node = self.rotor.save(tofile=False)
-        bearing_nodes = [
-            bearing.save(
-                path=type(bearing).__name__ + str(bearing.node_link),
-                name=name,
-                tofile=False,
-            )
-            for num, bearing in enumerate(self.bearings)
-        ]
-        parent_node.add_child(rotor_node)
-        parent_node.add_children(bearing_nodes)
-        if tofile:
-            return parent_node.persist(kwargs.get("writer"), path)
-        return parent_node
+        return build_coupling_save_tree(
+            self._result,
+            self.rotor,
+            self.bearings,
+            path,
+            name,
+            tofile=tofile,
+            writer=kwargs.get("writer"),
+        )
 
     def finish_signal(self):
         uxy_n1 = self._rp["uxy"]
