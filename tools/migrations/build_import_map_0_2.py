@@ -22,16 +22,24 @@ MODULE_OVERRIDES: dict[str, list[str]] = {
         "ALB.physics.bearing.decorators",
         "ALB.systems.alb.ports",
     ],
-    "ALB.alb": ["ALB.systems.alb.assembly"],
+    "ALB.alb": [
+        "ALB.systems.alb.builder",
+        "ALB.systems.alb.factories",
+        "ALB.systems.alb.linear",
+        "ALB.systems.alb.runtime",
+        "ALB.systems.alb.surrogate_runtime",
+        "ALB.systems.alb.switch",
+    ],
     "ALB.base": ["ALB.core.component", "ALB.core.fem.base"],
     "ALB.bearing": ["ALB.physics.bearing", "ALB.physics.bearing.solver"],
     "ALB.boundary": ["ALB.core.fem.boundary"],
     "ALB.config": ["ALB.config"],
     "ALB.controller": [
-        "ALB.control.controllers",
         "ALB.control.fuzzy",
         "ALB.control.lqg",
         "ALB.control.pid",
+        "ALB.control.reduction_core",
+        "ALB.control.repetitive",
     ],
     "ALB.couple": ["ALB.dynamics.coupling"],
     "ALB.damping": ["ALB.core.numerics.damping"],
@@ -71,7 +79,7 @@ MODULE_OVERRIDES: dict[str, list[str]] = {
         "ALB.contracts.results",
         "ALB.infrastructure.persistence",
     ],
-    "ALB.rotor": ["ALB.dynamics.rotor"],
+    "ALB.rotor": ["ALB.dynamics.rotor", "ALB.dynamics.rotor_layout"],
     "ALB.servovalve": ["ALB.control.valve"],
     "ALB.task": [
         "ALB.workflows.alb",
@@ -103,6 +111,7 @@ MODULE_OVERRIDES: dict[str, list[str]] = {
 }
 
 SYMBOL_OVERRIDES = {
+    "ALB.controller.test_lqg": ["ALB.control.controllers.test_lqg"],
     "ALB.base.BaseSimpleModel": ["ALB.core.component.BaseSimpleModel"],
     "ALB.config.ConfigData": ["ALB.config.common.ConfigData"],
     "ALB.config.ResolvedTimeGrid": ["ALB.config.common.ResolvedTimeGrid"],

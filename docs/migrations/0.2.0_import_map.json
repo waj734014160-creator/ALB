@@ -49,7 +49,12 @@
     {
       "source": "ALB.alb",
       "targets": [
-        "ALB.systems.alb.assembly"
+        "ALB.systems.alb.builder",
+        "ALB.systems.alb.factories",
+        "ALB.systems.alb.linear",
+        "ALB.systems.alb.runtime",
+        "ALB.systems.alb.surrogate_runtime",
+        "ALB.systems.alb.switch"
       ],
       "status": "migrated",
       "source_file": "ALB/alb.py"
@@ -147,10 +152,11 @@
     {
       "source": "ALB.controller",
       "targets": [
-        "ALB.control.controllers",
         "ALB.control.fuzzy",
         "ALB.control.lqg",
-        "ALB.control.pid"
+        "ALB.control.pid",
+        "ALB.control.reduction_core",
+        "ALB.control.repetitive"
       ],
       "status": "migrated",
       "source_file": "ALB/controller.py"
@@ -446,7 +452,8 @@
     {
       "source": "ALB.rotor",
       "targets": [
-        "ALB.dynamics.rotor"
+        "ALB.dynamics.rotor",
+        "ALB.dynamics.rotor_layout"
       ],
       "status": "migrated",
       "source_file": "ALB/rotor.py"
@@ -590,7 +597,7 @@
     {
       "source": "ALB.alb.ALB",
       "targets": [
-        "ALB.systems.alb.assembly.ALB"
+        "ALB.systems.alb.runtime.ALB"
       ],
       "status": "migrated",
       "rationale": null
@@ -598,7 +605,7 @@
     {
       "source": "ALB.alb.ALBSV",
       "targets": [
-        "ALB.systems.alb.assembly.ALBSV"
+        "ALB.systems.alb.runtime.ALBSV"
       ],
       "status": "migrated",
       "rationale": null
@@ -606,7 +613,7 @@
     {
       "source": "ALB.alb.NodimALB",
       "targets": [
-        "ALB.systems.alb.assembly.NodimALB"
+        "ALB.systems.alb.runtime.NodimALB"
       ],
       "status": "migrated",
       "rationale": null
@@ -614,7 +621,7 @@
     {
       "source": "ALB.alb.NodimALBSV",
       "targets": [
-        "ALB.systems.alb.assembly.NodimALBSV"
+        "ALB.systems.alb.runtime.NodimALBSV"
       ],
       "status": "migrated",
       "rationale": null
@@ -622,7 +629,7 @@
     {
       "source": "ALB.alb.ALBLinear",
       "targets": [
-        "ALB.systems.alb.assembly.ALBLinear"
+        "ALB.systems.alb.linear.ALBLinear"
       ],
       "status": "migrated",
       "rationale": null
@@ -630,7 +637,7 @@
     {
       "source": "ALB.alb.FakeOf",
       "targets": [
-        "ALB.systems.alb.assembly.FakeOf"
+        "ALB.systems.alb.linear.FakeOf"
       ],
       "status": "migrated",
       "rationale": null
@@ -638,7 +645,7 @@
     {
       "source": "ALB.alb.ALBLinearAgent",
       "targets": [
-        "ALB.systems.alb.assembly.ALBLinearAgent"
+        "ALB.systems.alb.linear.ALBLinearAgent"
       ],
       "status": "migrated",
       "rationale": null
@@ -646,7 +653,7 @@
     {
       "source": "ALB.alb.ALBNNAgent",
       "targets": [
-        "ALB.systems.alb.assembly.ALBNNAgent"
+        "ALB.systems.alb.surrogate_runtime.ALBNNAgent"
       ],
       "status": "migrated",
       "rationale": null
@@ -654,7 +661,7 @@
     {
       "source": "ALB.alb.TimerSwitch",
       "targets": [
-        "ALB.systems.alb.assembly.TimerSwitch"
+        "ALB.systems.alb.switch.TimerSwitch"
       ],
       "status": "migrated",
       "rationale": null
@@ -662,7 +669,7 @@
     {
       "source": "ALB.alb.ALBBuilder",
       "targets": [
-        "ALB.systems.alb.assembly.ALBBuilder"
+        "ALB.systems.alb.builder.ALBBuilder"
       ],
       "status": "migrated",
       "rationale": null
@@ -670,7 +677,7 @@
     {
       "source": "ALB.alb.alb2",
       "targets": [
-        "ALB.systems.alb.assembly.alb2"
+        "ALB.systems.alb.factories.alb2"
       ],
       "status": "migrated",
       "rationale": null
@@ -678,7 +685,7 @@
     {
       "source": "ALB.alb.alb2_fuzzy",
       "targets": [
-        "ALB.systems.alb.assembly.alb2_fuzzy"
+        "ALB.systems.alb.factories.alb2_fuzzy"
       ],
       "status": "migrated",
       "rationale": null
@@ -686,7 +693,7 @@
     {
       "source": "ALB.alb.alb2_static",
       "targets": [
-        "ALB.systems.alb.assembly.alb2_static"
+        "ALB.systems.alb.factories.alb2_static"
       ],
       "status": "migrated",
       "rationale": null
@@ -694,7 +701,7 @@
     {
       "source": "ALB.alb.nodim_alb",
       "targets": [
-        "ALB.systems.alb.assembly.nodim_alb"
+        "ALB.systems.alb.factories.nodim_alb"
       ],
       "status": "migrated",
       "rationale": null
@@ -702,7 +709,7 @@
     {
       "source": "ALB.alb.alb_no_controller",
       "targets": [
-        "ALB.systems.alb.assembly.alb_no_controller"
+        "ALB.systems.alb.factories.alb_no_controller"
       ],
       "status": "migrated",
       "rationale": null
@@ -710,7 +717,7 @@
     {
       "source": "ALB.alb.linear_alb",
       "targets": [
-        "ALB.systems.alb.assembly.linear_alb"
+        "ALB.systems.alb.factories.linear_alb"
       ],
       "status": "migrated",
       "rationale": null
@@ -718,7 +725,7 @@
     {
       "source": "ALB.alb.nn_agent",
       "targets": [
-        "ALB.systems.alb.assembly.nn_agent"
+        "ALB.systems.alb.factories.nn_agent"
       ],
       "status": "migrated",
       "rationale": null
@@ -1270,7 +1277,7 @@
     {
       "source": "ALB.controller.PID",
       "targets": [
-        "ALB.control.controllers.PID"
+        "ALB.control.pid.PID"
       ],
       "status": "migrated",
       "rationale": null
@@ -1278,7 +1285,7 @@
     {
       "source": "ALB.controller.FuzzyPID",
       "targets": [
-        "ALB.control.controllers.FuzzyPID"
+        "ALB.control.fuzzy.FuzzyPID"
       ],
       "status": "migrated",
       "rationale": null
@@ -1286,7 +1293,7 @@
     {
       "source": "ALB.controller.BearingContent",
       "targets": [
-        "ALB.control.controllers.BearingContent"
+        "ALB.control.lqg.BearingContent"
       ],
       "status": "migrated",
       "rationale": null
@@ -1294,7 +1301,7 @@
     {
       "source": "ALB.controller.ALBLQGController",
       "targets": [
-        "ALB.control.controllers.ALBLQGController"
+        "ALB.control.lqg.ALBLQGController"
       ],
       "status": "migrated",
       "rationale": null
@@ -1302,7 +1309,7 @@
     {
       "source": "ALB.controller.RCConfig",
       "targets": [
-        "ALB.control.controllers.RCConfig"
+        "ALB.control.repetitive.RCConfig"
       ],
       "status": "migrated",
       "rationale": null
@@ -1310,7 +1317,7 @@
     {
       "source": "ALB.controller.RepetitiveController",
       "targets": [
-        "ALB.control.controllers.RepetitiveController"
+        "ALB.control.repetitive.RepetitiveController"
       ],
       "status": "migrated",
       "rationale": null
@@ -1318,7 +1325,7 @@
     {
       "source": "ALB.controller.default_rules",
       "targets": [
-        "ALB.control.controllers.default_rules"
+        "ALB.control.fuzzy.default_rules"
       ],
       "status": "migrated",
       "rationale": null
@@ -1326,7 +1333,7 @@
     {
       "source": "ALB.controller.alpha_shift",
       "targets": [
-        "ALB.control.controllers.alpha_shift"
+        "ALB.control.reduction_core.alpha_shift"
       ],
       "status": "migrated",
       "rationale": null
@@ -1334,7 +1341,7 @@
     {
       "source": "ALB.controller.alpha_unshift",
       "targets": [
-        "ALB.control.controllers.alpha_unshift"
+        "ALB.control.reduction_core.alpha_unshift"
       ],
       "status": "migrated",
       "rationale": null
@@ -1342,7 +1349,7 @@
     {
       "source": "ALB.controller.balanced_truncation",
       "targets": [
-        "ALB.control.controllers.balanced_truncation"
+        "ALB.control.reduction_core.balanced_truncation"
       ],
       "status": "migrated",
       "rationale": null
@@ -1350,7 +1357,7 @@
     {
       "source": "ALB.controller.compute_modal_info",
       "targets": [
-        "ALB.control.controllers.compute_modal_info"
+        "ALB.control.reduction_core.compute_modal_info"
       ],
       "status": "migrated",
       "rationale": null
@@ -1358,7 +1365,7 @@
     {
       "source": "ALB.controller.print_modal_table",
       "targets": [
-        "ALB.control.controllers.print_modal_table"
+        "ALB.control.reduction_core.print_modal_table"
       ],
       "status": "migrated",
       "rationale": null
@@ -1366,7 +1373,7 @@
     {
       "source": "ALB.controller.modal_truncation_by_frequency",
       "targets": [
-        "ALB.control.controllers.modal_truncation_by_frequency"
+        "ALB.control.reduction_core.modal_truncation_by_frequency"
       ],
       "status": "migrated",
       "rationale": null
@@ -1374,7 +1381,7 @@
     {
       "source": "ALB.controller.modal_truncation_by_damping",
       "targets": [
-        "ALB.control.controllers.modal_truncation_by_damping"
+        "ALB.control.reduction_core.modal_truncation_by_damping"
       ],
       "status": "migrated",
       "rationale": null
@@ -1382,7 +1389,7 @@
     {
       "source": "ALB.controller.modal_truncation_by_index",
       "targets": [
-        "ALB.control.controllers.modal_truncation_by_index"
+        "ALB.control.reduction_core.modal_truncation_by_index"
       ],
       "status": "migrated",
       "rationale": null
@@ -1390,7 +1397,7 @@
     {
       "source": "ALB.controller.modal_truncation_by_dominance",
       "targets": [
-        "ALB.control.controllers.modal_truncation_by_dominance"
+        "ALB.control.reduction_core.modal_truncation_by_dominance"
       ],
       "status": "migrated",
       "rationale": null
@@ -1406,7 +1413,7 @@
     {
       "source": "ALB.controller.balreal",
       "targets": [
-        "ALB.control.controllers.balreal"
+        "ALB.control.reduction_core.balreal"
       ],
       "status": "migrated",
       "rationale": null
@@ -3590,7 +3597,7 @@
     {
       "source": "ALB.rotor.location_mapping_matrix",
       "targets": [
-        "ALB.dynamics.rotor.location_mapping_matrix"
+        "ALB.dynamics.rotor_layout.location_mapping_matrix"
       ],
       "status": "migrated",
       "rationale": null
@@ -4575,7 +4582,7 @@
       "source": "ALB.ALB",
       "legacy_provider": "ALB.alb.ALB",
       "targets": [
-        "ALB.systems.alb.assembly.ALB"
+        "ALB.systems.alb.runtime.ALB"
       ],
       "status": "migrated_root_export"
     },
@@ -4583,7 +4590,7 @@
       "source": "ALB.NodimALB",
       "legacy_provider": "ALB.alb.NodimALB",
       "targets": [
-        "ALB.systems.alb.assembly.NodimALB"
+        "ALB.systems.alb.runtime.NodimALB"
       ],
       "status": "migrated_root_export"
     },
@@ -4591,7 +4598,7 @@
       "source": "ALB.alb2",
       "legacy_provider": "ALB.alb.alb2",
       "targets": [
-        "ALB.systems.alb.assembly.alb2"
+        "ALB.systems.alb.factories.alb2"
       ],
       "status": "migrated_root_export"
     },
@@ -4599,7 +4606,7 @@
       "source": "ALB.alb2_fuzzy",
       "legacy_provider": "ALB.alb.alb2_fuzzy",
       "targets": [
-        "ALB.systems.alb.assembly.alb2_fuzzy"
+        "ALB.systems.alb.factories.alb2_fuzzy"
       ],
       "status": "migrated_root_export"
     },
@@ -4607,7 +4614,7 @@
       "source": "ALB.alb2_static",
       "legacy_provider": "ALB.alb.alb2_static",
       "targets": [
-        "ALB.systems.alb.assembly.alb2_static"
+        "ALB.systems.alb.factories.alb2_static"
       ],
       "status": "migrated_root_export"
     },
@@ -4615,7 +4622,7 @@
       "source": "ALB.nodim_alb",
       "legacy_provider": "ALB.alb.nodim_alb",
       "targets": [
-        "ALB.systems.alb.assembly.nodim_alb"
+        "ALB.systems.alb.factories.nodim_alb"
       ],
       "status": "migrated_root_export"
     },
@@ -4903,7 +4910,7 @@
       "source": "ALB.FuzzyPID",
       "legacy_provider": "ALB.controller.FuzzyPID",
       "targets": [
-        "ALB.control.controllers.FuzzyPID"
+        "ALB.control.fuzzy.FuzzyPID"
       ],
       "status": "migrated_root_export"
     },
@@ -4911,7 +4918,7 @@
       "source": "ALB.PID",
       "legacy_provider": "ALB.controller.PID",
       "targets": [
-        "ALB.control.controllers.PID"
+        "ALB.control.pid.PID"
       ],
       "status": "migrated_root_export"
     },
