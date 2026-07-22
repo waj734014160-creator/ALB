@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from pathlib import Path, PurePath
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 REPORT_PATH = REPOSITORY_ROOT / "docs/migrations/0.2.0_build_acceptance.json"
+
+
+def _has_path_suffix(path: str, expected_suffix: Path) -> bool:
+    """Compare stored evidence paths without binding them to this checkout root."""
+
+    actual_parts = PurePath(path).parts
+    expected_parts = PurePath(expected_suffix).parts
+    return actual_parts[-len(expected_parts) :] == expected_parts
 
 
 def test_wheel_metadata_cli_and_namespace_smokes_passed() -> None:
@@ -36,8 +44,9 @@ def test_wheel_metadata_cli_and_namespace_smokes_passed() -> None:
     }
     assert all(item["returncode"] == 0 for item in report["extra_smokes"].values())
     assert all(
-        Path(item["alb_file"]).resolve().is_relative_to(
-            REPOSITORY_ROOT / report["isolated_install"]["root"]
+        _has_path_suffix(
+            item["alb_file"],
+            Path(report["isolated_install"]["root"]) / "ALB" / "__init__.py",
         )
         for item in report["extra_smokes"].values()
     )
