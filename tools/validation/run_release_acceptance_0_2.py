@@ -213,24 +213,6 @@ FIFTH_REVIEW_NODEIDS = {
         "test_candidate_head_must_remain_unchanged"
     ),
 }
-SEVENTH_REVIEW_NODEIDS = {
-    (
-        "tests/unit/systems/test_controller_compatibility.py::"
-        "test_harmonic_runtime_failure_invalidates_partial_step"
-        "[controller-nonfinite]"
-    ),
-    (
-        "tests/unit/systems/test_controller_compatibility.py::"
-        "test_harmonic_runtime_failure_invalidates_partial_step"
-        "[valve-nonfinite]"
-    ),
-    (
-        "tests/unit/systems/test_controller_compatibility.py::"
-        "test_harmonic_output_overflow_invalidates_runtime"
-    ),
-}
-
-
 SIXTH_REVIEW_NODEIDS = {
     (
         "tests/regression/test_sixth_review_runtime_reference.py::"
@@ -259,6 +241,24 @@ SIXTH_REVIEW_NODEIDS = {
     (
         "tests/unit/workflows/test_release_acceptance_gate.py::"
         "test_detached_acceptance_command_is_isolated_and_internal"
+    ),
+}
+
+
+SEVENTH_REVIEW_NODEIDS = {
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_harmonic_runtime_failure_invalidates_partial_step"
+        "[controller-nonfinite]"
+    ),
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_harmonic_runtime_failure_invalidates_partial_step"
+        "[valve-nonfinite]"
+    ),
+    (
+        "tests/unit/systems/test_controller_compatibility.py::"
+        "test_harmonic_output_overflow_invalidates_runtime"
     ),
 }
 
