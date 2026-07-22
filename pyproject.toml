@@ -51,7 +51,7 @@ test = [
     "build>=1.2",
     "import-linter>=2.0",
     "mypy>=1.10",
-    "pytest>=8",
+    "pytest>=9",
 ]
 
 [project.scripts]
