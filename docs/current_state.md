@@ -37,7 +37,8 @@
 - 四轮审查参考：`refs/fourth_review_release_reference_v4.{json,npz}` 在生产修正前冻结默认 harmonic-PID 的构造、运行和重新初始化轨迹、普通 ALB 启用控制时的阀命令，以及非默认 PID 配置回读，共 13 个数组；当前工作树逐元素精确相等。
 - 五轮审查参考：`refs/fifth_review_release_reference_v5.{json,npz}` 在第五轮生产修正前冻结 harmonic 成功运行/重新初始化、PID/FuzzyPID 合法带标签回读和三个公开 ALB 子类的默认初始矩阵，共 27 个数组；当前工作树逐元素精确相等。
 - 六轮审查参考：`refs/sixth_review_runtime_reference_v6.{json,npz}` 在第六轮生产修正前继续冻结第五轮 27 个合法行为数组；当前工作树逐元素精确相等。
-- 当前阶段：第六轮新发现的 2 个 P1 已修复并完成干净候选验收：harmonic 运行中半推进异常立即使 runtime 失效；发布验收从候选 SHA 的 detached worktree 执行，清理 Python/pytest 注入环境并使用本次新建的固定版本 mypy 目录。候选 `66fe326` 得到 421 passed、13 skipped、0 warnings、27 subtests passed；测试前后 HEAD 一致，tracked 状态及敏感 untracked/ignored 输入均为空。因此本轮两个发布阻塞项已关闭，可解除针对这两项的 `Request changes`。
+- 七轮审查参考：`refs/seventh_review_release_reference_v7.{json,npz}` 在 commit `908abd7` 的生产修正前冻结 harmonic 合法控制器、阀、位移/速度、力和重新初始化路径共 27 个数组；修正后逐元素精确相等，既有 v1-v6 参考均未覆盖。
+- 当前阶段：第七轮两份审查中的 NaN/Inf、复杂数、pytest 隔离、skip/warning、插件证据和 wheel 绑定问题均已修复。候选 `728b198` 从独立 detached worktree 得到 436 passed、13 skipped、0 warnings、27 subtests passed；pytest 9.0.3、37 个最终活动插件、13 个精确允许 skip、两个严格 mypy 门禁、wheel 源码/METADATA/哈希及测试前后 HEAD/敏感输入均通过。因此本轮列出的发布阻塞项已关闭，可解除针对这些具体问题的 `Request changes`。
 
 ## 已完成的 0.2.0 边界
 
@@ -58,6 +59,7 @@
 15. 第四轮审查修正已提交：harmonic 真实公共生命周期支持控制器实例/工厂注入；永久控制许可与定时启动分离；无控制器普通 ALB 输出零命令；PID/FuzzyPID/none 带类型标签精确回读；coupler 改拓扑后立即失效；正式发布证据改为测试前必须是干净 tracked 工作树。
 16. 第五轮审查修正已提交并验收：harmonic 重初始化失败后整体失效并封锁状态出口；正式验收拒绝敏感 untracked/ignored 输入并验证 HEAD 前后一致；带标签的嵌套控制器配置严格校验类型和字段；`ALBSV`、`NodimALB`、`NodimALBSV` 不再共享可变默认配置。
 17. 第六轮审查修正已提交并验收：`input()`/`output()` 的控制器、命令整形、双阀和记录阶段由严格 runtime guard 封锁半推进异常；正式验收从 detached candidate 执行，不再依赖本地 `outputs/.devtools`。旧热参考生成器固定为 LF checkout，历史构建证据路径采用可移植的后缀校验。
+18. 第七轮审查修正已提交并验收：harmonic 在任何 float 转换前拒绝 complex，并对控制器命令、阀芯、轴承输入、quadrature 和最终力执行形状与有限性校验；pytest 使用固定 9.0.3、禁用插件自动加载并精确校验 skip/warning/xfail/插件；wheel 从运行专属 tracked 源码副本构建并核对候选源码和 METADATA，不再污染 detached 候选树。
 
 ## 当前验收结论
 
@@ -76,15 +78,16 @@
 | 四轮代码审查修正 | 候选提交 `0abf6dd`：402 passed、13 skipped、0 warnings、15 subtests passed；415 个节点全部收集；第四轮 12 个关键节点及 4 个子测试全部通过；13 个 v4 有效行为数组逐元素精确相等；contracts/core 的 19 个文件 mypy 无问题；测试前后 tracked 状态均为空 | `docs/migrations/0.2.0_fourth_review_acceptance.json` |
 | 五轮代码审查修正 | 候选提交 `27729ee`：413 passed、13 skipped、0 warnings、27 subtests passed；426 个节点全部收集；第五轮 11 个关键节点及相关子测试全部通过；27 个 v5 有效行为数组逐元素精确相等；contracts/core 的 19 个文件 mypy 无问题；测试前后 tracked、敏感 untracked/ignored 状态均为空且 HEAD 一致 | `docs/migrations/0.2.0_fifth_review_acceptance.json` |
 | 六轮代码审查修正 | 候选提交 `66fe326`：421 passed、13 skipped、0 warnings、27 subtests passed；434 个节点全部收集；第六轮 8 个关键节点全部通过；27 个 v6 有效行为数组逐元素精确相等；contracts/core 19 个文件和独立 runtime 1 个文件严格 mypy 通过；detached worktree 测试前后 HEAD、tracked 状态及敏感输入均保持不变 | `docs/migrations/0.2.0_sixth_review_acceptance.json` |
+| 七轮代码审查修正 | 候选提交 `728b198`：436 passed、13 skipped、0 warnings、27 subtests passed；449 个节点全部收集；27 个 v7 合法行为数组逐元素精确相等；pytest 9.0.3、37 个最终插件、精确 skip allowlist、contracts/core 及 harmonic runtime 严格 mypy、现场 wheel 和 detached worktree 前后状态全部通过 | `docs/migrations/0.2.0_seventh_review_acceptance.json` |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
 | 严格类型 | mypy 2.3.0 检查 `ALB/contracts` 与 `ALB/core`，19 个源文件无问题 | `docs/migrations/0.2.0_release_acceptance.json` |
 | Optional dependency | 各领域 namespace 的缺依赖提示与 extra 安装信息测试通过 | `tests/unit/contracts/`、`tests/validation/test_optional_dependency_errors.py` |
 | 同机性能 | film 0.8943、thermal 0.9114、ALB 0.9098、ALBNN 0.9028、coupling 0.9550，均低于 1.15 阈值 | `docs/migrations/0.2.0_performance.json` |
-| Wheel | `re_alb-0.2.0-py3-none-any.whl` 构建、隔离安装、8 组 extras 独立 import smoke、namespace smoke 和两个 CLI `--help` 通过 | `docs/migrations/0.2.0_build_acceptance.json` |
+| Wheel | `re_alb-0.2.0-1-py3-none-any.whl` 从当前 tracked 源码构建；118 个 ALB 文件逐字节核对、METADATA 与 `pyproject.toml` 一致，隔离安装、8 组 extras import smoke、namespace smoke 和两个 CLI `--help` 通过 | `docs/migrations/0.2.0_build_acceptance.json` |
 
-wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf197ebd8dea76`。它包含 122 个成员，不包含已删除的旧平铺模块。
+当前发布 wheel SHA-256 为 `5266ca0c4bc5bf07599e41445dbaeac6f9929577cd9e110e98da6398f0bc5bcc`。它包含 123 个成员，不包含已删除的旧平铺模块；旧无 build tag 文件因本机 ACL 无法覆盖，仅作为本地历史文件，不属于本轮发布证据。
 
 ## 外部消费者状态
 
@@ -114,6 +117,8 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - 第三轮验收 JSON 只证明带未提交修改的工作树通过测试，不绑定提交 `7910eaa`，因此只保留为历史工作树证据。第四轮已完成“代码提交 `dc2de7f`、测试映射提交 `0abf6dd`、干净树验收、证据提交”的闭环；正式报告的 `candidate_commit` 为 `0abf6dd`，测试前后 tracked 状态均为空。
 - 第五轮已完成“代码提交 `690d69a`、测试映射提交 `27729ee`、干净候选验收、证据提交”的闭环。新的验收门禁会拒绝 `ALB/`、`tests/` 中未提交文件、`tools/` 中未提交 Python 输入和根目录 Python/config 输入（包括被 ignore 的文件），并要求测试前后 HEAD 不变；正式报告的 `candidate_commit` 为 `27729ee`。
 - 第六轮已完成“代码与可移植性修复、测试映射提交 `66fe326`、detached 干净候选验收、证据提交”的闭环。验收器从候选 SHA 建立位于 `ALB_PROJECTS` 下的临时 worktree，使外部 `SURROGATE_TRAIN` 只读测试仍能找到兄弟目录；完成后删除临时 worktree。候选内部扫描任意位置的未提交 `.py/.pyi/.pyd/.so`，并为 mypy 创建、使用和清理全新运行目录；正式报告的 `candidate_commit` 为 `66fe326`。
+- 第七轮已完成“v7 合法行为参考、生产与验收门禁修正、449 节点测试映射、wheel 构建证据、detached 候选验收”的闭环。首次正式运行因构建后端在候选树生成 `build/lib/**` 被敏感输入门禁拒绝；修正为运行专属 tracked 源码副本后重跑通过，证明该门禁实际生效。正式报告的 `candidate_commit` 为 `728b198`。
+- 发布工具仍有结构性欠账：各轮节点集合尚未全部迁入版本化 manifest；launcher、detached worker 和测试清单仍集中在一个大脚本；fresh 工具只固定直接版本，传递依赖尚未使用带哈希 constraints/wheelhouse。它们不改变本轮通过结论，但下一版发布基础设施应继续拆分和固化。
 - 四轮审查涉及的具体缺陷已经关闭，但三个结构性欠账仍在：`thermal/solver.py` 等 6 个主要模块仍为约 1269-3259 行的单体；ServoValve2 仍以兼容方式保留 `input()` 内计算，LQG 和 RepetitiveController 也尚未原生迁入严格状态机；mypy 严格门禁仍只覆盖 contracts/core 的 19 个文件。这些属于分阶段重构工作，不能用本轮局部修复宣称完成。
 
 ## 发布后下一步
@@ -125,7 +130,7 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 5. 将新 base/expert/residual 训练输出自动封装为 0.2 model package；residual 的主模型嵌套关系需先定义 manifest 语义。
 6. 为 PAPER_WORK 四个顶层执行脚本增加主入口隔离，并为两个 M0035 内部代理建立 DTO block 参考后再迁移。
 7. 为 `task/task_thermal_forces.py` 接入真实 `pooln` 并单独验证并行输出次序和确定性。
-8. 如需重新发布 wheel，先执行完整 wheel 隔离安装门禁并核对新 SHA-256。
+8. 后续发布基础设施拆分时，将各轮 node ID 集合迁入版本化 manifest，并为 fresh 工具链增加带哈希 constraints 或 wheelhouse；正式 wheel 仍须执行完整隔离安装门禁并核对 SHA-256。
 
 ## 证据入口
 
@@ -141,6 +146,7 @@ wheel 当前 SHA-256 为 `9c031a19c67d20b917d687a9cad61c24634adfa3e096a0780fcf19
 - 四轮代码审查修正门禁：`docs/migrations/0.2.0_fourth_review_acceptance.json`。
 - 五轮代码审查修正门禁：`docs/migrations/0.2.0_fifth_review_acceptance.json`。
 - 六轮代码审查修正门禁：`docs/migrations/0.2.0_sixth_review_acceptance.json`。
+- 七轮代码审查修正门禁：`docs/migrations/0.2.0_seventh_review_acceptance.json`。
 - 控制状态和耦合时序参考：`refs/control_state_contract_reference_v1.json`、`refs/control_lifecycle_reference_v2.json`、`refs/rotor_bearing_coupling_time_reference_v3.json`、`refs/rotor_dof_coupling_reference_v4.json`。
 - 三轮兼容性参考：`refs/third_review_compatibility_reference_v3.json`。
 - 四轮发布阻塞修正参考：`refs/fourth_review_release_reference_v4.json`。
