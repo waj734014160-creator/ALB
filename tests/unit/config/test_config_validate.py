@@ -43,6 +43,19 @@ class TestALBConfigValidation(unittest.TestCase):
         with self.assertRaises(ValueError):
             ALBConfig.from_dict({}, controller="MPC")
 
+    def test_no_controller_config_is_explicit_and_round_trippable(self):
+        for config_class in (ALBConfig, NodimALBConfig):
+            with self.subTest(config_class=config_class.__name__):
+                explicit = config_class.from_dict({"controller": "none"})
+                self.assertIsNone(explicit.controller_config)
+
+                serialized = config_class(controller_config=None).to_dict()
+                restored = config_class.from_dict(serialized)
+                self.assertIsNone(restored.controller_config)
+
+                default = config_class.from_dict({})
+                self.assertIsNotNone(default.controller_config)
+
     def test_alb_config_invalid_alb(self):
         with self.assertRaises(ValueError):
             ALBConfig.from_dict({"alb": "BAD"})

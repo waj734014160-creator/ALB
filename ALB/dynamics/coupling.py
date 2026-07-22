@@ -94,7 +94,16 @@ class RsRotorBearingCouple(BaseCSystem):
 
     @property
     def results(self):
+        self._require_valid("reading results")
         return self._result
+
+    def _require_valid(self, operation: str) -> None:
+        """Reject access to state that may contain a partially applied step."""
+
+        if not self._valid:
+            raise RuntimeError(
+                f"coupling state is invalid; call init() before {operation}"
+            )
 
     def add_bearing(self, bearing):
         self._validate_bearing(bearing)
@@ -258,10 +267,7 @@ class RsRotorBearingCouple(BaseCSystem):
     def advance(self, context: StepContext, **kwargs) -> ResultBundle:
         """Advance one coupled physical step and commit it exactly once."""
 
-        if not self._valid:
-            raise RuntimeError(
-                "coupling state is invalid; call init() before advancing"
-            )
+        self._require_valid("advancing")
         if not isinstance(context, StepContext):
             raise TypeError("context must be StepContext")
         if context.unit_system.value != "dimensional":
@@ -317,15 +323,13 @@ class RsRotorBearingCouple(BaseCSystem):
     def output(self) -> ResultBundle:
         """Read the most recent completed coupled result without advancing."""
 
-        if not self._valid:
-            raise RuntimeError(
-                "coupling state is invalid; call init() before reading output"
-            )
+        self._require_valid("reading output")
         if self._last_output is None:
             raise RuntimeError("coupled output is unavailable before advance()")
         return self._last_output
 
     def save(self, tofile=True, path=None, name=None, *args, **kwargs):
+        self._require_valid("saving results")
         if path is None:
             path = self._save_path
         if name is None:

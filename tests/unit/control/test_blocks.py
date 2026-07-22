@@ -5,6 +5,7 @@ import pytest
 
 from ALB.contracts import ControlInput, UnitSystem, ValveInput
 from ALB.control.blocks import ControllerBlock, ValveBlock
+from ALB.control.valve import moog_2nd_servovalve
 
 
 class _Controller:
@@ -37,3 +38,14 @@ def test_valve_block_uses_explicit_evaluate():
     block = ValveBlock(_Valve(), "nondimensional")
     result = block.step(ValveInput([0.4, -0.2], 0.1, "nondimensional"))
     np.testing.assert_allclose(result.spool, [0.3, -0.3], rtol=0.0, atol=1e-15)
+
+
+def test_servo_valve_input_then_solve_does_not_evaluate_twice():
+    valve = moog_2nd_servovalve(dt=0.001)
+    valve.input(0.0, 0.25)
+    expected = np.asarray(valve.output(), dtype=float).copy()
+    history_lengths = (len(valve.ts), len(valve.xout), len(valve.yout))
+
+    np.testing.assert_array_equal(valve.solve(), expected)
+    np.testing.assert_array_equal(valve.solve(), expected)
+    assert (len(valve.ts), len(valve.xout), len(valve.yout)) == history_lengths

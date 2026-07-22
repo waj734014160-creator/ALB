@@ -125,6 +125,10 @@ def test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization():
         coupling.advance(context)
     with pytest.raises(RuntimeError, match="invalid"):
         coupling.output()
+    with pytest.raises(RuntimeError, match="invalid"):
+        _ = coupling.results
+    with pytest.raises(RuntimeError, match="invalid"):
+        coupling.save(tofile=False)
     assert rotor.input_calls == 1
 
     bearing.fail_on_finish = False

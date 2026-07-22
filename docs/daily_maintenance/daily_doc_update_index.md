@@ -43,6 +43,7 @@
 | `ALB_MAIN/docs/migrations/0.2.0_post_release_rotor_acceptance.json` | 发布后转子时步修正机器验收证据 | 记录 RossRotor 时步修正后的 pytest、mypy、转子节点、冻结参考和 tracked 工作树门禁。 | 只能由正式验收工具按真实执行结果新建。 | 手工填写通过结论、覆盖既有验收、实时任务状态和未经执行的测试结果。 | 发布后 RossRotor 时步修正重新验收时。 |
 | `ALB_MAIN/docs/migrations/0.2.0_post_refactor_review_acceptance.json` | 重构后代码审查机器验收证据 | 记录 13 项代码审查修正后的全量 pytest、mypy、skip 和 tracked 工作树门禁。 | 只能由正式验收工具按真实执行结果新建。 | 手工填写通过结论、覆盖既有验收、实时任务状态和未经执行的测试结果。 | 重构后代码审查修正重新验收时。 |
 | `ALB_MAIN/docs/migrations/0.2.0_second_review_acceptance.json` | 二轮代码审查机器验收证据 | 记录 4/6-DOF、真实 coupling、无控制器和显式控制生命周期修正后的全量 pytest、mypy、skip、精确参考和 tracked 工作树门禁。 | 只能由正式验收工具按真实执行结果新建。 | 手工填写通过结论、覆盖既有验收、实时任务状态和未经执行的测试结果。 | 二轮代码审查修正重新验收时。 |
+| `ALB_MAIN/docs/migrations/0.2.0_third_review_acceptance.json` | 三轮代码审查机器验收证据 | 记录控制器兼容适配、coupler 失效出口、严格节点、无控制器配置回读和 ServoValve2 生命周期修正后的 pytest、mypy、skip、精确参考及 tracked 工作树门禁。 | 只能由正式验收工具按真实执行结果新建。 | 手工填写通过结论、覆盖既有验收、实时任务状态和未经执行的测试结果。 | 三轮代码审查修正重新验收时。 |
 | `ALB_MAIN/docs/migrations/0.2.0_external_consumer_audit.md` | 版本化只读迁移证据 | declared 外部调用者的路径、哈希、旧 import 和迁移目标汇总。 | 外部只读快照口径、文件清单、迁移门槛和证据指针。 | 修改外部文件、记录外部实时任务状态、复制原始日志。 | declared 快照或 0.2 迁移目标变化时。 |
 | `ALB_MAIN/docs/file_classification.md` | ALB_MAIN 文件归属和清理策略 | 文件组、归属边界、归档/删除策略。 | 文件类别、代表路径、保留/归档规则、清理风险说明。 | 实时运行状态、模型进度、详细 run 历史。 | 主要文件组、归档类别或清理策略变化时。 |
 | `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS 全局 run 规则和路径索引 | 项目前缀 run 编号、run ID、current-status 归属和规范路径指针。 | run 编号规则、项目前缀映射、current-status 指针、规范路径和归档指针规则。 | 原始日志、详细进度尾部、模型指标、实时 tick、清理动作。 | run 编号、项目前缀、current-status 归属、路径族或归档指针规则变化时。 |
@@ -98,6 +99,7 @@
 | `ALB_MAIN/docs/migrations/0.2.0_post_release_rotor_acceptance.json` | RossRotor 时步发布后修正的 pytest、mypy、节点结果、冻结参考与 tracked 工作树门禁。 |
 | `ALB_MAIN/docs/migrations/0.2.0_post_refactor_review_acceptance.json` | 重构后 13 项代码审查修正的 pytest、mypy、skip 与 tracked 工作树门禁。 |
 | `ALB_MAIN/docs/migrations/0.2.0_second_review_acceptance.json` | 二轮代码审查修正的 pytest、mypy、skip、4/6-DOF coupling 与控制生命周期门禁。 |
+| `ALB_MAIN/docs/migrations/0.2.0_third_review_acceptance.json` | 三轮代码审查修正的 pytest、mypy、skip、控制器兼容、coupler 失效出口、严格节点和配置回读门禁。 |
 | `ALB_MAIN/refs/full_repo_refactor_addendum_v1/` | 从重构前隔离源码生成的 thermal direct/Newton/transient 不可覆盖补充参考。 |
 | `ALB_MAIN/docs/run_index.md` | 人类可读的工作区全局 run 编号和路径策略。 |
 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` | 论文任务文件管理、路径命名和证据保留规则。 |

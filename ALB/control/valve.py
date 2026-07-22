@@ -31,6 +31,8 @@ class BaseValve(BaseSystem):
         self.main_model.init()
 
     def input(self, t, uv, *args, **kwargs):
+        """Latch one servovalve input without advancing the main model."""
+
         uv = np.array(uv)
         uv = uv.reshape([uv.size, 1])
         self.uv = uv
@@ -73,6 +75,8 @@ class ServoValve2(BaseValve):
         return pd.DataFrame({"t": t, "xout": xout, "yout": yout})
 
     def input(self, t, uv, *args, **kwargs):
+        """Latch and evaluate one legacy servovalve input exactly once."""
+
         uv = np.array(uv)
         uv = uv.reshape([-1, 1])
         self.uv = limit_signal(uv)
@@ -81,6 +85,11 @@ class ServoValve2(BaseValve):
         self.xv = self.yout[-1]
         self.xv = limit_signal(self.xv)
         return True
+
+    def solve(self):
+        """Return the result already computed by ``input()`` without reevaluation."""
+
+        return np.asarray(self.xv, dtype=float).copy()
 
     def output(self, *orifice, **kwargs):
         # pada aseSystem pada ada.main_model

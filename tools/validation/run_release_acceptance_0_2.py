@@ -80,6 +80,55 @@ SECOND_REVIEW_NODEIDS = {
         "test_nondimensional_factory_accepts_explicitly_absent_controller"
     ),
 }
+THIRD_REVIEW_NODEIDS = {
+    (
+        "tests/regression/test_third_review_compatibility_reference.py::"
+        "test_third_review_valid_behavior_matches_v3_reference_exactly"
+    ),
+    *{
+        (
+            "tests/unit/systems/test_controller_compatibility.py::"
+            "test_alb_control_process_accepts_strict_and_legacy_controllers"
+            f"[{controller}]"
+        )
+        for controller in ("legacy", "lqg", "repetitive")
+    },
+    *{
+        (
+            "tests/unit/systems/test_controller_compatibility.py::"
+            "test_harmonic_control_path_accepts_strict_and_legacy_controllers"
+            f"[{controller}]"
+        )
+        for controller in ("legacy", "lqg", "repetitive")
+    },
+    (
+        "tests/integration/dynamics/test_coupling_step_commit.py::"
+        "test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization"
+    ),
+    (
+        "tests/unit/config/test_config_validate.py::TestALBConfigValidation::"
+        "test_no_controller_config_is_explicit_and_round_trippable"
+    ),
+    (
+        "tests/unit/control/test_blocks.py::"
+        "test_servo_valve_input_then_solve_does_not_evaluate_twice"
+    ),
+    *{
+        (
+            "tests/unit/dynamics/test_rotor_lifecycle.py::"
+            "test_current_state_rejects_non_integer_node_indices_without_truncation"
+            f"[{node_id}]"
+        )
+        for node_id in ("0.9", "-0.1", "True", "node3")
+    },
+    *{
+        (
+            "tests/unit/dynamics/test_rotor_lifecycle.py::"
+            f"test_current_state_rejects_out_of_range_node_indices[{node_id}]"
+        )
+        for node_id in ("-1", "2")
+    },
+}
 
 
 def _run(command: list[str], *, environment: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -198,6 +247,13 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("The complete second-review regression node set was not recorded")
     if any(item["outcome"] != "passed" for item in second_review_reports):
         raise AssertionError("A second-review regression node did not pass")
+    third_review_reports = [
+        item for item in reports["reports"] if item["nodeid"] in THIRD_REVIEW_NODEIDS
+    ]
+    if {item["nodeid"] for item in third_review_reports} != THIRD_REVIEW_NODEIDS:
+        raise AssertionError("The complete third-review regression node set was not recorded")
+    if any(item["outcome"] != "passed" for item in third_review_reports):
+        raise AssertionError("A third-review regression node did not pass")
 
     mypy_environment = environment.copy()
     mypy_environment["PYTHONPATH"] = str(DEVTOOLS_ROOT)
@@ -252,6 +308,7 @@ def run_acceptance() -> dict[str, Any]:
             "s0011_reports": s0011_reports,
             "ross_rotor_time_reports": ross_rotor_time_reports,
             "second_review_reports": second_review_reports,
+            "third_review_reports": third_review_reports,
         },
         "mypy": {
             "command": subprocess.list2cmdline(mypy_command),
@@ -278,6 +335,9 @@ def run_acceptance() -> dict[str, Any]:
             ),
             "control_lifecycle_v2": "refs/control_lifecycle_reference_v2.json",
             "rotor_dof_coupling_v4": "refs/rotor_dof_coupling_reference_v4.json",
+            "third_review_compatibility_v3": (
+                "refs/third_review_compatibility_reference_v3.json"
+            ),
         },
         "overall_status": "passed",
     }

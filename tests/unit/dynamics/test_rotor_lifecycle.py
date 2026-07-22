@@ -217,6 +217,26 @@ def test_six_dof_result_and_mapping_use_ross_local_layout():
     np.testing.assert_array_equal(mapping, expected)
 
 
+@pytest.mark.parametrize("node", [0.9, -0.1, True, np.bool_(False)])
+def test_current_state_rejects_non_integer_node_indices_without_truncation(node):
+    rotor = RossRotor(_SixDofNodeRotorPlant(), speed=1.0, dt=1.0e-3)
+    rotor._xk0 = np.arange(24, dtype=float)
+    rotor._state_ready = True
+
+    with pytest.raises(TypeError, match="integers"):
+        rotor.current_state(node)
+
+
+@pytest.mark.parametrize("node", [-1, 2])
+def test_current_state_rejects_out_of_range_node_indices(node):
+    rotor = RossRotor(_SixDofNodeRotorPlant(), speed=1.0, dt=1.0e-3)
+    rotor._xk0 = np.arange(24, dtype=float)
+    rotor._state_ready = True
+
+    with pytest.raises(ValueError):
+        rotor.current_state(node)
+
+
 @pytest.mark.parametrize(
     ("force", "node", "error"),
     [

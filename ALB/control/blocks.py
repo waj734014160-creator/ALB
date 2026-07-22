@@ -14,6 +14,22 @@ from ALB.contracts import (
 from ALB.core import CommandComputingBlock, EvaluatingBlock
 
 
+def run_controller_step(controller: Any, time: float, error: Any) -> Any:
+    """Run one controller step across strict and legacy lifecycle variants.
+
+    Strict controllers compute in ``evaluate()`` and expose a read-only
+    ``output()``. Historical controllers compute directly in ``output()`` and
+    do not define ``evaluate()``. This adapter calls ``output()`` exactly once
+    in both cases so legacy controllers are not advanced twice.
+    """
+
+    controller.input(time, error)
+    evaluate = getattr(controller, "evaluate", None)
+    if callable(evaluate):
+        evaluate()
+    return controller.output()
+
+
 class ControllerBlock(CommandComputingBlock[ControlInput, ControlOutput]):
     """Adapt a numerical control law to the strict command port lifecycle."""
 
@@ -31,11 +47,7 @@ class ControllerBlock(CommandComputingBlock[ControlInput, ControlOutput]):
 
     def compute_command(self) -> None:
         dto = self._require_input()
-        self.controller.input(dto.time, dto.error)
-        evaluate = getattr(self.controller, "evaluate", None)
-        if evaluate is not None:
-            evaluate()
-        command = self.controller.output()
+        command = run_controller_step(self.controller, dto.time, dto.error)
         self._publish_output(
             ControlOutput(command, dto.time, self.unit_system)
         )

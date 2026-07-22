@@ -87,14 +87,23 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 `ValveOutput.spool` 和 direct-spool 节流器输入必须是 `[-1, 1]` 内的有限标量，非法值会立即失败，
 不会静默沿用旧阀芯状态。`BaseLti`/`BaseDlti.output()` 每次只返回当前输出向量；完整状态和输出
 历史分别从 `xout`、`yout` 读取。`PID.init()` 与 `FuzzyPID.init()` 会恢复到新实例等价状态。
+ALB 装配和谐波控制路径通过同一个控制器生命周期适配器接入：提供 `evaluate()` 的严格控制器按
+`input()`、`evaluate()`、`output()` 执行；仅提供旧式 `input()`、`output()` 的 LQG、重复控制器
+或自定义控制器只调用一次 `output()`，不会因缺少 `evaluate()` 而失败。
 
 `RsRotorBearingCouple.init()` 把时间网格首点登记为只读初始快照，`solve()` 只对后续目标时刻
 推进。时步 ledger 要求序号恰好加 1、时间增量与固定 `dt` 一致，因此 `t=0` 不再对应
 已经推进到 `dt` 的转子状态。
+中途异常会使 coupler 整体失效；此后 `advance()`、`output()`、`results` 和 `save()` 都拒绝
+暴露可能只推进了一部分的状态，必须显式 `init()` 后才能继续。
 
 ### 配置
 
 配置从 `ALB.config.<domain>` 显式导入。`alb-migrate-config` 和 `tools/migrations/migrate_config_0_2.py` 只读旧 JSON5，并把 0.2 schema 另存为 UTF-8 文件；不会覆盖源配置。旧文件若无法按 UTF-8 解码，迁移器会显式警告并临时尝试 GBK/CP936，输出仍统一写为 UTF-8。
+
+`ALBConfig.from_dict()` 与 `NodimALBConfig.from_dict()` 支持 `{"controller": "none"}`；
+`controller_config=None` 经 `to_dict()` 序列化后也能恢复为无控制器配置。缺少上述显式标记时仍保留
+历史默认 PID。
 
 `ALB.physics.hydraulics.CSOrifice` 与 `NodimCSOrifice` 的 0.2 契约固定为零泄漏，
 `q_leak` 只能取 `0.0`；配置或直接求解传入非零值会立即抛出 `ValueError`。公共腔压力通过同一
@@ -135,8 +144,10 @@ thermal ALBNN 的实际输入列、feature set、target transform 和模型选�
 - 旧平铺模块已经物理删除；不存在一个版本周期的 facade。
 - `StaicLoad` 更名为 `StaticLoad`，`dynmaic` 更名为 `dynamic`，`rotor_respone` 更名为 `rotor_response`。
 - `RossRotor.output()` 不再隐式推进；使用 `advance()` 和 `current_state()`。
+- `RossRotor.current_state(node=...)` 与节点载荷入口共用严格节点规范化；布尔值和浮点数不会再被静默转换为整数节点。
 - `RsRotorBearingCouple` 的首点是初始快照，包含 `num + 1` 个采样点的网格只推进 `num` 次。
 - `BaseLti`、`BaseDlti`、`PID` 和 `FuzzyPID` 使用 `input()` → `evaluate()` → `output()`；`output()` 只读取已完成快照，重复读取不再推进状态、积分或写历史。
+- `ServoValve2` 仍保留旧式 `input()` 内计算语义以兼容既有调用者；其 `solve()` 只读取该次已完成结果，不会再次调用底层 LTI 的 `evaluate()`。严格阀端口继续使用 `ValveBlock`。
 - 4/6-DOF ROSS 节点映射统一通过 `RotorDofLayout`；`result_uxy()` 与 LQG 执行器、传感器和扰动映射不再假定固定 4-DOF 步长。
 - 旧结果树保存方法和数值模块内部 exporter 已删除；保存必须经过 artifact writer。
 - 数值实现内部仍可能保留用于冻结行为的旧参数解析或适配代码，但这些不是 0.2 推荐公共 import 面。

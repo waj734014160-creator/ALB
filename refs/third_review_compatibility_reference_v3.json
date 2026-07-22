@@ -1,0 +1,140 @@
+{
+  "reference_name": "third_review_compatibility_reference_v3",
+  "created_at": "2026-07-22T08:53:57.411433+00:00",
+  "baseline_commit": "e2313c702f83efed1ab57ff1221d9e35036544b9",
+  "random_seed": 20260722,
+  "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+  "python_version": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "scope": "Valid legacy/LQG/repetitive controller outputs, ServoValve2 input-output behavior, strict six-DOF node reads, and default controller configuration",
+  "arrays": {
+    "config.default_controller_flags": {
+      "shape": [
+        2
+      ],
+      "dtype": "int8",
+      "sha256": "9dcf97a184f32623d11a73124ceb99a5709b083721e878a16d78f596718ba7b2"
+    },
+    "config.default_switch_flags": {
+      "shape": [
+        2
+      ],
+      "dtype": "int8",
+      "sha256": "9dcf97a184f32623d11a73124ceb99a5709b083721e878a16d78f596718ba7b2"
+    },
+    "legacy_controller.output_calls": {
+      "shape": [
+        1
+      ],
+      "dtype": "int64",
+      "sha256": "35be322d094f9d154a8aba4733b8497f180353bd7ae7b0a15f90b586b549f28b"
+    },
+    "legacy_controller.outputs": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "32d4458690cae546cf60953337b2cc6b47583436d163650a0a8f8307718382d6"
+    },
+    "lqg.final_x_hat": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "241b7c3993b96fe334e148d761f4846f7e7367325a727d2a543fb746f850768f"
+    },
+    "lqg.final_x_next": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "913744bdff4926bd0abfa57cfa6a80ab438494dcfe951ead44aa2c3d0d5b34e5"
+    },
+    "lqg.outputs": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "c78060d0af185b90025c78b103ed8dd0867ea83413adeb24f6f4fe2b63a93fb6"
+    },
+    "repetitive.e_buffer": {
+      "shape": [
+        10,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8c6516d07fe1d05f2ac8a7b33e9172b9a7ed7c0230c28843b72fa0a5ca1a7aa2"
+    },
+    "repetitive.outputs": {
+      "shape": [
+        14,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "c7abedd249a95b26a16e995efb5f575fb3195744f5952d8063dbea7636aa1f01"
+    },
+    "repetitive.pointer": {
+      "shape": [
+        1
+      ],
+      "dtype": "int64",
+      "sha256": "f0a0278e4372459cca6159cd5e71cfee638302a7b9ca9b05c34181ac0a65ac5d"
+    },
+    "repetitive.u_buffer": {
+      "shape": [
+        10,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "32ee53bb6d75aed9b1b9f5f309fa5dc1433bea03a95329bd9ec01409b5116a74"
+    },
+    "rotor.node_state_uxy": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "41cd7024c0d2cf11e62f429cd3dc97ebb2397fb1769b8348d7c793e6e2e28750"
+    },
+    "rotor.node_state_uxyt": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "78e8311db723bcf2b32a210656b03a4d1d83aebe93f4c448e593b5ae6440cecf"
+    },
+    "servo.outputs": {
+      "shape": [
+        4,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "5c564f0f944fc51b22d514514a291b5cfa87e07a893ee3da73279df8e2b24951"
+    },
+    "servo.times": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "ca2616ffaab18a63340a150f12bb93818471dbd79213d5400b65669ac70083fe"
+    },
+    "servo.xout": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8c134db4974879f7e8e44a3116f39f43dffa8cfd0fd041cfbaf7cd5ed5554143"
+    },
+    "servo.yout": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "5c564f0f944fc51b22d514514a291b5cfa87e07a893ee3da73279df8e2b24951"
+    }
+  }
+}

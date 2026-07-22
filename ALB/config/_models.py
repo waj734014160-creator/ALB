@@ -34,6 +34,25 @@ def _normalize_thermal_miu_update(value: str) -> str:
     return method
 
 
+def _select_alb_controller(config_dict: dict, default: Optional[str]) -> Optional[str]:
+    """Resolve PID, FuzzyPID, or the explicit no-controller configuration."""
+
+    if "controller" in config_dict:
+        selected = config_dict["controller"]
+    elif (
+        "controller_config" in config_dict
+        and config_dict["controller_config"] is None
+    ):
+        selected = None
+    else:
+        selected = default
+    if selected is None or selected == "none":
+        return None
+    if selected not in {"PID", "FuzzyPID"}:
+        raise ValueError("Controller must be 'PID', 'FuzzyPID', or 'none'")
+    return selected
+
+
 @dataclass
 class ConfigData:
     """Base class for configuration data, providing dictionary-like access."""
@@ -1072,15 +1091,13 @@ class ALBConfig(ConfigData):
         return self.pad_config.thermal_config
 
     @classmethod
-    def from_dict(cls, config_dict, controller: str = "PID"):
+    def from_dict(cls, config_dict, controller: Optional[str] = "PID"):
         """
         Construct an ALBConfig instance correctly from a dictionary containing all parameters.
         :param controller: the type of the controller, PID or FuzzyPID
         :param config_dict: a dictionary containing all parameters
         """
-        selected_controller = config_dict.get("controller", controller)
-        if selected_controller not in {"PID", "FuzzyPID"}:
-            raise ValueError("Controller must be 'PID' or 'FuzzyPID'")
+        selected_controller = _select_alb_controller(config_dict, controller)
 
         alb = config_dict.get("alb", "ALB")
         if alb not in {"ALB", "ALBSV"}:
@@ -1089,20 +1106,74 @@ class ALBConfig(ConfigData):
         if servo not in {"moog_2nd", "moog", "static"}:
             raise ValueError("servo must be 'moog_2nd', 'moog', or 'static'")
 
-        # Create instances for each nested configuration item
-        pad_config_instance = FPBConfig.from_dict(config_dict)
-        servo_config_data = Moog2ndServoConfig().to_dict()
-        servo_config_data.update(
-            {key: config_dict[key] for key in servo_config_data if key in config_dict}
+        # Prefer nested payloads emitted by to_dict(), while retaining the
+        # historical flat task/config dictionary form.
+        pad_payload = config_dict.get("pad_config")
+        pad_config_instance = (
+            pad_payload
+            if isinstance(pad_payload, FPBConfig)
+            else FPBConfig.from_dict(
+                pad_payload if isinstance(pad_payload, dict) else config_dict
+            )
         )
-        servo_config_instance = Moog2ndServoConfig(**servo_config_data)
-        orifice_config_instance = cls.set_config(OrificeConfig, config_dict)
-        tank_config_instance = cls.set_config(TankConfig, config_dict)
-        if selected_controller == "PID":
+        servo_payload = config_dict.get("servo_config")
+        if isinstance(servo_payload, ServoConfig):
+            servo_config_instance = servo_payload
+        elif isinstance(servo_payload, dict):
+            servo_config_instance = Moog2ndServoConfig(**servo_payload)
+        else:
+            servo_config_data = Moog2ndServoConfig().to_dict()
+            servo_config_data.update(
+                {
+                    key: config_dict[key]
+                    for key in servo_config_data
+                    if key in config_dict
+                }
+            )
+            servo_config_instance = Moog2ndServoConfig(**servo_config_data)
+        orifice_payload = config_dict.get("orifice_config")
+        orifice_config_instance = (
+            orifice_payload
+            if isinstance(orifice_payload, OrificeConfig)
+            else OrificeConfig(**orifice_payload)
+            if isinstance(orifice_payload, dict)
+            else cls.set_config(OrificeConfig, config_dict)
+        )
+        tank_payload = config_dict.get("tank_config")
+        tank_config_instance = (
+            tank_payload
+            if isinstance(tank_payload, TankConfig)
+            else TankConfig(**tank_payload)
+            if isinstance(tank_payload, dict)
+            else cls.set_config(TankConfig, config_dict)
+        )
+        controller_payload = config_dict.get("controller_config")
+        if selected_controller is None:
+            controller_instance = None
+        elif selected_controller == "PID":
             controller_class = PIDConfig
+            controller_instance = (
+                controller_payload
+                if isinstance(controller_payload, PIDConfig)
+                else cls.set_config(
+                    controller_class,
+                    controller_payload
+                    if isinstance(controller_payload, dict)
+                    else config_dict,
+                )
+            )
         elif selected_controller == "FuzzyPID":
             controller_class = FuzzyPIDConfig
-        controller_instance = cls.set_config(controller_class, config_dict)
+            controller_instance = (
+                controller_payload
+                if isinstance(controller_payload, FuzzyPIDConfig)
+                else cls.set_config(
+                    controller_class,
+                    controller_payload
+                    if isinstance(controller_payload, dict)
+                    else config_dict,
+                )
+            )
 
         # Extract fields that directly belong to ALBConfig
         direct_keys = [
@@ -1346,11 +1417,9 @@ class NodimALBConfig(ConfigData):
         return self.pad_config.thermal_config
 
     @classmethod
-    def from_dict(cls, config_dict, controller: str = "PID"):
+    def from_dict(cls, config_dict, controller: Optional[str] = "PID"):
         """Create a nodimensional ALB config from the flat task/config dictionary style."""
-        selected_controller = config_dict.get("controller", controller)
-        if selected_controller not in {"PID", "FuzzyPID"}:
-            raise ValueError("Controller must be 'PID' or 'FuzzyPID'")
+        selected_controller = _select_alb_controller(config_dict, controller)
 
         alb = config_dict.get("alb", "ALB")
         if alb not in {"ALB", "ALBSV"}:
@@ -1359,7 +1428,11 @@ class NodimALBConfig(ConfigData):
         if servo not in {"moog_2nd", "moog", "static"}:
             raise ValueError("servo must be 'moog_2nd', 'moog', or 'static'")
 
-        controller_class = PIDConfig if selected_controller == "PID" else FuzzyPIDConfig
+        controller_class = (
+            None
+            if selected_controller is None
+            else PIDConfig if selected_controller == "PID" else FuzzyPIDConfig
+        )
         direct_keys = [
             "dt",
             "node_link",
@@ -1372,20 +1445,66 @@ class NodimALBConfig(ConfigData):
         direct_args = {
             key: config_dict[key] for key in direct_keys if key in config_dict
         }
-        servo_config_data = Moog2ndServoConfig().to_dict()
-        servo_config_data.update(
-            {key: config_dict[key] for key in servo_config_data if key in config_dict}
+        pad_payload = config_dict.get("pad_config")
+        pad_config_instance = (
+            pad_payload
+            if isinstance(pad_payload, NodimPadConfig)
+            else NodimPadConfig.from_dict(
+                pad_payload if isinstance(pad_payload, dict) else config_dict
+            )
         )
-        servo_config_instance = Moog2ndServoConfig(**servo_config_data)
+        orifice_payload = config_dict.get("orifice_config")
+        orifice_config_instance = (
+            orifice_payload
+            if isinstance(orifice_payload, NodimOrificeConfig)
+            else NodimOrificeConfig.from_dict(
+                orifice_payload if isinstance(orifice_payload, dict) else config_dict
+            )
+        )
+        servo_payload = config_dict.get("servo_config")
+        if isinstance(servo_payload, ServoConfig):
+            servo_config_instance = servo_payload
+        elif isinstance(servo_payload, dict):
+            servo_config_instance = Moog2ndServoConfig(**servo_payload)
+        else:
+            servo_config_data = Moog2ndServoConfig().to_dict()
+            servo_config_data.update(
+                {
+                    key: config_dict[key]
+                    for key in servo_config_data
+                    if key in config_dict
+                }
+            )
+            servo_config_instance = Moog2ndServoConfig(**servo_config_data)
+        tank_payload = config_dict.get("tank_config")
+        tank_config_instance = (
+            tank_payload
+            if isinstance(tank_payload, TankConfig)
+            else TankConfig(**tank_payload)
+            if isinstance(tank_payload, dict)
+            else cls.set_config(TankConfig, config_dict)
+        )
+        controller_payload = config_dict.get("controller_config")
 
         # Mirror ALBConfig.from_dict by rebuilding the nested nodim config
         # objects from a shared flat configuration payload.
         return cls(
-            pad_config=NodimPadConfig.from_dict(config_dict),
-            orifice_config=NodimOrificeConfig.from_dict(config_dict),
+            pad_config=pad_config_instance,
+            orifice_config=orifice_config_instance,
             servo_config=servo_config_instance,
-            tank_config=cls.set_config(TankConfig, config_dict),
-            controller_config=cls.set_config(controller_class, config_dict),
+            tank_config=tank_config_instance,
+            controller_config=(
+                None
+                if controller_class is None
+                else controller_payload
+                if isinstance(controller_payload, controller_class)
+                else cls.set_config(
+                    controller_class,
+                    controller_payload
+                    if isinstance(controller_payload, dict)
+                    else config_dict,
+                )
+            ),
             **direct_args,
         )
 

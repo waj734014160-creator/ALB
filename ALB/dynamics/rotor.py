@@ -380,6 +380,25 @@ class RotorDofLayout:
         return index
 
 
+def normalize_node_indices(node) -> np.ndarray:
+    """Return node indices after rejecting booleans and non-integral values."""
+
+    raw_nodes = list(np.asarray(node, dtype=object).reshape(-1))
+    if any(
+        isinstance(value, (bool, np.bool_))
+        or not isinstance(value, (Integral, np.integer))
+        for value in raw_nodes
+    ):
+        raise TypeError("node indices must be integers")
+    try:
+        normalized = np.asarray([int(value) for value in raw_nodes], dtype=np.int64)
+    except OverflowError as exc:
+        raise ValueError("node indices exceed the supported integer range") from exc
+    if np.any(normalized < 0):
+        raise ValueError("node indices must be nonnegative")
+    return normalized
+
+
 def _nodeforce2array(ndof, layout, force, node):
     """Map per-node XY forces through one explicit ROSS DOF layout."""
     if isinstance(ndof, (bool, np.bool_)) or not isinstance(
@@ -402,18 +421,9 @@ def _nodeforce2array(ndof, layout, force, node):
     if not np.all(np.isfinite(force_array)):
         raise ValueError("force values must be finite")
 
-    raw_nodes = list(np.asarray(node, dtype=object).reshape(-1))
-    if any(
-        isinstance(value, (bool, np.bool_))
-        or not isinstance(value, (Integral, np.integer))
-        for value in raw_nodes
-    ):
-        raise TypeError("node indices must be integers")
-    nodes = np.asarray(raw_nodes, dtype=np.int64)
+    nodes = normalize_node_indices(node)
     if len(nodes) != force_array.shape[0]:
         raise ValueError("node count must match the number of force rows")
-    if np.any(nodes < 0):
-        raise ValueError("node indices must be nonnegative")
     aforce = np.zeros(ndof, dtype=float)
     for index, node_index in enumerate(nodes):
         x_index = layout.global_index(int(node_index), "x", ndof)
@@ -657,13 +667,21 @@ class RossRotor:
                 raise ValueError(
                     "node-state extraction requires a four- or six-DOF layout"
                 )
-            node = np.array(node, dtype=np.int32).reshape(-1)
+            node = normalize_node_indices(node)
             # xy
             x_indices = np.asarray(
-                [self._dof_layout.global_index(int(value), "x", ndof) for value in node]
+                [
+                    self._dof_layout.global_index(int(value), "x", ndof)
+                    for value in node
+                ],
+                dtype=np.int64,
             )
             y_indices = np.asarray(
-                [self._dof_layout.global_index(int(value), "y", ndof) for value in node]
+                [
+                    self._dof_layout.global_index(int(value), "y", ndof)
+                    for value in node
+                ],
+                dtype=np.int64,
             )
             u0 = res[x_indices]
             u1 = res[y_indices]

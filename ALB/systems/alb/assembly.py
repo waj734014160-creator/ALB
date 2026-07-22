@@ -24,6 +24,7 @@ from ALB.config import (
     build_thermal_config,
 )
 from ALB.control.controllers import FuzzyPID, PID
+from ALB.control.blocks import run_controller_step
 from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve, moog_servovalve, static_sv
@@ -235,10 +236,7 @@ class ALB(BaseCSystem):
         uv = np.dot(self._gxy, uxy) + np.dot(self._gxyt, uxyt)
         u0 = np.zeros_like(uv)
         if self.controller is not None:
-            self.controller.input(t, uv - u0)
-            self.controller.evaluate()
-            output = self.controller.output()
-            return output
+            return run_controller_step(self.controller, t, uv - u0)
         else:
             return uv
 

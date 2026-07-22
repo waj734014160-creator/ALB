@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 from ALB.config import Moog2ndServoConfig, PIDConfig
+from ALB.control.blocks import run_controller_step
 from ALB.control.pid import PID
 from ALB.core import BearingComponentBase
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
@@ -434,9 +435,14 @@ class ALBHarmonicLinear(BearingComponentBase):
         """Advance the project PD and two second-order Moog servovalves."""
 
         assert self.controller is not None
-        self.controller.input(time_s, uxy / self.coefficients.clearance_m)
-        self.controller.evaluate()
-        command = np.asarray(self.controller.output(), dtype=float).reshape(2)
+        command = np.asarray(
+            run_controller_step(
+                self.controller,
+                time_s,
+                uxy / self.coefficients.clearance_m,
+            ),
+            dtype=float,
+        ).reshape(2)
         spool = np.zeros(2, dtype=float)
         for axis, valve in enumerate(self.servovalves):
             valve.input(time_s, command[axis])
