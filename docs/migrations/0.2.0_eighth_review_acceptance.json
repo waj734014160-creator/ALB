@@ -1,0 +1,1318 @@
+{
+  "schema": "alb.release-acceptance.v1",
+  "version": "0.2.0",
+  "candidate_commit": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2",
+  "pytest": {
+    "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_46668_20da55dc\\\\outputs\\\\release_acceptance\\\\devtools_51448_1841fb2f');sys.argv=['pytest', *sys.argv[1:]];runpy.run_module('pytest', run_name='__main__')\" tests -q -p no:cacheprovider -p tools.validation.release_pytest_plugin --basetemp=G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\pytest_tmp_51448_1841fb2f",
+    "returncode": 0,
+    "summary": {
+      "passed": 438,
+      "skipped": 13,
+      "subtests_passed": 27,
+      "warnings": 0
+    },
+    "summary_tail": [
+      "........................................................................ [ 15%]",
+      "........................................................................ [ 31%]",
+      ".................................................. [ 43%]",
+      "........................................................................ [ 58%]",
+      "........................................................................ [ 74%]",
+      "................................................................... [ 89%]",
+      ".....sssssssssssss............................                           [100%]",
+      "438 passed, 13 skipped, 27 subtests passed in 250.26s (0:04:10)",
+      ""
+    ],
+    "version": "9.0.3",
+    "policy": "tools/validation/release_acceptance_policy_v7.json",
+    "python_runtime": {
+      "isolated": 0,
+      "ignore_environment": 1,
+      "no_user_site": 1,
+      "optimize": 0,
+      "warnoptions": [],
+      "pytest_disable_plugin_autoload": "1"
+    },
+    "active_plugins": [
+      "assertion",
+      "capture",
+      "capturemanager",
+      "debugging",
+      "doctest",
+      "faulthandler",
+      "fixtures",
+      "funcmanage",
+      "helpconfig",
+      "junitxml",
+      "legacypath",
+      "legacypath-tmpdir",
+      "logging",
+      "logging-plugin",
+      "main",
+      "mark",
+      "monkeypatch",
+      "pastebin",
+      "pytestconfig",
+      "python",
+      "recwarn",
+      "reports",
+      "runner",
+      "session",
+      "setuponly",
+      "setupplan",
+      "skipping",
+      "subtests",
+      "terminal",
+      "terminalprogress",
+      "terminalreporter",
+      "threadexception",
+      "tmpdir",
+      "tools.validation.release_pytest_plugin",
+      "unittest",
+      "unraisableexception",
+      "warnings"
+    ],
+    "warnings": [],
+    "skipped": [
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_validation_import_ignores_param_scan_run_first_on_sys_path",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_nondim_thermal_field_case_uses_thermal_config_input",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_nondim_pressure_field_matches_dimensional_scaling",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_zero_heat_partition_gives_zero_nondim_temperature_rise",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_nondim_thermal_field_case.py::test_dimensional_and_nondim_parameter_sets_match_viscosity_field_evolution",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_extract_last_cycle_excludes_repeated_endpoint",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_three_case_configs_match_refactor_intent",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_three_cases_run_on_short_orbit",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_force_time_term_compare.py::TestThermalForceTimeTermCompare::test_viscosity_skfem_degenerates_to_skfem_when_miu_ratio_is_one",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_case_bearing_uses_fixed_zero_opening_without_control",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_requested_orbit_matches_user_spec_and_is_valid",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_short_kc_identification_returns_finite_coefficients_for_three_cases",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/external/test_thermal_kc_compare.py::TestThermalKcCompare::test_validation_dependency_ignores_param_scan_run_first_on_sys_path",
+        "when": "setup",
+        "outcome": "skipped",
+        "reason": "Skipped: external VALIDATION snapshot still imports the removed ALB 0.1 namespace",
+        "report_type": "TestReport",
+        "wasxfail": null
+      }
+    ],
+    "s0011_reports": [
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_fixed_point_reference_snapshot_matches_pre_change_results_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_s0011_current_replay_reference_v2_matches_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_direct_then_newton_reports_s0011_sample_30_without_false_convergence",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/bearing/test_thermal_segregated_newton.py::test_direct_then_newton_does_not_false_converge_s0011_sample_162946",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      }
+    ],
+    "ross_rotor_time_reports": [
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_rotor_valid_time_trajectories_match_v2_reference_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_input_force_rejects_invalid_time_without_mutating_state",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_input_force2node_rejects_invalid_time_without_mutating_state",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      }
+    ],
+    "second_review_reports": [
+      {
+        "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/regression/control/test_control_lifecycle_reference_v2.py::test_pid_and_fuzzy_outputs_are_read_only_after_one_evaluation",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/regression/control/test_control_lifecycle_reference_v2.py::test_lti_output_is_read_only_after_one_evaluation",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/regression/dynamics/test_rotor_dof_coupling_reference.py::test_real_ross_coupling_and_lqg_mapping_match_v4_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_six_dof_result_and_mapping_use_ross_local_layout",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_alb_builder_boundaries.py::test_alb_save_accepts_explicitly_absent_controller",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_alb_builder_boundaries.py::test_nondimensional_factory_accepts_explicitly_absent_controller",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      }
+    ],
+    "third_review_reports": [
+      {
+        "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/regression/test_third_review_compatibility_reference.py::test_third_review_valid_behavior_matches_v3_reference_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_no_controller_config_is_explicit_and_round_trippable",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_no_controller_config_is_explicit_and_round_trippable",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_no_controller_config_is_explicit_and_round_trippable",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/control/test_blocks.py::test_servo_valve_input_then_solve_does_not_evaluate_twice",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_non_integer_node_indices_without_truncation[0.9]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_non_integer_node_indices_without_truncation[-0.1]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_non_integer_node_indices_without_truncation[True]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_non_integer_node_indices_without_truncation[node3]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_out_of_range_node_indices[-1]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/dynamics/test_rotor_lifecycle.py::test_current_state_rejects_out_of_range_node_indices[2]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_alb_control_process_accepts_strict_and_legacy_controllers[legacy]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_alb_control_process_accepts_strict_and_legacy_controllers[lqg]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_alb_control_process_accepts_strict_and_legacy_controllers[repetitive]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_control_path_accepts_strict_and_legacy_controllers[legacy]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_control_path_accepts_strict_and_legacy_controllers[lqg]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_control_path_accepts_strict_and_legacy_controllers[repetitive]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      }
+    ],
+    "fourth_review_reports": [
+      {
+        "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_topology_change_requires_reinitialization[bearing]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_topology_change_requires_reinitialization[static-force]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_topology_change_requires_reinitialization[unbalance]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/regression/test_fourth_review_release_reference.py::test_fourth_review_valid_behavior_matches_v4_reference_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_type_and_nondefault_values_round_trip_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_type_and_nondefault_values_round_trip_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_type_and_nondefault_values_round_trip_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_type_and_nondefault_values_round_trip_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_type_and_nondefault_values_round_trip_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_public_lifecycle_supports_injected_controllers[legacy]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_public_lifecycle_supports_injected_controllers[lqg]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_public_lifecycle_supports_injected_controllers[repetitive]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_switch_false_stays_disabled_for_nonnegative_times",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_missing_controller_produces_zero_command",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_timed_start_is_recomputed_after_reinitialization",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/workflows/test_release_acceptance_gate.py::test_release_acceptance_rejects_dirty_tracked_worktree_before_tests",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      }
+    ],
+    "fifth_review_reports": [
+      {
+        "nodeid": "tests/regression/test_fifth_review_release_reference.py::test_fifth_review_valid_behavior_matches_v5_reference_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_tag_and_nested_payload_type_must_agree",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_tag_and_nested_payload_type_must_agree",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_tag_and_nested_payload_type_must_agree",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_tag_and_nested_payload_type_must_agree",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_tag_and_nested_payload_type_must_agree",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_tag_and_nested_payload_type_must_agree",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_tag_and_nested_payload_type_must_agree",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_tag_and_nested_payload_type_must_agree",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_controller_tag_and_nested_payload_type_must_agree",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_legacy_flat_controller_payload_remains_permissive",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_legacy_flat_controller_payload_remains_permissive",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_legacy_flat_controller_payload_remains_permissive",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_nested_controller_payload_rejects_unknown_fields",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_nested_controller_payload_rejects_unknown_fields",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "SubtestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/config/test_config_validate.py::TestALBConfigValidation::test_nested_controller_payload_rejects_unknown_fields",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_failed_harmonic_reinitialization_invalidates_runtime[factory]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_failed_harmonic_reinitialization_invalidates_runtime[controller-init]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_failed_harmonic_reinitialization_invalidates_runtime[warm-up]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_public_alb_subclass_defaults_are_fresh_per_instance",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/workflows/test_release_acceptance_gate.py::test_release_acceptance_rejects_sensitive_untracked_or_ignored_inputs",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/workflows/test_release_acceptance_gate.py::test_sensitive_runtime_input_filter_ignores_cache_and_output_artifacts",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/workflows/test_release_acceptance_gate.py::test_candidate_head_must_remain_unchanged",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      }
+    ],
+    "sixth_review_reports": [
+      {
+        "nodeid": "tests/regression/test_sixth_review_runtime_reference.py::test_sixth_review_valid_behavior_matches_v6_reference_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_runtime_failure_invalidates_partial_step[controller]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_runtime_failure_invalidates_partial_step[command-shape]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_runtime_failure_invalidates_partial_step[second-valve]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_output_failure_invalidates_partial_result",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/workflows/test_release_acceptance_gate.py::test_sensitive_scanner_catches_shadow_packages_and_devtools",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/workflows/test_release_acceptance_gate.py::test_acceptance_environment_removes_python_injection_variables",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/workflows/test_release_acceptance_gate.py::test_detached_acceptance_command_is_isolated_and_internal",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      }
+    ],
+    "seventh_review_reports": [
+      {
+        "nodeid": "tests/regression/test_seventh_review_release_reference.py::test_seventh_review_valid_behavior_matches_v7_reference_exactly",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_runtime_failure_invalidates_partial_step[controller-nonfinite]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_runtime_failure_invalidates_partial_step[valve-nonfinite]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_complex_runtime_input_requires_reinitialization[controller]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_complex_runtime_input_requires_reinitialization[valve]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_complex_runtime_input_requires_reinitialization[bearing-position]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_complex_runtime_input_requires_reinitialization[bearing-velocity]",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/systems/test_controller_compatibility.py::test_harmonic_output_overflow_invalidates_runtime",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      }
+    ],
+    "eighth_review_reports": [
+      {
+        "nodeid": "tests/regression/test_eighth_review_wheel_identity_reference.py::test_candidate_release_blobs_and_v7_behavior_reference_remain_exact",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/workflows/test_release_acceptance_gate.py::test_wheel_build_materializes_candidate_git_blobs",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/unit/workflows/test_release_acceptance_gate.py::test_publish_staged_wheel_preserves_detached_sha",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      },
+      {
+        "nodeid": "tests/validation/test_build_acceptance_report.py::test_wheel_metadata_cli_and_namespace_smokes_passed",
+        "when": "call",
+        "outcome": "passed",
+        "reason": null,
+        "report_type": "TestReport",
+        "wasxfail": null
+      }
+    ]
+  },
+  "mypy": {
+    "install_command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -m pip install --isolated --disable-pip-version-check --no-input --no-compile --target G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\devtools_51448_1841fb2f mypy==2.3.0 build==1.5.0 import-linter==2.13 pytest==9.0.3",
+    "install_returncode": 0,
+    "install_summary_tail": [
+      "Using cached exceptiongroup-1.3.1-py3-none-any.whl (16 kB)",
+      "Using cached grimp-3.15-cp310-cp310-win_amd64.whl (2.0 MB)",
+      "Using cached iniconfig-2.3.0-py3-none-any.whl (7.5 kB)",
+      "Using cached librt-0.13.0-cp310-cp310-win_amd64.whl (125 kB)",
+      "Using cached mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)",
+      "Using cached packaging-26.2-py3-none-any.whl (100 kB)",
+      "Using cached pathspec-1.1.1-py3-none-any.whl (57 kB)",
+      "Using cached pygments-2.20.0-py3-none-any.whl (1.2 MB)",
+      "Using cached rich-15.0.0-py3-none-any.whl (310 kB)",
+      "Using cached markdown_it_py-4.2.0-py3-none-any.whl (91 kB)",
+      "Using cached mdurl-0.1.2-py3-none-any.whl (10.0 kB)",
+      "Using cached tomli-2.4.1-py3-none-any.whl (14 kB)",
+      "Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)",
+      "Using cached pyproject_hooks-1.2.0-py3-none-any.whl (10 kB)",
+      "Installing collected packages: typing_extensions, tomli, pyproject_hooks, pygments, pluggy, pathspec, packaging, mypy_extensions, mdurl, librt, iniconfig, grimp, colorama, ast-serialize, mypy, markdown-it-py, exceptiongroup, click, build, rich, pytest, import-linter",
+      "",
+      "Successfully installed ast-serialize-0.6.0 build-1.5.0 click-8.4.2 colorama-0.4.6 exceptiongroup-1.3.1 grimp-3.15 import-linter-2.13 iniconfig-2.3.0 librt-0.13.0 markdown-it-py-4.2.0 mdurl-0.1.2 mypy-2.3.0 mypy_extensions-1.1.0 packaging-26.2 pathspec-1.1.1 pluggy-1.6.0 pygments-2.20.0 pyproject_hooks-1.2.0 pytest-9.0.3 rich-15.0.0 tomli-2.4.1 typing_extensions-4.16.0",
+      "",
+      "ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.",
+      "ipywidgets 8.1.1 requires comm>=0.1.3, but you have comm 0.1.2 which is incompatible."
+    ],
+    "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_46668_20da55dc\\\\outputs\\\\release_acceptance\\\\devtools_51448_1841fb2f');sys.argv=['mypy', *sys.argv[1:]];runpy.run_module('mypy', run_name='__main__')\" ALB/contracts ALB/core --config-file pyproject.toml --no-incremental --cache-dir G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\mypy_cache_51448_1841fb2f",
+    "returncode": 0,
+    "version": "2.3.0",
+    "stdout": "Success: no issues found in 19 source files",
+    "stderr": "",
+    "incremental_runtime": {
+      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_46668_20da55dc\\\\outputs\\\\release_acceptance\\\\devtools_51448_1841fb2f');sys.argv=['mypy', *sys.argv[1:]];runpy.run_module('mypy', run_name='__main__')\" ALB/systems/alb/_harmonic_runtime.py --config-file pyproject.toml --no-incremental --follow-imports=skip --cache-dir G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\runtime_mypy_cache_51448_1841fb2f",
+      "returncode": 0,
+      "stdout": "Success: no issues found in 1 source file",
+      "stderr": ""
+    }
+  },
+  "wheel": {
+    "schema": "alb.build-acceptance.v1",
+    "version": "0.2.0",
+    "candidate_commit": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2",
+    "source": {
+      "candidate_commit": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2",
+      "tree_sha256": "39bece7caecfaec5924578bc25f195447d2c6461dda00e3f3f223416c5e9ef52",
+      "file_count": 119,
+      "pyproject_sha256": "17daf95f05397bb31bbefb642a1928689acb30df8f677dc31d9de745bee38680",
+      "source_date_epoch": 1784733033,
+      "source_kind": "git_blobs",
+      "wheel_source_files_checked": 118,
+      "missing_wheel_members": [],
+      "mismatched_wheel_members": []
+    },
+    "wheel": {
+      "path": "dist/re_alb-0.2.0-1-py3-none-any.whl",
+      "size_bytes": 302311,
+      "sha256": "a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897",
+      "member_count": 123,
+      "build_tag": "1",
+      "forbidden_members_present": [],
+      "required_members_present": [
+        "ALB/contracts/block.py",
+        "ALB/core/steps.py",
+        "ALB/dynamics/identification.py",
+        "ALB/infrastructure/persistence/writers.py",
+        "ALB/systems/alb/data/alb_harmonic_linear_gamma1_50hz.json"
+      ]
+    },
+    "metadata": {
+      "version": "0.2.0",
+      "requires_python": ">=3.10",
+      "extras": [
+        "all",
+        "control",
+        "dynamics",
+        "film",
+        "io",
+        "surrogate",
+        "test"
+      ],
+      "requirements_by_extra": {
+        "core": [
+          "numba>=0.58",
+          "numpy>=1.24",
+          "pandas>=2.0",
+          "scipy>=1.10",
+          "tqdm>=4.65"
+        ],
+        "all": [
+          "control>=0.10",
+          "json5>=0.9",
+          "matplotlib>=3.7",
+          "ross-rotordynamics>=1.4",
+          "scikit-fem>=11",
+          "scikit-fuzzy>=0.4",
+          "scikit-learn>=1.3",
+          "torch>=2.1"
+        ],
+        "control": [
+          "control>=0.10",
+          "matplotlib>=3.7",
+          "scikit-fuzzy>=0.4"
+        ],
+        "dynamics": [
+          "matplotlib>=3.7",
+          "ross-rotordynamics>=1.4"
+        ],
+        "film": [
+          "matplotlib>=3.7",
+          "scikit-fem>=11"
+        ],
+        "io": [
+          "json5>=0.9"
+        ],
+        "surrogate": [
+          "matplotlib>=3.7",
+          "scikit-learn>=1.3",
+          "torch>=2.1"
+        ],
+        "test": [
+          "build>=1.2",
+          "import-linter>=2.0",
+          "mypy>=1.10",
+          "pytest>=9"
+        ]
+      },
+      "matches_pyproject": true,
+      "build_tag": "1"
+    },
+    "isolated_install": {
+      "root": "outputs/release_acceptance/wheel_install_51448_1841fb2f",
+      "dependency_paths": [
+        "outputs/release_acceptance/devtools_51448_1841fb2f"
+      ],
+      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
+      "version": "0.2.0",
+      "root_exports": [
+        "AdvancingBlock",
+        "CommandBlock",
+        "ComputationalBlock",
+        "ConvergenceStatus",
+        "EvaluableBlock",
+        "SolvableBlock",
+        "StepContext",
+        "UnitSystem",
+        "__version__"
+      ],
+      "removed_specs": {
+        "ALB.alb": false,
+        "ALB.base": false,
+        "ALB.bearing": false,
+        "ALB.controller": false,
+        "ALB.film": false,
+        "ALB.nn": false,
+        "ALB.remote": false,
+        "ALB.results": false,
+        "ALB.task": false,
+        "ALB.thermal": false,
+        "ALB.tool": false
+      },
+      "namespace_smoke": [
+        "PID",
+        "FuzzyPID",
+        "RossRotor",
+        "DirectoryArtifactWriter",
+        "read_json5",
+        "HydrostaticBearing",
+        "SkfemNewtonFilm",
+        "ThermalHydroBearing",
+        "Net",
+        "TrainingConfig",
+        "ALBHarmonicLinear"
+      ]
+    },
+    "extra_smokes": {
+      "core": {
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl",
+        "returncode": 0,
+        "python": "3.10.17",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
+        "resolved": [
+          "ALB.contracts.ResultBundle",
+          "ALB.core.StepCommitLedger"
+        ],
+        "dependency_versions": {
+          "numpy": "1.24.3",
+          "scipy": "1.10.1",
+          "pandas": "2.1.1",
+          "numba": "0.58.1",
+          "tqdm": "4.66.1"
+        }
+      },
+      "film": {
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[film]",
+        "returncode": 0,
+        "python": "3.10.17",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
+        "resolved": [
+          "ALB.physics.film.SkfemNewtonFilm"
+        ],
+        "dependency_versions": {
+          "matplotlib": "3.10.0",
+          "scikit-fem": "12.0.1"
+        }
+      },
+      "control": {
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[control]",
+        "returncode": 0,
+        "python": "3.10.17",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
+        "resolved": [
+          "ALB.control.FuzzyPID",
+          "ALB.control.PID"
+        ],
+        "dependency_versions": {
+          "control": "0.10.2",
+          "matplotlib": "3.10.0",
+          "scikit-fuzzy": "0.5.0"
+        }
+      },
+      "dynamics": {
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[dynamics]",
+        "returncode": 0,
+        "python": "3.10.17",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
+        "resolved": [
+          "ALB.dynamics.RossRotor"
+        ],
+        "dependency_versions": {
+          "matplotlib": "3.10.0",
+          "ross-rotordynamics": "1.4.2"
+        }
+      },
+      "surrogate": {
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[surrogate]",
+        "returncode": 0,
+        "python": "3.10.17",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
+        "resolved": [
+          "ALB.surrogate.Net",
+          "ALB.surrogate.training.TrainingConfig"
+        ],
+        "dependency_versions": {
+          "matplotlib": "3.10.0",
+          "scikit-learn": "1.6.1",
+          "torch": "2.11.0+cu128"
+        }
+      },
+      "io": {
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[io]",
+        "returncode": 0,
+        "python": "3.10.17",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
+        "resolved": [
+          "ALB.infrastructure.config_io.read_json5"
+        ],
+        "dependency_versions": {
+          "json5": "0.9.6"
+        }
+      },
+      "all": {
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[all]",
+        "returncode": 0,
+        "python": "3.10.17",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
+        "resolved": [
+          "ALB.infrastructure.DirectoryArtifactWriter",
+          "ALB.systems.alb.ALBHarmonicLinear"
+        ],
+        "dependency_versions": {
+          "control": "0.10.2",
+          "json5": "0.9.6",
+          "matplotlib": "3.10.0",
+          "ross-rotordynamics": "1.4.2",
+          "scikit-fem": "12.0.1",
+          "scikit-fuzzy": "0.5.0",
+          "scikit-learn": "1.6.1",
+          "torch": "2.11.0+cu128"
+        }
+      },
+      "test": {
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[test]",
+        "returncode": 0,
+        "python": "3.10.17",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
+        "resolved": [
+          "ALB.contracts.ComputationalBlock",
+          "build",
+          "importlinter",
+          "mypy",
+          "pytest"
+        ],
+        "dependency_versions": {
+          "build": "1.5.0",
+          "import-linter": "2.13",
+          "mypy": "2.3.0",
+          "pytest": "9.0.3"
+        }
+      }
+    },
+    "extra_smoke_scope": "Eight independent subprocess imports from the isolated wheel target; dependency versions come from the validated host environment. This is an import smoke, not an independent dependency-resolver installation.",
+    "cli_help": {
+      "alb-migrate-config": {
+        "module": "ALB.config.cli",
+        "returncode": 0,
+        "usage": "usage: ALB.config.cli [-h] [--overwrite] source destination"
+      },
+      "alb-migrate-surrogate": {
+        "module": "ALB.surrogate.cli",
+        "returncode": 0,
+        "usage": "usage: ALB.surrogate.cli [-h] [--metadata METADATA] [--overwrite]"
+      }
+    },
+    "overall_status": "passed",
+    "reproducible_build": {
+      "candidate_commit": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2",
+      "source_kind": "git_blobs",
+      "source_date_epoch": 1784733033,
+      "build_tag": "1",
+      "first_filename": "re_alb-0.2.0-1-py3-none-any.whl",
+      "second_filename": "re_alb-0.2.0-1-py3-none-any.whl",
+      "first_sha256": "a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897",
+      "second_sha256": "a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897",
+      "sha256_equal": true
+    },
+    "commands": {
+      "build": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_46668_20da55dc\\\\outputs\\\\release_acceptance\\\\devtools_51448_1841fb2f');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_source_51448_1841fb2f",
+      "build_returncode": 0,
+      "reproducibility_build": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_46668_20da55dc\\\\outputs\\\\release_acceptance\\\\devtools_51448_1841fb2f');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_repeat_51448_1841fb2f -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_source_repeat_51448_1841fb2f",
+      "reproducibility_build_returncode": 0,
+      "install": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -m pip install --isolated --disable-pip-version-check --no-input --no-compile --no-deps --target G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl",
+      "install_returncode": 0
+    },
+    "published_artifact": {
+      "path": "dist/re_alb-0.2.0-1-py3-none-any.whl",
+      "sha256": "a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897",
+      "matches_detached_installed_wheel": true
+    }
+  },
+  "worktree": {
+    "tracked_status_before": [],
+    "tracked_status_after": [],
+    "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tracked_status_delta": 0,
+    "sensitive_inputs_before": {
+      "untracked": [],
+      "ignored": []
+    },
+    "sensitive_inputs_after": {
+      "untracked": [],
+      "ignored": []
+    },
+    "candidate_head_before": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2",
+    "candidate_head_after": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2"
+  },
+  "references": {
+    "full_repo_refactor_v1_unchanged_from_tag": true,
+    "thermal_addendum": "refs/full_repo_refactor_addendum_v1",
+    "thermal_segregated_newton_v2": "refs/thermal_segregated_newton_reference_v2.json",
+    "ross_rotor_time_validation_v2": "refs/ross_rotor_time_validation_reference_v2.json",
+    "control_lifecycle_v2": "refs/control_lifecycle_reference_v2.json",
+    "rotor_dof_coupling_v4": "refs/rotor_dof_coupling_reference_v4.json",
+    "third_review_compatibility_v3": "refs/third_review_compatibility_reference_v3.json",
+    "fourth_review_release_v4": "refs/fourth_review_release_reference_v4.json",
+    "fifth_review_release_v5": "refs/fifth_review_release_reference_v5.json",
+    "sixth_review_runtime_v6": "refs/sixth_review_runtime_reference_v6.json",
+    "seventh_review_release_v7": "refs/seventh_review_release_reference_v7.json",
+    "eighth_review_wheel_identity_v8": "refs/eighth_review_wheel_identity_reference_v8.json"
+  },
+  "overall_status": "passed",
+  "execution": {
+    "mode": "detached_worktree",
+    "python_isolated_mode": true,
+    "python_subprocess_environment_sanitized": true,
+    "python_subprocess_flags": [
+      "-E",
+      "-s"
+    ],
+    "pytest_plugin_autoload_disabled": true,
+    "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+    "candidate_head_before": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2",
+    "candidate_head_after": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2",
+    "launcher_tracked_status_before": [],
+    "launcher_tracked_status_after": [],
+    "published_wheel": {
+      "path": "dist/re_alb-0.2.0-1-py3-none-any.whl",
+      "sha256": "a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897",
+      "matches_detached_installed_wheel": true
+    }
+  }
+}

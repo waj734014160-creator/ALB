@@ -38,7 +38,8 @@
 - 五轮审查参考：`refs/fifth_review_release_reference_v5.{json,npz}` 在第五轮生产修正前冻结 harmonic 成功运行/重新初始化、PID/FuzzyPID 合法带标签回读和三个公开 ALB 子类的默认初始矩阵，共 27 个数组；当前工作树逐元素精确相等。
 - 六轮审查参考：`refs/sixth_review_runtime_reference_v6.{json,npz}` 在第六轮生产修正前继续冻结第五轮 27 个合法行为数组；当前工作树逐元素精确相等。
 - 七轮审查参考：`refs/seventh_review_release_reference_v7.{json,npz}` 在 commit `908abd7` 的生产修正前冻结 harmonic 合法控制器、阀、位移/速度、力和重新初始化路径共 27 个数组；修正后逐元素精确相等，既有 v1-v6 参考均未覆盖。
-- 当前阶段：第七轮两份审查中的 NaN/Inf、复杂数、pytest 隔离、skip/warning、插件证据和 wheel 绑定问题均已修复。候选 `728b198` 从独立 detached worktree 得到 436 passed、13 skipped、0 warnings、27 subtests passed；pytest 9.0.3、37 个最终活动插件、13 个精确允许 skip、两个严格 mypy 门禁、wheel 源码/METADATA/哈希及测试前后 HEAD/敏感输入均通过。因此本轮列出的发布阻塞项已关闭，可解除针对这些具体问题的 `Request changes`。
+- 八轮制品身份参考：commit `a29290e` 在工具修正前创建 `refs/eighth_review_wheel_identity_reference_v8.json`，冻结 candidate `4d6e609` 的 119 个 release Git blob、规范源码摘要 `39bece7c…`、v7 行为参考哈希，以及两份旧 wheel 证据的差异；生产 `ALB/**` 与运行时 `pyproject.toml` 内容保持精确一致。
+- 当前阶段：最后一项 wheel 制品身份 P1 已关闭。候选 `62b53be` 从 Git blob 规范源连续构建两次 build tag `1` wheel，均得到 SHA-256 `a6750b0d…`；detached 正式验收安装的 wheel、发布到 `dist/` 的文件、构建报告和八轮验收报告均为同一 SHA。正式结果为 438 passed、13 skipped、0 warnings、27 subtests passed，451 个节点全部收集。因此当前审查提出的发布阻塞项已全部关闭，可解除 `Request changes`。
 
 ## 已完成的 0.2.0 边界
 
@@ -60,6 +61,7 @@
 16. 第五轮审查修正已提交并验收：harmonic 重初始化失败后整体失效并封锁状态出口；正式验收拒绝敏感 untracked/ignored 输入并验证 HEAD 前后一致；带标签的嵌套控制器配置严格校验类型和字段；`ALBSV`、`NodimALB`、`NodimALBSV` 不再共享可变默认配置。
 17. 第六轮审查修正已提交并验收：`input()`/`output()` 的控制器、命令整形、双阀和记录阶段由严格 runtime guard 封锁半推进异常；正式验收从 detached candidate 执行，不再依赖本地 `outputs/.devtools`。旧热参考生成器固定为 LF checkout，历史构建证据路径采用可移植的后缀校验。
 18. 第七轮审查修正已提交并验收：harmonic 在任何 float 转换前拒绝 complex，并对控制器命令、阀芯、轴承输入、quadrature 和最终力执行形状与有限性校验；pytest 使用固定 9.0.3、禁用插件自动加载并精确校验 skip/warning/xfail/插件；wheel 从运行专属 tracked 源码副本构建并核对候选源码和 METADATA，不再污染 detached 候选树。
+19. 八轮制品身份修正已提交并验收：wheel 输入改由 `git cat-file` 读取 candidate blob，不再复制受换行、smudge 或文件时间影响的工作树字节；`SOURCE_DATE_EPOCH` 固定为最近一次 release 输入提交时间；同一候选必须连续两次生成相同 build tag `1` wheel；外层只发布 detached 实际安装验证的那一份精确字节。
 
 ## 当前验收结论
 
@@ -79,6 +81,7 @@
 | 五轮代码审查修正 | 候选提交 `27729ee`：413 passed、13 skipped、0 warnings、27 subtests passed；426 个节点全部收集；第五轮 11 个关键节点及相关子测试全部通过；27 个 v5 有效行为数组逐元素精确相等；contracts/core 的 19 个文件 mypy 无问题；测试前后 tracked、敏感 untracked/ignored 状态均为空且 HEAD 一致 | `docs/migrations/0.2.0_fifth_review_acceptance.json` |
 | 六轮代码审查修正 | 候选提交 `66fe326`：421 passed、13 skipped、0 warnings、27 subtests passed；434 个节点全部收集；第六轮 8 个关键节点全部通过；27 个 v6 有效行为数组逐元素精确相等；contracts/core 19 个文件和独立 runtime 1 个文件严格 mypy 通过；detached worktree 测试前后 HEAD、tracked 状态及敏感输入均保持不变 | `docs/migrations/0.2.0_sixth_review_acceptance.json` |
 | 七轮代码审查修正 | 候选提交 `728b198`：436 passed、13 skipped、0 warnings、27 subtests passed；449 个节点全部收集；27 个 v7 合法行为数组逐元素精确相等；pytest 9.0.3、37 个最终插件、精确 skip allowlist、contracts/core 及 harmonic runtime 严格 mypy、现场 wheel 和 detached worktree 前后状态全部通过 | `docs/migrations/0.2.0_seventh_review_acceptance.json` |
+| 八轮 wheel 制品身份修正 | 候选提交 `62b53be`：438 passed、13 skipped、0 warnings、27 subtests passed；451 个节点全部收集；4 个制品身份关键节点通过；Git blob 规范摘要、两次构建、detached 安装、最终发布文件、构建报告和验收报告的 wheel SHA 全部一致 | `docs/migrations/0.2.0_eighth_review_acceptance.json` |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
@@ -87,7 +90,7 @@
 | 同机性能 | film 0.8943、thermal 0.9114、ALB 0.9098、ALBNN 0.9028、coupling 0.9550，均低于 1.15 阈值 | `docs/migrations/0.2.0_performance.json` |
 | Wheel | `re_alb-0.2.0-1-py3-none-any.whl` 从当前 tracked 源码构建；118 个 ALB 文件逐字节核对、METADATA 与 `pyproject.toml` 一致，隔离安装、8 组 extras import smoke、namespace smoke 和两个 CLI `--help` 通过 | `docs/migrations/0.2.0_build_acceptance.json` |
 
-当前发布 wheel SHA-256 为 `5266ca0c4bc5bf07599e41445dbaeac6f9929577cd9e110e98da6398f0bc5bcc`。它包含 123 个成员，不包含已删除的旧平铺模块；旧无 build tag 文件因本机 ACL 无法覆盖，仅作为本地历史文件，不属于本轮发布证据。
+当前发布 wheel SHA-256 为 `a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897`。它包含 123 个成员，不包含已删除的旧平铺模块；规范 release 源摘要为 `39bece7caecfaec5924578bc25f195447d2c6461dda00e3f3f223416c5e9ef52`。旧无 build tag 文件因本机 ACL 无法覆盖，仅作为本地历史文件，不属于发布脚本默认目标。
 
 ## 外部消费者状态
 
@@ -118,6 +121,7 @@
 - 第五轮已完成“代码提交 `690d69a`、测试映射提交 `27729ee`、干净候选验收、证据提交”的闭环。新的验收门禁会拒绝 `ALB/`、`tests/` 中未提交文件、`tools/` 中未提交 Python 输入和根目录 Python/config 输入（包括被 ignore 的文件），并要求测试前后 HEAD 不变；正式报告的 `candidate_commit` 为 `27729ee`。
 - 第六轮已完成“代码与可移植性修复、测试映射提交 `66fe326`、detached 干净候选验收、证据提交”的闭环。验收器从候选 SHA 建立位于 `ALB_PROJECTS` 下的临时 worktree，使外部 `SURROGATE_TRAIN` 只读测试仍能找到兄弟目录；完成后删除临时 worktree。候选内部扫描任意位置的未提交 `.py/.pyi/.pyd/.so`，并为 mypy 创建、使用和清理全新运行目录；正式报告的 `candidate_commit` 为 `66fe326`。
 - 第七轮已完成“v7 合法行为参考、生产与验收门禁修正、449 节点测试映射、wheel 构建证据、detached 候选验收”的闭环。首次正式运行因构建后端在候选树生成 `build/lib/**` 被敏感输入门禁拒绝；修正为运行专属 tracked 源码副本后重跑通过，证明该门禁实际生效。正式报告的 `candidate_commit` 为 `728b198`。
+- 八轮已完成“Git blob 规范参考、可复现双构建、451 节点测试映射、detached 安装、最终制品发布和双报告同 SHA”的闭环。旧构建报告 `5266ca0…` 与七轮现场 wheel `6ae4436…` 只保留在 v8 参考中作为问题证据；当前构建报告和正式验收均绑定候选 `62b53be`、源码摘要 `39bece7…` 和发布 wheel `a6750b0d…`。首次八轮正式运行因内部过早清理已验证 wheel 而未生成证据，调整交接顺序后完整重跑通过。
 - 发布工具仍有结构性欠账：各轮节点集合尚未全部迁入版本化 manifest；launcher、detached worker 和测试清单仍集中在一个大脚本；fresh 工具只固定直接版本，传递依赖尚未使用带哈希 constraints/wheelhouse。它们不改变本轮通过结论，但下一版发布基础设施应继续拆分和固化。
 - 四轮审查涉及的具体缺陷已经关闭，但三个结构性欠账仍在：`thermal/solver.py` 等 6 个主要模块仍为约 1269-3259 行的单体；ServoValve2 仍以兼容方式保留 `input()` 内计算，LQG 和 RepetitiveController 也尚未原生迁入严格状态机；mypy 严格门禁仍只覆盖 contracts/core 的 19 个文件。这些属于分阶段重构工作，不能用本轮局部修复宣称完成。
 
@@ -147,6 +151,7 @@
 - 五轮代码审查修正门禁：`docs/migrations/0.2.0_fifth_review_acceptance.json`。
 - 六轮代码审查修正门禁：`docs/migrations/0.2.0_sixth_review_acceptance.json`。
 - 七轮代码审查修正门禁：`docs/migrations/0.2.0_seventh_review_acceptance.json`。
+- 八轮 wheel 制品身份门禁：`docs/migrations/0.2.0_eighth_review_acceptance.json`。
 - 控制状态和耦合时序参考：`refs/control_state_contract_reference_v1.json`、`refs/control_lifecycle_reference_v2.json`、`refs/rotor_bearing_coupling_time_reference_v3.json`、`refs/rotor_dof_coupling_reference_v4.json`。
 - 三轮兼容性参考：`refs/third_review_compatibility_reference_v3.json`。
 - 四轮发布阻塞修正参考：`refs/fourth_review_release_reference_v4.json`。

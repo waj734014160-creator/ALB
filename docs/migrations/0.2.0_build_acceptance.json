@@ -1,20 +1,24 @@
 {
   "schema": "alb.build-acceptance.v1",
   "version": "0.2.0",
-  "candidate_commit": "365676a9067188e754c9222b85ff6b76de61a677",
+  "candidate_commit": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2",
   "source": {
-    "tree_sha256": "94cd52a1568489191e5ae2a60bec5ebe7c8684a4f2d64860ae9d56e4d662c7af",
+    "candidate_commit": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2",
+    "tree_sha256": "39bece7caecfaec5924578bc25f195447d2c6461dda00e3f3f223416c5e9ef52",
     "file_count": 119,
-    "pyproject_sha256": "7e857aa8ec7ed3d76e822b37dffbc61a30255e44d4e7421b307cb98e6cea7021",
+    "pyproject_sha256": "17daf95f05397bb31bbefb642a1928689acb30df8f677dc31d9de745bee38680",
+    "source_date_epoch": 1784733033,
+    "source_kind": "git_blobs",
     "wheel_source_files_checked": 118,
     "missing_wheel_members": [],
     "mismatched_wheel_members": []
   },
   "wheel": {
     "path": "dist/re_alb-0.2.0-1-py3-none-any.whl",
-    "size_bytes": 305485,
-    "sha256": "5266ca0c4bc5bf07599e41445dbaeac6f9929577cd9e110e98da6398f0bc5bcc",
+    "size_bytes": 302311,
+    "sha256": "a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897",
     "member_count": 123,
+    "build_tag": "1",
     "forbidden_members_present": [],
     "required_members_present": [
       "ALB/contracts/block.py",
@@ -82,14 +86,15 @@
         "pytest>=9"
       ]
     },
-    "matches_pyproject": true
+    "matches_pyproject": true,
+    "build_tag": "1"
   },
   "isolated_install": {
-    "root": "outputs/wheel_smoke/wheel_install_release_365676a",
+    "root": "outputs/release_acceptance/wheel_install_51448_1841fb2f",
     "dependency_paths": [
-      "outputs/wheel_smoke/devtools_365676a"
+      "outputs/release_acceptance/devtools_51448_1841fb2f"
     ],
-    "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
+    "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
     "version": "0.2.0",
     "root_exports": [
       "AdvancingBlock",
@@ -131,10 +136,10 @@
   },
   "extra_smokes": {
     "core": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl",
+      "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
       "resolved": [
         "ALB.contracts.ResultBundle",
         "ALB.core.StepCommitLedger"
@@ -148,10 +153,10 @@
       }
     },
     "film": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[film]",
+      "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[film]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
       "resolved": [
         "ALB.physics.film.SkfemNewtonFilm"
       ],
@@ -161,10 +166,10 @@
       }
     },
     "control": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[control]",
+      "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[control]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
       "resolved": [
         "ALB.control.FuzzyPID",
         "ALB.control.PID"
@@ -176,10 +181,10 @@
       }
     },
     "dynamics": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[dynamics]",
+      "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[dynamics]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
       "resolved": [
         "ALB.dynamics.RossRotor"
       ],
@@ -189,10 +194,10 @@
       }
     },
     "surrogate": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[surrogate]",
+      "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[surrogate]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
       "resolved": [
         "ALB.surrogate.Net",
         "ALB.surrogate.training.TrainingConfig"
@@ -204,10 +209,10 @@
       }
     },
     "io": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[io]",
+      "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[io]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
       "resolved": [
         "ALB.infrastructure.config_io.read_json5"
       ],
@@ -216,10 +221,10 @@
       }
     },
     "all": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[all]",
+      "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[all]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
       "resolved": [
         "ALB.infrastructure.DirectoryArtifactWriter",
         "ALB.systems.alb.ALBHarmonicLinear"
@@ -236,10 +241,10 @@
       }
     },
     "test": {
-      "install_spec": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.2.0-1-py3-none-any.whl[test]",
+      "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl[test]",
       "returncode": 0,
       "python": "3.10.17",
-      "alb_file": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\wheel_smoke\\wheel_install_release_365676a\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f\\ALB\\__init__.py",
       "resolved": [
         "ALB.contracts.ComputationalBlock",
         "build",
@@ -268,5 +273,29 @@
       "usage": "usage: ALB.surrogate.cli [-h] [--metadata METADATA] [--overwrite]"
     }
   },
-  "overall_status": "passed"
+  "overall_status": "passed",
+  "reproducible_build": {
+    "candidate_commit": "62b53be79c895cd54dd86bc0ae71d3e9ec5a70d2",
+    "source_kind": "git_blobs",
+    "source_date_epoch": 1784733033,
+    "build_tag": "1",
+    "first_filename": "re_alb-0.2.0-1-py3-none-any.whl",
+    "second_filename": "re_alb-0.2.0-1-py3-none-any.whl",
+    "first_sha256": "a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897",
+    "second_sha256": "a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897",
+    "sha256_equal": true
+  },
+  "commands": {
+    "build": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_46668_20da55dc\\\\outputs\\\\release_acceptance\\\\devtools_51448_1841fb2f');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_source_51448_1841fb2f",
+    "build_returncode": 0,
+    "reproducibility_build": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_46668_20da55dc\\\\outputs\\\\release_acceptance\\\\devtools_51448_1841fb2f');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_repeat_51448_1841fb2f -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_source_repeat_51448_1841fb2f",
+    "reproducibility_build_returncode": 0,
+    "install": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -m pip install --isolated --disable-pip-version-check --no-input --no-compile --no-deps --target G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_install_51448_1841fb2f G:\\ALB_PROJECTS\\.alb_release_acceptance_46668_20da55dc\\outputs\\release_acceptance\\wheel_51448_1841fb2f\\re_alb-0.2.0-1-py3-none-any.whl",
+    "install_returncode": 0
+  },
+  "published_artifact": {
+    "path": "dist/re_alb-0.2.0-1-py3-none-any.whl",
+    "sha256": "a6750b0d6deaefb1c16f613569ea13f15c93513c440027828479d9068f7c6897",
+    "matches_detached_installed_wheel": true
+  }
 }
