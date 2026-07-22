@@ -33,6 +33,10 @@ STRICT_TARGETS = (
     "ALB/systems/alb/_harmonic_runtime.py",
     "ALB/systems/alb/harmonic_results.py",
     "ALB/systems/alb/assembly.py",
+    "tools/validation/release_phases.py",
+    "tools/validation/release_source_identity.py",
+    "tools/validation/release_wheel_gate.py",
+    "tools/validation/run_release_acceptance_0_2.py",
 )
 COVERED_NAMESPACES = (
     "ALB/config",

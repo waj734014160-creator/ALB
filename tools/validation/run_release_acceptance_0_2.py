@@ -11,7 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
-from typing import Any
+from typing import Any, cast
 import uuid
 
 
@@ -20,6 +20,12 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from tools.validation.release_wheel_gate import build_and_validate_wheel
+from tools.validation.release_phases import (
+    evidence_phase,
+    publish_wheel_phase,
+    run_test_phase,
+    select_candidate,
+)
 
 
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.2.0_release_acceptance.json"
@@ -522,7 +528,10 @@ def _install_fresh_validation_tools(
 def _load_acceptance_policy() -> dict[str, Any]:
     """Load the versioned pytest evidence policy committed with the candidate."""
 
-    policy = json.loads(ACCEPTANCE_POLICY.read_text(encoding="utf-8"))
+    policy = cast(
+        dict[str, Any],
+        json.loads(ACCEPTANCE_POLICY.read_text(encoding="utf-8")),
+    )
     if policy.get("schema") != "alb.release-acceptance-policy.v1":
         raise ValueError("Unsupported release acceptance policy schema")
     return policy
@@ -626,7 +635,6 @@ def run_acceptance() -> dict[str, Any]:
     pytest_report = runtime_root / f"pytest_reports_{run_token}.json"
     pytest_basetemp = runtime_root / f"pytest_tmp_{run_token}"
     mypy_cache = runtime_root / f"mypy_cache_{run_token}"
-    runtime_mypy_cache = runtime_root / f"runtime_mypy_cache_{run_token}"
     fresh_devtools = runtime_root / f"devtools_{run_token}"
 
     environment = _acceptance_environment()
@@ -643,7 +651,8 @@ def run_acceptance() -> dict[str, Any]:
             "Release acceptance requires committed runtime and test inputs:\n"
             + json.dumps(sensitive_before, ensure_ascii=False, indent=2)
         )
-    candidate_commit = _git("rev-parse", "HEAD")
+    candidate = select_candidate(REPOSITORY_ROOT, "HEAD")
+    candidate_commit = candidate.commit
     mypy_environment = environment.copy()
     mypy_install_command, mypy_install = _install_fresh_validation_tools(
         fresh_devtools, mypy_environment
@@ -671,14 +680,22 @@ def run_acceptance() -> dict[str, Any]:
         f"--basetemp={pytest_basetemp}",
         prepend_path=fresh_devtools,
     )
-    pytest_run = _run(pytest_command, environment=environment)
+    pytest_run = run_test_phase(
+        pytest_command,
+        repository_root=REPOSITORY_ROOT,
+        environment=environment,
+        phase="test",
+    )
     if pytest_run.returncode != 0:
         raise RuntimeError(
             "Full pytest acceptance failed:\n"
             + (pytest_run.stdout or "")
             + (pytest_run.stderr or "")
         )
-    reports = json.loads(pytest_report.read_text(encoding="utf-8"))
+    reports = cast(
+        dict[str, Any],
+        json.loads(pytest_report.read_text(encoding="utf-8")),
+    )
     acceptance_policy = _load_acceptance_policy()
     skipped, recorded_warnings = _validate_pytest_evidence(
         reports, acceptance_policy
@@ -765,38 +782,27 @@ def run_acceptance() -> dict[str, Any]:
     if any(item["outcome"] != "passed" for item in eighth_review_reports):
         raise AssertionError("An eighth-review artifact identity node did not pass")
 
-    mypy_command = _python_module_command(
-        "mypy",
-        "ALB/contracts",
-        "ALB/core",
-        "--config-file",
-        "pyproject.toml",
-        "--no-incremental",
-        "--cache-dir",
+    mypy_command = [
+        str(PYTHON),
+        "-E",
+        "-s",
+        str(REPOSITORY_ROOT / "tools/validation/run_layered_mypy.py"),
+        "--mypy-target",
+        str(fresh_devtools),
+        "--cache-root",
         str(mypy_cache),
-        prepend_path=fresh_devtools,
+    ]
+    mypy_run = run_test_phase(
+        mypy_command,
+        repository_root=REPOSITORY_ROOT,
+        environment=mypy_environment,
+        phase="layered_type_check",
     )
-    mypy_run = _run(mypy_command, environment=mypy_environment)
     if mypy_run.returncode != 0:
-        raise RuntimeError("Strict mypy acceptance failed:\n" + mypy_run.stdout + mypy_run.stderr)
-    runtime_mypy_command = _python_module_command(
-        "mypy",
-        "ALB/systems/alb/_harmonic_runtime.py",
-        "--config-file",
-        "pyproject.toml",
-        "--no-incremental",
-        "--follow-imports=skip",
-        "--cache-dir",
-        str(runtime_mypy_cache),
-        prepend_path=fresh_devtools,
-    )
-    runtime_mypy_run = _run(runtime_mypy_command, environment=mypy_environment)
-    if runtime_mypy_run.returncode != 0:
         raise RuntimeError(
-            "Harmonic runtime mypy acceptance failed:\n"
-            + runtime_mypy_run.stdout
-            + runtime_mypy_run.stderr
+            "Layered mypy acceptance failed:\n" + mypy_run.stdout + mypy_run.stderr
         )
+    mypy_summary = cast(dict[str, Any], json.loads(mypy_run.stdout))
     mypy_version = _mypy_version(fresh_devtools, mypy_environment)
     if mypy_version != MYPY_VERSION:
         raise AssertionError(
@@ -808,7 +814,6 @@ def run_acceptance() -> dict[str, Any]:
         pytest_report,
         pytest_basetemp,
         mypy_cache,
-        runtime_mypy_cache,
         fresh_devtools,
         wheel_gate.report_path,
         wheel_gate.installed_root,
@@ -888,12 +893,7 @@ def run_acceptance() -> dict[str, Any]:
             "version": mypy_version,
             "stdout": mypy_run.stdout.strip(),
             "stderr": mypy_run.stderr.strip(),
-            "incremental_runtime": {
-                "command": subprocess.list2cmdline(runtime_mypy_command),
-                "returncode": runtime_mypy_run.returncode,
-                "stdout": runtime_mypy_run.stdout.strip(),
-                "stderr": runtime_mypy_run.stderr.strip(),
-            },
+            "layered_summary": mypy_summary,
         },
         "wheel": wheel_gate.payload,
         "worktree": {
@@ -936,6 +936,18 @@ def run_acceptance() -> dict[str, Any]:
             "eighth_review_wheel_identity_v8": (
                 "refs/eighth_review_wheel_identity_reference_v8.json"
             ),
+        },
+        "release_phases": {
+            "candidate_selection": candidate.evidence(),
+            "source_export": wheel_gate.payload["phases"]["source_export"],
+            "build": wheel_gate.payload["phases"]["build"],
+            "install": wheel_gate.payload["phases"]["install"],
+            "test": pytest_run.evidence(),
+            "layered_type_check": mypy_run.evidence(),
+            "evidence_generation": {
+                "phase": "evidence_generation",
+                "status": "passed",
+            },
         },
         "overall_status": "passed",
     }
@@ -1008,11 +1020,12 @@ def _publish_staged_wheel(
             f"actual={publish_wheel.name}"
         )
     expected_sha256 = payload["wheel"]["wheel"]["sha256"]
-    publish_wheel.parent.mkdir(parents=True, exist_ok=True)
-    os.replace(staging, publish_wheel)
-    published_sha256 = hashlib.sha256(publish_wheel.read_bytes()).hexdigest()
-    if published_sha256 != expected_sha256:
-        raise AssertionError("Published wheel differs from detached accepted wheel")
+    published = publish_wheel_phase(
+        staging,
+        publish_wheel,
+        expected_sha256=expected_sha256,
+    )
+    published_sha256 = published["sha256"]
     relative_path = publish_wheel.relative_to(REPOSITORY_ROOT).as_posix()
     payload["wheel"]["wheel"]["path"] = relative_path
     payload["wheel"]["published_artifact"] = {
@@ -1031,7 +1044,7 @@ def run_acceptance_in_detached_worktree(publish_wheel: Path) -> dict[str, Any]:
             "Detached acceptance requires a clean tracked launcher worktree:\n"
             + json.dumps(before, ensure_ascii=False, indent=2)
         )
-    candidate_commit = _git("rev-parse", "HEAD")
+    candidate_commit = select_candidate(REPOSITORY_ROOT, "HEAD").commit
     worktree = REPOSITORY_ROOT.resolve().parent / (
         f".alb_release_acceptance_{os.getpid()}_{uuid.uuid4().hex[:8]}"
     )
@@ -1075,7 +1088,10 @@ def run_acceptance_in_detached_worktree(publish_wheel: Path) -> dict[str, Any]:
                 + completed.stdout
                 + completed.stderr
             )
-        payload = json.loads(internal_output.read_text(encoding="utf-8"))
+        payload = cast(
+            dict[str, Any],
+            json.loads(internal_output.read_text(encoding="utf-8")),
+        )
         staging_wheel = _stage_detached_wheel(worktree, payload)
     finally:
         _remove_detached_worktree(worktree)
@@ -1150,14 +1166,15 @@ def main() -> int:
         else run_acceptance_in_detached_worktree(args.publish_wheel)
     )
     if not args.internal_detached:
-        build_report.parent.mkdir(parents=True, exist_ok=True)
-        build_report.write_text(
-            json.dumps(payload["wheel"], ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
+        evidence_phase(
+            build_report,
+            payload["wheel"],
+            overwrite=args.overwrite_build_report,
         )
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    evidence_phase(
+        output,
+        payload,
+        overwrite=args.overwrite_output,
     )
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0

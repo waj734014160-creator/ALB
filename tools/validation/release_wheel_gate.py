@@ -9,9 +9,11 @@ from pathlib import Path
 import subprocess
 from typing import Any
 
-from tools.validation.release_source_identity import (
-    materialize_candidate_source,
-    resolve_candidate,
+from tools.validation.release_phases import (
+    build_wheel_phase,
+    export_source_phase,
+    install_wheel_phase,
+    select_candidate,
 )
 from tools.validation.validate_wheel_0_2 import validate
 
@@ -32,54 +34,8 @@ class ReleaseWheelGateResult:
     reproducibility_build_source_root: Path
 
 
-def _run(
-    command: list[str],
-    *,
-    repository_root: Path,
-    environment: dict[str, str],
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        command,
-        cwd=repository_root,
-        env=environment,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
-
-
-def _isolated_module_command(
-    python: Path,
-    module: str,
-    *args: str,
-    dependency_paths: tuple[Path, ...] = (),
-) -> list[str]:
-    """Run a module in isolated mode with only explicit tool roots prepended."""
-
-    path_bootstrap = "".join(
-        f"sys.path.insert({index}, {str(path)!r});"
-        for index, path in reversed(list(enumerate(dependency_paths)))
-    )
-    bootstrap = (
-        "import runpy,sys;"
-        f"{path_bootstrap}"
-        f"sys.argv=[{module!r}, *sys.argv[1:]];"
-        f"runpy.run_module({module!r}, run_name='__main__')"
-    )
-    return [str(python), "-I", "-c", bootstrap, *args]
-
-
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _one_wheel(path: Path) -> Path:
-    wheels = list(path.glob("*.whl"))
-    if len(wheels) != 1:
-        raise RuntimeError(f"Expected one release wheel, found {len(wheels)}")
-    return wheels[0].resolve()
 
 
 def build_and_validate_wheel(
@@ -95,7 +51,8 @@ def build_and_validate_wheel(
 ) -> ReleaseWheelGateResult:
     """Build one wheel, install it in isolation, and validate source identity."""
 
-    candidate_sha = resolve_candidate(repository_root, candidate_commit)
+    candidate = select_candidate(repository_root, candidate_commit)
+    candidate_sha = candidate.commit
     wheel_root = runtime_root / f"wheel_{run_token}"
     reproducibility_wheel_root = runtime_root / f"wheel_repeat_{run_token}"
     installed_root = runtime_root / f"wheel_install_{run_token}"
@@ -112,66 +69,33 @@ def build_and_validate_wheel(
     ):
         if path.exists():
             raise FileExistsError(f"Release wheel path already exists: {path}")
-    wheel_root.mkdir(parents=True)
-    reproducibility_wheel_root.mkdir(parents=True)
-    source_evidence = materialize_candidate_source(
-        repository_root,
-        candidate_sha,
-        build_source_root,
+    exported_source = export_source_phase(candidate, build_source_root)
+    repeated_exported_source = export_source_phase(
+        candidate, reproducibility_build_source_root
     )
-    repeated_source_evidence = materialize_candidate_source(
-        repository_root,
-        candidate_sha,
-        reproducibility_build_source_root,
-    )
+    source_evidence = exported_source.source_evidence
+    repeated_source_evidence = repeated_exported_source.source_evidence
     if source_evidence != repeated_source_evidence:
         raise AssertionError("Repeated candidate source materialization changed identity")
 
-    build_environment = environment.copy()
-    build_environment["SOURCE_DATE_EPOCH"] = str(source_evidence["source_date_epoch"])
-
-    build_command = _isolated_module_command(
-        python,
-        "build",
-        "--wheel",
-        "--outdir",
-        str(wheel_root),
-        f"-C--build-option=--build-number={build_tag}",
-        str(build_source_root),
+    built_wheel = build_wheel_phase(
+        python=python,
+        exported_source=exported_source,
+        output_root=wheel_root,
+        environment=environment,
         dependency_paths=dependency_paths,
+        build_tag=build_tag,
     )
-    build_run = _run(
-        build_command,
-        repository_root=repository_root,
-        environment=build_environment,
-    )
-    if build_run.returncode != 0:
-        raise RuntimeError(
-            "Release wheel build failed:\n" + build_run.stdout + build_run.stderr
-        )
-    wheel = _one_wheel(wheel_root)
-    reproducibility_build_command = _isolated_module_command(
-        python,
-        "build",
-        "--wheel",
-        "--outdir",
-        str(reproducibility_wheel_root),
-        f"-C--build-option=--build-number={build_tag}",
-        str(reproducibility_build_source_root),
+    repeated_built_wheel = build_wheel_phase(
+        python=python,
+        exported_source=repeated_exported_source,
+        output_root=reproducibility_wheel_root,
+        environment=environment,
         dependency_paths=dependency_paths,
+        build_tag=build_tag,
     )
-    reproducibility_build_run = _run(
-        reproducibility_build_command,
-        repository_root=repository_root,
-        environment=build_environment,
-    )
-    if reproducibility_build_run.returncode != 0:
-        raise RuntimeError(
-            "Repeated release wheel build failed:\n"
-            + reproducibility_build_run.stdout
-            + reproducibility_build_run.stderr
-        )
-    repeated_wheel = _one_wheel(reproducibility_wheel_root)
+    wheel = built_wheel.wheel
+    repeated_wheel = repeated_built_wheel.wheel
     wheel_sha256 = _sha256(wheel)
     repeated_wheel_sha256 = _sha256(repeated_wheel)
     if wheel.name != repeated_wheel.name or wheel_sha256 != repeated_wheel_sha256:
@@ -181,32 +105,13 @@ def build_and_validate_wheel(
             f"second={repeated_wheel.name}:{repeated_wheel_sha256}"
         )
 
-    install_command = [
-        str(python),
-        "-I",
-        "-m",
-        "pip",
-        "install",
-        "--isolated",
-        "--disable-pip-version-check",
-        "--no-input",
-        "--no-compile",
-        "--no-deps",
-        "--target",
-        str(installed_root),
-        str(wheel),
-    ]
-    install_run = _run(
-        install_command,
+    installed_wheel = install_wheel_phase(
+        python=python,
         repository_root=repository_root,
+        wheel=wheel,
+        destination_root=installed_root,
         environment=environment,
     )
-    if install_run.returncode != 0:
-        raise RuntimeError(
-            "Release wheel isolated installation failed:\n"
-            + install_run.stdout
-            + install_run.stderr
-        )
 
     payload = validate(
         wheel,
@@ -227,14 +132,22 @@ def build_and_validate_wheel(
         "sha256_equal": True,
     }
     payload["commands"] = {
-        "build": subprocess.list2cmdline(build_command),
-        "build_returncode": build_run.returncode,
+        "build": subprocess.list2cmdline(list(built_wheel.result.command)),
+        "build_returncode": built_wheel.result.returncode,
         "reproducibility_build": subprocess.list2cmdline(
-            reproducibility_build_command
+            list(repeated_built_wheel.result.command)
         ),
-        "reproducibility_build_returncode": reproducibility_build_run.returncode,
-        "install": subprocess.list2cmdline(install_command),
-        "install_returncode": install_run.returncode,
+        "reproducibility_build_returncode": repeated_built_wheel.result.returncode,
+        "install": subprocess.list2cmdline(list(installed_wheel.result.command)),
+        "install_returncode": installed_wheel.result.returncode,
+    }
+    payload["phases"] = {
+        "candidate_selection": candidate.evidence(),
+        "source_export": exported_source.evidence(),
+        "build": built_wheel.evidence(),
+        "reproducibility_source_export": repeated_exported_source.evidence(),
+        "reproducibility_build": repeated_built_wheel.evidence(),
+        "install": installed_wheel.evidence(),
     }
     report_path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
@@ -242,8 +155,8 @@ def build_and_validate_wheel(
     )
     return ReleaseWheelGateResult(
         payload=payload,
-        build_command=build_command,
-        install_command=install_command,
+        build_command=list(built_wheel.result.command),
+        install_command=list(installed_wheel.result.command),
         wheel=wheel,
         installed_root=installed_root,
         report_path=report_path,

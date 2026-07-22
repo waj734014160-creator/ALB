@@ -27,15 +27,29 @@ def test_release_acceptance_reports_real_pytest_mypy_and_status_gates() -> None:
         "test_fixed_point_reference_snapshot_matches_pre_change_results_exactly"
     )
     assert report["mypy"]["returncode"] == 0
-    assert "Success: no issues found" in report["mypy"]["stdout"]
+    layered_summary = report["mypy"].get("layered_summary")
+    if layered_summary is None:
+        assert "Success: no issues found" in report["mypy"]["stdout"]
+    else:
+        assert layered_summary["strict_returncode"] == 0
+        assert layered_summary["strict_targets"] > 0
+        assert layered_summary["covered_source_files"] > 0
     assert report["worktree"]["tracked_status_delta"] == 0
     assert report["worktree"]["before_sha256"] == report["worktree"]["after_sha256"]
-    assert report["worktree"]["tracked_status_before"] == [
-        " M test/bearing/_thermal_plots/alb_thermal_4pads.png",
-        " M test/bearing/_thermal_plots/orifice_thermal_comparison.png",
-    ]
     assert (
         report["worktree"]["tracked_status_after"]
         == report["worktree"]["tracked_status_before"]
     )
     assert report["references"]["full_repo_refactor_v1_unchanged_from_tag"] is True
+    phases = report.get("release_phases")
+    if phases is not None:
+        assert set(phases) >= {
+            "candidate_selection",
+            "source_export",
+            "build",
+            "install",
+            "test",
+            "layered_type_check",
+            "evidence_generation",
+        }
+        assert all(phase["status"] == "passed" for phase in phases.values())

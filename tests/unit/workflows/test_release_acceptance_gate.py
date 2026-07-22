@@ -1,13 +1,18 @@
 """Unit tests for release-evidence worktree preconditions."""
 
 import hashlib
+import json
 from pathlib import Path
 import subprocess
 
 import pytest
 
 from tools.validation import run_release_acceptance_0_2 as acceptance
-from tools.validation.release_source_identity import materialize_candidate_source
+from tools.validation import release_phases
+from tools.validation.release_source_identity import (
+    materialize_candidate_source,
+    source_tree_evidence,
+)
 
 
 def test_release_acceptance_rejects_dirty_tracked_worktree_before_tests(monkeypatch):
@@ -83,8 +88,84 @@ def test_wheel_build_materializes_candidate_git_blobs(tmp_path: Path) -> None:
 
     assert (source_root / "pyproject.toml").read_bytes() == expected_pyproject
     assert evidence["source_kind"] == "git_blobs"
-    assert evidence["file_count"] == 119
+    assert evidence["file_count"] == source_tree_evidence(
+        acceptance.REPOSITORY_ROOT, "HEAD"
+    )["file_count"]
+    assert evidence["file_count"] > 119
     assert not (source_root / "tests").exists()
+
+
+def test_release_candidate_and_source_export_are_independent_phases(tmp_path):
+    """Candidate selection and canonical export can be reused independently."""
+
+    candidate = release_phases.select_candidate(acceptance.REPOSITORY_ROOT)
+    exported = release_phases.export_source_phase(candidate, tmp_path / "source")
+
+    assert candidate.evidence()["phase"] == "candidate_selection"
+    assert exported.evidence()["phase"] == "source_export"
+    assert exported.source_evidence == candidate.source_evidence
+    assert (exported.root / "pyproject.toml").is_file()
+
+
+def test_build_install_test_and_evidence_phases_have_explicit_boundaries(
+    tmp_path,
+    monkeypatch,
+):
+    """Each mutable release action exposes one reusable result boundary."""
+
+    candidate = release_phases.select_candidate(acceptance.REPOSITORY_ROOT)
+    exported = release_phases.ExportedSource(
+        candidate,
+        tmp_path / "source",
+        candidate.source_evidence,
+    )
+    exported.root.mkdir()
+
+    def fake_run(phase, command, **kwargs):
+        del kwargs
+        if phase == "build":
+            output = Path(command[command.index("--outdir") + 1])
+            (output / "example-0.2.0-py3-none-any.whl").write_bytes(b"wheel")
+        return release_phases.CommandPhaseResult(
+            phase, tuple(command), 0, "passed", ""
+        )
+
+    monkeypatch.setattr(release_phases, "_run_command", fake_run)
+    built = release_phases.build_wheel_phase(
+        python=Path("python"),
+        exported_source=exported,
+        output_root=tmp_path / "wheel",
+        environment={},
+    )
+    installed = release_phases.install_wheel_phase(
+        python=Path("python"),
+        repository_root=acceptance.REPOSITORY_ROOT,
+        wheel=built.wheel,
+        destination_root=tmp_path / "install",
+        environment={},
+    )
+    tested = release_phases.run_test_phase(
+        ["python", "-m", "pytest"],
+        repository_root=acceptance.REPOSITORY_ROOT,
+        environment={},
+    )
+    evidence_path = tmp_path / "evidence.json"
+    written = release_phases.evidence_phase(
+        evidence_path,
+        {"phases": [built.evidence(), installed.evidence(), tested.evidence()]},
+    )
+
+    assert [
+        built.evidence()["phase"],
+        installed.evidence()["phase"],
+        tested.evidence()["phase"],
+        written["phase"],
+    ] == ["build", "install", "test", "evidence_generation"]
+    assert json.loads(evidence_path.read_text(encoding="utf-8"))["phases"][0][
+        "status"
+    ] == "passed"
+    with pytest.raises(FileExistsError, match="overwrite"):
+        release_phases.evidence_phase(evidence_path, {})
 
 
 def test_publish_staged_wheel_preserves_detached_sha(tmp_path, monkeypatch):
