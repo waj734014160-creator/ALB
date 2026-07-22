@@ -49,10 +49,10 @@ from ALB.systems.alb import BearingBlock, DirectSpoolBearingBlock, nodim_alb
 | `ALB.physics.gas` | 气体轴承 | gas-film solver |
 | `ALB.physics.thermal` | 热耦合 | 热模型、黏温/尺度转换和热惯性状态 |
 | `ALB.control` | 控制和阀 | 独立 `pid`、`fuzzy`、`lqg`、`repetitive`、`reduction_core`、状态空间、伺服阀和严格端口 blocks；`controllers` 只保留内部兼容重导出 |
-| `ALB.dynamics` | 转子与耦合 | `rotor_layout`、rotor 数值推进、`coupling_runtime`、`coupling_results`、orbit、FFT/KC 识别 |
+| `ALB.dynamics` | 转子与耦合 | `rotor_layout`、`rotor_results`、rotor 数值推进、`coupling_runtime`、`coupling_results`、orbit、FFT/KC 识别 |
 | `ALB.surrogate` | 部署侧代理模型 | features、networks、scalers、inference、versioned model package、非破坏迁移 |
 | `ALB.surrogate.training` | 训练侧公共能力 | config、data、loss、transform、report、run 和 ALBNN 专用远程队列 |
-| `ALB.systems.alb` | 顶层 ALB 系统装配 | `runtime`、`builder`、`factories`、`linear`、`surrogate_runtime`、`switch`、harmonic runtime/result；`assembly` 只保留内部兼容重导出 |
+| `ALB.systems.alb` | 顶层 ALB 系统装配 | `runtime`、`builder`、`factories`、`linear`、`surrogate_runtime`、`switch`、harmonic runtime/result/coefficient contract；`assembly` 只保留内部兼容重导出 |
 | `ALB.infrastructure` | 外部副作用 | UTF-8 配置 IO、日志、`SmtpNotifier`、artifact writer、generic remote engine |
 | `ALB.workflows` | 可执行流程和后处理 | ALB workflow、DoE、配置装配、命名、绘图、后处理和顶层执行 |
 
@@ -86,6 +86,11 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 `RuntimeLifecycleProtocol` 是正式结构契约。`ALB.core.lifecycle.RuntimeLifecycle` 为有状态组件
 提供统一 `NEW/READY/RUNNING/FAILED` 转换和访问门禁；`ALB.core.validation` 统一处理实数、形状、
 有限性、时间和调用方数组副本，不允许各领域依赖隐式 complex-to-float 转换。
+
+`RossRotor` 也复用这套 lifecycle：载荷输入先锁存，`advance()` 是唯一公开推进入口，失败后进入
+`FAILED` 并要求重新 `init()`。结果提取和保存树组装位于 `ALB.dynamics.rotor_results`，不再由
+转子推进类同时承担。谐波系数 DTO、JSON/resource 加载和校验位于
+`ALB.systems.alb.harmonic_coefficients`，运行时只消费已经验证的系数对象。
 
 严格 block 遵循 `input()`、显式计算、`output()` 的生命周期。非线性 ALB 和谐波线性轴承都可通过 `ALB.systems.alb.BearingBlock` 系列暴露同一个轴承端口协议。已经是归一化阀芯状态的 `sx/sy` 应通过 `DirectSpoolBearingInput(BearingInput, ValveOutput)` 交给 `DirectSpoolBearingBlock`；它不会再次引入阀动态。
 

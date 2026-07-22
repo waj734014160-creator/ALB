@@ -146,8 +146,11 @@ nondimensional
 - 需要 DTO 端口时使用 `ControllerBlock`，由它以 `compute_command()` 封装原生控制器的一次严格运行。
 - 仅有计算型 `output()` 的旧自定义控制器不满足 `ControllerProtocol`，必须显式经 `LegacyControllerAdapter` 接入；该兼容层将在下一破坏式版本移除。
 - 伺服阀实现 `ServoValveProtocol`，计算动作是 `evaluate()`。
-- 转子实现 `RotorProtocol`，状态推进是 `advance()`。
-- `RossRotor.current_state()` 只读取当前状态，`output()` 不再隐藏推进。
+- 转子实现同时继承 `RuntimeLifecycleProtocol` 的 `RotorProtocol`，状态推进是 `advance()`。
+- `RossRotor` 的载荷输入只锁存，`advance()` 是唯一公开推进入口；`current_state()`、`output()`、
+  结果提取和保存只读取已完成快照。推进失败后进入 `FAILED`，必须重新 `init()`。
+- 转子结果/保存树组装位于 `ALB.dynamics.rotor_results`；谐波系数契约和资源加载位于
+  `ALB.systems.alb.harmonic_coefficients`，避免运行时同时承担持久化和配置 IO。
 - 顶层 rotor-bearing coupler 负责一次 `advance()` 后的一次全局 step commit。
 
 ## 结果和副作用边界
