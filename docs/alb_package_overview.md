@@ -39,20 +39,20 @@ from ALB.systems.alb import BearingBlock, DirectSpoolBearingBlock, nodim_alb
 | Namespace | 职责 | 代表模块或能力 |
 | --- | --- | --- |
 | `ALB.contracts` | 纯接口、DTO、值对象和结果契约 | block Protocol、轴承/控制/阀/转子端口、`UnitSystem`、`StepContext`、`ConvergenceStatus`、`ResultBundle`、artifact 协议 |
-| `ALB.core` | 与领域和文件系统无关的运行时基础 | 显式计算块状态机、时步 ledger、时间迭代、验证和事件 |
+| `ALB.core` | 与领域和文件系统无关的运行时基础 | `RuntimeLifecycle`、显式计算块状态机、时步 ledger、统一有限实数验证、时间迭代和事件 |
 | `ALB.core.fem` | 有限元基础 | 节点、单元、网格、边界 |
 | `ALB.core.numerics` | 通用数值工具 | 数组、静态/动态矩阵、阻尼、迭代工具 |
-| `ALB.config` | 按领域分类的配置契约 | `film`、`hydraulics`、`gas`、`thermal`、`control`、`system`、`surrogate`、配置迁移 |
+| `ALB.config` | 按领域分类的配置契约 | 各领域 `*_models`、当前 `schema`、独立只读 `legacy` 迁移和配置 CLI |
 | `ALB.physics.film` | Reynolds 油膜求解 | mesh、film solver、压力场和容量辅助 |
 | `ALB.physics.hydraulics` | 液压与节流 | orifice 模型和流量关系 |
 | `ALB.physics.bearing` | 轴承组合 | 静压轴承、四瓦轴承和显式适配器 |
 | `ALB.physics.gas` | 气体轴承 | gas-film solver |
 | `ALB.physics.thermal` | 热耦合 | 热模型、黏温/尺度转换和热惯性状态 |
-| `ALB.control` | 控制和阀 | PID、Fuzzy、LQG、状态空间、降阶、伺服阀和严格端口 blocks |
-| `ALB.dynamics` | 转子与耦合 | `RotorDofLayout`、rotor、coupling、orbit、FFT/KC 识别 |
+| `ALB.control` | 控制和阀 | 独立 `pid`、`fuzzy`、`lqg`、`repetitive`、`reduction_core`、状态空间、伺服阀和严格端口 blocks；`controllers` 只保留内部兼容重导出 |
+| `ALB.dynamics` | 转子与耦合 | `rotor_layout`、rotor 数值推进、`coupling_runtime`、`coupling_results`、orbit、FFT/KC 识别 |
 | `ALB.surrogate` | 部署侧代理模型 | features、networks、scalers、inference、versioned model package、非破坏迁移 |
 | `ALB.surrogate.training` | 训练侧公共能力 | config、data、loss、transform、report、run 和 ALBNN 专用远程队列 |
-| `ALB.systems.alb` | 顶层 ALB 系统装配 | builder、非线性 ALB、严格 `BearingBlock`、direct-spool 适配器、谐波线性轴承及 `K/C/G_xv` |
+| `ALB.systems.alb` | 顶层 ALB 系统装配 | `runtime`、`builder`、`factories`、`linear`、`surrogate_runtime`、`switch`、harmonic runtime/result；`assembly` 只保留内部兼容重导出 |
 | `ALB.infrastructure` | 外部副作用 | UTF-8 配置 IO、日志、`SmtpNotifier`、artifact writer、generic remote engine |
 | `ALB.workflows` | 可执行流程和后处理 | ALB workflow、DoE、配置装配、命名、绘图、后处理和顶层执行 |
 
@@ -81,6 +81,11 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 ### 计算块与端口
 
 `ALB.contracts` 提供 `BearingInput/BearingOutput`、`ControlInput/ControlOutput`、`ValveInput/ValveOutput`、`RotorLoadInput/RotorState`。DTO 在构造时验证形状、有限性、非负时间和单位制，并冻结数组副本。
+
+`ControllerProtocol`、`ServoValveProtocol`、`RotorProtocol`、`ResultRecorderProtocol` 和
+`RuntimeLifecycleProtocol` 是正式结构契约。`ALB.core.lifecycle.RuntimeLifecycle` 为有状态组件
+提供统一 `NEW/READY/RUNNING/FAILED` 转换和访问门禁；`ALB.core.validation` 统一处理实数、形状、
+有限性、时间和调用方数组副本，不允许各领域依赖隐式 complex-to-float 转换。
 
 严格 block 遵循 `input()`、显式计算、`output()` 的生命周期。非线性 ALB 和谐波线性轴承都可通过 `ALB.systems.alb.BearingBlock` 系列暴露同一个轴承端口协议。已经是归一化阀芯状态的 `sx/sy` 应通过 `DirectSpoolBearingInput(BearingInput, ValveOutput)` 交给 `DirectSpoolBearingBlock`；它不会再次引入阀动态。
 
@@ -119,6 +124,11 @@ direct-spool 端口。
 ### 配置
 
 配置从 `ALB.config.<domain>` 显式导入。`alb-migrate-config` 和 `tools/migrations/migrate_config_0_2.py` 只读旧 JSON5，并把 0.2 schema 另存为 UTF-8 文件；不会覆盖源配置。旧文件若无法按 UTF-8 解码，迁移器会显式警告并临时尝试 GBK/CP936，输出仍统一写为 UTF-8。
+
+当前配置由 `ALB.config.schema` 的 `ALBConfigEnvelope` 和固定
+`CURRENT_SCHEMA_VERSION = "0.2.0"` 表达；它只接受当前嵌套 schema。旧平铺格式只进入
+`ALB.config.legacy.migrate_legacy_alb_config()` 的单向迁移路径，迁移报告会记录源格式、目标版本和
+默认值补全，当前模型不再同时承担宽松 legacy 解析职责。
 
 `ALBConfig.to_dict()` 与 `NodimALBConfig.to_dict()` 固定写出
 `"controller": "PID" | "FuzzyPID" | "none"` 类型标签；`from_dict()` 据此恢复具体配置类型和
@@ -162,6 +172,17 @@ thermal ALBNN 的实际输入列、feature set、target transform 和模型选�
 | `test` | build、import-linter、mypy、pytest |
 
 缺少 optional dependency 时，namespace 会给出对应 extra 的安装提示。wheel 和隔离安装证据位于 `docs/migrations/0.2.0_build_acceptance.json`。
+
+## 类型与发布门禁
+
+`tools/validation/run_layered_mypy.py` 使用两层门禁：contracts/core、配置 schema/迁移、控制和
+动力学边界、systems runtime/result 以及发布工具属于零错误 strict 层；完整
+`config/control/dynamics/systems` namespace 属于精确的文件加错误码增量基线层。任何新增文件、
+诊断类别或数量漂移都会失败，历史诊断只能在审查后显式下降或更新基线。
+
+发布验收由 `tools.validation.release_phases` 提供可复用的候选选择、Git blob 源码导出、构建、
+安装、测试、证据生成和制品发布阶段。0.2 runner 仍负责版本专用策略与关键 nodeid，但不再自行
+复制这些通用执行语义。
 
 ## 不兼容边界
 

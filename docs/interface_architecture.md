@@ -77,6 +77,20 @@ result = block.output()  # 只读取已经完成的结果
 
 `ALB.core.computation` 提供统一状态机基类；领域 adapter 不应复制状态管理逻辑。某些机械迁移后的实现内部仍保留旧求解调用形式以冻结数值行为，但推荐公共端口必须由严格 block adapter 暴露。
 
+带内部状态的原生运行时还实现 `RuntimeLifecycleProtocol`，并复用
+`ALB.core.lifecycle.RuntimeLifecycle`：
+
+```text
+NEW --init--> READY --input/evaluate--> RUNNING
+  ^              |                         |
+  |              +---- execution error ----+--> FAILED
+  +---------------- successful init --------------+
+```
+
+`FAILED` 是终止性状态：不得继续锁存输入、推进、读取结果或保存；只有成功 `init()` 才能恢复。
+`output()` 返回调用方拥有的快照，修改返回数组不得改变下一次读取。Harmonic、coupler、PID、
+LQG、重复控制器和伺服阀使用同一状态语义，领域代码不再各自发明布尔标记组合。
+
 ## 标准 DTO
 
 `ALB.contracts.ports` 定义：
@@ -94,6 +108,10 @@ result = block.output()  # 只读取已经完成的结果
 - 转子节点数量必须与 `node_links` 匹配，节点索引必须为非负整数。
 - 输入数组复制后设为只读，避免调用方在锁存后原地改变含义。
 - `unit_system` 必须可转换为合法 `UnitSystem`。
+
+DTO 与兼容型原生入口共用 `ALB.core.validation`：任何 complex 输入都在转为 float 前拒绝，NaN、
+Inf、布尔时间、错误形状和错误长度使用一致的异常语义。验证函数总是生成自有 `float64` 数组，
+避免调用方在锁存后修改原始内存。
 
 ## 单位制
 
@@ -151,6 +169,9 @@ manifest = writer.write(bundle, Path("outputs") / "case_001")
 
 ## 配置和 model package 迁移
 
+- 当前配置文件使用 `ALB.config.schema.ALBConfigEnvelope`，schema 版本固定为 `0.2.0`。
+- `ALB.config.legacy.migrate_legacy_alb_config()` 是旧平铺配置到当前 envelope 的单向转换；当前
+  `load_current_config()` 不接受无版本 legacy payload。
 - legacy JSON5 使用 `alb-migrate-config` 或 `tools/migrations/migrate_config_0_2.py` 另存；禁止原地覆盖。
 - legacy ALBNN checkpoint/scaler 使用 `alb-migrate-surrogate` 或 `tools/migrations/migrate_surrogate_0_2.py` 生成带 manifest 和 digest 的 package。
 - pickle 加载需要调用者显式设置可信开关；不接受来源不明的 model package。
@@ -175,6 +196,7 @@ E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/unit/systems/test_bearing_po
 E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/regression/test_full_repo_refactor_references.py -q
 E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/validation/test_import_boundaries.py -q
 E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/validation/test_optional_dependency_errors.py -q
+E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
 ```
 
 全量测试、类型、性能和 wheel 证据见 `docs/current_state.md` 及 `docs/migrations/` 下的正式报告。
