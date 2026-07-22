@@ -10,7 +10,9 @@ import pytest
 from ALB.contracts import ControllerProtocol
 from ALB.control.adapters import LegacyControllerAdapter
 from ALB.control.controllers import ALBLQGController, RCConfig, RepetitiveController
+from ALB.control.pid import PID
 from ALB.control.valve import moog_2nd_servovalve
+from ALB.config import PIDConfig
 from ALB.core import LifecycleState
 
 
@@ -101,3 +103,66 @@ def test_servovalve_input_does_not_advance_and_output_is_read_only():
     assert (len(valve.xout), len(valve.yout)) == history_after_evaluate
     with pytest.raises(RuntimeError, match="new input"):
         valve.evaluate()
+
+
+def test_pid_failure_is_terminal_until_explicit_init(monkeypatch):
+    controller = PID(PIDConfig(kp=0.5, dt=0.01))
+    controller.input(0.0, [0.2, -0.3])
+
+    def fail(*args, **kwargs):
+        del args, kwargs
+        raise FloatingPointError("injected PID failure")
+
+    monkeypatch.setattr(controller, "decrete_pid", fail)
+    with pytest.raises(FloatingPointError, match="injected"):
+        controller.evaluate()
+    assert controller.lifecycle_state is LifecycleState.FAILED
+    with pytest.raises(RuntimeError, match="init"):
+        controller.output()
+    with pytest.raises(RuntimeError, match="init"):
+        controller.input(0.01, [0.0, 0.0])
+
+    controller.init()
+    assert controller.lifecycle_state is LifecycleState.READY
+    with pytest.raises(RuntimeError, match="unavailable"):
+        controller.output()
+
+
+@pytest.mark.parametrize(
+    "factory,input_args",
+    [
+        (lambda: PID(PIDConfig(kp=0.5, dt=0.01)), (0.0, [0.2, -0.3])),
+        (_lqg_controller, (0.0, [0.2, -0.3])),
+        (_repetitive_controller, (0.0, [0.2, -0.3])),
+        (lambda: moog_2nd_servovalve(dt=0.001), (0.0, 0.2)),
+    ],
+    ids=["pid", "lqg", "repetitive", "servovalve"],
+)
+def test_completed_outputs_are_caller_owned_snapshots(factory, input_args):
+    component = factory()
+    component.input(*input_args)
+    expected = component.evaluate()
+    mutated = component.output()
+    mutated[...] = 99.0
+
+    np.testing.assert_array_equal(component.output(), expected)
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    [
+        [1.0 + 1.0j, 0.0],
+        [np.nan, 0.0],
+        [np.inf, 0.0],
+        [0.0],
+    ],
+)
+def test_pid_shared_numeric_boundary_rejects_invalid_input_atomically(invalid):
+    controller = PID(PIDConfig(kp=0.5, dt=0.01))
+
+    with pytest.raises(ValueError):
+        controller.input(0.0, invalid)
+
+    assert controller.lifecycle_state is LifecycleState.READY
+    with pytest.raises(RuntimeError, match="unavailable"):
+        controller.output()

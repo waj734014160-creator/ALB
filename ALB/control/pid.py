@@ -138,11 +138,8 @@ class PID(BaseSimpleModel):
         :param error: The error signal.
         """
         self._lifecycle.require_input_slot()
-        inp = np.asarray(error, dtype=float).reshape(-1)
-        if inp.size != 2:
-            raise ValueError("PID input error must contain exactly two values")
-        if not np.all(np.isfinite(inp)):
-            raise ValueError("PID input error must be finite")
+        time = finite_real_scalar(t, "controller time")
+        inp = finite_real_vector(error, "controller error", 2)
         projected_error = self._sensor(inp)
         self.inp = inp
         if self._committed_error is None:
@@ -150,7 +147,7 @@ class PID(BaseSimpleModel):
         else:
             self.delta_error = projected_error - self._committed_error
         self.error = limit_signal(projected_error)
-        self.t = t
+        self.t = time
         self._last_output = None
         self._lifecycle.latch()
 

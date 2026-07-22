@@ -10,6 +10,7 @@ from scipy.linalg import expm
 
 from ALB.core.component import BaseSimpleModel
 from ALB.core.events import Signal
+from ALB.core.validation import finite_real_array, finite_real_time, finite_real_vector
 from ALB.core.fem.base import BasePostProcess
 
 # from ALB.infrastructure.logging import logger
@@ -364,8 +365,8 @@ class RossRotor:
         self._xouts = []
         self._yout = None
         self._youts = []
-        self._force0 = None  # t=kT
-        self._force1 = None  # t=(k+1)T
+        self._force0: np.ndarray | None = None  # t=kT
+        self._force1: np.ndarray | None = None  # t=(k+1)T
         self._discrete = discrete
         self.signal = Signal(sys=self)
         self.init()
@@ -418,18 +419,31 @@ class RossRotor:
             force0: previous-step force for continuous interpolation.
         """
         # Validate before mutating histories or latched inputs.
-        self._check_time(t)
-        self._t.append(t)
+        time = self._check_time(t)
+        current_force = finite_real_vector(
+            force, "rotor force", int(self._rotor.ndof)
+        )
+        force0 = kwargs.get("force0", None)
+        previous_force = (
+            None
+            if force0 is None
+            else finite_real_vector(force0, "previous rotor force", int(self._rotor.ndof))
+        )
+        initial_state = (
+            None
+            if x0 is None
+            else finite_real_array(x0, "initial rotor state", shape=np.shape(self._xk0))
+        )
+        self._t.append(time)
         # Current-step input.
-        self._force1 = force
+        self._force1 = current_force
         self._state_ready = False
         # Optional previous-step input for continuous mode.
-        force0 = kwargs.get("force0", None)
-        if force0 is not None:
-            self._force0 = force0
+        if previous_force is not None:
+            self._force0 = previous_force
         # Optional: override the initial state.
-        if x0 is not None:
-            self._xk0 = x0
+        if initial_state is not None:
+            self._xk0 = initial_state
 
     def input_force2node(self, t, force, node, x0=None, **kwargs):
         """
@@ -449,13 +463,18 @@ class RossRotor:
             )
         )
         # Validate all inputs before mutating histories or latched state.
-        self._check_time(t)
-        self._t.append(t)
+        time = self._check_time(t)
+        initial_state = (
+            None
+            if x0 is None
+            else finite_real_array(x0, "initial rotor state", shape=np.shape(self._xk0))
+        )
+        self._t.append(time)
         self._force1 = mapped_force
         self._state_ready = False
         # Optional: override the initial state.
-        if x0 is not None:
-            self._xk0 = x0
+        if initial_state is not None:
+            self._xk0 = initial_state
         # Optional previous-step input for continuous mode.
         if mapped_force0 is not None:
             self._force0 = mapped_force0
@@ -477,13 +496,13 @@ class RossRotor:
         """
         Validate that time is finite and successive increments match system dt.
         """
-        if not np.isfinite(t):
-            raise ValueError("Input time must be finite.")
+        time = finite_real_time(t, "input time")
 
         if len(self._t) > 0:
-            dt = t - self._t[-1]
+            dt = time - self._t[-1]
             if abs(dt - self._dt) > tol:
                 raise ValueError("Input time step does not match system dt.")
+        return time
 
     def run(self):
         if self._discrete:
@@ -509,6 +528,8 @@ class RossRotor:
         # If previous input is missing, reuse current input.
         if self._force0 is None:
             self._force0 = self._force1
+        assert self._force0 is not None
+        assert self._force1 is not None
         self._xk1 = (
             np.dot(self._xk0, self._a)
             + np.dot(self._force0, self._Bd0)

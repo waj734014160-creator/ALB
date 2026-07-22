@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 from ALB.dynamics.rotor import RotorDofLayout, RossRotor, location_mapping_matrix
+from ALB.contracts import RotorProtocol
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -89,6 +90,7 @@ def test_rotor_valid_time_trajectories_match_v2_reference_exactly():
         global_rotor = RossRotor(
             _LinearRotorPlant(), speed=2.0 * np.pi * 50.0, dt=1.0e-3
         )
+        assert isinstance(global_rotor, RotorProtocol)
         global_states = []
         for time_value, force in zip(
             reference["global.times"], reference["global.forces"]
