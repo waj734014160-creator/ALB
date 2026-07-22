@@ -324,17 +324,13 @@ def _acceptance_environment() -> dict[str, str]:
     """Return an environment without caller-controlled Python/test injection."""
 
     environment = os.environ.copy()
-    for name in (
-        "PYTHONHOME",
-        "PYTHONPATH",
-        "PYTHONSTARTUP",
-        "PYTEST_ADDOPTS",
-        "PYTEST_PLUGINS",
-    ):
-        environment.pop(name, None)
+    for name in tuple(environment):
+        if name.startswith(("PYTHON", "PYTEST")):
+            environment.pop(name, None)
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
     environment["PYTHONIOENCODING"] = "utf-8"
     environment["PYTHONNOUSERSITE"] = "1"
+    environment["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
     return environment
 
 
@@ -488,6 +484,23 @@ def run_acceptance() -> dict[str, Any]:
             + (pytest_run.stderr or "")
         )
     reports = json.loads(pytest_report.read_text(encoding="utf-8"))
+    python_runtime = reports.get("python_runtime", {})
+    expected_runtime = {
+        "no_user_site": 1,
+        "optimize": 0,
+        "warnoptions": [],
+        "pytest_disable_plugin_autoload": "1",
+    }
+    runtime_mismatches = {
+        name: {"expected": expected, "actual": python_runtime.get(name)}
+        for name, expected in expected_runtime.items()
+        if python_runtime.get(name) != expected
+    }
+    if runtime_mismatches:
+        raise AssertionError(
+            "Pytest interpreter was not isolated from caller injection:\n"
+            + json.dumps(runtime_mismatches, ensure_ascii=False, indent=2)
+        )
     skipped = [item for item in reports["reports"] if item["outcome"] == "skipped"]
     s0011_reports = [
         item for item in reports["reports"] if item["nodeid"] in S0011_NODEIDS
@@ -579,6 +592,11 @@ def run_acceptance() -> dict[str, Any]:
             + runtime_mypy_run.stderr
         )
     mypy_version = _mypy_version(mypy_environment)
+    if mypy_version != MYPY_VERSION:
+        raise AssertionError(
+            f"Fresh mypy version mismatch: expected={MYPY_VERSION}, "
+            f"actual={mypy_version}"
+        )
     _cleanup_runtime_paths(
         pytest_report,
         pytest_basetemp,
@@ -629,6 +647,8 @@ def run_acceptance() -> dict[str, Any]:
             "returncode": pytest_run.returncode,
             "summary": _summary_counts(combined_output),
             "summary_tail": combined_output.splitlines()[-20:],
+            "python_runtime": python_runtime,
+            "active_plugins": reports.get("active_plugins", []),
             "skipped": skipped,
             "s0011_reports": s0011_reports,
             "ross_rotor_time_reports": ross_rotor_time_reports,
@@ -792,6 +812,8 @@ def run_acceptance_in_detached_worktree() -> dict[str, Any]:
     payload["execution"] = {
         "mode": "detached_worktree",
         "python_isolated_mode": True,
+        "python_subprocess_environment_sanitized": True,
+        "pytest_plugin_autoload_disabled": True,
         "candidate_head_before": candidate_commit,
         "candidate_head_after": candidate_after,
         "launcher_tracked_status_before": before,
