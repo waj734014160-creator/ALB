@@ -46,7 +46,10 @@ MODULE_OVERRIDES: dict[str, list[str]] = {
     "ALB.film": ["ALB.physics.film", "ALB.physics.film.solver"],
     "ALB.gas": ["ALB.physics.gas", "ALB.physics.gas.solver"],
     "ALB.gauss": ["ALB.core.numerics.iteration"],
-    "ALB.harmonic_linear": ["ALB.systems.alb.harmonic"],
+    "ALB.harmonic_linear": [
+        "ALB.systems.alb.harmonic",
+        "ALB.systems.alb.harmonic_coefficients",
+    ],
     "ALB.logger": ["ALB.infrastructure.logging"],
     "ALB.lti": ["ALB.control.state_space"],
     "ALB.matrix": ["ALB.core.numerics"],

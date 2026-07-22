@@ -6,6 +6,7 @@ from typing import Protocol, TypeAlias, runtime_checkable
 import numpy.typing as npt
 
 from .numeric import FloatArray
+from .lifecycle import RuntimeLifecycleProtocol
 from .types import UnitSystem
 
 
@@ -13,7 +14,7 @@ RotorStateMap: TypeAlias = Mapping[str, FloatArray]
 
 
 @runtime_checkable
-class RotorProtocol(Protocol):
+class RotorProtocol(RuntimeLifecycleProtocol, Protocol):
     """Explicit rotor runtime consumed by ``RsRotorBearingCouple``."""
 
     unit_system: UnitSystem | str

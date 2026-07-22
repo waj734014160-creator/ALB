@@ -13,11 +13,14 @@ _EXPORTS = {
     "alb2_fuzzy": ("ALB.systems.alb.factories", "alb2_fuzzy"),
     "alb2_static": ("ALB.systems.alb.factories", "alb2_static"),
     "nodim_alb": ("ALB.systems.alb.factories", "nodim_alb"),
-    "ALBHarmonicCoefficients": ("ALB.systems.alb.harmonic", "ALBHarmonicCoefficients"),
+    "ALBHarmonicCoefficients": (
+        "ALB.systems.alb.harmonic_coefficients",
+        "ALBHarmonicCoefficients",
+    ),
     "ALBHarmonicLinear": ("ALB.systems.alb.harmonic", "ALBHarmonicLinear"),
     "alb_harmonic_linear": ("ALB.systems.alb.harmonic", "alb_harmonic_linear"),
     "load_builtin_alb_harmonic_coefficients": (
-        "ALB.systems.alb.harmonic",
+        "ALB.systems.alb.harmonic_coefficients",
         "load_builtin_alb_harmonic_coefficients",
     ),
     "BearingBlock": ("ALB.systems.alb.ports", "BearingBlock"),

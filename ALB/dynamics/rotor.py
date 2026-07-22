@@ -10,17 +10,22 @@ from scipy.linalg import expm
 
 from ALB.core.component import BaseSimpleModel
 from ALB.core.events import Signal
+from ALB.core.lifecycle import LifecycleState, RuntimeLifecycle
 from ALB.core.validation import finite_real_array, finite_real_time, finite_real_vector
 from ALB.core.fem.base import BasePostProcess
 
 # from ALB.infrastructure.logging import logger
-from ALB.contracts.result_tree import RossRotorResult, SaveTreeNode
 from ALB.dynamics.identification import pearson_similarity
 from ALB.dynamics.rotor_layout import (
     RotorDofLayout,
     location_mapping_matrix,
     node_force_to_array as _nodeforce2array,
     normalize_node_indices,
+)
+from ALB.dynamics.rotor_results import (
+    build_rotor_save_tree,
+    build_time_response_results,
+    extract_displacement_history,
 )
 
 _intpoint = np.array(
@@ -369,6 +374,7 @@ class RossRotor:
         self._force1: np.ndarray | None = None  # t=(k+1)T
         self._discrete = discrete
         self.signal = Signal(sys=self)
+        self._lifecycle = RuntimeLifecycle(type(self).__name__, input_label="rotor load")
         self.init()
 
     def continuesys(self):
@@ -418,6 +424,7 @@ class RossRotor:
             x0: override current state.
             force0: previous-step force for continuous interpolation.
         """
+        self._lifecycle.require_input_slot()
         # Validate before mutating histories or latched inputs.
         time = self._check_time(t)
         current_force = finite_real_vector(
@@ -444,11 +451,13 @@ class RossRotor:
         # Optional: override the initial state.
         if initial_state is not None:
             self._xk0 = initial_state
+        self._lifecycle.latch()
 
     def input_force2node(self, t, force, node, x0=None, **kwargs):
         """
         Input per-node 2D forces and map them to global DOFs.
         """
+        self._lifecycle.require_input_slot()
         if self._dof_layout is None:
             raise ValueError("node-force mapping requires a four- or six-DOF layout")
         mapped_force = _nodeforce2array(
@@ -478,19 +487,36 @@ class RossRotor:
         # Optional previous-step input for continuous mode.
         if mapped_force0 is not None:
             self._force0 = mapped_force0
+        self._lifecycle.latch()
 
     def init(self, x0=None):
-        if x0 is not None:
-            self._xk0 = x0
-        else:
-            self._xk0 = np.zeros(self._a.shape[0])
-            self._xk1 = np.zeros(self._a.shape[0])
-        self._t = []
-        self._xouts = []
-        self._youts = []
-        self._force1 = np.zeros(self._rotor.ndof)
-        self._force0 = np.zeros(self._rotor.ndof)
-        self._state_ready = True
+        self._lifecycle.fail()
+        try:
+            if x0 is not None:
+                initial_state = finite_real_array(
+                    x0, "initial rotor state", shape=np.shape(self._xk0)
+                )
+                self._xk0 = initial_state
+                self._xk1 = initial_state.copy()
+            else:
+                self._xk0 = np.zeros(self._a.shape[0])
+                self._xk1 = np.zeros(self._a.shape[0])
+            self._t = []
+            self._xouts = []
+            self._youts = []
+            self._force1 = np.zeros(self._rotor.ndof)
+            self._force0 = np.zeros(self._rotor.ndof)
+            self._state_ready = True
+        except BaseException:
+            self._lifecycle.fail()
+            raise
+        self._lifecycle.reset(output_available=True)
+
+    @property
+    def lifecycle_state(self) -> LifecycleState:
+        """Return the shared rotor runtime state without advancing."""
+
+        return self._lifecycle.state
 
     def _check_time(self, t, tol=1e-15):
         """
@@ -504,14 +530,16 @@ class RossRotor:
                 raise ValueError("Input time step does not match system dt.")
         return time
 
-    def run(self):
+    def _propagate(self):
+        """Propagate one latched load without changing lifecycle state."""
+
         if self._discrete:
-            return self.run_discrete()
+            return self._run_discrete()
 
         else:
-            return self.run_continues()
+            return self._run_continuous()
 
-    def run_discrete(self):
+    def _run_discrete(self):
         """
         One-step propagation for discrete model.
         """
@@ -521,7 +549,7 @@ class RossRotor:
         self._xout = self._xk0
         return self._xk1
 
-    def run_continues(self):
+    def _run_continuous(self):
         """
         One-step propagation for continuous-discretized model.
         """
@@ -547,18 +575,16 @@ class RossRotor:
     def advance(self):
         """Advance exactly once from the currently latched force input."""
 
-        if self._state_ready:
-            raise RuntimeError("a new rotor load must be supplied before advance")
-        result = self.run()
-        self._state_ready = True
-        self.signal.lead_loop("finish_signal")
+        with self._lifecycle.evaluation():
+            result = self._propagate()
+            self._state_ready = True
+            self.signal.lead_loop("finish_signal")
         return result
 
     def current_state(self, node=None):
         """Read the current rotor state without advancing the model."""
 
-        if not self._state_ready:
-            raise RuntimeError("rotor state is stale until advance() completes")
+        self._lifecycle.require_output()
         ndof = self._rotor.ndof
         res = self._xk0
         if node is None:
@@ -614,8 +640,9 @@ class RossRotor:
         """
         Package simulation history as `ross.TimeResponseResults`.
         """
-        return rs.TimeResponseResults(
-            self._rotor, np.array(self._t), np.array(self._youts), np.array(self._xouts)
+        self._lifecycle.require_output()
+        return build_time_response_results(
+            self._rotor, self._t, self._youts, self._xouts
         )
 
     def result_uxy(self, node):
@@ -624,9 +651,10 @@ class RossRotor:
         """
         if self._dof_layout is None:
             raise ValueError("result_uxy requires a four- or six-DOF layout")
-        x_index = self._dof_layout.global_index(node, "x", self._rotor.ndof)
-        y_index = self._dof_layout.global_index(node, "y", self._rotor.ndof)
-        return np.asarray(self._youts)[:, [x_index, y_index]]
+        self._lifecycle.require_output()
+        return extract_displacement_history(
+            self._youts, self._dof_layout, node, self._rotor.ndof
+        )
 
     def plot_rotor(self, **kwargs):
         return self._rotor.plot_rotor(**kwargs)
@@ -639,13 +667,18 @@ class RossRotor:
             path = "rotor_result"
         if name is None:
             name = "rotor"
-        res = RossRotorResult(
-            self._t, self._xouts, self._youts, self.results(), self._rotor, name=name
+        self._lifecycle.require_output()
+        return build_rotor_save_tree(
+            times=self._t,
+            states=self._xouts,
+            outputs=self._youts,
+            response=self.results(),
+            rotor=self._rotor,
+            path=path,
+            name=name,
+            tofile=tofile,
+            writer=kwargs.get("writer"),
         )
-        node = SaveTreeNode(path, res)
-        if tofile:
-            return node.persist(kwargs.get("writer"), path)
-        return node
 
 
 class RossRotorSimilarityCheck:

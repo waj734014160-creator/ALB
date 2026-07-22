@@ -119,6 +119,7 @@ def _run_pd_orbit(bearing: ALBHarmonicLinear) -> pd.DataFrame:
 def test_builtin_coefficient_contract_and_base_match():
     coefficients = load_builtin_alb_harmonic_coefficients()
     assert isinstance(coefficients, ALBHarmonicCoefficients)
+    assert type(coefficients).__module__ == "ALB.systems.alb.harmonic_coefficients"
     assert coefficients.stiffness.shape == (2, 2)
     assert coefficients.damping.shape == (2, 2)
     assert coefficients.spool_transfer.shape == (2, 2)

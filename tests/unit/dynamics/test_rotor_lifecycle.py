@@ -8,6 +8,7 @@ import pytest
 
 from ALB.dynamics.rotor import RotorDofLayout, RossRotor, location_mapping_matrix
 from ALB.contracts import RotorProtocol
+from ALB.contracts.result_tree import SaveTreeNode
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -74,7 +75,7 @@ def test_rotor_output_never_hides_state_advancement():
     np.testing.assert_array_equal(initial, np.zeros(2))
 
     rotor.input_force(0.0, np.array([1.0]))
-    with pytest.raises(RuntimeError, match="stale"):
+    with pytest.raises(RuntimeError, match="unavailable"):
         rotor.output()
 
     rotor.advance()
@@ -83,6 +84,40 @@ def test_rotor_output_never_hides_state_advancement():
     np.testing.assert_array_equal(rotor.output(), first)
     with pytest.raises(RuntimeError, match="new rotor load"):
         rotor.advance()
+
+
+def test_rotor_advance_failure_requires_successful_reinitialization(monkeypatch):
+    rotor = RossRotor(_LinearRotorPlant(), speed=1.0, dt=1.0e-3)
+    rotor.input_force(0.0, np.array([1.0]))
+
+    def fail():
+        raise FloatingPointError("injected rotor propagation failure")
+
+    monkeypatch.setattr(rotor, "_propagate", fail)
+    with pytest.raises(FloatingPointError, match="injected"):
+        rotor.advance()
+    assert rotor.lifecycle_state.value == "failed"
+    with pytest.raises(RuntimeError, match="init"):
+        rotor.output()
+    with pytest.raises(RuntimeError, match="init"):
+        rotor.input_force(0.0, np.array([1.0]))
+
+    rotor.init()
+    assert rotor.lifecycle_state.value == "ready"
+    np.testing.assert_array_equal(rotor.output(), np.zeros(2))
+
+
+def test_rotor_results_and_persistence_are_read_only_after_advance():
+    rotor = RossRotor(_LinearRotorPlant(), speed=1.0, dt=1.0e-3)
+    rotor.input_force(0.0, np.array([1.0]))
+    rotor.advance()
+
+    response = rotor.results()
+    save_tree = rotor.save(tofile=False)
+
+    assert isinstance(save_tree, SaveTreeNode)
+    assert type(response) is type(save_tree.data.rotor_result)
+    assert rotor.lifecycle_state.value == "ready"
 
 
 def test_rotor_valid_time_trajectories_match_v2_reference_exactly():
