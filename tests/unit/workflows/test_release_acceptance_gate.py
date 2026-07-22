@@ -90,26 +90,39 @@ def test_sensitive_scanner_catches_shadow_packages_and_devtools(monkeypatch):
 def test_acceptance_environment_removes_python_injection_variables(monkeypatch):
     """Caller-controlled Python and pytest injection variables are removed."""
 
-    for name in (
+    injected_names = (
         "PYTHONHOME",
         "PYTHONPATH",
         "PYTHONSTARTUP",
+        "PYTHONOPTIMIZE",
+        "PYTHONWARNINGS",
+        "PYTHONHASHSEED",
+        "PYTHONINSPECT",
         "PYTEST_ADDOPTS",
         "PYTEST_PLUGINS",
-    ):
+        "PYTEST_DEBUG",
+    )
+    for name in injected_names:
         monkeypatch.setenv(name, f"injected-{name}")
+    monkeypatch.setenv("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "0")
 
     environment = acceptance._acceptance_environment()
-    for name in (
-        "PYTHONHOME",
-        "PYTHONPATH",
-        "PYTHONSTARTUP",
-        "PYTEST_ADDOPTS",
-        "PYTEST_PLUGINS",
-    ):
+    for name in injected_names:
         assert name not in environment
     assert environment["PYTHONDONTWRITEBYTECODE"] == "1"
     assert environment["PYTHONNOUSERSITE"] == "1"
+    assert environment["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] == "1"
+    assert all(
+        name
+        in {
+            "PYTHONDONTWRITEBYTECODE",
+            "PYTHONIOENCODING",
+            "PYTHONNOUSERSITE",
+            "PYTEST_DISABLE_PLUGIN_AUTOLOAD",
+        }
+        for name in environment
+        if name.startswith(("PYTHON", "PYTEST"))
+    )
 
 
 def test_detached_acceptance_command_is_isolated_and_internal():
