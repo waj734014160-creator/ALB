@@ -40,7 +40,7 @@
 - 七轮审查参考：`refs/seventh_review_release_reference_v7.{json,npz}` 在 commit `908abd7` 的生产修正前冻结 harmonic 合法控制器、阀、位移/速度、力和重新初始化路径共 27 个数组；修正后逐元素精确相等，既有 v1-v6 参考均未覆盖。
 - 八轮制品身份参考：commit `a29290e` 在工具修正前创建 `refs/eighth_review_wheel_identity_reference_v8.json`，冻结 candidate `4d6e609` 的 119 个 release Git blob、规范源码摘要 `39bece7c…`、v7 行为参考哈希，以及两份旧 wheel 证据的差异；生产 `ALB/**` 与运行时 `pyproject.toml` 内容保持精确一致。
 - 原生控制生命周期参考：commit `00a842b` 创建 `refs/native_control_lifecycle_reference_v9.{json,npz}`，在生产修改前冻结 LQG、重复控制器和二阶伺服阀的 18 个多步数组；迁移后逐元素精确相等，既有 v1-v8 参考均未覆盖。
-- 当前阶段：P2-1 至 P2-12 已完成实现、分阶段提交、canonical import map 和 500 节点测试映射。最终 P2 专用 detached 验收已绑定候选 `cac4a05` 并通过；当前只剩提交 P2 机器证据，并从该证据提交重建默认 canonical 报告，确认两次验收的 release 源摘要和 wheel SHA 完全相同。
+- 当前阶段：P2-1 至 P2-12 已完成实现、分阶段提交、canonical import map、500 节点测试映射、P2 专用和默认 canonical detached 正式验收。P2 运行时候选为 `cac4a05`，包含 P2 证据的 canonical 候选为 `fd5029e`；两次验收的 release 源摘要和 wheel SHA 完全相同。当前只剩提交 canonical 机器报告与最终状态摘要，不再改动运行时源码。
 
 ## 已完成的 0.2.0 边界
 
@@ -88,19 +88,19 @@
 | 六轮代码审查修正 | 候选提交 `66fe326`：421 passed、13 skipped、0 warnings、27 subtests passed；434 个节点全部收集；第六轮 8 个关键节点全部通过；27 个 v6 有效行为数组逐元素精确相等；contracts/core 19 个文件和独立 runtime 1 个文件严格 mypy 通过；detached worktree 测试前后 HEAD、tracked 状态及敏感输入均保持不变 | `docs/migrations/0.2.0_sixth_review_acceptance.json` |
 | 七轮代码审查修正 | 候选提交 `728b198`：436 passed、13 skipped、0 warnings、27 subtests passed；449 个节点全部收集；27 个 v7 合法行为数组逐元素精确相等；pytest 9.0.3、37 个最终插件、精确 skip allowlist、contracts/core 及 harmonic runtime 严格 mypy、现场 wheel 和 detached worktree 前后状态全部通过 | `docs/migrations/0.2.0_seventh_review_acceptance.json` |
 | 八轮 wheel 制品身份修正 | 候选提交 `62b53be`：438 passed、13 skipped、0 warnings、27 subtests passed；451 个节点全部收集；4 个制品身份关键节点通过；Git blob 规范摘要、两次构建、detached 安装、最终发布文件、构建报告和验收报告的 wheel SHA 全部一致 | `docs/migrations/0.2.0_eighth_review_acceptance.json` |
-| P2 架构正式验收 | 候选 `cac4a05`：487 passed、13 skipped、0 warnings、27 subtests passed；500 个节点、87 个关键 nodeid、20 个 strict 目标通过，58 个领域文件的 221 条历史诊断精确匹配；detached 前后 HEAD 和 launcher tracked 状态不变 | `docs/migrations/0.2.0_p2_architecture_acceptance.json`、`docs/migrations/0.2.0_p2_architecture_closure.md` |
+| P2 架构正式验收 | 运行时候选 `cac4a05` 与 canonical 候选 `fd5029e` 均为 487 passed、13 skipped、0 warnings、27 subtests passed；500 个节点、87 个关键 nodeid、20 个 strict 目标通过，58 个领域文件的 221 条历史诊断精确匹配；detached 前后 HEAD 和 launcher tracked 状态不变 | `docs/migrations/0.2.0_p2_architecture_acceptance.json`、`docs/migrations/0.2.0_release_acceptance.json`、`docs/migrations/0.2.0_p2_architecture_closure.md` |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
 | 分层严格类型 | mypy 2.3.0：20 个 contracts/core/领域边界/发布工具目标零错误；`config/control/dynamics/systems` 全部 58 个 Python 文件进入精确增量基线，当前 221 条历史诊断、53 个文件/错误码组 | `tools/validation/run_layered_mypy.py`、`tools/validation/mypy_layer_baseline.json` |
 | Optional dependency | 各领域 namespace 的缺依赖提示与 extra 安装信息测试通过 | `tests/unit/contracts/`、`tests/validation/test_optional_dependency_errors.py` |
 | 同机性能 | film 0.8943、thermal 0.9114、ALB 0.9098、ALBNN 0.9028、coupling 0.9550，均低于 1.15 阈值 | `docs/migrations/0.2.0_performance.json` |
-| Wheel | `re_alb-0.2.0-1-py3-none-any.whl` 从候选 Git blob 构建；146 个发布输入逐字节核对、METADATA 与 `pyproject.toml` 一致，稳定双构建、隔离安装、8 组 extras import smoke、namespace smoke 和两个 CLI `--help` 通过 | `docs/migrations/0.2.0_p2_architecture_build_acceptance.json` |
+| Wheel | `re_alb-0.2.0-1-py3-none-any.whl` 从候选 Git blob 构建；146 个发布输入逐字节核对、METADATA 与 `pyproject.toml` 一致，稳定双构建、隔离安装、8 组 extras import smoke、namespace smoke 和两个 CLI `--help` 通过 | `docs/migrations/0.2.0_build_acceptance.json`、`docs/migrations/0.2.0_p2_architecture_build_acceptance.json` |
 
 当前 P2 发布 wheel 为 `dist/re_alb-0.2.0-1-py3-none-any.whl`，SHA-256 为
 `3ee11ab94a152cf497c69ffebe1fac75bd30447297b9af9f1d8edb834714a281`。同一候选的两次规范构建、
-detached 实际安装制品、P2 构建报告、P2 验收报告和磁盘最终文件 SHA 完全一致；默认 canonical
-报告将在 P2 证据提交后重建并要求保持同一源码摘要和 wheel SHA。
+detached 实际安装制品、P2/canonical 构建报告、P2/canonical 验收报告和磁盘最终文件 SHA 完全
+一致；两次验收的 Git blob 规范源码摘要也同为 `29a9c7af…96ae1`。
 
 ## 外部消费者状态
 
@@ -132,19 +132,17 @@ detached 实际安装制品、P2 构建报告、P2 验收报告和磁盘最终�
 - 第六轮已完成“代码与可移植性修复、测试映射提交 `66fe326`、detached 干净候选验收、证据提交”的闭环。验收器从候选 SHA 建立位于 `ALB_PROJECTS` 下的临时 worktree，使外部 `SURROGATE_TRAIN` 只读测试仍能找到兄弟目录；完成后删除临时 worktree。候选内部扫描任意位置的未提交 `.py/.pyi/.pyd/.so`，并为 mypy 创建、使用和清理全新运行目录；正式报告的 `candidate_commit` 为 `66fe326`。
 - 第七轮已完成“v7 合法行为参考、生产与验收门禁修正、449 节点测试映射、wheel 构建证据、detached 候选验收”的闭环。首次正式运行因构建后端在候选树生成 `build/lib/**` 被敏感输入门禁拒绝；修正为运行专属 tracked 源码副本后重跑通过，证明该门禁实际生效。正式报告的 `candidate_commit` 为 `728b198`。
 - 八轮已完成“Git blob 规范参考、可复现双构建、451 节点测试映射、detached 安装、最终制品发布和双报告同 SHA”的闭环。旧构建报告 `5266ca0…` 与七轮现场 wheel `6ae4436…` 只保留在 v8 参考中作为问题证据；当前构建报告和正式验收均绑定候选 `62b53be`、源码摘要 `39bece7…` 和发布 wheel `a6750b0d…`。首次八轮正式运行因内部过早清理已验证 wheel 而未生成证据，调整交接顺序后完整重跑通过。
-- P2-1 至 P2-12 的完成边界见独立收敛报告。最终补充的 RossRotor 生命周期、`rotor_results` 和 `harmonic_coefficients` 已纳入 strict mypy 与 87 个关键 nodeid 预检，P2 专用机器报告已在候选 `cac4a05` 上通过；默认 canonical 报告仍须从证据提交重建。发布 runner 中 0.2 专用关键 nodeid 集合仍是版本策略，fresh 工具只固定直接版本、尚未使用带哈希 constraints/wheelhouse；这属于后续供应链加固，不改变“通用发布阶段已经拆分并实际复用”的 P2-12 结论。
+- P2-1 至 P2-12 的完成边界见独立收敛报告。最终补充的 RossRotor 生命周期、`rotor_results` 和 `harmonic_coefficients` 已纳入 strict mypy 与 87 个关键 nodeid 预检；P2 专用和默认 canonical 机器报告均已通过。发布 runner 中 0.2 专用关键 nodeid 集合仍是版本策略，fresh 工具只固定直接版本、尚未使用带哈希 constraints/wheelhouse；这属于后续供应链加固，不改变“通用发布阶段已经拆分并实际复用”的 P2-12 结论。
 - 分层 mypy 的 221 条历史诊断是精确锁定的清理队列，不是“全部 strict 零错误”。后续只能按小范围提交减少基线，禁止以宽泛 ignore 或整目录排除伪装清零。
 
 ## 当前下一步
 
-1. 提交候选 `cac4a05` 的 P2 专用机器证据，再从包含该证据的干净提交重建默认 canonical detached 验收。
-2. canonical 验收完成后核对其规范源码摘要和 wheel SHA 与 P2 专用报告完全相同，并回填最终状态。
-3. 后续按文件逐步减少 221 条历史 mypy 诊断；每次只降低精确基线，不扩大 relaxations。
-4. 为 `task/task_alb_data2.py` 的混合单位调用先建立参考与显式尺度适配器；不要直接套用 nondimensional strict port。
-5. 将新 base/expert/residual 训练输出自动封装为 0.2 model package；residual 的主模型嵌套关系需先定义 manifest 语义。
-6. 为 PAPER_WORK 四个顶层执行脚本增加主入口隔离，并为两个 M0035 内部代理建立 DTO block 参考后再迁移。
-7. 为 `task/task_thermal_forces.py` 接入真实 `pooln` 并单独验证并行输出次序和确定性。
-8. 为 fresh 工具链增加带哈希 constraints 或 wheelhouse；版本专用关键 nodeid 集合可在 0.3 发布策略建立时迁入独立 manifest。
+1. 后续按文件逐步减少 221 条历史 mypy 诊断；每次只降低精确基线，不扩大 relaxations。
+2. 为 `task/task_alb_data2.py` 的混合单位调用先建立参考与显式尺度适配器；不要直接套用 nondimensional strict port。
+3. 将新 base/expert/residual 训练输出自动封装为 0.2 model package；residual 的主模型嵌套关系需先定义 manifest 语义。
+4. 为 PAPER_WORK 四个顶层执行脚本增加主入口隔离，并为两个 M0035 内部代理建立 DTO block 参考后再迁移。
+5. 为 `task/task_thermal_forces.py` 接入真实 `pooln` 并单独验证并行输出次序和确定性。
+6. 为 fresh 工具链增加带哈希 constraints 或 wheelhouse；版本专用关键 nodeid 集合可在 0.3 发布策略建立时迁入独立 manifest。
 
 ## 证据入口
 
