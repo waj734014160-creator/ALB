@@ -120,15 +120,20 @@ class _ReinitializationFailureController(_FactoryLegacyController):
 class _RuntimeFailureController(_FactoryLegacyController):
     """Controller double that mutates once before a runtime output failure."""
 
-    def __init__(self, output_size: int | None = None) -> None:
+    def __init__(
+        self,
+        output_size: int | None = None,
+        output_value: float = 0.0,
+    ) -> None:
         self.output_size = output_size
+        self.output_value = float(output_value)
         self.output_calls = 0
 
     def output(self) -> np.ndarray:
         self.output_calls += 1
         if self.output_size is None:
             raise RuntimeError("controller runtime failed")
-        return np.zeros(self.output_size, dtype=float)
+        return np.full(self.output_size, self.output_value, dtype=float)
 
 
 class _FailingValve(_ReadOnlyValve):
@@ -137,6 +142,13 @@ class _FailingValve(_ReadOnlyValve):
     def input(self, time, command) -> None:
         super().input(time, command)
         raise RuntimeError("second valve failed")
+
+
+class _NonfiniteValve(_ReadOnlyValve):
+    """Valve double that returns a non-finite scalar after accepting input."""
+
+    def output(self) -> float:
+        return float("inf")
 
 
 def _lqg_controller() -> ALBLQGController:
@@ -362,7 +374,14 @@ def test_failed_harmonic_reinitialization_invalidates_runtime(
 
 
 @pytest.mark.parametrize(
-    "failure_point", ["controller", "command-shape", "second-valve"]
+    "failure_point",
+    [
+        "controller",
+        "command-shape",
+        "controller-nonfinite",
+        "second-valve",
+        "valve-nonfinite",
+    ],
 )
 def test_harmonic_runtime_failure_invalidates_partial_step(failure_point):
     """A partial controller/valve advance cannot be observed or retried."""
@@ -379,11 +398,24 @@ def test_harmonic_runtime_failure_invalidates_partial_step(failure_point):
         bearing.controller = _RuntimeFailureController()
     elif failure_point == "command-shape":
         bearing.controller = _RuntimeFailureController(output_size=3)
+    elif failure_point == "controller-nonfinite":
+        bearing.controller = _RuntimeFailureController(
+            output_size=2,
+            output_value=float("nan"),
+        )
     else:
         first_valve = _ReadOnlyValve()
-        bearing.servovalves = [first_valve, _FailingValve()]
+        second_valve = (
+            _FailingValve()
+            if failure_point == "second-valve"
+            else _NonfiniteValve()
+        )
+        bearing.servovalves = [first_valve, second_valve]
 
-    with pytest.raises((RuntimeError, ValueError), match="failed|reshape"):
+    with pytest.raises(
+        (RuntimeError, ValueError, FloatingPointError),
+        match="failed|exactly|finite",
+    ):
         bearing.input(np.asarray([1.0e-6, -2.0e-6]), np.zeros(2), 0.0)
 
     assert bearing._valid is False
@@ -397,6 +429,32 @@ def test_harmonic_runtime_failure_invalidates_partial_step(failure_point):
     ):
         with pytest.raises(RuntimeError, match="runtime is invalid"):
             operation()
+
+    assert bearing.init() is True
+    bearing.input(np.zeros(2), np.zeros(2), 0.0)
+    assert bearing.output()["force"].shape == (2,)
+
+
+def test_harmonic_output_overflow_invalidates_runtime():
+    """Finite inputs that overflow force evaluation cannot be committed."""
+
+    bearing = ALBHarmonicLinear(
+        _zero_base_coefficients(),
+        node_link=3,
+        servo_config=Moog2ndServoConfig(dt=0.001),
+        controller_factory=_FactoryLegacyController,
+        warmup_steps=24,
+    )
+    bearing.controller = _RuntimeFailureController(output_size=2)
+    bearing.input(np.asarray([1.0e303, 0.0]), np.zeros(2), 0.0)
+
+    with pytest.raises(FloatingPointError, match="overflow|finite"):
+        bearing.output()
+
+    assert bearing._valid is False
+    assert bearing._has_input is False
+    with pytest.raises(RuntimeError, match="runtime is invalid"):
+        bearing.results
 
     assert bearing.init() is True
     bearing.input(np.zeros(2), np.zeros(2), 0.0)
