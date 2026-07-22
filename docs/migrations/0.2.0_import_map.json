@@ -254,7 +254,8 @@
     {
       "source": "ALB.harmonic_linear",
       "targets": [
-        "ALB.systems.alb.harmonic"
+        "ALB.systems.alb.harmonic",
+        "ALB.systems.alb.harmonic_coefficients"
       ],
       "status": "migrated",
       "source_file": "ALB/harmonic_linear.py"
@@ -1813,7 +1814,7 @@
     {
       "source": "ALB.harmonic_linear.ALBHarmonicCoefficients",
       "targets": [
-        "ALB.systems.alb.harmonic.ALBHarmonicCoefficients"
+        "ALB.systems.alb.harmonic_coefficients.ALBHarmonicCoefficients"
       ],
       "status": "migrated",
       "rationale": null
@@ -1821,7 +1822,7 @@
     {
       "source": "ALB.harmonic_linear.load_builtin_alb_harmonic_coefficients",
       "targets": [
-        "ALB.systems.alb.harmonic.load_builtin_alb_harmonic_coefficients"
+        "ALB.systems.alb.harmonic_coefficients.load_builtin_alb_harmonic_coefficients"
       ],
       "status": "migrated",
       "rationale": null
@@ -4630,7 +4631,7 @@
       "source": "ALB.ALBHarmonicCoefficients",
       "legacy_provider": "ALB.harmonic_linear.ALBHarmonicCoefficients",
       "targets": [
-        "ALB.systems.alb.harmonic.ALBHarmonicCoefficients"
+        "ALB.systems.alb.harmonic_coefficients.ALBHarmonicCoefficients"
       ],
       "status": "migrated_root_export"
     },
@@ -4654,7 +4655,7 @@
       "source": "ALB.load_builtin_alb_harmonic_coefficients",
       "legacy_provider": "ALB.harmonic_linear.load_builtin_alb_harmonic_coefficients",
       "targets": [
-        "ALB.systems.alb.harmonic.load_builtin_alb_harmonic_coefficients"
+        "ALB.systems.alb.harmonic_coefficients.load_builtin_alb_harmonic_coefficients"
       ],
       "status": "migrated_root_export"
     },
