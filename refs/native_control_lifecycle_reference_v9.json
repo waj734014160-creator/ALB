@@ -1,0 +1,156 @@
+{
+  "reference_name": "native_control_lifecycle_reference_v9",
+  "created_at": "2026-07-22T16:43:10.473743+00:00",
+  "baseline_commit": "299afaea57a7d478cdb0e0c8b74f83e257a8a9a9",
+  "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+  "python_version": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "random_seed": null,
+  "dependencies": {
+    "control": "0.10.2",
+    "numpy": "1.24.3",
+    "pandas": "2.1.1",
+    "scipy": "1.10.1"
+  },
+  "calculation_contract": "Preserve each numerical update exactly once per input while moving all mutation into evaluate() and making output() read-only.",
+  "arrays": {
+    "lqg.errors": {
+      "shape": [
+        6,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "3b43f3df69b0380af7e5170bd5a7c58998176a6c9aee7e421be8f221d3acf6c2"
+    },
+    "lqg.history_outputs": {
+      "shape": [
+        6,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "3d405ef8aaf90d8836d59b26048543f3e48ef27231528fc7cb718f050a7adec9"
+    },
+    "lqg.history_times": {
+      "shape": [
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "f7492bc5dcd31596347143baf357e2d8224c1f2bfdbeb5e16c2135244e962e40"
+    },
+    "lqg.next_states": {
+      "shape": [
+        6,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "5276a1a632dbbf266fcc17905e5297a76471a5f29d4444eb05e31696a3404de0"
+    },
+    "lqg.outputs": {
+      "shape": [
+        6,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "3d405ef8aaf90d8836d59b26048543f3e48ef27231528fc7cb718f050a7adec9"
+    },
+    "lqg.states": {
+      "shape": [
+        6,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "59232e2555c9f196efca87df61b70bdf43179048aea3e39d07712bc4619a6c70"
+    },
+    "lqg.times": {
+      "shape": [
+        6
+      ],
+      "dtype": "float64",
+      "sha256": "f7492bc5dcd31596347143baf357e2d8224c1f2bfdbeb5e16c2135244e962e40"
+    },
+    "repetitive.e_buffer": {
+      "shape": [
+        10,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "6e1a1782fa5b5b6d5c59320e63fe5513d1dd57a04e5469d9d391db3dbc3e6bec"
+    },
+    "repetitive.errors": {
+      "shape": [
+        14,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "75612997ad7008247950609d86c375db042b740851de5f7154373aa1d91fa899"
+    },
+    "repetitive.outputs": {
+      "shape": [
+        14,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "da70f63162366c3ff7ec8f974f58a9048a0cbf1d861f4986919d8195afbe24d9"
+    },
+    "repetitive.pointers": {
+      "shape": [
+        14
+      ],
+      "dtype": "int64",
+      "sha256": "a72b8d9ee174a88ec527edcb9436fd1fefb82c2f397682a04acf65bbab228efc"
+    },
+    "repetitive.times": {
+      "shape": [
+        14
+      ],
+      "dtype": "float64",
+      "sha256": "28c2c8631d2dcc142511c546889c83111527e9068ea40affc8e0a5323e7d4c53"
+    },
+    "repetitive.u_buffer": {
+      "shape": [
+        10,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "5d5ac17bfe8425dc84106d2880ccc48e82e88463cd7fdd02b4f5b73a9e24e0d2"
+    },
+    "servovalve.commands": {
+      "shape": [
+        8
+      ],
+      "dtype": "float64",
+      "sha256": "9379519dac9f328b2ca95793fa046e48db7f01cd8334df4ce3c714ddcd092fef"
+    },
+    "servovalve.outputs": {
+      "shape": [
+        8,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "d7ad664d25f08924ec8a266f230d83df882f155c129dccfa1ade79058fbf089c"
+    },
+    "servovalve.times": {
+      "shape": [
+        8
+      ],
+      "dtype": "float64",
+      "sha256": "ab3ab6a1d14b0beb2e0550d8d5dc7b9bb6ef07dc688b08f909d5ce072009a8e7"
+    },
+    "servovalve.xout": {
+      "shape": [
+        8,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "5c1eb74560a94150e7d7748293083531abd9bab207a52319c1a81f3f7c04c7c9"
+    },
+    "servovalve.yout": {
+      "shape": [
+        8,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "d7ad664d25f08924ec8a266f230d83df882f155c129dccfa1ade79058fbf089c"
+    }
+  }
+}
