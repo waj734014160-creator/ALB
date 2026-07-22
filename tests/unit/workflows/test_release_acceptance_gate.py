@@ -1,11 +1,13 @@
 """Unit tests for release-evidence worktree preconditions."""
 
+import hashlib
 from pathlib import Path
+import subprocess
 
 import pytest
 
 from tools.validation import run_release_acceptance_0_2 as acceptance
-from tools.validation.release_wheel_gate import _copy_tracked_build_inputs
+from tools.validation.release_source_identity import materialize_candidate_source
 
 
 def test_release_acceptance_rejects_dirty_tracked_worktree_before_tests(monkeypatch):
@@ -65,19 +67,51 @@ def test_sensitive_runtime_input_filter_ignores_cache_and_output_artifacts():
     assert not acceptance._is_sensitive_runtime_input(".codex/settings.json")
 
 
-def test_wheel_build_uses_run_owned_tracked_source_copy(tmp_path: Path) -> None:
-    """Wheel builds must not create backend artifacts in the candidate tree."""
+def test_wheel_build_materializes_candidate_git_blobs(tmp_path: Path) -> None:
+    """Wheel inputs come from immutable candidate blobs, not checkout filters."""
 
     source_root = tmp_path / "wheel-source"
-    _copy_tracked_build_inputs(acceptance.REPOSITORY_ROOT, source_root)
+    evidence = materialize_candidate_source(
+        acceptance.REPOSITORY_ROOT,
+        "HEAD",
+        source_root,
+    )
+    expected_pyproject = subprocess.check_output(
+        ["git", "cat-file", "blob", "HEAD:pyproject.toml"],
+        cwd=acceptance.REPOSITORY_ROOT,
+    )
 
-    assert (source_root / "pyproject.toml").read_bytes() == (
-        acceptance.REPOSITORY_ROOT / "pyproject.toml"
-    ).read_bytes()
-    assert (source_root / "ALB/__init__.py").read_bytes() == (
-        acceptance.REPOSITORY_ROOT / "ALB/__init__.py"
-    ).read_bytes()
+    assert (source_root / "pyproject.toml").read_bytes() == expected_pyproject
+    assert evidence["source_kind"] == "git_blobs"
+    assert evidence["file_count"] == 119
     assert not (source_root / "tests").exists()
+
+
+def test_publish_staged_wheel_preserves_detached_sha(tmp_path, monkeypatch):
+    """The published path receives the exact detached accepted wheel bytes."""
+
+    monkeypatch.setattr(acceptance, "REPOSITORY_ROOT", tmp_path)
+    staging = tmp_path / "staging.whl"
+    staging.write_bytes(b"accepted-wheel")
+    expected_sha256 = hashlib.sha256(staging.read_bytes()).hexdigest()
+    payload = {
+        "wheel": {
+            "wheel": {"sha256": expected_sha256},
+            "reproducible_build": {
+                "first_filename": "re_alb-0.2.0-1-py3-none-any.whl"
+            },
+        }
+    }
+    publish_wheel = tmp_path / "dist/re_alb-0.2.0-1-py3-none-any.whl"
+
+    acceptance._publish_staged_wheel(staging, publish_wheel, payload)
+
+    assert hashlib.sha256(publish_wheel.read_bytes()).hexdigest() == expected_sha256
+    assert payload["wheel"]["published_artifact"] == {
+        "path": "dist/re_alb-0.2.0-1-py3-none-any.whl",
+        "sha256": expected_sha256,
+        "matches_detached_installed_wheel": True,
+    }
 
 
 def test_candidate_head_must_remain_unchanged(monkeypatch):

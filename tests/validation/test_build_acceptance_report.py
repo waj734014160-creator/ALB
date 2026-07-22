@@ -60,6 +60,7 @@ def test_wheel_metadata_cli_and_namespace_smokes_passed() -> None:
     assert report["source"]["missing_wheel_members"] == []
     assert report["source"]["mismatched_wheel_members"] == []
     assert report["source"]["wheel_source_files_checked"] > 0
+    assert report["source"]["source_kind"] == "git_blobs"
     assert report["metadata"]["version"] == "0.2.0"
     assert report["metadata"]["requires_python"] == ">=3.10"
     assert report["metadata"]["extras"] == [
@@ -79,7 +80,15 @@ def test_wheel_metadata_cli_and_namespace_smokes_passed() -> None:
         "pytest>=9",
     ]
     assert report["wheel"]["forbidden_members_present"] == []
+    assert report["wheel"]["build_tag"] == "1"
     assert len(report["wheel"]["sha256"]) == 64
+    assert report["reproducible_build"]["sha256_equal"] is True
+    assert report["reproducible_build"]["first_sha256"] == report["wheel"][
+        "sha256"
+    ]
+    assert report["reproducible_build"]["second_sha256"] == report["wheel"][
+        "sha256"
+    ]
     wheel_path = REPOSITORY_ROOT / report["wheel"]["path"]
     require_disk_wheel = os.environ.get("ALB_BUILD_ACCEPTANCE_REQUIRE_WHEEL") == "1"
     if require_disk_wheel or wheel_path.is_file():
@@ -87,6 +96,13 @@ def test_wheel_metadata_cli_and_namespace_smokes_passed() -> None:
         assert hashlib.sha256(wheel_path.read_bytes()).hexdigest() == report["wheel"][
             "sha256"
         ]
+    published = report.get("published_artifact")
+    if published is not None:
+        assert published == {
+            "path": report["wheel"]["path"],
+            "sha256": report["wheel"]["sha256"],
+            "matches_detached_installed_wheel": True,
+        }
     assert all(not present for present in report["isolated_install"]["removed_specs"].values())
     assert len(report["isolated_install"]["namespace_smoke"]) == 11
     assert set(report["extra_smokes"]) == {

@@ -15,6 +15,13 @@ from typing import Any
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
+from tools.validation.release_source_identity import (
+    candidate_blob,
+    iter_candidate_blobs,
+    resolve_candidate,
+    source_tree_evidence as canonical_source_tree_evidence,
+)
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 test environment
@@ -22,7 +29,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 test environment
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_WHEEL = REPOSITORY_ROOT / "dist/re_alb-0.2.0-py3-none-any.whl"
+DEFAULT_WHEEL = REPOSITORY_ROOT / "dist/re_alb-0.2.0-1-py3-none-any.whl"
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.2.0_build_acceptance.json"
 EXPECTED_EXTRAS = {"all", "control", "dynamics", "film", "io", "surrogate", "test"}
 EXTRA_SMOKES = {
@@ -104,49 +111,10 @@ FORBIDDEN_WHEEL_MEMBERS = {
 }
 
 
-def _git_head() -> str:
-    return subprocess.check_output(
-        ["git", "rev-parse", "HEAD"],
-        cwd=REPOSITORY_ROOT,
-        text=True,
-        encoding="utf-8",
-    ).strip()
+def source_tree_evidence(candidate_commit: str = "HEAD") -> dict[str, Any]:
+    """Hash immutable candidate Git blobs for stable release identity."""
 
-
-def _tracked_release_files() -> list[Path]:
-    """Return tracked package and metadata inputs that define the wheel source."""
-
-    completed = subprocess.run(
-        ["git", "ls-files", "-z", "--", "ALB", "pyproject.toml"],
-        cwd=REPOSITORY_ROOT,
-        capture_output=True,
-        check=True,
-    )
-    return [
-        REPOSITORY_ROOT / path.decode("utf-8")
-        for path in completed.stdout.split(b"\0")
-        if path
-    ]
-
-
-def source_tree_evidence() -> dict[str, Any]:
-    """Hash every tracked release input with stable repository-relative names."""
-
-    digest = hashlib.sha256()
-    files = _tracked_release_files()
-    for path in files:
-        relative = path.relative_to(REPOSITORY_ROOT).as_posix()
-        digest.update(relative.encode("utf-8"))
-        digest.update(b"\0")
-        digest.update(path.read_bytes())
-        digest.update(b"\0")
-    return {
-        "tree_sha256": digest.hexdigest(),
-        "file_count": len(files),
-        "pyproject_sha256": hashlib.sha256(
-            (REPOSITORY_ROOT / "pyproject.toml").read_bytes()
-        ).hexdigest(),
-    }
+    return canonical_source_tree_evidence(REPOSITORY_ROOT, candidate_commit)
 
 
 def _isolated_environment() -> dict[str, str]:
@@ -267,11 +235,16 @@ def _requirement_key(value: str | Requirement) -> str:
     return f"{canonicalize_name(requirement.name)}{extras}{requirement.specifier}{url}"
 
 
-def _pyproject_requirements() -> dict[str, list[str]]:
+def _pyproject_requirements(candidate_commit: str) -> dict[str, list[str]]:
     """Read canonical core and extra requirements from the release metadata input."""
 
-    with (REPOSITORY_ROOT / "pyproject.toml").open("rb") as stream:
-        project = tomllib.load(stream)["project"]
+    project = tomllib.loads(
+        candidate_blob(
+            REPOSITORY_ROOT,
+            candidate_commit,
+            "pyproject.toml",
+        ).decode("utf-8")
+    )["project"]
     requirements = {
         "core": sorted(_requirement_key(item) for item in project["dependencies"])
     }
@@ -314,35 +287,40 @@ def validate(
     installed_root: Path,
     *,
     dependency_paths: tuple[Path, ...] = (),
+    candidate_commit: str = "HEAD",
+    expected_build_tag: str = "1",
 ) -> dict[str, Any]:
     wheel = wheel.resolve()
     installed_root = installed_root.resolve()
+    candidate_sha = resolve_candidate(REPOSITORY_ROOT, candidate_commit)
     if not wheel.is_file():
         raise FileNotFoundError(wheel)
     if not (installed_root / "ALB/__init__.py").is_file():
         raise FileNotFoundError(f"isolated ALB install missing under {installed_root}")
 
-    tracked_package_files = [
-        path
-        for path in _tracked_release_files()
-        if path.relative_to(REPOSITORY_ROOT).as_posix().startswith("ALB/")
-    ]
+    candidate_blobs = dict(iter_candidate_blobs(REPOSITORY_ROOT, candidate_sha))
+    tracked_package_files = sorted(
+        path for path in candidate_blobs if path.startswith("ALB/")
+    )
     with zipfile.ZipFile(wheel) as archive:
         members = set(archive.namelist())
         metadata_member = next(
             name for name in members if name.endswith(".dist-info/METADATA")
         )
+        wheel_metadata_member = next(
+            name for name in members if name.endswith(".dist-info/WHEEL")
+        )
         metadata = archive.read(metadata_member).decode("utf-8")
+        wheel_metadata = archive.read(wheel_metadata_member).decode("utf-8")
         missing_source_members = sorted(
-            path.relative_to(REPOSITORY_ROOT).as_posix()
+            path
             for path in tracked_package_files
-            if path.relative_to(REPOSITORY_ROOT).as_posix() not in members
+            if path not in members
         )
         mismatched_source_members = sorted(
-            relative
+            path
             for path in tracked_package_files
-            if (relative := path.relative_to(REPOSITORY_ROOT).as_posix()) in members
-            and archive.read(relative) != path.read_bytes()
+            if path in members and archive.read(path) != candidate_blobs[path]
         )
     if missing_source_members or mismatched_source_members:
         raise AssertionError(
@@ -381,7 +359,20 @@ def validate(
         raise AssertionError("wheel metadata Requires-Python is not >=3.10")
     if extras != EXPECTED_EXTRAS:
         raise AssertionError(f"wheel extras mismatch: {sorted(extras)}")
-    pyproject_requirements = _pyproject_requirements()
+    wheel_build_values = [
+        line.removeprefix("Build: ")
+        for line in wheel_metadata.splitlines()
+        if line.startswith("Build: ")
+    ]
+    if wheel_build_values != [expected_build_tag]:
+        raise AssertionError(
+            f"wheel build tag mismatch: expected={expected_build_tag}, "
+            f"actual={wheel_build_values}"
+        )
+    expected_filename_fragment = f"-0.2.0-{expected_build_tag}-"
+    if expected_filename_fragment not in wheel.name:
+        raise AssertionError(f"wheel filename does not contain build tag {expected_build_tag}")
+    pyproject_requirements = _pyproject_requirements(candidate_sha)
     metadata_requirements = _metadata_requirements(metadata_lines)
     if metadata_requirements != pyproject_requirements:
         raise AssertionError(
@@ -472,9 +463,9 @@ print(json.dumps({
     return {
         "schema": "alb.build-acceptance.v1",
         "version": "0.2.0",
-        "candidate_commit": _git_head(),
+        "candidate_commit": candidate_sha,
         "source": {
-            **source_tree_evidence(),
+            **source_tree_evidence(candidate_sha),
             "wheel_source_files_checked": len(tracked_package_files),
             "missing_wheel_members": missing_source_members,
             "mismatched_wheel_members": mismatched_source_members,
@@ -484,6 +475,7 @@ print(json.dumps({
             "size_bytes": len(wheel_payload),
             "sha256": hashlib.sha256(wheel_payload).hexdigest(),
             "member_count": len(members),
+            "build_tag": expected_build_tag,
             "forbidden_members_present": forbidden_present,
             "required_members_present": sorted(required_members),
         },
@@ -493,6 +485,7 @@ print(json.dumps({
             "extras": sorted(extras),
             "requirements_by_extra": metadata_requirements,
             "matches_pyproject": True,
+            "build_tag": expected_build_tag,
         },
         "isolated_install": {
             "root": installed_root.relative_to(REPOSITORY_ROOT).as_posix(),
@@ -528,11 +521,19 @@ def main() -> int:
     )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--overwrite-output", action="store_true")
+    parser.add_argument(
+        "--candidate-commit",
+        default="HEAD",
+        help="Git candidate whose canonical blobs must match the wheel.",
+    )
+    parser.add_argument("--build-tag", default="1")
     args = parser.parse_args()
     payload = validate(
         args.wheel,
         args.installed_root,
         dependency_paths=tuple(path.resolve() for path in args.dependency_path),
+        candidate_commit=args.candidate_commit,
+        expected_build_tag=args.build_tag,
     )
     output = args.output.resolve()
     if output.exists() and not args.overwrite_output:

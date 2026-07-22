@@ -23,6 +23,8 @@ from tools.validation.release_wheel_gate import build_and_validate_wheel
 
 
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.2.0_release_acceptance.json"
+DEFAULT_BUILD_REPORT = REPOSITORY_ROOT / "docs/migrations/0.2.0_build_acceptance.json"
+DEFAULT_PUBLISH_WHEEL = REPOSITORY_ROOT / "dist/re_alb-0.2.0-1-py3-none-any.whl"
 RUNTIME_ROOT = REPOSITORY_ROOT / "outputs/release_acceptance"
 PYTHON = Path("E:/Anaconda2023/envs/ALB/python.exe")
 MYPY_VERSION = "2.3.0"
@@ -289,6 +291,26 @@ SEVENTH_REVIEW_NODEIDS = {
     (
         "tests/unit/systems/test_controller_compatibility.py::"
         "test_harmonic_output_overflow_invalidates_runtime"
+    ),
+}
+
+
+EIGHTH_REVIEW_NODEIDS = {
+    (
+        "tests/regression/test_eighth_review_wheel_identity_reference.py::"
+        "test_candidate_release_blobs_and_v7_behavior_reference_remain_exact"
+    ),
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_wheel_build_materializes_candidate_git_blobs"
+    ),
+    (
+        "tests/unit/workflows/test_release_acceptance_gate.py::"
+        "test_publish_staged_wheel_preserves_detached_sha"
+    ),
+    (
+        "tests/validation/test_build_acceptance_report.py::"
+        "test_wheel_metadata_cli_and_namespace_smokes_passed"
     ),
 }
 
@@ -633,6 +655,8 @@ def run_acceptance() -> dict[str, Any]:
         run_token=run_token,
         environment=environment,
         dependency_paths=(fresh_devtools,),
+        candidate_commit=candidate_commit,
+        build_tag="1",
     )
     environment["ALB_BUILD_ACCEPTANCE_REPORT"] = str(wheel_gate.report_path)
     environment["ALB_BUILD_ACCEPTANCE_REQUIRE_WHEEL"] = "1"
@@ -733,6 +757,13 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("The complete seventh-review regression node set was not recorded")
     if any(item["outcome"] != "passed" for item in seventh_review_reports):
         raise AssertionError("A seventh-review regression node did not pass")
+    eighth_review_reports = [
+        item for item in reports["reports"] if item["nodeid"] in EIGHTH_REVIEW_NODEIDS
+    ]
+    if {item["nodeid"] for item in eighth_review_reports} != EIGHTH_REVIEW_NODEIDS:
+        raise AssertionError("The complete eighth-review artifact node set was not recorded")
+    if any(item["outcome"] != "passed" for item in eighth_review_reports):
+        raise AssertionError("An eighth-review artifact identity node did not pass")
 
     mypy_command = _python_module_command(
         "mypy",
@@ -782,6 +813,8 @@ def run_acceptance() -> dict[str, Any]:
         wheel_gate.installed_root,
         wheel_gate.wheel_root,
         wheel_gate.build_source_root,
+        wheel_gate.reproducibility_wheel_root,
+        wheel_gate.reproducibility_build_source_root,
     )
     after = _tracked_status()
     if after:
@@ -842,6 +875,7 @@ def run_acceptance() -> dict[str, Any]:
             "fifth_review_reports": fifth_review_reports,
             "sixth_review_reports": sixth_review_reports,
             "seventh_review_reports": seventh_review_reports,
+            "eighth_review_reports": eighth_review_reports,
         },
         "mypy": {
             "install_command": subprocess.list2cmdline(mypy_install_command),
@@ -899,6 +933,9 @@ def run_acceptance() -> dict[str, Any]:
             "seventh_review_release_v7": (
                 "refs/seventh_review_release_reference_v7.json"
             ),
+            "eighth_review_wheel_identity_v8": (
+                "refs/eighth_review_wheel_identity_reference_v8.json"
+            ),
         },
         "overall_status": "passed",
     }
@@ -933,7 +970,59 @@ def _remove_detached_worktree(worktree: Path) -> None:
         shutil.rmtree(resolved)
 
 
-def run_acceptance_in_detached_worktree() -> dict[str, Any]:
+def _stage_detached_wheel(worktree: Path, payload: dict[str, Any]) -> Path:
+    """Copy the verified detached wheel to a launcher-owned staging path."""
+
+    relative_wheel = Path(payload["wheel"]["wheel"]["path"])
+    detached_wheel = (worktree / relative_wheel).resolve()
+    if not detached_wheel.is_relative_to(worktree.resolve()):
+        raise RuntimeError(f"Detached wheel escaped candidate worktree: {detached_wheel}")
+    if not detached_wheel.is_file():
+        raise FileNotFoundError(detached_wheel)
+    expected_sha256 = payload["wheel"]["wheel"]["sha256"]
+    if hashlib.sha256(detached_wheel.read_bytes()).hexdigest() != expected_sha256:
+        raise AssertionError("Detached wheel bytes differ from acceptance evidence")
+    RUNTIME_ROOT.mkdir(parents=True, exist_ok=True)
+    staging = RUNTIME_ROOT / f"published_wheel_{uuid.uuid4().hex}.whl"
+    shutil.copyfile(detached_wheel, staging)
+    if hashlib.sha256(staging.read_bytes()).hexdigest() != expected_sha256:
+        raise AssertionError("Staged wheel bytes differ from detached acceptance")
+    return staging
+
+
+def _publish_staged_wheel(
+    staging: Path,
+    publish_wheel: Path,
+    payload: dict[str, Any],
+) -> None:
+    """Atomically publish the exact wheel installed by detached acceptance."""
+
+    publish_wheel = publish_wheel.resolve()
+    expected_dist = (REPOSITORY_ROOT / "dist").resolve()
+    if publish_wheel.parent != expected_dist:
+        raise RuntimeError(f"Release wheel must be published under {expected_dist}")
+    expected_name = payload["wheel"]["reproducible_build"]["first_filename"]
+    if publish_wheel.name != expected_name:
+        raise RuntimeError(
+            f"Published wheel name mismatch: expected={expected_name}, "
+            f"actual={publish_wheel.name}"
+        )
+    expected_sha256 = payload["wheel"]["wheel"]["sha256"]
+    publish_wheel.parent.mkdir(parents=True, exist_ok=True)
+    os.replace(staging, publish_wheel)
+    published_sha256 = hashlib.sha256(publish_wheel.read_bytes()).hexdigest()
+    if published_sha256 != expected_sha256:
+        raise AssertionError("Published wheel differs from detached accepted wheel")
+    relative_path = publish_wheel.relative_to(REPOSITORY_ROOT).as_posix()
+    payload["wheel"]["wheel"]["path"] = relative_path
+    payload["wheel"]["published_artifact"] = {
+        "path": relative_path,
+        "sha256": published_sha256,
+        "matches_detached_installed_wheel": True,
+    }
+
+
+def run_acceptance_in_detached_worktree(publish_wheel: Path) -> dict[str, Any]:
     """Run acceptance only from a detached checkout of the candidate SHA."""
 
     before = _tracked_status()
@@ -968,6 +1057,7 @@ def run_acceptance_in_detached_worktree() -> dict[str, Any]:
     internal_output = worktree / "outputs/release_acceptance/evidence.json"
     command = _detached_acceptance_command(worktree, internal_output)
     environment = _acceptance_environment()
+    staging_wheel: Path | None = None
     try:
         completed = subprocess.run(
             command,
@@ -986,6 +1076,7 @@ def run_acceptance_in_detached_worktree() -> dict[str, Any]:
                 + completed.stderr
             )
         payload = json.loads(internal_output.read_text(encoding="utf-8"))
+        staging_wheel = _stage_detached_wheel(worktree, payload)
     finally:
         _remove_detached_worktree(worktree)
 
@@ -998,6 +1089,13 @@ def run_acceptance_in_detached_worktree() -> dict[str, Any]:
     candidate_after = _assert_candidate_head(candidate_commit)
     if payload.get("candidate_commit") != candidate_commit:
         raise AssertionError("Detached report is not bound to the launcher candidate")
+    if staging_wheel is None:
+        raise AssertionError("Detached acceptance did not stage a release wheel")
+    try:
+        _publish_staged_wheel(staging_wheel, publish_wheel, payload)
+    finally:
+        if staging_wheel.exists():
+            staging_wheel.unlink()
     payload["execution"] = {
         "mode": "detached_worktree",
         "python_isolated_mode": True,
@@ -1009,6 +1107,7 @@ def run_acceptance_in_detached_worktree() -> dict[str, Any]:
         "candidate_head_after": candidate_after,
         "launcher_tracked_status_before": before,
         "launcher_tracked_status_after": after,
+        "published_wheel": payload["wheel"]["published_artifact"],
     }
     return payload
 
@@ -1018,6 +1117,8 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--build-report", type=Path, default=DEFAULT_BUILD_REPORT)
+    parser.add_argument("--publish-wheel", type=Path, default=DEFAULT_PUBLISH_WHEEL)
     parser.add_argument(
         "--python",
         type=Path,
@@ -1025,6 +1126,7 @@ def main() -> int:
         help="Python interpreter used for every release subprocess.",
     )
     parser.add_argument("--overwrite-output", action="store_true")
+    parser.add_argument("--overwrite-build-report", action="store_true")
     parser.add_argument("--internal-detached", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     PYTHON = args.python.resolve()
@@ -1033,11 +1135,26 @@ def main() -> int:
     output = args.output.resolve()
     if output.exists() and not args.overwrite_output:
         raise FileExistsError(f"Refusing to overwrite release evidence: {output}")
+    build_report = args.build_report.resolve()
+    if (
+        not args.internal_detached
+        and build_report.exists()
+        and not args.overwrite_build_report
+    ):
+        raise FileExistsError(
+            f"Refusing to overwrite build evidence: {build_report}"
+        )
     payload = (
         run_acceptance()
         if args.internal_detached
-        else run_acceptance_in_detached_worktree()
+        else run_acceptance_in_detached_worktree(args.publish_wheel)
     )
+    if not args.internal_detached:
+        build_report.parent.mkdir(parents=True, exist_ok=True)
+        build_report.write_text(
+            json.dumps(payload["wheel"], ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
