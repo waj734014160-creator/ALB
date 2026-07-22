@@ -76,8 +76,11 @@ class PID(BaseSimpleModel):
         self.ki_calc = 0
         self.kd_calc = 0
         self._committed_error = None
-        self._input_pending = False
         self._last_output = None
+        self._lifecycle = RuntimeLifecycle(
+            "controller", input_label="controller input"
+        )
+        self._lifecycle.reset()
         if pid_config.sensor_angles is None:
             self.sensor_angles = np.array([0, 90])
         else:
@@ -126,8 +129,8 @@ class PID(BaseSimpleModel):
         self.ki_calc = 0
         self.kd_calc = 0
         self._committed_error = None
-        self._input_pending = False
         self._last_output = None
+        self._lifecycle.reset()
 
     def input(self, t, error, *args, **kwargs):
         """
@@ -135,8 +138,7 @@ class PID(BaseSimpleModel):
         :param t: The current time.
         :param error: The error signal.
         """
-        if self._input_pending:
-            raise RuntimeError("latched controller input must be evaluated first")
+        self._lifecycle.require_input_slot()
         inp = np.asarray(error, dtype=float).reshape(-1)
         if inp.size != 2:
             raise ValueError("PID input error must contain exactly two values")
@@ -150,38 +152,43 @@ class PID(BaseSimpleModel):
             self.delta_error = projected_error - self._committed_error
         self.error = limit_signal(projected_error)
         self.t = t
-        self._input_pending = True
         self._last_output = None
+        self._lifecycle.latch()
 
     def evaluate(self, *args, **kwargs):
         """
         Calculate one PID command from the currently latched input.
         :return: The controller output signal.
         """
-        if not self._input_pending or self.error is None:
-            raise RuntimeError("a new controller input is required before evaluate()")
-        output = self.decrete_pid(self.error, self.delta_error)
-        output = limit_signal(output)
-        self.results.loc[self.results.shape[0]] = [
-            self.t,
-            self.inp,
-            output,
-            self.error,
-            self.delta_error,
-            self.kp_calc,
-            self.ki_calc,
-            self.kd_calc,
-        ]
-        self._committed_error = np.asarray(self.error, dtype=float).copy()
-        self._last_output = np.asarray(output, dtype=float).copy()
-        self._input_pending = False
-        return self._last_output.copy()
+        with self._lifecycle.evaluation():
+            assert self.error is not None
+            output = self.decrete_pid(self.error, self.delta_error)
+            output = limit_signal(output)
+            self.results.loc[self.results.shape[0]] = [
+                self.t,
+                self.inp,
+                output,
+                self.error,
+                self.delta_error,
+                self.kp_calc,
+                self.ki_calc,
+                self.kd_calc,
+            ]
+            self._committed_error = np.asarray(self.error, dtype=float).copy()
+            self._last_output = np.asarray(output, dtype=float).copy()
+        return self.output()
 
     def output(self, *args, **kwargs):
         """Read the completed PID command without integrating again."""
-        if self._input_pending or self._last_output is None:
-            raise RuntimeError("controller output is unavailable until evaluate() completes")
+        self._lifecycle.require_output()
+        assert self._last_output is not None
         return self._last_output.copy()
+
+    @property
+    def lifecycle_state(self):
+        """Return the current strict runtime state."""
+
+        return self._lifecycle.state
 
     def decrete_pid(self, error, delta_error):
         """
@@ -444,29 +451,28 @@ class FuzzyPID(PID):
         Calculate one Fuzzy PID command from the currently latched input.
         :return: The controller output signal.
         """
-        if not self._input_pending or self.error is None:
-            raise RuntimeError("a new controller input is required before evaluate()")
-        self.fuzzy_pid(self.error, self.delta_error)
-        output = self.decrete_pid(self.error, self.delta_error)
-        self.results.loc[self.results.shape[0]] = [
-            self.t,
-            self.inp,
-            output,
-            self.error,
-            self.delta_error,
-            self.kp_calc,
-            self.ki_calc,
-            self.kd_calc,
-            self.kp,
-            self.ki,
-            self.kd,
-            self.ki_nodim,
-            self.kd_nodim,
-        ]
-        self._committed_error = np.asarray(self.error, dtype=float).copy()
-        self._last_output = np.asarray(output, dtype=float).copy()
-        self._input_pending = False
-        return self._last_output.copy()
+        with self._lifecycle.evaluation():
+            assert self.error is not None
+            self.fuzzy_pid(self.error, self.delta_error)
+            output = self.decrete_pid(self.error, self.delta_error)
+            self.results.loc[self.results.shape[0]] = [
+                self.t,
+                self.inp,
+                output,
+                self.error,
+                self.delta_error,
+                self.kp_calc,
+                self.ki_calc,
+                self.kd_calc,
+                self.kp,
+                self.ki,
+                self.kd,
+                self.ki_nodim,
+                self.kd_nodim,
+            ]
+            self._committed_error = np.asarray(self.error, dtype=float).copy()
+            self._last_output = np.asarray(output, dtype=float).copy()
+        return self.output()
 
     def fuzzy_pid(self, error, delta_error):
         """

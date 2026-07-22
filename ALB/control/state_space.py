@@ -7,6 +7,8 @@ import scipy.linalg
 from scipy import signal as ss
 
 from ALB.core.component import BaseSimpleModel
+from ALB.core.lifecycle import RuntimeLifecycle
+from ALB.core.validation import finite_real_array, finite_real_time
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 
 
@@ -106,8 +108,9 @@ class BaseLti(BaseSimpleModel):
         self.yout = []
         self.xout = []
         self.u = []
-        self._input_pending = False
         self._last_output = None
+        self._lifecycle = RuntimeLifecycle("LTI", input_label="LTI input")
+        self._lifecycle.reset()
 
     @property
     def A(self):
@@ -137,8 +140,8 @@ class BaseLti(BaseSimpleModel):
         self.yout = []
         self.xout = []
         self.u = []
-        self._input_pending = False
         self._last_output = None
+        self._lifecycle.reset()
 
     def _state_space_matrix_init(self, a, b, c, d, dt):
         return lti_state_space_matrix_init(a, b, c, d, dt)
@@ -155,9 +158,7 @@ class BaseLti(BaseSimpleModel):
         Check whether the time step matches the configured sampling time.
         tol: Tolerance, default 1e-7.
         """
-        t = float(t)
-        if not np.isfinite(t):
-            raise ValueError("Input time must be finite")
+        t = finite_real_time(t, "input time", nonnegative=False)
         if len(self.ts) > 0:
             dt = t - self.ts[-1]
             if np.abs(dt - self._dt) > tol:
@@ -167,61 +168,63 @@ class BaseLti(BaseSimpleModel):
         return t
 
     def _check_input(self, u):
-        u = np.asarray(u, dtype=float)
-        u = u.reshape([-1, 1])
-        if u.shape[0] != self._Bd1.shape[0]:
+        size = int(self._Bd1.shape[0])
+        vector = finite_real_array(u, "input vector").reshape(-1)
+        if vector.shape != (size,):
             raise ValueError("Input vector dimension mismatch")
-        if not np.all(np.isfinite(u)):
-            raise ValueError("Input vector must be finite")
-        return u
+        return vector.reshape(-1, 1)
 
     def input(self, t, u, *args, **kwargs):
         """Validate and latch one input without advancing the state."""
-        if self._input_pending:
-            raise RuntimeError("latched LTI input must be evaluated before replacement")
+        self._lifecycle.require_input_slot()
         t = self._check_time(t)
         u = self._check_input(u)
         self.ts.append(t)
         self.u1 = u
         u = np.squeeze(u)
         self.u.append(u)
-        self._input_pending = True
         self._last_output = None
+        self._lifecycle.latch()
 
     def evaluate(self):
         """Advance once from the latched input and publish one output snapshot."""
-        if not self._input_pending or self.u1 is None:
-            raise RuntimeError("a new LTI input must be supplied before evaluate()")
-        current_input = np.asarray(self.u1, dtype=float).reshape(-1)
-        # The first call publishes y(0) without advancing the state.
-        if self.u0 is None:
-            self.u0 = np.zeros(self._Bd0.shape[0], dtype=float)
-            self.xout.append(np.squeeze(self.xk0))
-            yout = self._c @ np.asarray(self.xk0).reshape(-1) + self._d @ current_input
-            self.yout.append(np.squeeze(yout))
-        else:
-            self.xk1 = (
-                np.asarray(self.xk0).reshape(-1) @ self._a
-                + np.asarray(self.u0).reshape(-1) @ self._Bd0
-                + current_input @ self._Bd1
-            )
+        with self._lifecycle.evaluation():
+            assert self.u1 is not None
+            current_input = np.asarray(self.u1, dtype=float).reshape(-1)
+            # The first call publishes y(0) without advancing the state.
+            if self.u0 is None:
+                self.u0 = np.zeros(self._Bd0.shape[0], dtype=float)
+                self.xout.append(np.squeeze(self.xk0))
+                yout = self._c @ np.asarray(self.xk0).reshape(-1) + self._d @ current_input
+                self.yout.append(np.squeeze(yout))
+            else:
+                self.xk1 = (
+                    np.asarray(self.xk0).reshape(-1) @ self._a
+                    + np.asarray(self.u0).reshape(-1) @ self._Bd0
+                    + current_input @ self._Bd1
+                )
 
-            # Save the current input as the previous input for the next step.
-            self.u0 = current_input.copy()
-            yout = self._c @ np.asarray(self.xk1).reshape(-1) + self._d @ current_input
-            self.yout.append(np.squeeze(yout))
-            self.xk0 = self.xk1
-            self.xout.append(np.squeeze(self.xk0))
+                # Save the current input as the previous input for the next step.
+                self.u0 = current_input.copy()
+                yout = self._c @ np.asarray(self.xk1).reshape(-1) + self._d @ current_input
+                self.yout.append(np.squeeze(yout))
+                self.xk0 = self.xk1
+                self.xout.append(np.squeeze(self.xk0))
 
-        self._last_output = np.asarray(yout, dtype=float).reshape(-1).copy()
-        self._input_pending = False
-        return self._last_output.copy()
+            self._last_output = np.asarray(yout, dtype=float).reshape(-1).copy()
+        return self.output()
 
     def output(self):
         """Read the last completed output without advancing model state."""
-        if self._input_pending or self._last_output is None:
-            raise RuntimeError("LTI output is unavailable until evaluate() completes")
+        self._lifecycle.require_output()
+        assert self._last_output is not None
         return self._last_output.copy()
+
+    @property
+    def lifecycle_state(self):
+        """Return the current strict runtime state."""
+
+        return self._lifecycle.state
 
     def plot_output(self):
         plt.plot(self.ts, self.yout)
@@ -267,27 +270,24 @@ class BaseDlti(BaseLti):
         self._d = args[3]
 
     def _check_input(self, u):
-        u = np.asarray(u, dtype=float)
-        u = u.reshape([-1, 1])
-        if u.shape[0] != self._b.shape[1]:
+        size = int(self._b.shape[1])
+        vector = finite_real_array(u, "input vector").reshape(-1)
+        if vector.shape != (size,):
             raise ValueError("Input vector dimension mismatch")
-        if not np.all(np.isfinite(u)):
-            raise ValueError("Input vector must be finite")
-        return u
+        return vector.reshape(-1, 1)
 
     def evaluate(self):
         """Advance the discrete state once from the latched input."""
-        if not self._input_pending or self.u1 is None:
-            raise RuntimeError("a new LTI input must be supplied before evaluate()")
-        current_input = np.asarray(self.u1, dtype=float).reshape(-1)
-        self.xk1 = self._a @ np.asarray(self.xk0).reshape(-1) + self._b @ current_input
-        yout = self._c @ self.xk1 + self._d @ current_input
-        self.yout.append(np.squeeze(yout))
-        self.xk0 = self.xk1
-        self.xout.append(np.squeeze(self.xk0))
-        self._last_output = np.asarray(yout, dtype=float).reshape(-1).copy()
-        self._input_pending = False
-        return self._last_output.copy()
+        with self._lifecycle.evaluation():
+            assert self.u1 is not None
+            current_input = np.asarray(self.u1, dtype=float).reshape(-1)
+            self.xk1 = self._a @ np.asarray(self.xk0).reshape(-1) + self._b @ current_input
+            yout = self._c @ self.xk1 + self._d @ current_input
+            self.yout.append(np.squeeze(yout))
+            self.xk0 = self.xk1
+            self.xout.append(np.squeeze(self.xk0))
+            self._last_output = np.asarray(yout, dtype=float).reshape(-1).copy()
+        return self.output()
 
 
 def get_space_matrix_from_sys(system):

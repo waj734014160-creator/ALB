@@ -4,16 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-from enum import Enum
 
-
-class LifecycleState(str, Enum):
-    """Stable runtime states shared by controllers, valves, and couplers."""
-
-    NEW = "new"
-    READY = "ready"
-    RUNNING = "running"
-    FAILED = "failed"
+from ALB.contracts.lifecycle import LifecycleState as LifecycleState
 
 
 class RuntimeLifecycle:
@@ -25,8 +17,9 @@ class RuntimeLifecycle:
     during a mutating phase enters ``FAILED`` and requires an explicit reset.
     """
 
-    def __init__(self, owner: str) -> None:
+    def __init__(self, owner: str, *, input_label: str = "input") -> None:
         self._owner = owner
+        self._input_label = input_label
         self._state = LifecycleState.NEW
         self._output_available = False
 
@@ -36,11 +29,17 @@ class RuntimeLifecycle:
 
         return self._state
 
-    def reset(self) -> None:
-        """Enter ``READY`` with no readable output."""
+    @property
+    def is_valid(self) -> bool:
+        """Return whether the runtime is initialized and not failed."""
+
+        return self._state in {LifecycleState.READY, LifecycleState.RUNNING}
+
+    def reset(self, *, output_available: bool = False) -> None:
+        """Enter ``READY`` and optionally publish an initialization snapshot."""
 
         self._state = LifecycleState.READY
-        self._output_available = False
+        self._output_available = output_available
 
     def require_input_slot(self) -> None:
         """Require a runtime that can accept a new input."""
@@ -69,7 +68,7 @@ class RuntimeLifecycle:
             raise RuntimeError(f"{self._owner} is failed; call init() before reuse")
         if self._state is not LifecycleState.RUNNING:
             raise RuntimeError(
-                f"{self._owner} requires a new input before evaluate()"
+                f"a new {self._input_label} is required before evaluate()"
             )
         try:
             yield

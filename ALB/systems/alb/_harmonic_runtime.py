@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 
-from ALB.core.validation import FloatArray
+from ALB.contracts.numeric import FloatArray
 from ALB.core.validation import finite_real_array as _finite_real_array
 from ALB.core.validation import finite_real_scalar as _finite_real_scalar
 

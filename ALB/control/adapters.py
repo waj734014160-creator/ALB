@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
 from ALB.contracts import ControllerProtocol
+from ALB.contracts.numeric import FloatArray
 from ALB.core import LifecycleState, RuntimeLifecycle
-from ALB.core.validation import FloatArray, finite_real_scalar, finite_real_vector
+from ALB.core.validation import finite_real_scalar, finite_real_vector
 
 
 class LegacyControllerAdapter:
@@ -102,5 +103,5 @@ def adapt_controller(controller: Any) -> ControllerProtocol:
         if not callable(getattr(controller, method_name, None)):
             raise TypeError(f"controller must provide {method_name}()")
     if callable(getattr(controller, "evaluate", None)):
-        return controller
+        return cast(ControllerProtocol, controller)
     return LegacyControllerAdapter(controller)

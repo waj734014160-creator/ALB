@@ -81,3 +81,24 @@ def test_step_context_allows_only_explicit_supported_units():
     assert context.unit_system is UnitSystem.DIMENSIONAL
     with pytest.raises(ValueError, match="unit_system"):
         StepContext(0, 0.0, 0.01, "unspecified")
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: ControlInput([1.0 + 1.0j, 0.0], 0.0, "nondimensional"),
+        lambda: ValveInput([0.0, 1.0j], 0.0, "nondimensional"),
+        lambda: RotorLoadInput(
+            [[1.0 + 1.0j, 0.0]], [[0.0, 0.0]], (0,), 0.0, "dimensional"
+        ),
+    ],
+)
+def test_port_dtos_reject_complex_values_before_float_conversion(factory):
+    with pytest.raises(ValueError, match="complex"):
+        factory()
+
+
+@pytest.mark.parametrize("time", [True, np.bool_(False)])
+def test_port_dtos_reject_boolean_timestamps(time):
+    with pytest.raises(TypeError, match="real scalar"):
+        ControlInput([0.0, 0.0], time, "nondimensional")

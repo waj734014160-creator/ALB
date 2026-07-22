@@ -9,7 +9,8 @@ from .block import (
     SolvableBlock,
 )
 from .control import ControllerProtocol, LegacyControllerProtocol, ServoValveProtocol
-from .dynamics import RotorProtocol
+from .dynamics import RotorProtocol, RotorStateMap
+from .lifecycle import LifecycleState, RuntimeLifecycleProtocol
 from .model import (
     ConvergenceStatus,
     LifecycleProtocol,
@@ -34,6 +35,8 @@ from .results import (
     ArtifactRecord,
     ArtifactWriterProtocol,
     ResultBundle,
+    ResultRecorderProtocol,
+    ResultSnapshotProtocol,
     result_snapshot,
 )
 from .result_tree import DataFrameResult, NpyResult, RossRotorResult, SaveTreeNode
@@ -57,15 +60,20 @@ __all__ = [
     "ConvergenceStatus",
     "EvaluableBlock",
     "LifecycleProtocol",
+    "LifecycleState",
     "LegacyControllerProtocol",
     "NotifierProtocol",
     "import_optional_module",
     "missing_optional_dependency",
     "PersistableProtocol",
     "RotorProtocol",
+    "RotorStateMap",
     "RotorLoadInput",
     "RotorState",
     "ResultBundle",
+    "ResultRecorderProtocol",
+    "ResultSnapshotProtocol",
+    "RuntimeLifecycleProtocol",
     "NpyResult",
     "RossRotorResult",
     "SaveTreeNode",

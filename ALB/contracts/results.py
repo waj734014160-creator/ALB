@@ -96,3 +96,19 @@ class ArtifactWriterProtocol(Protocol):
 
     def write(self, bundle: ResultBundle, destination: Path) -> ArtifactManifest:
         """Persist a result bundle and return a verifiable manifest."""
+
+
+@runtime_checkable
+class ResultSnapshotProtocol(Protocol):
+    """Read the most recent immutable numerical result."""
+
+    def result_snapshot(self) -> ResultBundle:
+        """Return a detached snapshot without advancing component state."""
+
+
+@runtime_checkable
+class ResultRecorderProtocol(Protocol):
+    """Receive immutable results without exposing filesystem concerns."""
+
+    def record(self, bundle: ResultBundle) -> None:
+        """Record one completed bundle exactly once."""

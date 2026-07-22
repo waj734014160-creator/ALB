@@ -4,47 +4,32 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from numbers import Integral
-from typing import Any, TypeAlias
+from typing import Any
 
 import numpy as np
-import numpy.typing as npt
 
+from .numeric import FloatArray, finite_real_array, finite_real_time
 from .types import UnitSystem
 
 
-FloatArray: TypeAlias = npt.NDArray[np.float64]
-
-
 def _finite_time(value: Any) -> float:
-    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, float, np.number)):
-        raise TypeError("time must be a real scalar")
-    result = float(value)
-    if not np.isfinite(result) or result < 0.0:
-        raise ValueError("time must be finite and nonnegative")
-    return result
+    return finite_real_time(value)
 
 
 def _finite_axis_vector(value: Any, name: str) -> FloatArray:
-    array = np.asarray(value, dtype=float)
-    if array.shape != (2,):
-        raise ValueError(f"{name} must have shape (2,)")
-    if not np.all(np.isfinite(array)):
-        raise ValueError(f"{name} must contain only finite values")
-    result = array.copy()
+    result = finite_real_array(value, name, shape=(2,))
     result.setflags(write=False)
     return result
 
 
 def _finite_node_axes(value: Any, name: str) -> FloatArray:
-    array = np.asarray(value, dtype=float)
+    array = finite_real_array(value, name)
     if array.ndim == 1:
         if array.shape != (2,):
             raise ValueError(f"{name} must have shape (2,) or (n, 2)")
         array = array.reshape(1, 2)
     if array.ndim != 2 or array.shape[1] != 2 or array.shape[0] == 0:
         raise ValueError(f"{name} must have shape (2,) or (n, 2)")
-    if not np.all(np.isfinite(array)):
-        raise ValueError(f"{name} must contain only finite values")
     result = array.copy()
     result.setflags(write=False)
     return result

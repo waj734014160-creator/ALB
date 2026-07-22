@@ -22,7 +22,7 @@ from ALB.config import Moog2ndServoConfig, PIDConfig
 from ALB.control.adapters import adapt_controller
 from ALB.control.blocks import run_controller_step, run_valve_step
 from ALB.control.pid import PID
-from ALB.core import BearingComponentBase
+from ALB.core import BearingComponentBase, LifecycleState, RuntimeLifecycle
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve
 
@@ -406,6 +406,10 @@ class ALBHarmonicLinear(BearingComponentBase):
         self._last_recorded_time: float | None = None
         self._has_input = False
         self._valid = False
+        self._lifecycle = RuntimeLifecycle(
+            "harmonic bearing", input_label="bearing input"
+        )
+        self._last_output: dict[str, Any] | None = None
         self._runtime_guard = RuntimeFailureGuard(self._invalidate_runtime)
         self.init()
 
@@ -457,11 +461,17 @@ class ALBHarmonicLinear(BearingComponentBase):
     def _require_valid(self, operation: str) -> None:
         """Reject state access after a failed runtime initialization."""
 
-        if not self._valid:
+        if not self._lifecycle.is_valid:
             raise RuntimeError(
                 f"Cannot {operation}: harmonic bearing runtime is invalid; "
                 "call init() successfully before reuse"
             )
+
+    @property
+    def lifecycle_state(self) -> LifecycleState:
+        """Return the shared harmonic runtime state."""
+
+        return self._lifecycle.state
 
     def _reset_public_state(self) -> None:
         """Reset public snapshots to a deterministic non-computed base state."""
@@ -483,11 +493,13 @@ class ALBHarmonicLinear(BearingComponentBase):
         self._last_input = None
         self._last_recorded_time = None
         self._has_input = False
+        self._last_output = None
 
     def _invalidate_runtime(self) -> None:
         """Discard a partial controller/valve runtime and block state access."""
 
         self._valid = False
+        self._lifecycle.fail()
         self.controller = None
         self.servovalves = []
         self._reset_public_state()
@@ -665,6 +677,7 @@ class ALBHarmonicLinear(BearingComponentBase):
             self._invalidate_runtime()
             raise
         self._valid = True
+        self._lifecycle.reset()
         return True
 
     def input(self, uxy, uxyt, t, *args, **kwargs) -> bool:
@@ -673,6 +686,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         self._require_valid("accept input")
         if kwargs.get("nodim", False):
             raise ValueError("ALBHarmonicLinear accepts dimensional bearing inputs")
+        self._lifecycle.require_input_slot()
         with self._runtime_guard.phase():
             position = _finite_vector("uxy", uxy)
             velocity = _finite_vector("uxyt", uxyt)
@@ -716,7 +730,18 @@ class ALBHarmonicLinear(BearingComponentBase):
             self._last_time = time_s
             self._last_input = (position.copy(), velocity.copy())
             self._has_input = True
+            self._last_output = None
+            self._lifecycle.latch()
         return True
+
+    @staticmethod
+    def _copy_output(output: Mapping[str, Any]) -> dict[str, Any]:
+        """Return a caller-owned copy of one completed harmonic output."""
+
+        return {
+            name: value.copy() if isinstance(value, np.ndarray) else value
+            for name, value in output.items()
+        }
 
     def output(self, *args, **kwargs) -> dict[str, Any]:
         """Return total dimensional bearing force and component diagnostics."""
@@ -726,7 +751,11 @@ class ALBHarmonicLinear(BearingComponentBase):
             raise ValueError("ALBHarmonicLinear only outputs dimensional force")
         if not self._has_input:
             raise RuntimeError("input() must be called before output()")
-        with self._runtime_guard.phase():
+        if self._lifecycle.state is LifecycleState.READY:
+            self._lifecycle.require_output()
+            assert self._last_output is not None
+            return self._copy_output(self._last_output)
+        with self._runtime_guard.phase(), self._lifecycle.evaluation():
             delta_position = self.uxy - self.coefficients.equilibrium_position
             delta_spool = self.spool - self.coefficients.base_spool
             with np.errstate(over="raise", invalid="raise"):
@@ -754,7 +783,7 @@ class ALBHarmonicLinear(BearingComponentBase):
             for name, vector in runtime_vectors.items():
                 finite_real_array(name, vector, shape=(2,))
             self.signal.lead_loop("finish_signal")
-            return {
+            self._last_output = {
                 "force": self.force.copy(),
                 "friction": 0.0,
                 "force_stiffness": self._force_stiffness.copy(),
@@ -763,6 +792,8 @@ class ALBHarmonicLinear(BearingComponentBase):
                 "spool": self.spool.copy(),
                 "spool_command": self.spool_command.copy(),
             }
+        assert self._last_output is not None
+        return self._copy_output(self._last_output)
 
     def finish_signal(self) -> None:
         """Record the latest completed coupling state once per timestamp."""

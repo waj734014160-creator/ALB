@@ -7,6 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from ALB.core.component import BaseCSystem, BaseSystem
+from ALB.core.lifecycle import LifecycleState, RuntimeLifecycle
 from ALB.core.validation import require_unit_system, validate_bearing_output
 from ALB.contracts import ResultBundle, StepContext, result_snapshot
 from ALB.dynamics.rotor import Gravity, StaticLoad
@@ -90,6 +91,9 @@ class RsRotorBearingCouple(BaseCSystem):
         self._ts = None
         self._last_output = None
         self._step_ledger = StepCommitLedger()
+        self._lifecycle = RuntimeLifecycle(
+            "rotor-bearing coupling", input_label="step context"
+        )
         self._valid = False
 
     @property
@@ -100,16 +104,28 @@ class RsRotorBearingCouple(BaseCSystem):
     def _require_valid(self, operation: str) -> None:
         """Reject access to state that may contain a partially applied step."""
 
-        if not self._valid:
+        if not self._lifecycle.is_valid:
             raise RuntimeError(
                 f"coupling state is invalid; call init() before {operation}"
             )
 
+    @property
+    def lifecycle_state(self) -> LifecycleState:
+        """Return the shared coupled-runtime state."""
+
+        return self._lifecycle.state
+
+    def _invalidate_runtime(self) -> None:
+        """Block access after a partial step or a topology change."""
+
+        self._lifecycle.fail()
+        self._valid = False
+        self._last_output = None
+
     def _invalidate_topology(self) -> None:
         """Require a fresh init after the coupled component graph changes."""
 
-        self._valid = False
-        self._last_output = None
+        self._invalidate_runtime()
         self._fnode_links = None
         self._bnode_links = None
 
@@ -134,63 +150,68 @@ class RsRotorBearingCouple(BaseCSystem):
         )
 
     def init(self, **kwargs):
-        self._valid = False
-        time_values = [float(value) for value in self._time_iter()]
-        if not time_values:
-            raise ValueError("rotor-bearing coupling time grid cannot be empty")
-        initial_time = time_values[0]
-        self.rotor.init()
-        for bearing in self.bearings:
-            bearing.init()
-        self._fnode_links = get_all_attribute_values(self.forces, "node_link")
-        self._bnode_links = get_all_attribute_values(self.bearings, "node_link")
-        self._fnode_links = np.hstack(
-            [
-                np.array(self._fnode_links, dtype=np.int32),
-                np.array(self._bnode_links, dtype=np.int32),
-            ]
-        )
-        if len(self.forces) == 0:
-            self._forceu0 = []
-        else:
-            self._forceu0 = np.vstack(
-                [force(t=initial_time) for force in self.forces]
+        self._invalidate_runtime()
+        try:
+            time_values = [float(value) for value in self._time_iter()]
+            if not time_values:
+                raise ValueError("rotor-bearing coupling time grid cannot be empty")
+            initial_time = time_values[0]
+            self.rotor.init()
+            for bearing in self.bearings:
+                bearing.init()
+            self._fnode_links = get_all_attribute_values(self.forces, "node_link")
+            self._bnode_links = get_all_attribute_values(self.bearings, "node_link")
+            self._fnode_links = np.hstack(
+                [
+                    np.array(self._fnode_links, dtype=np.int32),
+                    np.array(self._bnode_links, dtype=np.int32),
+                ]
             )
-        self._rp = self.rotor.output(self._bnode_links)
-        for num, bearing in enumerate(self.bearings):
-            self._result["bearing" + str(num)] = pd.DataFrame(
-                columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
+            if len(self.forces) == 0:
+                self._forceu0 = []
+            else:
+                self._forceu0 = np.vstack(
+                    [force(t=initial_time) for force in self.forces]
+                )
+            self._rp = self.rotor.output(self._bnode_links)
+            for num, bearing in enumerate(self.bearings):
+                self._result["bearing" + str(num)] = pd.DataFrame(
+                    columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
+                )
+            self._forcef0 = []
+            for num, bearing in enumerate(self.bearings):
+                rp_uxy = self._rp["uxy"][num]
+                rp_uxyt = self._rp["uxyt"][num]
+                bearing.input(uxy=rp_uxy, uxyt=rp_uxyt, t=initial_time)
+                self._forcef0.append(validate_bearing_output(bearing.output()))
+            self._forcef0 = np.array(self._forcef0)
+            self._forcen0 = vertical_stack_nonempty(
+                [np.array(self._forceu0), np.array(self._forcef0)]
             )
-        self._forcef0 = []
-        for num, bearing in enumerate(self.bearings):
-            rp_uxy = self._rp["uxy"][num]
-            rp_uxyt = self._rp["uxyt"][num]
-            bearing.input(uxy=rp_uxy, uxyt=rp_uxyt, t=initial_time)
-            self._forcef0.append(validate_bearing_output(bearing.output()))
-        self._forcef0 = np.array(self._forcef0)
-        self._forcen0 = vertical_stack_nonempty(
-            [np.array(self._forceu0), np.array(self._forcef0)]
-        )
-        self._nt = 0
-        self._step_ledger = StepCommitLedger()
-        initial_context = StepContext(
-            0, initial_time, self._time_iter.dt, "dimensional"
-        )
-        self._last_output = result_snapshot(
-            {
-                "rotor_displacement": self._rp["uxy"],
-                "rotor_velocity": self._rp["uxyt"],
-                "bearing_force": self._forcef0,
-                "nodal_force": self._forcen0,
-            },
-            {
-                "step_index": initial_context.step_index,
-                "time": initial_context.time,
-                "unit_system": initial_context.unit_system.value,
-                "initial_snapshot": True,
-            },
-        )
-        self._step_ledger.commit_step(initial_context)
+            self._nt = 0
+            self._step_ledger = StepCommitLedger()
+            initial_context = StepContext(
+                0, initial_time, self._time_iter.dt, "dimensional"
+            )
+            self._last_output = result_snapshot(
+                {
+                    "rotor_displacement": self._rp["uxy"],
+                    "rotor_velocity": self._rp["uxyt"],
+                    "bearing_force": self._forcef0,
+                    "nodal_force": self._forcen0,
+                },
+                {
+                    "step_index": initial_context.step_index,
+                    "time": initial_context.time,
+                    "unit_system": initial_context.unit_system.value,
+                    "initial_snapshot": True,
+                },
+            )
+            self._step_ledger.commit_step(initial_context)
+        except BaseException:
+            self._invalidate_runtime()
+            raise
+        self._lifecycle.reset(output_available=True)
         self._valid = True
 
     def add_unbalance(
@@ -285,60 +306,67 @@ class RsRotorBearingCouple(BaseCSystem):
         if context.unit_system.value != "dimensional":
             raise ValueError("rotor-bearing coupling requires dimensional units")
         self._step_ledger.validate_next(context)
+        self._lifecycle.require_input_slot()
+        self._lifecycle.latch()
         try:
-            ts = context.time
-            self._ts = ts
-            uxy_n1 = self._rp["uxy"]
-            uxyt_n1 = self._rp["uxyt"]
-            self._forceu1 = vertical_stack_nonempty(
-                [force(ts) for force in self.forces]
-            )
-            self._forcef1 = []
-            for num, bearing in enumerate(self.bearings):
-                bearing.input(uxy=uxy_n1[num], uxyt=uxyt_n1[num], t=ts)
-                self._forcef1.append(validate_bearing_output(bearing.output()))
-            self._forcef1 = np.array(self._forcef1)
+            with self._lifecycle.evaluation():
+                ts = context.time
+                self._ts = ts
+                uxy_n1 = self._rp["uxy"]
+                uxyt_n1 = self._rp["uxyt"]
+                self._forceu1 = vertical_stack_nonempty(
+                    [force(ts) for force in self.forces]
+                )
+                self._forcef1 = []
+                for num, bearing in enumerate(self.bearings):
+                    bearing.input(uxy=uxy_n1[num], uxyt=uxyt_n1[num], t=ts)
+                    self._forcef1.append(validate_bearing_output(bearing.output()))
+                self._forcef1 = np.array(self._forcef1)
 
-            self._forcen0 = vertical_stack_nonempty((self._forceu0, self._forcef0))
-            self._forcen1 = vertical_stack_nonempty((self._forceu1, self._forcef1))
-            self.rotor.input_force2node(
-                ts, self._forcen1, self._fnode_links, force0=self._forcen0
-            )
-            self.rotor.advance()
-            self._rp = self.rotor.output(self._bnode_links)
-            self._forcen0 = self._forcen1
-            self._forceu0 = self._forceu1
-            self._forcef0 = self._forcef1
+                self._forcen0 = vertical_stack_nonempty((self._forceu0, self._forcef0))
+                self._forcen1 = vertical_stack_nonempty((self._forceu1, self._forcef1))
+                self.rotor.input_force2node(
+                    ts, self._forcen1, self._fnode_links, force0=self._forcen0
+                )
+                self.rotor.advance()
+                self._rp = self.rotor.output(self._bnode_links)
+                self._forcen0 = self._forcen1
+                self._forceu0 = self._forceu1
+                self._forcef0 = self._forcef1
 
-            self.signal.lead_loop("finish_signal")
-            self._last_output = result_snapshot(
-                {
-                    "rotor_displacement": self._rp["uxy"],
-                    "rotor_velocity": self._rp["uxyt"],
-                    "bearing_force": self._forcef1,
-                    "nodal_force": self._forcen1,
-                },
-                {
-                    "step_index": context.step_index,
-                    "time": context.time,
-                    "unit_system": context.unit_system.value,
-                },
-            )
-            self._step_ledger.commit_step(context)
-            self._nt += 1
-            return self.output()
-        except Exception:
-            self._valid = False
-            self._last_output = None
+                self.signal.lead_loop("finish_signal")
+                self._last_output = result_snapshot(
+                    {
+                        "rotor_displacement": self._rp["uxy"],
+                        "rotor_velocity": self._rp["uxyt"],
+                        "bearing_force": self._forcef1,
+                        "nodal_force": self._forcen1,
+                    },
+                    {
+                        "step_index": context.step_index,
+                        "time": context.time,
+                        "unit_system": context.unit_system.value,
+                    },
+                )
+                self._step_ledger.commit_step(context)
+                self._nt += 1
+        except BaseException:
+            self._invalidate_runtime()
             raise
+        return self.output()
 
     def output(self) -> ResultBundle:
         """Read the most recent completed coupled result without advancing."""
 
         self._require_valid("reading output")
-        if self._last_output is None:
-            raise RuntimeError("coupled output is unavailable before advance()")
+        self._lifecycle.require_output()
+        assert self._last_output is not None
         return self._last_output
+
+    def result_snapshot(self) -> ResultBundle:
+        """Return the current immutable coupled result snapshot."""
+
+        return self.output()
 
     def save(self, tofile=True, path=None, name=None, *args, **kwargs):
         self._require_valid("saving results")

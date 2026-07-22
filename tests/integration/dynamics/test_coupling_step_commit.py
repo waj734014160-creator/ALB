@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from ALB import StepContext
-from ALB.core import Signal, TimeIterDt
+from ALB.core import LifecycleState, Signal, TimeIterDt
 from ALB.dynamics.coupling import RsRotorBearingCouple
 
 
@@ -76,6 +76,7 @@ def test_duplicate_context_is_rejected_before_second_mutation():
     rotor = _Rotor()
     coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.01, 1), _Bearing())
     coupling.init()
+    assert coupling.lifecycle_state is LifecycleState.READY
     initial = coupling.output()
     assert initial.metadata["step_index"] == 0
     assert initial.metadata["time"] == 0.0
@@ -83,6 +84,7 @@ def test_duplicate_context_is_rejected_before_second_mutation():
 
     context = StepContext(1, 0.01, 0.01, "dimensional")
     first = coupling.advance(context)
+    assert coupling.lifecycle_state is LifecycleState.READY
     assert first.metadata["step_index"] == 1
     assert rotor.input_calls == 1
 
@@ -119,6 +121,7 @@ def test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization():
 
     with pytest.raises(RuntimeError, match="injected finish failure"):
         coupling.advance(context)
+    assert coupling.lifecycle_state is LifecycleState.FAILED
     assert rotor.input_calls == 1
 
     with pytest.raises(RuntimeError, match="invalid"):

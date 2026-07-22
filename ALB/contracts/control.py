@@ -1,19 +1,24 @@
 """Strict runtime contracts for controllers and servovalves."""
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
+
+import numpy.typing as npt
+
+from .lifecycle import RuntimeLifecycleProtocol
+from .numeric import FloatArray
 
 
 @runtime_checkable
-class ControllerProtocol(Protocol):
+class ControllerProtocol(RuntimeLifecycleProtocol, Protocol):
     """Native controller lifecycle consumed by ALB system assemblers."""
 
-    def input(self, time: float, error: Any, *args: Any, **kwargs: Any) -> Any:
+    def input(self, time: float, error: npt.ArrayLike) -> None:
         """Validate and latch one controller sample without calculating."""
 
-    def evaluate(self, *args: Any, **kwargs: Any) -> Any:
+    def evaluate(self) -> FloatArray:
         """Advance the control law exactly once for the latched sample."""
 
-    def output(self, *args: Any, **kwargs: Any) -> Any:
+    def output(self) -> FloatArray:
         """Return the completed command without advancing controller state."""
 
 
@@ -21,22 +26,22 @@ class ControllerProtocol(Protocol):
 class LegacyControllerProtocol(Protocol):
     """Deprecated controller shape whose ``output()`` still calculates."""
 
-    def input(self, time: float, error: Any, *args: Any, **kwargs: Any) -> Any:
+    def input(self, time: float, error: npt.ArrayLike) -> None:
         """Accept one historical controller sample."""
 
-    def output(self, *args: Any, **kwargs: Any) -> Any:
+    def output(self) -> object:
         """Calculate and return one historical command."""
 
 
 @runtime_checkable
-class ServoValveProtocol(Protocol):
+class ServoValveProtocol(RuntimeLifecycleProtocol, Protocol):
     """Native servovalve lifecycle consumed by ALB system assemblers."""
 
-    def input(self, time: float, command: Any, *args: Any, **kwargs: Any) -> Any:
+    def input(self, time: float, command: npt.ArrayLike) -> None:
         """Validate and latch one valve command without advancing state."""
 
-    def evaluate(self, *args: Any, **kwargs: Any) -> Any:
+    def evaluate(self) -> FloatArray:
         """Advance valve state exactly once for the latched command."""
 
-    def output(self, *args: Any, **kwargs: Any) -> Any:
+    def output(self) -> FloatArray:
         """Return the completed spool state without advancing it."""
