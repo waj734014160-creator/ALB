@@ -166,7 +166,7 @@ def migrate_config_file(
     if destination_path.exists() and not overwrite:
         raise FileExistsError(f"destination already exists: {destination_path}")
     try:
-        import json5
+        import json5  # type: ignore[import-untyped]
     except ModuleNotFoundError as exc:
         raise ModuleNotFoundError(
             "JSON5 migration requires the optional 'io' extra: pip install re-alb[io]"

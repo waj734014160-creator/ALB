@@ -95,8 +95,8 @@ def load_current_config(payload: Mapping[str, object]) -> CurrentConfig:
     )
     normalized = deepcopy(dict(envelope.config))
     if envelope.unit_system == "dimensional":
-        return ALBConfig.from_dict(normalized)
-    return NodimALBConfig.from_dict(normalized)
+        return cast(ALBConfig, ALBConfig.from_dict(normalized))
+    return cast(NodimALBConfig, NodimALBConfig.from_dict(normalized))
 
 
 __all__ = [

@@ -71,5 +71,20 @@ addopts = ["-p", "no:cacheprovider"]
 [tool.mypy]
 python_version = "3.10"
 strict = true
-files = ["ALB/contracts", "ALB/core"]
+files = [
+    "ALB/contracts",
+    "ALB/core",
+    "ALB/config/schema.py",
+    "ALB/config/legacy.py",
+    "ALB/config/migration.py",
+    "ALB/config/cli.py",
+    "ALB/control/adapters.py",
+    "ALB/control/blocks.py",
+    "ALB/dynamics/rotor_layout.py",
+    "ALB/dynamics/coupling_runtime.py",
+    "ALB/dynamics/coupling_results.py",
+    "ALB/systems/alb/_harmonic_runtime.py",
+    "ALB/systems/alb/harmonic_results.py",
+    "ALB/systems/alb/assembly.py",
+]
 exclude = ["ALB/core/fem", "ALB/core/numerics"]
