@@ -37,6 +37,8 @@ from ALB.systems.alb import BearingBlock, nodim_alb
 - `docs/project_overview.md`：项目边界、目录职责和稳定工作流入口。
 - `docs/alb_package_overview.md`：0.2.0 模块图和公共接口组。
 - `docs/interface_architecture.md`：计算块、DTO、单位、时步提交和持久化契约。
+- `docs/next_interface_development_plan.md`：下一阶段用户构建、轴承原生生命周期、coupling、Signal 替换和 recorder 目标；其中目标 API 尚未实现。
+- `docs/adr/README.md`：0.3.0 目标的版本、`step()`、失败封锁、recorder、observer、builder 类型和单位适配 ADR；当前五份均已 Accepted。
 - `docs/alb_albnn_quickstart.md`：ALB 与迁移后 ALBNN model package 的最小用法。
 - `docs/file_classification.md`：文件归属、生成物和清理约束。
 - `docs/remote_workstation_connection.md`：远程工作站稳定机制。

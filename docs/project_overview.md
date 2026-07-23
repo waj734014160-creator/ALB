@@ -13,6 +13,8 @@
   `docs/current_state.md`、
   `docs/alb_package_overview.md`、
   `docs/interface_architecture.md`、
+  `docs/next_interface_development_plan.md`、
+  `docs/adr/README.md`、
   `docs/alb_albnn_quickstart.md`、
   `docs/file_classification.md`、
   `docs/run_index.md`。
@@ -51,10 +53,12 @@
 3. `docs/current_state.md`：恢复当前发布状态、验证结论和风险。
 4. `docs/alb_package_overview.md`：修改 package module 或 public interface 前查看模块归属。
 5. `docs/interface_architecture.md`：定义接口、移动模块或接入组件前确认依赖方向和生命周期。
-6. `docs/migrations/0.2.0.md`：迁移 0.1 import、配置、pickle 或外部调用时使用。
-7. `docs/file_classification.md`：整理、归档或清理文件前使用。
-8. `docs/run_index.md`：需要 run 编号、路径或 current-status 所有权时使用。
-9. `docs/remote_workstation_connection.md`：远程连接、Task Scheduler、runner 或 monitor 操作时使用。
+6. `docs/next_interface_development_plan.md`：实施下一阶段用户构建、轴承原生生命周期、coupling、recorder 或 Signal 替换前确认目标和验收边界。
+7. `docs/adr/README.md`：查看下一阶段公共版本、`step()`、失败封锁、recorder、observer 和单位适配的五份 Accepted ADR。
+8. `docs/migrations/0.2.0.md`：迁移 0.1 import、配置、pickle 或外部调用时使用。
+9. `docs/file_classification.md`：整理、归档或清理文件前使用。
+10. `docs/run_index.md`：需要 run 编号、路径或 current-status 所有权时使用。
+11. `docs/remote_workstation_connection.md`：远程连接、Task Scheduler、runner 或 monitor 操作时使用。
 
 ALBNN 活跃工作转向以下兄弟项目文档：
 
