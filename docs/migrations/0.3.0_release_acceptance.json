@@ -1,32 +1,32 @@
 {
   "schema": "alb.release-acceptance.v1",
   "version": "0.3.0",
-  "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
+  "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
   "pytest": {
-    "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_62232_ef96cf77\\\\outputs\\\\release_acceptance\\\\devtools_54968_3f848d50');sys.argv=['pytest', *sys.argv[1:]];runpy.run_module('pytest', run_name='__main__')\" tests -q -p no:cacheprovider -p tools.validation.release_pytest_plugin --basetemp=G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\pytest_tmp_54968_3f848d50",
+    "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_64672_14a9da93\\\\outputs\\\\release_acceptance\\\\devtools_46276_00a7dde6');sys.argv=['pytest', *sys.argv[1:]];runpy.run_module('pytest', run_name='__main__')\" tests -q -p no:cacheprovider -p tools.validation.release_pytest_plugin --basetemp=G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\pytest_tmp_46276_00a7dde6",
     "returncode": 0,
     "summary": {
-      "passed": 534,
+      "passed": 551,
       "skipped": 13,
       "subtests_passed": 27,
       "warnings": 0
     },
     "collection_preflight": {
-      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_62232_ef96cf77\\\\outputs\\\\release_acceptance\\\\devtools_54968_3f848d50');sys.argv=['pytest', *sys.argv[1:]];runpy.run_module('pytest', run_name='__main__')\" tests --collect-only -q -p no:cacheprovider",
+      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_64672_14a9da93\\\\outputs\\\\release_acceptance\\\\devtools_46276_00a7dde6');sys.argv=['pytest', *sys.argv[1:]];runpy.run_module('pytest', run_name='__main__')\" tests --collect-only -q -p no:cacheprovider",
       "returncode": 0,
-      "collected": 547,
-      "required_unique": 87
+      "collected": 564,
+      "required_unique": 134
     },
     "summary_tail": [
-      "........................................................................ [ 13%]",
-      "........................................................................ [ 26%]",
-      "........................................................ [ 36%]",
-      ".................................................................. [ 48%]",
-      "........................................................................ [ 61%]",
-      "........................................................................ [ 74%]",
-      "........................................................................ [ 88%]",
-      "........................sssssssssssss............................   [100%]",
-      "534 passed, 13 skipped, 27 subtests passed in 264.82s (0:04:24)",
+      "........................................................................ [ 12%]",
+      "........................................................................ [ 25%]",
+      ".......................................................................................................................... [ 47%]",
+      "........................................................................ [ 59%]",
+      "........................................................................ [ 72%]",
+      "........................................................................ [ 85%]",
+      "........................................sssssssssssss.............. [ 97%]",
+      "...............                                                          [100%]",
+      "551 passed, 13 skipped, 27 subtests passed in 285.09s (0:04:45)",
       ""
     ],
     "version": "9.0.3",
@@ -1052,10 +1052,890 @@
         "report_type": "TestReport",
         "wasxfail": null
       }
-    ]
+    ],
+    "feature_manifest": {
+      "path": "tools/validation/release_feature_manifest_0_3.json",
+      "implemented": 63,
+      "deferred": 1,
+      "features": [
+        {
+          "id": "F01",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_public_builders.py::test_standard_builder_hides_block_and_output_is_read_only"
+          ]
+        },
+        {
+          "id": "F02",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_public_builders.py::test_standard_builder_hides_block_and_output_is_read_only"
+          ]
+        },
+        {
+          "id": "F03",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_public_builders.py::test_direct_spool_builder_requires_explicit_spool_dto"
+          ]
+        },
+        {
+          "id": "F04",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/config/test_versioned_schema.py::test_current_loader_rejects_unversioned_and_old_envelopes"
+          ]
+        },
+        {
+          "id": "F05",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_public_builders.py::test_builders_reject_the_wrong_control_mode"
+          ]
+        },
+        {
+          "id": "F06",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_public_builders.py::test_build_dependencies_do_not_accept_runtime_or_output_dependencies"
+          ]
+        },
+        {
+          "id": "F07",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_native_alb_runtime.py::test_evaluation_failure_seals_normal_state_until_reinitialization"
+          ]
+        },
+        {
+          "id": "F08",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_native_alb_runtime.py::test_native_runtime_has_strict_read_only_output[ALB-dimensional]"
+          ]
+        },
+        {
+          "id": "F09",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_native_alb_runtime.py::test_native_runtime_has_strict_read_only_output[ALB-nondimensional]"
+          ]
+        },
+        {
+          "id": "F10",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_native_alb_runtime.py::test_step_is_exactly_the_three_phase_native_lifecycle"
+          ]
+        },
+        {
+          "id": "F11",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_native_alb_runtime.py::test_native_runtime_has_strict_read_only_output[ALBSV-dimensional]"
+          ]
+        },
+        {
+          "id": "F12",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_native_alb_runtime.py::test_convergence_queries_do_not_reenter_children"
+          ]
+        },
+        {
+          "id": "F13",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_native_alb_runtime.py::test_reinitialization_invalidates_a_completed_output"
+          ]
+        },
+        {
+          "id": "F14",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_native_alb_runtime.py::test_evaluation_failure_seals_normal_state_until_reinitialization"
+          ]
+        },
+        {
+          "id": "F15",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/contracts/test_component_contracts.py::test_protocols_and_specialized_bearing_template_are_runtime_checkable"
+          ]
+        },
+        {
+          "id": "F16",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_native_alb_runtime.py::test_native_runtime_has_strict_read_only_output[ALB-dimensional]"
+          ]
+        },
+        {
+          "id": "F17",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_bearing_ports.py::test_direct_spool_input_rejects_mismatched_time_and_dimensional_spool"
+          ]
+        },
+        {
+          "id": "F18",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_bearing_ports.py::test_harmonic_adapter_exposes_formal_coefficient_capability"
+          ]
+        },
+        {
+          "id": "F19",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_bearing_ports.py::test_nonlinear_bearing_adapter_uses_standard_dto_lifecycle"
+          ]
+        },
+        {
+          "id": "F20",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/contracts/test_result_tree.py::test_result_tree_persistence_returns_manifest"
+          ]
+        },
+        {
+          "id": "F21",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_coupling_rejects_stale_or_wrong_unit_bearing_output[output_time_offset-0.001-output time]",
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_coupling_rejects_stale_or_wrong_unit_bearing_output[output_unit-nondimensional-unit_system]"
+          ]
+        },
+        {
+          "id": "F22",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_typed_coupling_save_does_not_require_component_save_methods"
+          ]
+        },
+        {
+          "id": "F23",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_typed_binding_has_no_hidden_history_and_uses_native_dto"
+          ]
+        },
+        {
+          "id": "F24",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_direct_spool_binding_requires_and_uses_explicit_provider"
+          ]
+        },
+        {
+          "id": "F25",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/physics/test_bearing_units.py::test_adapter_converts_each_port_quantity_and_context_independently"
+          ]
+        },
+        {
+          "id": "F26",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/regression/dynamics/test_rotor_dof_coupling_reference.py::test_real_ross_coupling_and_lqg_mapping_match_v4_exactly"
+          ]
+        },
+        {
+          "id": "F27",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_precommit_failure_points_seal_without_committing_or_retrying[candidate-result]"
+          ]
+        },
+        {
+          "id": "F28",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_record_failure_blocks_next_advance_and_retry_does_not_repeat_physics",
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_observer_failure_is_post_commit_and_does_not_invalidate_runtime"
+          ]
+        },
+        {
+          "id": "F29",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_binding_and_runtime_dependencies_reject_missing_capabilities_early"
+          ]
+        },
+        {
+          "id": "F30",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/validation/test_import_boundaries.py::test_signal_migration_debt_is_frozen_by_ast_boundary"
+          ]
+        },
+        {
+          "id": "F31",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_observer_failure_is_post_commit_and_does_not_invalidate_runtime"
+          ]
+        },
+        {
+          "id": "F32",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/infrastructure/test_observers.py::test_dispatch_isolates_one_observer_failure"
+          ]
+        },
+        {
+          "id": "F33",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_coupling_step_commit.py::test_topology_change_requires_reinitialization[bearing]"
+          ]
+        },
+        {
+          "id": "F34",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/contracts/test_component_contracts.py::test_signal_and_base_system_attach_each_child_once"
+          ]
+        },
+        {
+          "id": "F35",
+          "status": "deferred_to_0.4.0",
+          "required_nodeids": [
+            "tests/validation/test_import_boundaries.py::test_signal_migration_debt_is_frozen_by_ast_boundary"
+          ]
+        },
+        {
+          "id": "F36",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_typed_binding_has_no_hidden_history_and_uses_native_dto"
+          ]
+        },
+        {
+          "id": "F37",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_record_failure_blocks_next_advance_and_retry_does_not_repeat_physics"
+          ]
+        },
+        {
+          "id": "F38",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/infrastructure/test_result_recording.py::test_in_memory_recorder_is_run_scoped_continuous_and_idempotent"
+          ]
+        },
+        {
+          "id": "F39",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/infrastructure/test_result_recording.py::test_recorder_composition_enforces_filter_copy_and_ring_bounds"
+          ]
+        },
+        {
+          "id": "F40",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_pending_record_prevents_complete_run_receipt"
+          ]
+        },
+        {
+          "id": "F41",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/infrastructure/test_persistence.py::test_directory_writer_returns_verified_manifest"
+          ]
+        },
+        {
+          "id": "F42",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_public_builders.py::test_standard_builder_hides_block_and_output_is_read_only"
+          ]
+        },
+        {
+          "id": "F43",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_bearing_ports.py::test_nonlinear_bearing_adapter_uses_standard_dto_lifecycle"
+          ]
+        },
+        {
+          "id": "F44",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/contracts/test_component_contracts.py::test_legacy_adapter_calls_mutating_input_once_and_seals_failure"
+          ]
+        },
+        {
+          "id": "F45",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/control/test_native_lifecycle.py::test_legacy_controller_adapter_contains_calculation_in_evaluate"
+          ]
+        },
+        {
+          "id": "F46",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/contracts/test_component_contracts.py::test_decorator_and_legacy_adapter_preserve_standard_bearing_contract"
+          ]
+        },
+        {
+          "id": "F47",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/config/test_versioned_schema.py::test_current_loader_rejects_unversioned_and_old_envelopes"
+          ]
+        },
+        {
+          "id": "F48",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/config/test_versioned_schema.py::test_current_schema_round_trip_preserves_type_mode_and_values[config1]"
+          ]
+        },
+        {
+          "id": "F49",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/config/test_versioned_schema.py::test_control_mode_conflicts_fail_instead_of_guessing[controlled-ALB-none]"
+          ]
+        },
+        {
+          "id": "F50",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/config/test_versioned_schema.py::test_current_schema_round_trip_preserves_type_mode_and_values[config2]"
+          ]
+        },
+        {
+          "id": "F51",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_public_builders.py::test_build_dependencies_do_not_accept_runtime_or_output_dependencies"
+          ]
+        },
+        {
+          "id": "F52",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/physics/test_bearing_units.py::test_scale_descriptor_uses_primitive_direction_metadata"
+          ]
+        },
+        {
+          "id": "F53",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/config/test_versioned_schema.py::test_legacy_migration_is_non_mutating_one_way_and_auditable"
+          ]
+        },
+        {
+          "id": "F54",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/systems/test_build_alb_from_file.py::test_current_standard_file_build_init_and_step"
+          ]
+        },
+        {
+          "id": "F55",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/systems/test_native_alb_runtime.py::test_step_is_exactly_the_three_phase_native_lifecycle"
+          ]
+        },
+        {
+          "id": "F56",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_pending_record_prevents_complete_run_receipt"
+          ]
+        },
+        {
+          "id": "F57",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/regression/systems/test_adr_review_closure_reference.py::test_adr_review_closure_preserves_runtime_numerics_exactly"
+          ]
+        },
+        {
+          "id": "F58",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/systems/test_build_alb_from_file.py::test_current_direct_spool_file_build_init_and_step"
+          ]
+        },
+        {
+          "id": "F59",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/regression/dynamics/test_rotor_dof_coupling_reference.py::test_real_ross_coupling_and_lqg_mapping_match_v4_exactly"
+          ]
+        },
+        {
+          "id": "F60",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_precommit_failure_points_seal_without_committing_or_retrying[bearing]",
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_precommit_failure_points_seal_without_committing_or_retrying[rotor]",
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_precommit_failure_points_seal_without_committing_or_retrying[spool-provider]",
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_precommit_failure_points_seal_without_committing_or_retrying[candidate-result]",
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_record_failure_blocks_next_advance_and_retry_does_not_repeat_physics",
+            "tests/integration/dynamics/test_typed_coupling_runtime.py::test_observer_failure_is_post_commit_and_does_not_invalidate_runtime"
+          ]
+        },
+        {
+          "id": "F61",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/unit/infrastructure/test_result_recording.py::test_recorder_composition_enforces_filter_copy_and_ring_bounds"
+          ]
+        },
+        {
+          "id": "F62",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/validation/test_import_boundaries.py::test_signal_migration_debt_is_frozen_by_ast_boundary"
+          ]
+        },
+        {
+          "id": "F63",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/validation/test_performance_acceptance_report.py::test_all_required_performance_domains_pass_exact_runtime_and_memory_gates"
+          ]
+        },
+        {
+          "id": "F64",
+          "status": "implemented",
+          "required_nodeids": [
+            "tests/validation/test_release_acceptance_report.py::test_release_acceptance_reports_real_pytest_mypy_and_status_gates"
+          ]
+        }
+      ],
+      "reports": [
+        {
+          "nodeid": "tests/integration/dynamics/test_coupling_step_commit.py::test_topology_change_requires_reinitialization[bearing]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_typed_binding_has_no_hidden_history_and_uses_native_dto",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_record_failure_blocks_next_advance_and_retry_does_not_repeat_physics",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_pending_record_prevents_complete_run_receipt",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_observer_failure_is_post_commit_and_does_not_invalidate_runtime",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_direct_spool_binding_requires_and_uses_explicit_provider",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_coupling_rejects_stale_or_wrong_unit_bearing_output[output_time_offset-0.001-output time]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_coupling_rejects_stale_or_wrong_unit_bearing_output[output_unit-nondimensional-unit_system]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_typed_coupling_save_does_not_require_component_save_methods",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_binding_and_runtime_dependencies_reject_missing_capabilities_early",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_precommit_failure_points_seal_without_committing_or_retrying[bearing]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_precommit_failure_points_seal_without_committing_or_retrying[rotor]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_precommit_failure_points_seal_without_committing_or_retrying[spool-provider]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/dynamics/test_typed_coupling_runtime.py::test_precommit_failure_points_seal_without_committing_or_retrying[candidate-result]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/systems/test_build_alb_from_file.py::test_current_standard_file_build_init_and_step",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/integration/systems/test_build_alb_from_file.py::test_current_direct_spool_file_build_init_and_step",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/regression/dynamics/test_rotor_dof_coupling_reference.py::test_real_ross_coupling_and_lqg_mapping_match_v4_exactly",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/regression/systems/test_adr_review_closure_reference.py::test_adr_review_closure_preserves_runtime_numerics_exactly",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/config/test_versioned_schema.py::test_current_schema_round_trip_preserves_type_mode_and_values[config1]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/config/test_versioned_schema.py::test_current_schema_round_trip_preserves_type_mode_and_values[config2]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/config/test_versioned_schema.py::test_current_loader_rejects_unversioned_and_old_envelopes",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/config/test_versioned_schema.py::test_legacy_migration_is_non_mutating_one_way_and_auditable",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/config/test_versioned_schema.py::test_control_mode_conflicts_fail_instead_of_guessing[controlled-ALB-none]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/contracts/test_component_contracts.py::test_protocols_and_specialized_bearing_template_are_runtime_checkable",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/contracts/test_component_contracts.py::test_decorator_and_legacy_adapter_preserve_standard_bearing_contract",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/contracts/test_component_contracts.py::test_legacy_adapter_calls_mutating_input_once_and_seals_failure",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/contracts/test_component_contracts.py::test_signal_and_base_system_attach_each_child_once",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/contracts/test_result_tree.py::test_result_tree_persistence_returns_manifest",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/control/test_native_lifecycle.py::test_legacy_controller_adapter_contains_calculation_in_evaluate",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/infrastructure/test_observers.py::test_dispatch_isolates_one_observer_failure",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/infrastructure/test_persistence.py::test_directory_writer_returns_verified_manifest",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/infrastructure/test_result_recording.py::test_in_memory_recorder_is_run_scoped_continuous_and_idempotent",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/infrastructure/test_result_recording.py::test_recorder_composition_enforces_filter_copy_and_ring_bounds",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/physics/test_bearing_units.py::test_adapter_converts_each_port_quantity_and_context_independently",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/physics/test_bearing_units.py::test_scale_descriptor_uses_primitive_direction_metadata",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_bearing_ports.py::test_nonlinear_bearing_adapter_uses_standard_dto_lifecycle",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_bearing_ports.py::test_harmonic_adapter_exposes_formal_coefficient_capability",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_bearing_ports.py::test_direct_spool_input_rejects_mismatched_time_and_dimensional_spool",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_native_alb_runtime.py::test_native_runtime_has_strict_read_only_output[ALB-dimensional]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_native_alb_runtime.py::test_native_runtime_has_strict_read_only_output[ALB-nondimensional]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_native_alb_runtime.py::test_native_runtime_has_strict_read_only_output[ALBSV-dimensional]",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_native_alb_runtime.py::test_step_is_exactly_the_three_phase_native_lifecycle",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_native_alb_runtime.py::test_evaluation_failure_seals_normal_state_until_reinitialization",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_native_alb_runtime.py::test_convergence_queries_do_not_reenter_children",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_native_alb_runtime.py::test_reinitialization_invalidates_a_completed_output",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_public_builders.py::test_standard_builder_hides_block_and_output_is_read_only",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_public_builders.py::test_direct_spool_builder_requires_explicit_spool_dto",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_public_builders.py::test_builders_reject_the_wrong_control_mode",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/unit/systems/test_public_builders.py::test_build_dependencies_do_not_accept_runtime_or_output_dependencies",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/validation/test_import_boundaries.py::test_signal_migration_debt_is_frozen_by_ast_boundary",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/validation/test_performance_acceptance_report.py::test_all_required_performance_domains_pass_exact_runtime_and_memory_gates",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        },
+        {
+          "nodeid": "tests/validation/test_release_acceptance_report.py::test_release_acceptance_reports_real_pytest_mypy_and_status_gates",
+          "when": "call",
+          "outcome": "passed",
+          "reason": null,
+          "report_type": "TestReport",
+          "wasxfail": null
+        }
+      ]
+    }
   },
   "mypy": {
-    "install_command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -m pip install --isolated --disable-pip-version-check --no-input --no-compile --target G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\devtools_54968_3f848d50 mypy==2.3.0 build==1.5.0 import-linter==2.13 pytest==9.0.3",
+    "install_command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -m pip install --isolated --disable-pip-version-check --no-input --no-compile --target G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\devtools_46276_00a7dde6 mypy==2.3.0 build==1.5.0 import-linter==2.13 pytest==9.0.3",
     "install_returncode": 0,
     "install_summary_tail": [
       "Using cached exceptiongroup-1.3.1-py3-none-any.whl (16 kB)",
@@ -1079,39 +1959,39 @@
       "ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.",
       "ipywidgets 8.1.1 requires comm>=0.1.3, but you have comm 0.1.2 which is incompatible."
     ],
-    "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\tools\\validation\\run_layered_mypy.py --mypy-target G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\devtools_54968_3f848d50 --cache-root G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\mypy_cache_54968_3f848d50",
+    "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\tools\\validation\\run_layered_mypy.py --mypy-target G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\devtools_46276_00a7dde6 --cache-root G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\mypy_cache_46276_00a7dde6",
     "returncode": 0,
     "version": "2.3.0",
-    "stdout": "{\n  \"strict_returncode\": 0,\n  \"strict_targets\": 26,\n  \"covered_source_files\": 62,\n  \"legacy_diagnostics\": 152,\n  \"legacy_diagnostic_groups\": 47\n}",
+    "stdout": "{\n  \"strict_returncode\": 0,\n  \"strict_targets\": 26,\n  \"covered_source_files\": 62,\n  \"legacy_diagnostics\": 151,\n  \"legacy_diagnostic_groups\": 46\n}",
     "stderr": "",
     "layered_summary": {
       "strict_returncode": 0,
       "strict_targets": 26,
       "covered_source_files": 62,
-      "legacy_diagnostics": 152,
-      "legacy_diagnostic_groups": 47
+      "legacy_diagnostics": 151,
+      "legacy_diagnostic_groups": 46
     }
   },
   "wheel": {
     "schema": "alb.build-acceptance.v1",
     "version": "0.3.0",
-    "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
+    "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
     "source": {
-      "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-      "tree_sha256": "af2ae35c408e0b395a8b01759bfbb2c86bca404b37e185b62585a9e2d06d489b",
-      "file_count": 158,
+      "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+      "tree_sha256": "ae114a93b903e2e6b56d7c83ed15f90a1035bf86c927ab2e9706f4c804646f8a",
+      "file_count": 159,
       "pyproject_sha256": "692f972bd75daf285c775f8b89e53e6a2a8b12d721020f6ebde400d22bd8bd49",
-      "source_date_epoch": 1784805976,
+      "source_date_epoch": 1784817433,
       "source_kind": "git_blobs",
-      "wheel_source_files_checked": 157,
+      "wheel_source_files_checked": 158,
       "missing_wheel_members": [],
       "mismatched_wheel_members": []
     },
     "wheel": {
       "path": "dist/re_alb-0.3.0-1-py3-none-any.whl",
-      "size_bytes": 359089,
-      "sha256": "b548c1aa4f41fde2341939d300daf6570223b3bc030d2e3f889a802e61eca7a6",
-      "member_count": 162,
+      "size_bytes": 362794,
+      "sha256": "9553b272ce92aab0f0e65e239cd9537518dbe57ed3546294c90cb25e73d47e80",
+      "member_count": 163,
       "build_tag": "1",
       "forbidden_members_present": [],
       "required_members_present": [
@@ -1184,11 +2064,11 @@
       "build_tag": "1"
     },
     "isolated_install": {
-      "root": "outputs/release_acceptance/wheel_install_54968_3f848d50",
+      "root": "outputs/release_acceptance/wheel_install_46276_00a7dde6",
       "dependency_paths": [
-        "outputs/release_acceptance/devtools_54968_3f848d50"
+        "outputs/release_acceptance/devtools_46276_00a7dde6"
       ],
-      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50\\ALB\\__init__.py",
+      "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6\\ALB\\__init__.py",
       "version": "0.3.0",
       "root_exports": [
         "AdvancingBlock",
@@ -1230,10 +2110,10 @@
     },
     "extra_smokes": {
       "core": {
-        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl",
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl",
         "returncode": 0,
         "python": "3.10.17",
-        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50\\ALB\\__init__.py",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6\\ALB\\__init__.py",
         "resolved": [
           "ALB.contracts.ResultBundle",
           "ALB.core.StepCommitLedger"
@@ -1247,10 +2127,10 @@
         }
       },
       "film": {
-        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl[film]",
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl[film]",
         "returncode": 0,
         "python": "3.10.17",
-        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50\\ALB\\__init__.py",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6\\ALB\\__init__.py",
         "resolved": [
           "ALB.physics.film.SkfemNewtonFilm"
         ],
@@ -1260,10 +2140,10 @@
         }
       },
       "control": {
-        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl[control]",
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl[control]",
         "returncode": 0,
         "python": "3.10.17",
-        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50\\ALB\\__init__.py",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6\\ALB\\__init__.py",
         "resolved": [
           "ALB.control.FuzzyPID",
           "ALB.control.PID"
@@ -1275,10 +2155,10 @@
         }
       },
       "dynamics": {
-        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl[dynamics]",
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl[dynamics]",
         "returncode": 0,
         "python": "3.10.17",
-        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50\\ALB\\__init__.py",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6\\ALB\\__init__.py",
         "resolved": [
           "ALB.dynamics.RossRotor"
         ],
@@ -1288,10 +2168,10 @@
         }
       },
       "surrogate": {
-        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl[surrogate]",
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl[surrogate]",
         "returncode": 0,
         "python": "3.10.17",
-        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50\\ALB\\__init__.py",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6\\ALB\\__init__.py",
         "resolved": [
           "ALB.surrogate.Net",
           "ALB.surrogate.training.TrainingConfig"
@@ -1303,10 +2183,10 @@
         }
       },
       "io": {
-        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl[io]",
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl[io]",
         "returncode": 0,
         "python": "3.10.17",
-        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50\\ALB\\__init__.py",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6\\ALB\\__init__.py",
         "resolved": [
           "ALB.infrastructure.config_io.read_json5"
         ],
@@ -1315,10 +2195,10 @@
         }
       },
       "all": {
-        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl[all]",
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl[all]",
         "returncode": 0,
         "python": "3.10.17",
-        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50\\ALB\\__init__.py",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6\\ALB\\__init__.py",
         "resolved": [
           "ALB.infrastructure.DirectoryArtifactWriter",
           "ALB.systems.alb.ALBHarmonicLinear"
@@ -1335,10 +2215,10 @@
         }
       },
       "test": {
-        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl[test]",
+        "install_spec": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl[test]",
         "returncode": 0,
         "python": "3.10.17",
-        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50\\ALB\\__init__.py",
+        "alb_file": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6\\ALB\\__init__.py",
         "resolved": [
           "ALB.contracts.ComputationalBlock",
           "build",
@@ -1369,57 +2249,57 @@
     },
     "overall_status": "passed",
     "reproducible_build": {
-      "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
+      "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
       "source_kind": "git_blobs",
-      "source_date_epoch": 1784805976,
+      "source_date_epoch": 1784817433,
       "build_tag": "1",
       "first_filename": "re_alb-0.3.0-1-py3-none-any.whl",
       "second_filename": "re_alb-0.3.0-1-py3-none-any.whl",
-      "first_sha256": "b548c1aa4f41fde2341939d300daf6570223b3bc030d2e3f889a802e61eca7a6",
-      "second_sha256": "b548c1aa4f41fde2341939d300daf6570223b3bc030d2e3f889a802e61eca7a6",
+      "first_sha256": "9553b272ce92aab0f0e65e239cd9537518dbe57ed3546294c90cb25e73d47e80",
+      "second_sha256": "9553b272ce92aab0f0e65e239cd9537518dbe57ed3546294c90cb25e73d47e80",
       "sha256_equal": true
     },
     "commands": {
-      "build": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_62232_ef96cf77\\\\outputs\\\\release_acceptance\\\\devtools_54968_3f848d50');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50 -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_54968_3f848d50",
+      "build": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_64672_14a9da93\\\\outputs\\\\release_acceptance\\\\devtools_46276_00a7dde6');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6 -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_46276_00a7dde6",
       "build_returncode": 0,
-      "reproducibility_build": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_62232_ef96cf77\\\\outputs\\\\release_acceptance\\\\devtools_54968_3f848d50');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_repeat_54968_3f848d50 -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_repeat_54968_3f848d50",
+      "reproducibility_build": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_64672_14a9da93\\\\outputs\\\\release_acceptance\\\\devtools_46276_00a7dde6');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_repeat_46276_00a7dde6 -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_repeat_46276_00a7dde6",
       "reproducibility_build_returncode": 0,
-      "install": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -m pip install --isolated --disable-pip-version-check --no-input --no-compile --no-deps --target G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50 G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl",
+      "install": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -m pip install --isolated --disable-pip-version-check --no-input --no-compile --no-deps --target G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6 G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl",
       "install_returncode": 0
     },
     "phases": {
       "candidate_selection": {
         "phase": "candidate_selection",
         "status": "passed",
-        "revision": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-        "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
+        "revision": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+        "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
         "source": {
-          "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-          "tree_sha256": "af2ae35c408e0b395a8b01759bfbb2c86bca404b37e185b62585a9e2d06d489b",
-          "file_count": 158,
+          "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+          "tree_sha256": "ae114a93b903e2e6b56d7c83ed15f90a1035bf86c927ab2e9706f4c804646f8a",
+          "file_count": 159,
           "pyproject_sha256": "692f972bd75daf285c775f8b89e53e6a2a8b12d721020f6ebde400d22bd8bd49",
-          "source_date_epoch": 1784805976,
+          "source_date_epoch": 1784817433,
           "source_kind": "git_blobs"
         }
       },
       "source_export": {
         "phase": "source_export",
         "status": "passed",
-        "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-        "root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_54968_3f848d50",
+        "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+        "root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_46276_00a7dde6",
         "source": {
-          "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-          "tree_sha256": "af2ae35c408e0b395a8b01759bfbb2c86bca404b37e185b62585a9e2d06d489b",
-          "file_count": 158,
+          "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+          "tree_sha256": "ae114a93b903e2e6b56d7c83ed15f90a1035bf86c927ab2e9706f4c804646f8a",
+          "file_count": 159,
           "pyproject_sha256": "692f972bd75daf285c775f8b89e53e6a2a8b12d721020f6ebde400d22bd8bd49",
-          "source_date_epoch": 1784805976,
+          "source_date_epoch": 1784817433,
           "source_kind": "git_blobs"
         }
       },
       "build": {
         "phase": "build",
         "status": "passed",
-        "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_62232_ef96cf77\\\\outputs\\\\release_acceptance\\\\devtools_54968_3f848d50');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50 -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_54968_3f848d50",
+        "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_64672_14a9da93\\\\outputs\\\\release_acceptance\\\\devtools_46276_00a7dde6');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6 -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_46276_00a7dde6",
         "returncode": 0,
         "stdout_tail": [
           "adding 'ALB/systems/alb/scales.py'",
@@ -1455,28 +2335,28 @@
           "warning: install_lib: byte-compiling is disabled, skipping.",
           ""
         ],
-        "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-        "source_root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_54968_3f848d50",
-        "wheel": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl"
+        "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+        "source_root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_46276_00a7dde6",
+        "wheel": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl"
       },
       "reproducibility_source_export": {
         "phase": "source_export",
         "status": "passed",
-        "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-        "root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_repeat_54968_3f848d50",
+        "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+        "root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_repeat_46276_00a7dde6",
         "source": {
-          "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-          "tree_sha256": "af2ae35c408e0b395a8b01759bfbb2c86bca404b37e185b62585a9e2d06d489b",
-          "file_count": 158,
+          "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+          "tree_sha256": "ae114a93b903e2e6b56d7c83ed15f90a1035bf86c927ab2e9706f4c804646f8a",
+          "file_count": 159,
           "pyproject_sha256": "692f972bd75daf285c775f8b89e53e6a2a8b12d721020f6ebde400d22bd8bd49",
-          "source_date_epoch": 1784805976,
+          "source_date_epoch": 1784817433,
           "source_kind": "git_blobs"
         }
       },
       "reproducibility_build": {
         "phase": "build",
         "status": "passed",
-        "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_62232_ef96cf77\\\\outputs\\\\release_acceptance\\\\devtools_54968_3f848d50');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_repeat_54968_3f848d50 -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_repeat_54968_3f848d50",
+        "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_64672_14a9da93\\\\outputs\\\\release_acceptance\\\\devtools_46276_00a7dde6');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_repeat_46276_00a7dde6 -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_repeat_46276_00a7dde6",
         "returncode": 0,
         "stdout_tail": [
           "adding 'ALB/systems/alb/scales.py'",
@@ -1512,28 +2392,28 @@
           "warning: install_lib: byte-compiling is disabled, skipping.",
           ""
         ],
-        "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-        "source_root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_repeat_54968_3f848d50",
-        "wheel": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_repeat_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl"
+        "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+        "source_root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_repeat_46276_00a7dde6",
+        "wheel": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_repeat_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl"
       },
       "install": {
         "phase": "install",
         "status": "passed",
-        "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -m pip install --isolated --disable-pip-version-check --no-input --no-compile --no-deps --target G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50 G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl",
+        "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -m pip install --isolated --disable-pip-version-check --no-input --no-compile --no-deps --target G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6 G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl",
         "returncode": 0,
         "stdout_tail": [
-          "Processing .\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl",
+          "Processing .\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl",
           "Installing collected packages: re-alb",
           "Successfully installed re-alb-0.3.0"
         ],
         "stderr_tail": [],
-        "wheel": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl",
-        "root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50"
+        "wheel": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl",
+        "root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6"
       }
     },
     "published_artifact": {
       "path": "dist/re_alb-0.3.0-1-py3-none-any.whl",
-      "sha256": "b548c1aa4f41fde2341939d300daf6570223b3bc030d2e3f889a802e61eca7a6",
+      "sha256": "9553b272ce92aab0f0e65e239cd9537518dbe57ed3546294c90cb25e73d47e80",
       "matches_detached_installed_wheel": true
     }
   },
@@ -1551,8 +2431,8 @@
       "untracked": [],
       "ignored": []
     },
-    "candidate_head_before": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-    "candidate_head_after": "cf449fe834f4a1de8189680de41318cd0cbc5909"
+    "candidate_head_before": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+    "candidate_head_after": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4"
   },
   "references": {
     "full_repo_refactor_v1_unchanged_from_tag": true,
@@ -1573,34 +2453,34 @@
       "phase": "candidate_selection",
       "status": "passed",
       "revision": "HEAD",
-      "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
+      "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
       "source": {
-        "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-        "tree_sha256": "af2ae35c408e0b395a8b01759bfbb2c86bca404b37e185b62585a9e2d06d489b",
-        "file_count": 158,
+        "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+        "tree_sha256": "ae114a93b903e2e6b56d7c83ed15f90a1035bf86c927ab2e9706f4c804646f8a",
+        "file_count": 159,
         "pyproject_sha256": "692f972bd75daf285c775f8b89e53e6a2a8b12d721020f6ebde400d22bd8bd49",
-        "source_date_epoch": 1784805976,
+        "source_date_epoch": 1784817433,
         "source_kind": "git_blobs"
       }
     },
     "source_export": {
       "phase": "source_export",
       "status": "passed",
-      "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-      "root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_54968_3f848d50",
+      "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+      "root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_46276_00a7dde6",
       "source": {
-        "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-        "tree_sha256": "af2ae35c408e0b395a8b01759bfbb2c86bca404b37e185b62585a9e2d06d489b",
-        "file_count": 158,
+        "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+        "tree_sha256": "ae114a93b903e2e6b56d7c83ed15f90a1035bf86c927ab2e9706f4c804646f8a",
+        "file_count": 159,
         "pyproject_sha256": "692f972bd75daf285c775f8b89e53e6a2a8b12d721020f6ebde400d22bd8bd49",
-        "source_date_epoch": 1784805976,
+        "source_date_epoch": 1784817433,
         "source_kind": "git_blobs"
       }
     },
     "build": {
       "phase": "build",
       "status": "passed",
-      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_62232_ef96cf77\\\\outputs\\\\release_acceptance\\\\devtools_54968_3f848d50');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50 -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_54968_3f848d50",
+      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_64672_14a9da93\\\\outputs\\\\release_acceptance\\\\devtools_46276_00a7dde6');sys.argv=['build', *sys.argv[1:]];runpy.run_module('build', run_name='__main__')\" --wheel --outdir G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6 -C--build-option=--build-number=1 G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_46276_00a7dde6",
       "returncode": 0,
       "stdout_tail": [
         "adding 'ALB/systems/alb/scales.py'",
@@ -1636,46 +2516,46 @@
         "warning: install_lib: byte-compiling is disabled, skipping.",
         ""
       ],
-      "candidate_commit": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-      "source_root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_source_54968_3f848d50",
-      "wheel": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl"
+      "candidate_commit": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+      "source_root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_source_46276_00a7dde6",
+      "wheel": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl"
     },
     "install": {
       "phase": "install",
       "status": "passed",
-      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -m pip install --isolated --disable-pip-version-check --no-input --no-compile --no-deps --target G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50 G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl",
+      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -I -m pip install --isolated --disable-pip-version-check --no-input --no-compile --no-deps --target G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6 G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl",
       "returncode": 0,
       "stdout_tail": [
-        "Processing .\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl",
+        "Processing .\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl",
         "Installing collected packages: re-alb",
         "Successfully installed re-alb-0.3.0"
       ],
       "stderr_tail": [],
-      "wheel": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_54968_3f848d50\\re_alb-0.3.0-1-py3-none-any.whl",
-      "root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\wheel_install_54968_3f848d50"
+      "wheel": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_46276_00a7dde6\\re_alb-0.3.0-1-py3-none-any.whl",
+      "root": "G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\wheel_install_46276_00a7dde6"
     },
     "test": {
       "phase": "test",
       "status": "passed",
-      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_62232_ef96cf77\\\\outputs\\\\release_acceptance\\\\devtools_54968_3f848d50');sys.argv=['pytest', *sys.argv[1:]];runpy.run_module('pytest', run_name='__main__')\" tests -q -p no:cacheprovider -p tools.validation.release_pytest_plugin --basetemp=G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\pytest_tmp_54968_3f848d50",
+      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_64672_14a9da93\\\\outputs\\\\release_acceptance\\\\devtools_46276_00a7dde6');sys.argv=['pytest', *sys.argv[1:]];runpy.run_module('pytest', run_name='__main__')\" tests -q -p no:cacheprovider -p tools.validation.release_pytest_plugin --basetemp=G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\pytest_tmp_46276_00a7dde6",
       "returncode": 0,
       "stdout_tail": [
-        "........................................................................ [ 13%]",
-        "........................................................................ [ 26%]",
-        "........................................................ [ 36%]",
-        ".................................................................. [ 48%]",
-        "........................................................................ [ 61%]",
-        "........................................................................ [ 74%]",
-        "........................................................................ [ 88%]",
-        "........................sssssssssssss............................   [100%]",
-        "534 passed, 13 skipped, 27 subtests passed in 264.82s (0:04:24)"
+        "........................................................................ [ 12%]",
+        "........................................................................ [ 25%]",
+        ".......................................................................................................................... [ 47%]",
+        "........................................................................ [ 59%]",
+        "........................................................................ [ 72%]",
+        "........................................................................ [ 85%]",
+        "........................................sssssssssssss.............. [ 97%]",
+        "...............                                                          [100%]",
+        "551 passed, 13 skipped, 27 subtests passed in 285.09s (0:04:45)"
       ],
       "stderr_tail": []
     },
     "required_nodeid_collection": {
       "phase": "required_nodeid_collection",
       "status": "passed",
-      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_62232_ef96cf77\\\\outputs\\\\release_acceptance\\\\devtools_54968_3f848d50');sys.argv=['pytest', *sys.argv[1:]];runpy.run_module('pytest', run_name='__main__')\" tests --collect-only -q -p no:cacheprovider",
+      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s -c \"import runpy,sys;sys.path.insert(0, 'G:\\\\ALB_PROJECTS\\\\.alb_release_acceptance_64672_14a9da93\\\\outputs\\\\release_acceptance\\\\devtools_46276_00a7dde6');sys.argv=['pytest', *sys.argv[1:]];runpy.run_module('pytest', run_name='__main__')\" tests --collect-only -q -p no:cacheprovider",
       "returncode": 0,
       "stdout_tail": [
         "tests/validation/test_import_migration_map.py::test_all_baseline_modules_have_existing_namespace_targets",
@@ -1692,27 +2572,27 @@
         "tests/validation/test_optional_dependency_errors.py::test_missing_optional_dependency_has_install_hint[ALB.surrogate.training-from ALB.surrogate.training import AlbnnMlpTrainer-torch-surrogate]",
         "tests/validation/test_optional_dependency_errors.py::test_missing_optional_dependency_has_install_hint[ALB.systems.alb-from ALB.systems.alb import ALB-skfem-all]",
         "tests/validation/test_optional_dependency_errors.py::test_missing_optional_dependency_has_install_hint[ALB.infrastructure.config_io-import ALB.infrastructure.config_io-json5-io]",
-        "tests/validation/test_performance_acceptance_report.py::test_all_required_performance_domains_pass_exact_and_runtime_gates",
+        "tests/validation/test_performance_acceptance_report.py::test_all_required_performance_domains_pass_exact_runtime_and_memory_gates",
         "tests/validation/test_release_acceptance_report.py::test_release_acceptance_reports_real_pytest_mypy_and_status_gates",
         "tests/validation/test_test_node_migration_map.py::test_all_baseline_nodes_have_existing_replacements",
         "tests/validation/test_test_node_migration_map.py::test_all_non_collected_python_files_have_existing_targets",
         "",
-        "547 tests collected in 4.56s"
+        "564 tests collected in 4.55s"
       ],
       "stderr_tail": []
     },
     "layered_type_check": {
       "phase": "layered_type_check",
       "status": "passed",
-      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\tools\\validation\\run_layered_mypy.py --mypy-target G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\devtools_54968_3f848d50 --cache-root G:\\ALB_PROJECTS\\.alb_release_acceptance_62232_ef96cf77\\outputs\\release_acceptance\\mypy_cache_54968_3f848d50",
+      "command": "E:\\Anaconda2023\\envs\\ALB\\python.exe -E -s G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\tools\\validation\\run_layered_mypy.py --mypy-target G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\devtools_46276_00a7dde6 --cache-root G:\\ALB_PROJECTS\\.alb_release_acceptance_64672_14a9da93\\outputs\\release_acceptance\\mypy_cache_46276_00a7dde6",
       "returncode": 0,
       "stdout_tail": [
         "{",
         "  \"strict_returncode\": 0,",
         "  \"strict_targets\": 26,",
         "  \"covered_source_files\": 62,",
-        "  \"legacy_diagnostics\": 152,",
-        "  \"legacy_diagnostic_groups\": 47",
+        "  \"legacy_diagnostics\": 151,",
+        "  \"legacy_diagnostic_groups\": 46",
         "}"
       ],
       "stderr_tail": []
@@ -1733,13 +2613,13 @@
     ],
     "pytest_plugin_autoload_disabled": true,
     "python": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
-    "candidate_head_before": "cf449fe834f4a1de8189680de41318cd0cbc5909",
-    "candidate_head_after": "cf449fe834f4a1de8189680de41318cd0cbc5909",
+    "candidate_head_before": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
+    "candidate_head_after": "056e3198e2b20d4ab40c8ca3da5509ca575d16b4",
     "launcher_tracked_status_before": [],
     "launcher_tracked_status_after": [],
     "published_wheel": {
       "path": "dist/re_alb-0.3.0-1-py3-none-any.whl",
-      "sha256": "b548c1aa4f41fde2341939d300daf6570223b3bc030d2e3f889a802e61eca7a6",
+      "sha256": "9553b272ce92aab0f0e65e239cd9537518dbe57ed3546294c90cb25e73d47e80",
       "matches_detached_installed_wheel": true
     }
   }

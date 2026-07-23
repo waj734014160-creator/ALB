@@ -219,7 +219,7 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | F30-F34、F42-F46 | 已实现 | 新 coupling 正确性路径不依赖 Signal；原生 ALB/ALBNN/harmonic 默认不写 Signal 历史；observer 直接调用 Protocol 方法，不使用字符串反射 |
 | F35 | 延期到 0.4.0 | legacy Signal 仅保留给尚未清零的 film/thermal/rotor 消费者；AST 门禁禁止增加新消费者 |
 | F54-F63 | 已实现 | 64 项 manifest、故障注入、recorder 选择性/内存上界、Signal AST、精确参考和五领域时间/峰值内存报告均已落地 |
-| F64 | 等待最终证据提交 | 文档、测试映射和 26 个 strict 目标已更新；最终 detached pytest、wheel/extras smoke 和制品证据在候选提交后生成 |
+| F64 | 已实现 | 文档、测试映射、26 个 strict 目标、564 节点、detached pytest、wheel/extras smoke 和可复现制品证据均已通过 |
 
 64 项中 63 项已经实现；唯一未完成项是 F35。F35 尚未物理删除全部旧 Signal，不是方案未确定，
 而是 ADR-0001 要求至少保留一个 0.3.x minor
@@ -292,7 +292,7 @@ F63 使用以下统一规则，避免短计时和环境漂移产生没有意义�
 
 ## 完成标准
 
-只有同时满足以下条件，才能把本文对应目标标记为完成：
+除 ADR 明确延期到 0.4.0 的 F35 外，只有同时满足以下条件，才能把相应目标标记为完成：
 
 1. 普通用户从当前配置文件到第一次轴承输出不需要显式创建任何 block，并能在构造输入前通过
    `control_mode` 确认普通或 direct-spool 端口。
