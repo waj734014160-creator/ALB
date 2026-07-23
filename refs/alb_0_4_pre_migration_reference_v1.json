@@ -1,0 +1,63 @@
+{
+  "schema": "alb.pre-0.4-reference-set.v1",
+  "baseline_commit": "93dd63d12817b6952245cf60311139eb52ee5668",
+  "purpose": "Freeze the validated numerical references used while removing the 0.3 compatibility surface.",
+  "verification": {
+    "command": "E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/regression/test_full_repo_refactor_references.py tests/regression/systems/test_alb_runtime_families_reference.py tests/regression/systems/test_adr_review_closure_reference.py tests/regression/test_review_fix_unaffected_reference.py -q",
+    "result": "17 passed"
+  },
+  "references": {
+    "gas_metadata": {
+      "path": "refs/full_repo_refactor_v1/gas.json",
+      "sha256": "4f5d53843529250361898799cd67218309829267731d12dd4a244a56921abbf8"
+    },
+    "gas_arrays": {
+      "path": "refs/full_repo_refactor_v1/gas.npz",
+      "sha256": "806daafa7ab69afef80cc0764476adce7e3c8eefea292e51211784761be085e9"
+    },
+    "runtime_families_metadata": {
+      "path": "refs/alb_runtime_families_reference_v1.json",
+      "sha256": "f8d5bfed4c80ba227dcf1f23ba0676c7f60fca1ad892c1b5ff55c8d680c9c991"
+    },
+    "runtime_families_arrays": {
+      "path": "refs/alb_runtime_families_reference_v1.npz",
+      "sha256": "b187bd914ceb2f447553eaf82affa7878260e466a01750bd385f9a15bb52520b"
+    },
+    "runtime_closure_metadata": {
+      "path": "refs/adr_review_closure_reference_v1.json",
+      "sha256": "4620a660ceff43b1e81d95666c70f87e50634554c999634eb3469e8a548b074c"
+    },
+    "runtime_closure_arrays": {
+      "path": "refs/adr_review_closure_reference_v1.npz",
+      "sha256": "e293452ca8a08a148af14a8ea27008bc3927572fe89deeec1d334a318af7c74e"
+    },
+    "review_fix_reference": {
+      "path": "refs/review_fix_unaffected_reference_v1.json",
+      "sha256": "939d818963a5779733e88f8613f87d0758ddec21cf04efced51f522a32c043a5"
+    },
+    "direct_spool_metadata": {
+      "path": "refs/albsv_direct_spool_reference_v1.json",
+      "sha256": "577d6e18b3a6bfa4ae17034a2da4b708ed46888be2f3d9953cf32527d6360fc5"
+    },
+    "direct_spool_arrays": {
+      "path": "refs/albsv_direct_spool_reference_v1.npz",
+      "sha256": "9769d3deb1fb74cd45180aae406efb1ea5d1d3b5f75a560deb77669cfe2c1413"
+    },
+    "rotor_coupling_metadata": {
+      "path": "refs/rotor_dof_coupling_reference_v4.json",
+      "sha256": "a4fce9d168e840ccb79bc13d4a7060aa51cbfa3a82660e185017671854e613a7"
+    },
+    "rotor_coupling_arrays": {
+      "path": "refs/rotor_dof_coupling_reference_v4.npz",
+      "sha256": "afe035da5976edb0717eb0f18423027b751a64971048de98bdf3affb9bc5275a"
+    },
+    "surrogate_transform_metadata": {
+      "path": "refs/albnn_input_transform_reference_v1.json",
+      "sha256": "6943922ce4987ef5efcf1423c1b3868809120f4b07b77021678193c96a2c7a22"
+    },
+    "surrogate_transform_arrays": {
+      "path": "refs/albnn_input_transform_reference_v1.npz",
+      "sha256": "05931e773a967e21c37dbdebf3df06a807d77adde391db86525b5aa2bc5f8a57"
+    }
+  }
+}
