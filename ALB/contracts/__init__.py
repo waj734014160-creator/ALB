@@ -1,6 +1,11 @@
 """Public typed interfaces and DTOs for ALB components."""
 
-from .bearing import BearingCoefficientProtocol, BearingProtocol
+from .bearing import (
+    BearingCoefficientProtocol,
+    BearingProtocol,
+    BearingRuntimeProtocol,
+    DirectSpoolBearingRuntimeProtocol,
+)
 from .block import (
     AdvancingBlock,
     CommandBlock,
@@ -25,6 +30,7 @@ from .ports import (
     BearingOutput,
     ControlInput,
     ControlOutput,
+    DirectSpoolBearingInput,
     RotorLoadInput,
     RotorState,
     ValveInput,
@@ -52,10 +58,13 @@ __all__ = [
     "BearingOutput",
     "BearingCoefficientProtocol",
     "BearingProtocol",
+    "BearingRuntimeProtocol",
     "CommandBlock",
     "ComputationalBlock",
     "ControlInput",
     "ControlOutput",
+    "DirectSpoolBearingInput",
+    "DirectSpoolBearingRuntimeProtocol",
     "ControllerProtocol",
     "ConvergenceStatus",
     "EvaluableBlock",

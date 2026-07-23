@@ -1,175 +1,67 @@
-"""Legacy flat JSON5 to ALB 0.2 configuration migration."""
+"""Non-destructive legacy JSON5 migration into the strict ALB 0.3 schema."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
+import hashlib
 import json
-import warnings
-from copy import deepcopy
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Literal
+import warnings
 
-
-SCHEMA_VERSION = "0.2.0"
-
-_DOMAIN_KEYS = {
-    "time": {
-        "mode",
-        "freq",
-        "cycles",
-        "points_per_cycle",
-        "dt",
-        "steps",
-        "n",
-        "pt",
-    },
-    "film": {
-        "r",
-        "l",
-        "c",
-        "miu",
-        "rho",
-        "w",
-        "x0",
-        "lx",
-        "lz",
-        "nx",
-        "nz",
-        "bias",
-        "coe",
-        "reynold",
-        "error_set",
-        "max_iter",
-        "damp",
-        "lambda_value",
-        "lr",
-        "vf",
-    },
-    "hydraulics": {
-        "position",
-        "cq0",
-        "cq1",
-        "cq2",
-        "ps",
-        "p0",
-        "q_leak",
-        "tank_p",
-    },
-    "thermal": {
-        "thermal_enabled",
-        "thermal",
-        "thermal_config",
-        "transient_enabled",
-        "args_nodim",
-        "iter_method",
-        "coupling",
-        "miu0",
-        "rho_lub",
-        "cp_lub",
-        "k_lub",
-        "temperature_supply",
-        "temperature_ambient",
-    },
-    "control": {
-        "controller",
-        "kp",
-        "ki",
-        "kd",
-        "up",
-        "down",
-        "tw",
-        "zeta",
-        "tp3",
-        "error_range",
-        "delta_error_range",
-        "rule_path",
-        "sensor_angles",
-    },
-    "system": {
-        "alb",
-        "servo",
-        "switch",
-        "node_link",
-        "gxy",
-        "gxyt",
-    },
-    "surrogate": {
-        "scaler_X",
-        "scaler_y",
-        "model",
-        "metadata",
-        "agent",
-        "beta_nondim",
-        "extra_inputs",
-    },
-}
+from .legacy import migrate_legacy_alb_config
+from .schema import ConfigUnit, ControlMode
 
 
 @dataclass(frozen=True, slots=True)
 class ConfigMigrationReport:
-    """Summary of keys routed by a schema migration."""
+    """Auditable source, target, mode, and digest details."""
 
     source_schema: str
     target_schema: str
-    routed_keys: tuple[str, ...]
-    unmapped_keys: tuple[str, ...]
+    unit_system: ConfigUnit
+    controller: str
+    control_mode: str
+    source_sha256: str
+    output_sha256: str | None = None
 
 
 def migrate_legacy_config(
     payload: Mapping[str, Any],
-) -> tuple[dict[str, Any], ConfigMigrationReport]:
-    """Convert a legacy flat mapping without mutating the caller's data."""
-
-    if not isinstance(payload, Mapping):
-        raise TypeError("legacy configuration must be a mapping")
-    source = deepcopy(dict(payload))
-    if source.get("schema_version") == SCHEMA_VERSION:
-        raise ValueError("configuration already declares schema_version 0.2.0")
-
-    migrated: dict[str, Any] = {"schema_version": SCHEMA_VERSION}
-    routed: set[str] = set()
-    for domain, keys in _DOMAIN_KEYS.items():
-        section = {key: source[key] for key in source if key in keys}
-        if section:
-            migrated[domain] = section
-            routed.update(section)
-
-    unmapped = {
-        key: value
-        for key, value in source.items()
-        if key not in routed and key != "schema_version"
-    }
-    if unmapped:
-        migrated["legacy_unmapped"] = unmapped
-
-    report = ConfigMigrationReport(
-        source_schema=str(source.get("schema_version", "legacy-flat")),
-        target_schema=SCHEMA_VERSION,
-        routed_keys=tuple(sorted(routed)),
-        unmapped_keys=tuple(sorted(unmapped)),
-    )
-    return migrated, report
-
-
-def migrate_config_file(
-    source: Path | str,
-    destination: Path | str,
     *,
-    overwrite: bool = False,
-) -> ConfigMigrationReport:
-    """Read legacy JSON5 and save a separate UTF-8 ALB 0.2 JSON document."""
+    unit_system: ConfigUnit = "dimensional",
+    controller: Literal["PID", "FuzzyPID"] | None = "PID",
+    control_mode: ControlMode | str | None = None,
+) -> tuple[dict[str, object], ConfigMigrationReport]:
+    """Convert one unversioned ALB mapping to a strict current envelope."""
 
-    source_path = Path(source).resolve()
-    destination_path = Path(destination).resolve()
-    if source_path == destination_path:
-        raise ValueError("destination must differ from the legacy source")
-    if destination_path.exists() and not overwrite:
-        raise FileExistsError(f"destination already exists: {destination_path}")
+    envelope, legacy_report = migrate_legacy_alb_config(
+        payload,
+        unit_system=unit_system,
+        controller=controller,
+        control_mode=control_mode,
+    )
+    report = ConfigMigrationReport(
+        source_schema=legacy_report.source_schema,
+        target_schema=legacy_report.target_schema,
+        unit_system=legacy_report.unit_system,
+        controller=legacy_report.controller,
+        control_mode=legacy_report.control_mode,
+        source_sha256=legacy_report.source_sha256,
+    )
+    return envelope.to_dict(), report
+
+
+def _read_legacy_json5(source_path: Path) -> Mapping[str, Any]:
+    """Read UTF-8 JSON5, explicitly warning on legacy GBK/CP936 fallback."""
+
     try:
         import json5  # type: ignore[import-untyped]
     except ModuleNotFoundError as exc:
         raise ModuleNotFoundError(
-            "JSON5 migration requires the optional 'io' extra: pip install re-alb[io]"
+            "JSON5 migration requires the optional 'io' extra: "
+            "pip install re-alb[io]"
         ) from exc
 
     try:
@@ -188,15 +80,55 @@ def migrate_config_file(
         if source_text is None or fallback_encoding is None:
             raise utf8_error
         warnings.warn(
-            f"Legacy config is not UTF-8; decoded temporarily as "
+            "Legacy config is not UTF-8; decoded temporarily as "
             f"{fallback_encoding} and writing the migrated document as UTF-8.",
             UnicodeWarning,
             stacklevel=2,
         )
     payload = json5.loads(source_text)
-    migrated, report = migrate_legacy_config(payload)
+    if not isinstance(payload, Mapping):
+        raise TypeError("legacy JSON5 root must be an object")
+    return payload
+
+
+def migrate_config_file(
+    source: Path | str,
+    destination: Path | str,
+    *,
+    unit_system: ConfigUnit = "dimensional",
+    controller: Literal["PID", "FuzzyPID"] | None = "PID",
+    control_mode: ControlMode | str | None = None,
+    overwrite: bool = False,
+) -> ConfigMigrationReport:
+    """Save a separate UTF-8 0.3 envelope while preserving the source file."""
+
+    source_path = Path(source).resolve()
+    destination_path = Path(destination).resolve()
+    if source_path == destination_path:
+        raise ValueError("destination must differ from the legacy source")
+    if destination_path.exists() and not overwrite:
+        raise FileExistsError(f"destination already exists: {destination_path}")
+
+    payload = _read_legacy_json5(source_path)
+    migrated, report = migrate_legacy_config(
+        payload,
+        unit_system=unit_system,
+        controller=controller,
+        control_mode=control_mode,
+    )
+    encoded = (
+        json.dumps(migrated, ensure_ascii=False, indent=2) + "\n"
+    ).encode("utf-8")
     destination_path.parent.mkdir(parents=True, exist_ok=True)
-    with destination_path.open("w", encoding="utf-8", newline="\n") as stream:
-        json.dump(migrated, stream, ensure_ascii=False, indent=2)
-        stream.write("\n")
-    return report
+    destination_path.write_bytes(encoded)
+    return replace(
+        report,
+        output_sha256=hashlib.sha256(encoded).hexdigest(),
+    )
+
+
+__all__ = [
+    "ConfigMigrationReport",
+    "migrate_config_file",
+    "migrate_legacy_config",
+]

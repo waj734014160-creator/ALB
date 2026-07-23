@@ -15,7 +15,7 @@
   `tests/validation/test_import_boundaries.py`、
   `docs/alb_package_overview.md`。
 
-本文定义 ALB 0.2.0 的稳定接口架构。0.2 是破坏式版本：旧平铺模块已删除，数值实现保留冻结算法，但调用边界改为明确 namespace、强类型 DTO 和显式生命周期。
+本文定义 ALB 0.3.0 的稳定接口架构。0.2 已完成 namespace 重构；0.3 进一步固定用户 builder、原生 runtime、recorder、observer 和 coupling 边界。
 
 ## 架构原则
 
@@ -122,7 +122,13 @@ dimensional
 nondimensional
 ```
 
-不存在 `unspecified`。每个集成边界必须显式比较单位制；跨单位制转换需要显式尺度对象或 adapter。不得根据数值大小、变量名或调用路径推测单位。
+不存在 `unspecified`。每个集成边界必须显式比较单位制；跨单位制转换需要显式尺度对象或
+adapter。不得根据数值大小、变量名或调用路径推测单位。
+
+`BearingScaleSet` 把尺度统一定义为“一个 nondimensional unit 对应的 dimensional 值”，并要求
+`Sv = Sx / St`。`BearingUnitAdapter` 经统一 dimensional domain 分别转换位移、时间、速度、力和
+压力；归一化阀芯值不使用物理位移尺度。`descriptor()` 使用基础类型记录 scale ID、来源、全局和
+局部 `StepContext`、`scale_definition` 及实际 `applied_transform`，可直接进入结果摘要。
 
 ## 时步和收敛
 
@@ -132,7 +138,7 @@ nondimensional
 
 ## 轴承与谐波能力
 
-`BearingProtocol` 统一非线性和谐波轴承端口。`ALB.systems.alb.BearingBlock` 把 ALB 数值实现适配为严格 DTO 生命周期；`HarmonicBearingBlock` 额外正式公开：
+`BearingProtocol` 保持最小计算端口，`BearingRuntimeProtocol[InputT]` 增加初始化、生命周期、收敛和诊断出口。`ALB.systems.alb.build_alb()` 与 `build_direct_spool_alb()` 隐藏 0.3.x 兼容 block；`HarmonicBearingBlock` 额外正式公开：
 
 - `K`：2 x 2 刚度矩阵。
 - `C`：2 x 2 阻尼矩阵。
@@ -172,20 +178,20 @@ manifest = writer.write(bundle, Path("outputs") / "case_001")
 
 ## 配置和 model package 迁移
 
-- 当前配置文件使用 `ALB.config.schema.ALBConfigEnvelope`，schema 版本固定为 `0.2.0`。
+- 当前配置文件使用 `ALB.config.schema.ALBConfigEnvelope`，schema 版本固定为 `0.3.0`，并显式保存 `control_mode=controlled|none|direct_spool`。
 - `ALB.config.legacy.migrate_legacy_alb_config()` 是旧平铺配置到当前 envelope 的单向转换；当前
   `load_current_config()` 不接受无版本 legacy payload。
-- legacy JSON5 使用 `alb-migrate-config` 或 `tools/migrations/migrate_config_0_2.py` 另存；禁止原地覆盖。
+- legacy JSON5 使用 `alb-migrate-config` 另存；禁止原地覆盖。`ALB.workflows.build_alb_from_file()` 只接受当前 envelope，不执行宽松 legacy 推断。
 - legacy ALBNN checkpoint/scaler 使用 `alb-migrate-surrogate` 或 `tools/migrations/migrate_surrogate_0_2.py` 生成带 manifest 和 digest 的 package。
 - pickle 加载需要调用者显式设置可信开关；不接受来源不明的 model package。
 - 旧 pickle 中的 `ALB.nn.*` module-qualified 类型不保证直接反序列化。
 
 ## 兼容策略
 
-0.2 不保留旧 import facade。完整映射以 `docs/migrations/0.2.0_import_map.json` 为准。以下兼容只存在于新 namespace 内部，不构成旧 API 承诺：
+0.3 不恢复旧 import facade。完整 0.2 历史映射以 `docs/migrations/0.2.0_import_map.json` 为准。以下兼容只存在于新 namespace 内部，不构成长期 API 承诺：
 
 - 用于保持数值行为的旧参数名称解析。
-- 旧 JSON5 到 0.2 schema 的只读转换。
+- 旧 JSON5 到 0.3 schema 的只读转换。
 - 旧模型 artifact 到 versioned package 的非破坏复制。
 - 数值实现到强类型端口的 adapter。
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -11,28 +10,11 @@ from ALB.contracts import (
     BearingInput,
     BearingOutput,
     ConvergenceStatus,
+    DirectSpoolBearingInput,
     UnitSystem,
     ValveOutput,
 )
 from ALB.core import EvaluatingBlock
-
-
-@dataclass(frozen=True, slots=True)
-class DirectSpoolBearingInput:
-    """Bearing state paired with an already-normalized valve spool state."""
-
-    bearing: BearingInput
-    spool: ValveOutput
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.bearing, BearingInput):
-            raise TypeError("bearing must be BearingInput")
-        if not isinstance(self.spool, ValveOutput):
-            raise TypeError("spool must be ValveOutput")
-        if self.bearing.time != self.spool.time:
-            raise ValueError("bearing and spool timestamps must match")
-        if self.spool.unit_system is not UnitSystem.NONDIMENSIONAL:
-            raise ValueError("direct spool state must be nondimensional")
 
 
 class BearingBlock(EvaluatingBlock[BearingInput, BearingOutput]):
@@ -42,7 +24,8 @@ class BearingBlock(EvaluatingBlock[BearingInput, BearingOutput]):
         super().__init__()
         self.implementation = implementation
         self.unit_system = UnitSystem.coerce(implementation.unit_system)
-        self.node_link = int(implementation.node_link)
+        node_link = implementation.node_link
+        self.node_link = None if node_link is None else int(node_link)
 
     def _validate_input(self, dto: BearingInput) -> BearingInput:
         if not isinstance(dto, BearingInput):

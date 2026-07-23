@@ -1,6 +1,7 @@
 """Domain configuration models split from the historical monolith."""
 
 from dataclasses import dataclass, field, fields
+from numbers import Integral, Real
 from typing import Optional, Union
 
 import numpy as np
@@ -14,6 +15,51 @@ from .hydraulics_models import (
     NodimOrificeConfig, OrificeConfig, TankConfig,
 )
 from .thermal_models import ThermalConfig
+
+
+def _finite_matrix(value, name: str) -> np.ndarray:
+    """Normalize one finite 2-by-2 ALB gain matrix."""
+
+    array = np.asarray(value)
+    if np.iscomplexobj(array):
+        raise TypeError(f"{name} must be real")
+    try:
+        result = np.asarray(value, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise TypeError(f"{name} must be a real numeric matrix") from exc
+    if result.shape != (2, 2):
+        raise ValueError(f"{name} must have shape (2, 2)")
+    if not np.all(np.isfinite(result)):
+        raise ValueError(f"{name} must contain only finite values")
+    return result.copy()
+
+
+def _normalize_alb_common(config) -> None:
+    """Validate fields shared by dimensional and nondimensional ALB configs."""
+
+    if isinstance(config.dt, bool) or not isinstance(config.dt, Real):
+        raise TypeError("dt must be a real number")
+    config.dt = float(config.dt)
+    if not np.isfinite(config.dt) or config.dt <= 0.0:
+        raise ValueError("dt must be finite and > 0")
+    if config.node_link is not None:
+        if isinstance(config.node_link, (bool, np.bool_)) or not isinstance(
+            config.node_link, (Integral, np.integer)
+        ):
+            raise TypeError("node_link must be an integer or None")
+        if int(config.node_link) < 0:
+            raise ValueError("node_link must be nonnegative")
+        config.node_link = int(config.node_link)
+    config.gxy = _finite_matrix(config.gxy, "gxy")
+    config.gxyt = _finite_matrix(config.gxyt, "gxyt")
+    if config.alb not in {"ALB", "ALBSV"}:
+        raise ValueError("alb must be 'ALB' or 'ALBSV'")
+    if config.servo not in {"moog_2nd", "moog", "static"}:
+        raise ValueError("servo must be 'moog_2nd', 'moog', or 'static'")
+    if not isinstance(config.switch, (bool, np.bool_)):
+        raise TypeError("switch must be a bool")
+    config.switch = bool(config.switch)
+
 
 def _select_alb_controller(config_dict: dict, default: Optional[str]) -> Optional[str]:
     """Resolve PID, FuzzyPID, or the explicit no-controller configuration."""
@@ -114,6 +160,19 @@ class ALBConfig(ConfigData):
     switch: bool = True  # Whether to enable control
     c: Optional[float] = None  # Optional displacement scale override.
     w: Optional[float] = None  # Optional speed scale override, rpm.
+
+    def __post_init__(self) -> None:
+        _normalize_alb_common(self)
+        for name in ("c", "w"):
+            value = getattr(self, name)
+            if value is None:
+                continue
+            if isinstance(value, bool) or not isinstance(value, Real):
+                raise TypeError(f"{name} must be a real number or None")
+            normalized = float(value)
+            if not np.isfinite(normalized) or normalized <= 0.0:
+                raise ValueError(f"{name} must be finite and > 0")
+            setattr(self, name, normalized)
 
     @property
     def thermal_enabled(self) -> bool:
@@ -263,6 +322,9 @@ class NodimALBConfig(ConfigData):
     alb: str = "ALB"  # ALB or ALBSV
     servo: str = "moog_2nd"  # moog_2nd, moog, or static
     switch: bool = True
+
+    def __post_init__(self) -> None:
+        _normalize_alb_common(self)
 
     @property
     def thermal_enabled(self) -> bool:

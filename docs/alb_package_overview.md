@@ -12,7 +12,7 @@
   `docs/interface_architecture.md`、
   `docs/migrations/0.2.0.md`。
 
-本文是 ALB 0.2.0 package 的首次阅读导览。接口生命周期、依赖方向和单位制规则以 `docs/interface_architecture.md` 为准；从 0.1 迁移时使用 `docs/migrations/0.2.0_import_map.json`。
+本文是 ALB 0.3.0 package 的首次阅读导览。接口生命周期、依赖方向和单位制规则以 `docs/interface_architecture.md` 为准；0.2 历史迁移材料仍位于 `docs/migrations/0.2.0_import_map.json`。
 
 ## 顶层边界
 
@@ -31,7 +31,8 @@ from ALB.physics.bearing import HydrostaticBearing
 from ALB.control.pid import PID
 from ALB.dynamics.rotor import RossRotor, RotorDofLayout
 from ALB.surrogate.inference import albnn
-from ALB.systems.alb import BearingBlock, DirectSpoolBearingBlock, nodim_alb
+from ALB.systems.alb import build_alb, build_direct_spool_alb
+from ALB.workflows import build_alb_from_file
 ```
 
 ## 模块地图
@@ -45,14 +46,14 @@ from ALB.systems.alb import BearingBlock, DirectSpoolBearingBlock, nodim_alb
 | `ALB.config` | 按领域分类的配置契约 | 各领域 `*_models`、当前 `schema`、独立只读 `legacy` 迁移和配置 CLI |
 | `ALB.physics.film` | Reynolds 油膜求解 | mesh、film solver、压力场和容量辅助 |
 | `ALB.physics.hydraulics` | 液压与节流 | orifice 模型和流量关系 |
-| `ALB.physics.bearing` | 轴承组合 | 静压轴承、四瓦轴承和显式适配器 |
+| `ALB.physics.bearing` | 轴承组合 | 静压轴承、四瓦轴承、`BearingScaleSet` 和 `BearingUnitAdapter` |
 | `ALB.physics.gas` | 气体轴承 | gas-film solver |
 | `ALB.physics.thermal` | 热耦合 | 热模型、黏温/尺度转换和热惯性状态 |
 | `ALB.control` | 控制和阀 | 独立 `pid`、`fuzzy`、`lqg`、`repetitive`、`reduction_core`、状态空间、伺服阀和严格端口 blocks；`controllers` 只保留内部兼容重导出 |
 | `ALB.dynamics` | 转子与耦合 | `rotor_layout`、`rotor_results`、rotor 数值推进、`coupling_runtime`、`coupling_results`、orbit、FFT/KC 识别 |
 | `ALB.surrogate` | 部署侧代理模型 | features、networks、scalers、inference、versioned model package、非破坏迁移 |
 | `ALB.surrogate.training` | 训练侧公共能力 | config、data、loss、transform、report、run 和 ALBNN 专用远程队列 |
-| `ALB.systems.alb` | 顶层 ALB 系统装配 | `runtime`、`builder`、`factories`、`linear`、`surrogate_runtime`、`switch`、harmonic runtime/result/coefficient contract；`assembly` 只保留内部兼容重导出 |
+| `ALB.systems.alb` | 顶层 ALB 系统装配 | typed `building`、`runtime`、兼容 `builder/factories`、`linear`、`surrogate_runtime`、`switch`、harmonic runtime/result/coefficient contract |
 | `ALB.infrastructure` | 外部副作用 | UTF-8 配置 IO、日志、`SmtpNotifier`、artifact writer、generic remote engine |
 | `ALB.workflows` | 可执行流程和后处理 | ALB workflow、DoE、配置装配、命名、绘图、后处理和顶层执行 |
 
@@ -82,7 +83,7 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 
 `ALB.contracts` 提供 `BearingInput/BearingOutput`、`ControlInput/ControlOutput`、`ValveInput/ValveOutput`、`RotorLoadInput/RotorState`。DTO 在构造时验证形状、有限性、非负时间和单位制，并冻结数组副本。
 
-`ControllerProtocol`、`ServoValveProtocol`、`RotorProtocol`、`ResultRecorderProtocol` 和
+`BearingRuntimeProtocol[InputT]`、`ControllerProtocol`、`ServoValveProtocol`、`RotorProtocol`、`ResultRecorderProtocol` 和
 `RuntimeLifecycleProtocol` 是正式结构契约。`ALB.core.lifecycle.RuntimeLifecycle` 为有状态组件
 提供统一 `NEW/READY/RUNNING/FAILED` 转换和访问门禁；`ALB.core.validation` 统一处理实数、形状、
 有限性、时间和调用方数组副本，不允许各领域依赖隐式 complex-to-float 转换。
@@ -92,7 +93,13 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 转子推进类同时承担。谐波系数 DTO、JSON/resource 加载和校验位于
 `ALB.systems.alb.harmonic_coefficients`，运行时只消费已经验证的系数对象。
 
-严格 block 遵循 `input()`、显式计算、`output()` 的生命周期。非线性 ALB 和谐波线性轴承都可通过 `ALB.systems.alb.BearingBlock` 系列暴露同一个轴承端口协议。已经是归一化阀芯状态的 `sx/sy` 应通过 `DirectSpoolBearingInput(BearingInput, ValveOutput)` 交给 `DirectSpoolBearingBlock`；它不会再次引入阀动态。
+`build_alb(envelope)` 和 `build_direct_spool_alb(envelope)` 直接返回严格 runtime，普通用户不再手动创建 block。`DirectSpoolBearingInput` 已下沉到 `ALB.contracts`；已经归一化的 `sx/sy` 必须显式放入该 DTO，不能缺省为零。`BearingBlock` 系列仅作为 0.3.x 内部迁移兼容面。
+
+跨单位轴承接入使用 `ALB.physics.bearing.BearingScaleSet` 和
+`BearingUnitAdapter`。`ALB.systems.alb.bearing_scale_set_from_config()` 只从
+`NodimALBConfig` 中已经明确给出的 `scale_c/scale_l/scale_r/scale_ps/scale_w/vf`
+生成尺度；缺少长度或转速时直接报错，不补默认猜测。位移、时间、速度、力和压力分别使用
+`Sx/St/Sv/Sf/Sp`，归一化阀芯值保持不变。
 
 `ValveOutput.spool` 和 direct-spool 节流器输入必须是 `[-1, 1]` 内的有限标量，非法值会立即失败，
 不会静默沿用旧阀芯状态。`BaseLti`/`BaseDlti.output()` 每次只返回当前输出向量；完整状态和输出
@@ -128,10 +135,10 @@ direct-spool 端口。
 
 ### 配置
 
-配置从 `ALB.config.<domain>` 显式导入。`alb-migrate-config` 和 `tools/migrations/migrate_config_0_2.py` 只读旧 JSON5，并把 0.2 schema 另存为 UTF-8 文件；不会覆盖源配置。旧文件若无法按 UTF-8 解码，迁移器会显式警告并临时尝试 GBK/CP936，输出仍统一写为 UTF-8。
+配置从 `ALB.config.<domain>` 显式导入。`alb-migrate-config` 只读旧 JSON5，并把 0.3 schema 另存为 UTF-8 文件；不会覆盖源配置。旧文件若无法按 UTF-8 解码，迁移器会显式警告并临时尝试 GBK/CP936，输出仍统一写为 UTF-8。
 
 当前配置由 `ALB.config.schema` 的 `ALBConfigEnvelope` 和固定
-`CURRENT_SCHEMA_VERSION = "0.2.0"` 表达；它只接受当前嵌套 schema。旧平铺格式只进入
+`CURRENT_SCHEMA_VERSION = "0.3.0"` 表达；它要求显式 `unit_system` 和 `control_mode`，并对 envelope 及嵌套配置执行字段白名单。旧平铺格式只进入
 `ALB.config.legacy.migrate_legacy_alb_config()` 的单向迁移路径，迁移报告会记录源格式、目标版本和
 默认值补全，当前模型不再同时承担宽松 legacy 解析职责。
 

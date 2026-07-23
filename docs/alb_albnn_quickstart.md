@@ -13,7 +13,7 @@
   `docs/interface_architecture.md`、
   `../SURROGATE_TRAIN/docs/albnn_training_brief.md`。
 
-本文使用 0.2.0 的显式 namespace。旧 `ALB.alb` 和 `ALB.nn` 已删除；不要把旧 import 示例复制到新脚本。
+本文使用 0.3.0 的显式 namespace。旧 `ALB.alb` 和 `ALB.nn` 已删除；不要把旧 import 示例复制到新脚本。
 
 ## 环境准备
 
@@ -31,19 +31,19 @@ E:/Anaconda2023/envs/ALB/python.exe -m pip install -e ".[all]"
 
 ## 以严格轴承端口运行默认 ALB
 
-推荐从 `ALB.systems.alb` 构建实现，再用 `BearingBlock` 暴露 0.2 标准生命周期：
+推荐把当前配置包装为带 `unit_system` 和 `control_mode` 的 envelope，再由公开 builder 直接得到运行时；普通用户不需要创建 `BearingBlock`：
 
 ```python
 import numpy as np
 
 from ALB import UnitSystem
-from ALB.config.system import NodimALBConfig
+from ALB.config import NodimALBConfig, current_config_envelope
 from ALB.contracts import BearingInput
-from ALB.systems.alb import BearingBlock, nodim_alb
+from ALB.systems.alb import build_alb
 
-implementation = nodim_alb(alb_config=NodimALBConfig(node_link=0))
-implementation.init()
-block = BearingBlock(implementation)
+envelope = current_config_envelope(NodimALBConfig(node_link=0))
+bearing = build_alb(envelope)
+bearing.init()
 
 request = BearingInput(
     displacement=np.array([0.05, 0.00]),
@@ -51,19 +51,19 @@ request = BearingInput(
     time=0.0,
     unit_system=UnitSystem.NONDIMENSIONAL,
 )
-response = block.step(request)
+response = bearing.step(request)
 force = response.force
 ```
 
 `step()` 等价于 `input()`、`evaluate()`、`output()`，但不提交物理时步。需要检查生命周期时可显式拆开：
 
 ```python
-block.input(request)
-block.evaluate()
-response = block.output()
+bearing.input(request)
+bearing.evaluate()
+response = bearing.output()
 ```
 
-`input()` 后、`evaluate()` 前调用 `output()` 会抛出 `RuntimeError`。`output()` 不求解，也不推进状态。
+`input()` 后、`evaluate()` 前调用 `output()` 会抛出 `RuntimeError`。`output()` 不求解，也不推进状态。`build_alb_from_file()` 位于 `ALB.workflows`，只接受 0.3 envelope；旧 JSON5 必须先用 `alb-migrate-config` 另存迁移。
 
 `NodimALBConfig()` 保留冻结的默认物理和数值参数。轻量 smoke 可按需从 `ALB.config.film` 和 `ALB.config.hydraulics` 构建更小网格，但改变网格会改变物理离散，不应替代正式验证配置。
 

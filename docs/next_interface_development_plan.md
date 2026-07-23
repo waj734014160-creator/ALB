@@ -221,6 +221,8 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 - 先实施 F47-F53，再实施 F01-F07。
 - factory 可以暂时在内部创建现有 block，因此先解决用户必须理解 adapter 的问题。
 - 更新 quickstart，但不得提前宣称轴承 implementation 已原生严格化。
+- 阶段 1 已完成：当前 schema、控制模式、非破坏迁移、类型化 builder、文件入口和显式完整尺度
+  adapter 已落地；builder 内部仍使用临时 `LegacyBearingRuntimeAdapter`，原生生命周期属于阶段 2。
 
 ### 阶段 2：迁移轴承原生生命周期和协议
 

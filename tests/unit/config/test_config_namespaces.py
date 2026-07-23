@@ -20,11 +20,12 @@ def test_flat_legacy_payload_is_grouped_without_mutation():
     migrated, report = migrate_legacy_config(source)
 
     assert source == {"r": 0.04, "kp": 0.3, "node_link": 2, "custom": "keep"}
-    assert migrated == {
-        "schema_version": "0.2.0",
-        "film": {"r": 0.04},
-        "control": {"kp": 0.3},
-        "system": {"node_link": 2},
-        "legacy_unmapped": {"custom": "keep"},
-    }
-    assert report.unmapped_keys == ("custom",)
+    assert migrated["schema_version"] == "0.3.0"
+    assert migrated["kind"] == "alb"
+    assert migrated["unit_system"] == "dimensional"
+    assert migrated["control_mode"] == "controlled"
+    assert migrated["config"]["pad_config"]["r"] == 0.04
+    assert migrated["config"]["controller_config"]["kp"] == 0.3
+    assert migrated["config"]["node_link"] == 2
+    assert report.target_schema == "0.3.0"
+    assert len(report.source_sha256) == 64

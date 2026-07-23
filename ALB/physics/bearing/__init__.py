@@ -1,6 +1,7 @@
 """Hydrostatic and tilting-pad bearing assemblies."""
 
 from ALB.contracts.optional import import_optional_module
+from .units import AppliedTransform, BearingScaleSet, BearingUnitAdapter
 
 
 _NAMES = (
@@ -30,4 +31,9 @@ def __getattr__(name: str):
     return getattr(module, name)
 
 
-__all__ = list(_NAMES)
+__all__ = [
+    "AppliedTransform",
+    "BearingScaleSet",
+    "BearingUnitAdapter",
+    *_NAMES,
+]

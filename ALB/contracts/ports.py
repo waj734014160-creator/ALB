@@ -77,6 +77,24 @@ class BearingOutput(_PortDto):
 
 
 @dataclass(frozen=True, slots=True)
+class DirectSpoolBearingInput:
+    """Bearing state paired with a normalized, time-aligned spool command."""
+
+    bearing: BearingInput
+    spool: "ValveOutput"
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.bearing, BearingInput):
+            raise TypeError("bearing must be BearingInput")
+        if not isinstance(self.spool, ValveOutput):
+            raise TypeError("spool must be ValveOutput")
+        if self.bearing.time != self.spool.time:
+            raise ValueError("bearing and spool timestamps must match")
+        if self.spool.unit_system is not UnitSystem.NONDIMENSIONAL:
+            raise ValueError("direct spool state must be nondimensional")
+
+
+@dataclass(frozen=True, slots=True)
 class ControlInput(_PortDto):
     """Two-axis control error at one time sample."""
 

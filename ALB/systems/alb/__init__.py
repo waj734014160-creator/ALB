@@ -33,6 +33,31 @@ _EXPORTS = {
         "DirectSpoolBearingInput",
     ),
     "HarmonicBearingBlock": ("ALB.systems.alb.ports", "HarmonicBearingBlock"),
+    "BearingBuildDependencies": (
+        "ALB.systems.alb.building",
+        "BearingBuildDependencies",
+    ),
+    "BuiltControlledBearing": (
+        "ALB.systems.alb.building",
+        "BuiltControlledBearing",
+    ),
+    "BuiltDirectSpoolBearing": (
+        "ALB.systems.alb.building",
+        "BuiltDirectSpoolBearing",
+    ),
+    "BuiltUncontrolledBearing": (
+        "ALB.systems.alb.building",
+        "BuiltUncontrolledBearing",
+    ),
+    "build_alb": ("ALB.systems.alb.building", "build_alb"),
+    "build_direct_spool_alb": (
+        "ALB.systems.alb.building",
+        "build_direct_spool_alb",
+    ),
+    "bearing_scale_set_from_config": (
+        "ALB.systems.alb.scales",
+        "bearing_scale_set_from_config",
+    ),
 }
 
 

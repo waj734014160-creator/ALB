@@ -23,8 +23,8 @@
 ## 当前快照
 
 - 分支：`codex/full-repo-refactor`。
-- 包版本：`0.2.0`；最低 Python：`3.10`。
-- 发布标签：`v0.2.0`。
+- 开发包版本：`0.3.0`；最低 Python：`3.10`；尚未创建 0.3 发布标签或 wheel。
+- 最近正式发布标签：`v0.2.0`。
 - 重构前源码基线：commit `a4b2be1`，annotated tag `pre-full-repo-refactor-20260720`。
 - 完整行为参考基线：commit `d6d7432`，annotated tag `pre-full-repo-refactor-refs-20260720`。
 - 冻结参考：`refs/full_repo_refactor_v1/`，11 个领域、121 个冻结数组；现有 v1 参考不得覆盖。
@@ -42,7 +42,7 @@
 - 七轮审查参考：`refs/seventh_review_release_reference_v7.{json,npz}` 在 commit `908abd7` 的生产修正前冻结 harmonic 合法控制器、阀、位移/速度、力和重新初始化路径共 27 个数组；修正后逐元素精确相等，既有 v1-v6 参考均未覆盖。
 - 八轮制品身份参考：commit `a29290e` 在工具修正前创建 `refs/eighth_review_wheel_identity_reference_v8.json`，冻结 candidate `4d6e609` 的 119 个 release Git blob、规范源码摘要 `39bece7c…`、v7 行为参考哈希，以及两份旧 wheel 证据的差异；生产 `ALB/**` 与运行时 `pyproject.toml` 内容保持精确一致。
 - 原生控制生命周期参考：commit `00a842b` 创建 `refs/native_control_lifecycle_reference_v9.{json,npz}`，在生产修改前冻结 LQG、重复控制器和二阶伺服阀的 18 个多步数组；迁移后逐元素精确相等，既有 v1-v8 参考均未覆盖。
-- 当前阶段：P2-1 至 P2-12 已完成实现、分阶段提交、canonical import map、500 节点测试映射、P2 专用和默认 canonical detached 正式验收。P2 运行时候选为 `cac4a05`，包含 P2 证据的 canonical 候选为 `fd5029e`；两次验收的 release 源摘要和 wheel SHA 完全相同。下一阶段 0.3.0 规划已获第四轮独立审查 `Approve with minor comments`，五份 ADR 均为 Accepted；阶段 0 已完成，新增四组 v1 参考冻结 raw/block、六类 runtime、ALBNN shell、thermal、Signal 历史、save tree、完整 bearing 尺度及 coupling 成功/失败路径，尚未修改生产源码。
+- 当前阶段：P2-1 至 P2-12 已完成实现、分阶段提交、canonical import map、500 节点测试映射、P2 专用和默认 canonical detached 正式验收。0.3.0 五份 ADR 均为 Accepted；阶段 0 已以 commit `6fcc5c2` 冻结四组 v1 参考。阶段 1 已实现严格 0.3 envelope、显式 `control_mode`、默认不覆盖源文件的配置迁移、隐藏 block 的类型化 builder、配置文件构建入口和完整 `BearingScaleSet/BearingUnitAdapter`，目前正进入轴承原生生命周期迁移。
 
 ## 已完成的 0.2.0 边界
 
@@ -139,7 +139,7 @@ detached 实际安装制品、P2/canonical 构建报告、P2/canonical 验收报
 
 ## 当前下一步
 
-1. 先固定 0.3 配置语义并落地隐藏 block 的用户构建入口，再迁移轴承原生生命周期；recorder 基础设施必须早于 coupling，`Signal` 清除必须晚于显式调用和 observer。
+1. 将 `ALB/ALBSV/NodimALB/NodimALBSV` 从内部计算型 `output()` 迁入原生 `input/evaluate/output` 生命周期，再处理 harmonic 和 ALBNN shell；recorder 基础设施必须早于 coupling，`Signal` 清除必须晚于显式调用和 observer。
 2. 每个生产阶段均重放 `alb_runtime_transition_reference_v1`、`alb_runtime_families_reference_v1`、`bearing_unit_boundary_reference_v1`、`coupling_failure_save_reference_v1` 以及对应既有精确参考；不覆盖 v1。
 3. 后续按文件逐步减少 221 条历史 mypy 诊断；每次只降低精确基线，不扩大 relaxations。
 4. 为 `task/task_alb_data2.py` 的混合单位调用先建立参考与显式尺度适配器；不要直接套用 nondimensional strict port。
