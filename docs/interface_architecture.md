@@ -162,6 +162,9 @@ adapter。不得根据数值大小、变量名或调用路径推测单位。
 - 顶层 rotor-bearing coupler 只接收 `CoupledBearingBinding` 作为新接口。binding 明确 runtime、
   节点、可选 `BearingUnitAdapter` 和可选 direct-spool provider；`RotorLoadInput` 表达
   `previous_force/force`。
+- binding 和 runtime dependencies 在构造期校验 Protocol 能力、unit policy、post-commit policy
+  及 observer/recorder；bearing 输出在提交前必须匹配当前局部时间和 bearing 单位，经 adapter
+  返回后还必须匹配 rotor 时间和单位。
 - `advance()` 顺序固定为预检、mutable execute、构造不可变 candidate、ledger commit、不可失败
   发布、recorder、observer。提交前失败封锁 runtime；提交后 recorder/observer 失败不伪装成
   未执行物理步。
@@ -176,7 +179,8 @@ adapter。不得根据数值大小、变量名或调用路径推测单位。
 默认不配置 recorder 时，原生 ALB、ALBNN 和 harmonic runtime 只保留当前快照。完整内存、
 ring buffer、固定 sampling 和字段 filtering 使用组合 recorder；pending 恢复只重新记录已经
 提交的 `ResultBundle`。`StepCompleted` 每个物理步只发送一次，恢复另发
-`RecordingRecovered`。
+`RecordingRecovered`。严格 `end_run()` 拒绝 pending；只有显式 `allow_incomplete=True`
+才能关闭有缺口的 run，并返回 `INCOMPLETE` receipt 与 pending keys。
 
 保存必须注入 `ArtifactWriterProtocol` 并返回 `ArtifactManifest`：
 
@@ -196,6 +200,8 @@ manifest = writer.write(bundle, Path("outputs") / "case_001")
 ## 配置和 model package 迁移
 
 - 当前配置文件使用 `ALB.config.schema.ALBConfigEnvelope`，schema 版本固定为 `0.3.0`，并显式保存 `control_mode=controlled|none|direct_spool`。
+- 已验证 envelope 对所有嵌套 mapping、sequence 和 ndarray 执行递归不可变快照；
+  `materialize_current_config()` 在构造领域配置前重新执行完整 schema 校验。
 - `ALB.config.legacy.migrate_legacy_alb_config()` 是旧平铺配置到当前 envelope 的单向转换；当前
   `load_current_config()` 不接受无版本 legacy payload。
 - legacy JSON5 使用 `alb-migrate-config` 另存；禁止原地覆盖。`ALB.workflows.build_alb_from_file()` 只接受当前 envelope，不执行宽松 legacy 推断。
@@ -213,6 +219,8 @@ manifest = writer.write(bundle, Path("outputs") / "case_001")
 - `BearingBlock`、`DirectSpoolBearingBlock`、`LegacyBearingAdapter`、
   `LegacyControllerAdapter` 和 `LegacySignalAdapter` 只作为 0.3.x 迁移面，最早在 0.4.0
   且声明消费者清零后删除。
+- failure snapshot 只保留异常类型、安全通用消息和 detail fingerprint；不得保存第三方异常的
+  原始文本、路径、配置正文或凭据。
 
 任何数值或物理修正必须独立于机械重构提交，并生成新的 v2 行为参考。
 

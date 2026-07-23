@@ -128,6 +128,8 @@ direct-spool 端口。
 `RsRotorBearingCouple` 通过 `CoupledBearingBinding` 接收原生 bearing runtime、节点、可选单位
 adapter 和 direct-spool provider。转子载荷统一使用 `RotorLoadInput` 表达当前/上一时刻力；
 direct-spool 缺少 provider 时立即失败，跨单位调用缺少完整 adapter 时立即失败。
+每个 bearing 输出还必须与当前局部 `StepContext.time` 和 bearing 侧 `UnitSystem` 一致；单位
+adapter 返回到 rotor 侧后再次校验时间和 rotor 侧单位，旧快照或错误单位不会进入当前时步。
 `init()` 把时间网格首点登记为只读初始快照，`solve()` 只对后续目标时刻
 推进。时步 ledger 要求序号恰好加 1、时间增量与固定 `dt` 一致，因此 `t=0` 不再对应
 已经推进到 `dt` 的转子状态。
@@ -144,6 +146,8 @@ direct-spool 缺少 provider 时立即失败，跨单位调用缺少完整 adapt
 `CURRENT_SCHEMA_VERSION = "0.3.0"` 表达；它要求显式 `unit_system` 和 `control_mode`，并对 envelope 及嵌套配置执行字段白名单。旧平铺格式只进入
 `ALB.config.legacy.migrate_legacy_alb_config()` 的单向迁移路径，迁移报告会记录源格式、目标版本和
 默认值补全，当前模型不再同时承担宽松 legacy 解析职责。
+已验证 envelope 会递归冻结嵌套 mapping、sequence 和 ndarray；materialize 前仍会重新执行
+完整 schema 校验，调用者不能通过验证后修改嵌套对象绕过字段或数值约束。
 
 `ALBConfig.to_dict()` 与 `NodimALBConfig.to_dict()` 固定写出
 `"controller": "PID" | "FuzzyPID" | "none"` 类型标签；`from_dict()` 据此恢复具体配置类型和
@@ -172,7 +176,15 @@ thermal ALBNN 的实际输入列、feature set、target transform 和模型选�
 `begin_run/record/end_run`、`run_id + step_index` 幂等键和
 `alb.result-bundle.sha256.v1` 摘要；默认无 recorder 时不积累 ALB/ALBNN/harmonic 时间历史。
 完整内存、ring buffer、sampling 和字段 filtering 是可组合策略。record 失败发生在物理提交后，
-只生成 pending record，恢复不会重复物理计算。
+只生成 pending record，恢复不会重复物理计算。`end_run()` 默认拒绝存在 pending 的 run；
+调用者显式允许不完整关闭时返回 `INCOMPLETE` receipt 和未恢复记录键，不会把缺口误报为完整。
+
+类型化 coupling 保存读取组件 `result_snapshot()` 并组装纯内存结果树；新
+`BearingRuntimeProtocol`/rotor 实现不需要提供旧 `save()` 方法。只有旧组件兼容路径才可选调用
+现有 `save()`。
+
+运行时 failure snapshot 统一通过安全诊断函数保存异常类型、通用消息和 detail fingerprint，
+不会复制第三方异常中的原始路径、配置正文、控制字符或潜在凭据。
 
 写文件由 workflow 注入 `ArtifactWriterProtocol`；`ALB.infrastructure.persistence.DirectoryArtifactWriter` 返回含相对路径、媒体类型、字节数和 SHA-256 的 `ArtifactManifest`。纯数值结果对象不直接选择目录或 exporter。
 

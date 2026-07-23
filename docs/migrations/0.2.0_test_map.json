@@ -8,20 +8,21 @@
   "baseline_nodeids_sha256_computed": "8a14c7e0a28ac4925d9ce3e9db983d4704143f1167267ba06d888a9f04d25541",
   "baseline_recorded_digest_matches": true,
   "baseline_digest_note": "The frozen v1 digest was recomputed from the unchanged sorted 242-node set; the recorded and computed values match.",
-  "implementation_commit": "66ce5e9c8f81d93eb51852089fbdd099e5fa9a4d",
+  "implementation_commit": "1776cbfd6ccfcd2c19dd2a3479d7b8a276d800c8",
   "verification": {
     "collection_command": "E:/Anaconda2023/envs/ALB/python.exe -m pytest tests --collect-only -q -p no:cacheprovider",
-    "collected_node_count": 547,
-    "collected_nodeids_sha256": "80e2430e05b3cb92e6082e81820e2c37d369ba29e17ae625413c5783689d8ae4",
+    "collected_node_count": 564,
+    "collected_nodeids_sha256": "baf2199cb479424f702ed84ffdca018bea4910d4b73c798eb5b21358ae9fcfd0",
     "replacement_node_count": 242,
     "replacement_nodeids_sha256": "5bfc9bb3de3795ad68acece977e11c5271eaec1904ee352cd39eea9adbc48eed",
     "all_replacements_collected": true,
-    "full_suite_evidence": "docs/migrations/0.2.0_p2_architecture_acceptance.json",
+    "full_suite_evidence": "docs/migrations/0.3.0_release_acceptance.json",
     "notes": [
       "All 242 baseline nodes have an explicit replacement node.",
       "Migrated SURROGATE_TRAIN validation nodes are collected and executed.",
       "Remaining external validation skips state the missing caller migration.",
-      "Execution outcomes are recorded by the release acceptance runner, not hard-coded here."
+      "Execution outcomes are recorded by the release acceptance runner, not hard-coded here.",
+      "The 0.3 F01-F64 feature nodes are maintained separately in tools/validation/release_feature_manifest_0_3.json."
     ]
   },
   "mappings": [

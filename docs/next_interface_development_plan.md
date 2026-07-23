@@ -216,10 +216,13 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | F08-F20 | 已实现 | ALB/ALBSV/Nodim/ALBNN/harmonic 原生 DTO 生命周期、只读 output、诊断与失败封锁 |
 | F36-F41 | 已实现 | run-scoped recorder、v1 规范摘要、pending 恢复、内存/ring/sampling/filtering 组合策略、writer 分离 |
 | F21-F29 | 已实现 | `CoupledBearingBinding`、direct-spool provider、单位 adapter、`RotorLoadInput`、提交后发布顺序 |
-| F30-F35、F42-F46 | 0.3 边界已实现 | 新 coupling 正确性路径不依赖 Signal；原生 ALB/ALBNN/harmonic 默认不写 Signal 历史；legacy adapter 按 ADR 保留至至少 0.4.0 |
-| F54-F64 | 持续门禁 | 已增加 config-build-step、native/adapter/coupling、recorder/observer、单位和 failure injection 测试；最终全量、类型、性能、测试映射和 wheel 证据在候选提交后生成 |
+| F30-F34、F42-F46 | 已实现 | 新 coupling 正确性路径不依赖 Signal；原生 ALB/ALBNN/harmonic 默认不写 Signal 历史；observer 直接调用 Protocol 方法，不使用字符串反射 |
+| F35 | 延期到 0.4.0 | legacy Signal 仅保留给尚未清零的 film/thermal/rotor 消费者；AST 门禁禁止增加新消费者 |
+| F54-F63 | 已实现 | 64 项 manifest、故障注入、recorder 选择性/内存上界、Signal AST、精确参考和五领域时间/峰值内存报告均已落地 |
+| F64 | 等待最终证据提交 | 文档、测试映射和 26 个 strict 目标已更新；最终 detached pytest、wheel/extras smoke 和制品证据在候选提交后生成 |
 
-F35 尚未物理删除全部旧 Signal，不是方案未确定，而是 ADR-0001 要求至少保留一个 0.3.x minor
+64 项中 63 项已经实现；唯一未完成项是 F35。F35 尚未物理删除全部旧 Signal，不是方案未确定，
+而是 ADR-0001 要求至少保留一个 0.3.x minor
 兼容周期并先取得消费者清零证据。旧 film/thermal/rotor 消费者尚未清零，因此不能在 0.3.0
 提前删除兼容面；新代码不得再增加 Signal 依赖。
 
