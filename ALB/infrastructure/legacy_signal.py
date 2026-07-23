@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import warnings
+from typing import Any
 
 from ALB.contracts import RecordingRecovered, StepCompleted
 from ALB.core.events import Signal
@@ -15,7 +16,7 @@ class LegacySignalAdapter:
     0.4.0 after declared consumers reach zero.
     """
 
-    def __init__(self, component) -> None:
+    def __init__(self, component: Any) -> None:
         warnings.warn(
             "LegacySignalAdapter is deprecated; use StepObserverProtocol",
             DeprecationWarning,

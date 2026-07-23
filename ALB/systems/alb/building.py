@@ -160,7 +160,7 @@ def build_direct_spool_alb(
         raise TypeError(
             "component_factory must return a direct-spool bearing runtime"
         )
-    return cast(DirectSpoolBearingRuntimeProtocol, implementation)
+    return implementation
 
 
 def build_typed_bearing(

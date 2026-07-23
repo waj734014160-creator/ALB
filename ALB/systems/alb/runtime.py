@@ -1,6 +1,6 @@
 # coding: utf-8
 import copy
-from typing import TYPE_CHECKING, Iterable, Union
+from typing import Any, TYPE_CHECKING, Iterable, Union
 
 import numpy as np
 import pandas as pd
@@ -83,20 +83,20 @@ class ALB(BaseCSystem):
         super().__init__()
         if alb_config is None:
             alb_config = ALBConfig()
-        self._t = None
+        self._t: Any = None
         self.pads = list(pads)
         self.signal.children = [pad.signal for pad in self.pads]
         if len(self.pads) == 0:
             raise Exception("pads can't be empty")
         self.servovalves = servovalves
-        self.static_sv = None
+        self.static_sv: Any = None
         self.node_link = alb_config.node_link
         self.controller = adapt_controller(controller) if controller is not None else None
-        self._uv = None
-        self._uxy = None
-        self._uxyt = None
-        self._uxy_nodim = None
-        self._uxyt_nodim = None
+        self._uv: Any = None
+        self._uxy: Any = None
+        self._uxyt: Any = None
+        self._uxy_nodim: Any = None
+        self._uxyt_nodim: Any = None
         self._gxy = alb_config.gxy
         self._gxyt = alb_config.gxyt
         c_scale = getattr(alb_config, "c", None)
@@ -129,7 +129,7 @@ class ALB(BaseCSystem):
             columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
         )
         self._create_static_sv()
-        self.force = None
+        self.force: Any = None
 
     @property
     def gxy(self):

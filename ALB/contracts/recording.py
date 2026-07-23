@@ -181,7 +181,7 @@ def _encode_dtype(dtype: np.dtype[Any]) -> bytes:
     return b"D" + _length_prefixed(dtype.newbyteorder("<").str.encode("ascii"))
 
 
-def _encode_array(value: np.ndarray) -> bytes:
+def _encode_array(value: np.ndarray[Any, Any]) -> bytes:
     _validate_array_dtype(value.dtype)
     if value.dtype.fields:
         dtype_payload = _encode_dtype(value.dtype)

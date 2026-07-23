@@ -1,6 +1,7 @@
 ﻿# coding: utf-8
 
 from decimal import Decimal
+from typing import Any
 from uuid import uuid4
 
 import numpy as np
@@ -113,19 +114,19 @@ class RsRotorBearingCouple(BaseCSystem):
         self._time_iter = time_iter
         self._result = {}
         self._save_path = kwargs.get("save_path", "rotor_bearing_couple")
-        self._fnode_links = None
-        self._bnode_links = None
-        self._forceu0 = None
-        self._forceu1 = None
-        self._forcef0 = None
-        self._forcef1 = None
-        self._forcen0 = None
-        self._forcen1 = None
+        self._fnode_links: Any = None
+        self._bnode_links: Any = None
+        self._forceu0: Any = None
+        self._forceu1: Any = None
+        self._forcef0: Any = None
+        self._forcef1: Any = None
+        self._forcen0: Any = None
+        self._forcen1: Any = None
 
-        self._rp = None
-        self._nt = None
-        self._ts = None
-        self._last_output = None
+        self._rp: Any = None
+        self._nt: Any = None
+        self._ts: Any = None
+        self._last_output: ResultBundle | None = None
         self._runtime = CouplingStepRuntime()
         self._step_ledger = self._runtime.ledger
         self._valid = False
@@ -391,6 +392,7 @@ class RsRotorBearingCouple(BaseCSystem):
                 if adapter is not None
                 else global_input
             )
+            dto: BearingInput | DirectSpoolBearingInput
             if bearing.input_dto_type is DirectSpoolBearingInput:
                 if binding is None or binding.spool_provider is None:
                     raise TypeError(
@@ -473,17 +475,17 @@ class RsRotorBearingCouple(BaseCSystem):
                 rp_uxy = self._rp["uxy"][num]
                 rp_uxyt = self._rp["uxyt"][num]
                 force, metadata = self._evaluate_bearing(
-                        bearing,
-                        rp_uxy,
-                        rp_uxyt,
-                        StepContext(
-                            0,
-                            initial_time,
-                            self._time_iter.dt,
-                            "dimensional",
-                        ),
-                        self.bindings[num] if self.bindings else None,
-                    )
+                    bearing,
+                    rp_uxy,
+                    rp_uxyt,
+                    StepContext(
+                        0,
+                        initial_time,
+                        self._time_iter.dt,
+                        UnitSystem.DIMENSIONAL,
+                    ),
+                    self.bindings[num] if self.bindings else None,
+                )
                 self._forcef0.append(force)
                 if metadata is not None:
                     adapter_metadata.append(metadata)
@@ -496,7 +498,7 @@ class RsRotorBearingCouple(BaseCSystem):
             self._runtime.reset_ledger()
             self._step_ledger = self._runtime.ledger
             initial_context = StepContext(
-                0, initial_time, self._time_iter.dt, "dimensional"
+                0, initial_time, self._time_iter.dt, UnitSystem.DIMENSIONAL
             )
             candidate = coupling_snapshot(
                 self._rp,
@@ -593,7 +595,12 @@ class RsRotorBearingCouple(BaseCSystem):
             bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
         )
         for nt, ts in progress_bar:
-            context = StepContext(nt, ts, self._time_iter.dt, "dimensional")
+            context = StepContext(
+                nt,
+                ts,
+                self._time_iter.dt,
+                UnitSystem.DIMENSIONAL,
+            )
             self.advance(context, **kwargs)
 
     def input(self, *args, **kwargs):

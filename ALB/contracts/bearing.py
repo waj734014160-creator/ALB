@@ -19,7 +19,7 @@ from .types import UnitSystem
 from .types import StepContext
 
 
-InputT = TypeVar("InputT", contravariant=True)
+InputT = TypeVar("InputT")
 
 
 @runtime_checkable

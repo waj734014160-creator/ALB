@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from ALB.contracts import (
     BearingOutput,
@@ -27,7 +27,7 @@ class LegacyBearingRuntimeAdapter(Generic[InputT]):
     next implementation stage.
     """
 
-    def __init__(self, block, implementation) -> None:
+    def __init__(self, block: Any, implementation: Any) -> None:
         self._block = block
         self._implementation = implementation
         self.unit_system = UnitSystem.coerce(block.unit_system)

@@ -148,7 +148,7 @@ class BaseSystem(_CompositeSignalMixin):
             self.simple_models.append(simple_model)
         self._add_signal_child(simple_model)
 
-    def output(self, *args: Any, **kwargs: Any) -> None:
+    def output(self, *args: Any, **kwargs: Any) -> Any:
         return None
 
     def save(self, tofile: bool, path: str, name: str, *args: Any, **kwargs: Any) -> None:
@@ -175,7 +175,7 @@ class BaseCSystem(_CompositeSignalMixin, ABC):
     def solve(self, *args: Any, **kwargs: Any) -> None:
         return None
 
-    def output(self, *args: Any, **kwargs: Any) -> None:
+    def output(self, *args: Any, **kwargs: Any) -> Any:
         return None
 
     def input(self, *args: Any, **kwargs: Any) -> None:

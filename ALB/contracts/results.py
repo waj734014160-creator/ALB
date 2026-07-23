@@ -12,7 +12,7 @@ from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
 import numpy as np
 
 
-class _FrozenList(tuple):
+class _FrozenList(tuple[Any, ...]):
     """Immutable list snapshot that preserves the original container type."""
 
 

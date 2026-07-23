@@ -7,7 +7,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 import hashlib
 import json
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 
@@ -33,7 +33,7 @@ class LegacyALBMigrationReport:
     source_sha256: str
 
 
-def _json_primitive(value):
+def _json_primitive(value: Any) -> Any:
     """Normalize legacy values solely for a stable migration digest."""
 
     if isinstance(value, np.ndarray):
