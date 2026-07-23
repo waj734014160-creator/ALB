@@ -13,6 +13,7 @@ from ALB.core.events import Signal
 from ALB.core.lifecycle import LifecycleState, RuntimeLifecycle
 from ALB.core.validation import finite_real_array, finite_real_time, finite_real_vector
 from ALB.core.fem.base import BasePostProcess
+from ALB.contracts import RotorLoadInput, UnitSystem
 
 # from ALB.infrastructure.logging import logger
 from ALB.dynamics.identification import pearson_similarity
@@ -488,6 +489,20 @@ class RossRotor:
         if mapped_force0 is not None:
             self._force0 = mapped_force0
         self._lifecycle.latch()
+
+    def input_load(self, value: RotorLoadInput) -> None:
+        """Latch a validated dimensional nodal-load DTO."""
+
+        if not isinstance(value, RotorLoadInput):
+            raise TypeError("rotor load must be RotorLoadInput")
+        if value.unit_system is not UnitSystem.DIMENSIONAL:
+            raise ValueError("ROSS rotor loads must use dimensional units")
+        self.input_force2node(
+            value.time,
+            value.force,
+            value.node_links,
+            force0=value.previous_force,
+        )
 
     def init(self, x0=None):
         self._lifecycle.fail()

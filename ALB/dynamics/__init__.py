@@ -13,6 +13,14 @@ _EXPORTS = {
     "BearingForceTrack": ("ALB.dynamics.orbit", "BearingForceTrack"),
     "TimeIter": ("ALB.core.time", "TimeIter"),
     "TimeIterDt": ("ALB.core.time", "TimeIterDt"),
+    "CoupledBearingBinding": (
+        "ALB.dynamics.bindings",
+        "CoupledBearingBinding",
+    ),
+    "CouplingRuntimeDependencies": (
+        "ALB.dynamics.bindings",
+        "CouplingRuntimeDependencies",
+    ),
 }
 
 

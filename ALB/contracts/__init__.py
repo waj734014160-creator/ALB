@@ -5,6 +5,7 @@ from .bearing import (
     BearingProtocol,
     BearingRuntimeProtocol,
     DirectSpoolBearingRuntimeProtocol,
+    SpoolCommandProviderProtocol,
 )
 from .block import (
     AdvancingBlock,
@@ -86,6 +87,7 @@ __all__ = [
     "ControlOutput",
     "DirectSpoolBearingInput",
     "DirectSpoolBearingRuntimeProtocol",
+    "SpoolCommandProviderProtocol",
     "DIGEST_ALGORITHM",
     "ControllerProtocol",
     "ConvergenceStatus",

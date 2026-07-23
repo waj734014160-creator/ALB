@@ -8,6 +8,7 @@ import numpy.typing as npt
 from .numeric import FloatArray
 from .lifecycle import RuntimeLifecycleProtocol
 from .types import UnitSystem
+from .ports import RotorLoadInput
 
 
 RotorStateMap: TypeAlias = Mapping[str, FloatArray]
@@ -32,6 +33,9 @@ class RotorProtocol(RuntimeLifecycleProtocol, Protocol):
         force0: npt.ArrayLike | None = None,
     ) -> None:
         """Latch per-node force data without propagating the state."""
+
+    def input_load(self, value: RotorLoadInput) -> None:
+        """Latch the standard nodal-load DTO without advancing."""
 
     def advance(self) -> FloatArray:
         """Advance exactly once from the currently latched load."""

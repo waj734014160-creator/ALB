@@ -1,6 +1,7 @@
 ﻿# coding: utf-8
 
 from decimal import Decimal
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
@@ -13,17 +14,34 @@ from ALB.contracts import (
     BearingInput,
     BearingOutput,
     BearingRuntimeProtocol,
+    DirectSpoolBearingInput,
+    PendingRecord,
+    RecordingRecovered,
+    RecordReceipt,
     ResultBundle,
+    RotorLoadInput,
+    StepCompleted,
     StepContext,
+    StepRecordingStatus,
     UnitSystem,
+    ValveOutput,
+    result_snapshot,
+    validate_recordable_bundle,
 )
 from ALB.dynamics.rotor import Gravity, StaticLoad
 
 # from ALB.infrastructure.logging import logger
 from .rotor import RossRotor, SingleRotor, UnbalancedExcitation
-from .coupling_runtime import CouplingStepRuntime, coupling_snapshot
+from .coupling_runtime import (
+    CouplingStepRuntime,
+    PostCommitObserverError,
+    PostCommitRecordingError,
+    coupling_snapshot,
+)
 from .coupling_results import build_coupling_save_tree
+from .bindings import CoupledBearingBinding, CouplingRuntimeDependencies
 from ALB.core.numerics.arrays import vertical_stack_nonempty
+from ALB.infrastructure.observers import ObserverDispatcher
 
 
 class RotorBearingCouple(BaseSystem):
@@ -74,11 +92,20 @@ class RsRotorBearingCouple(BaseCSystem):
         """
         super().__init__()
         self.rotor = rotor
-        self.bearings = list(bearings)
+        binding_flags = [isinstance(item, CoupledBearingBinding) for item in bearings]
+        if any(binding_flags) and not all(binding_flags):
+            raise TypeError("cannot mix coupled bindings and legacy bearing objects")
+        self.bindings = list(bearings) if all(binding_flags) and bearings else []
+        self.bearings = (
+            [binding.bearing for binding in self.bindings]
+            if self.bindings
+            else list(bearings)
+        )
         for bearing in self.bearings:
             self._validate_bearing(bearing)
-        self.signal.children = [bearing.signal for bearing in self.bearings]
-        self.signal.add_child(self.rotor.signal)
+        if not self.bindings:
+            self.signal.children = [bearing.signal for bearing in self.bearings]
+            self.signal.add_child(self.rotor.signal)
         self.forces = []
         self._time_iter = time_iter
         self._result = {}
@@ -99,6 +126,19 @@ class RsRotorBearingCouple(BaseCSystem):
         self._runtime = CouplingStepRuntime()
         self._step_ledger = self._runtime.ledger
         self._valid = False
+        self._dependencies = kwargs.get("dependencies") or CouplingRuntimeDependencies(
+            run_id=f"coupling-{uuid4().hex}"
+        )
+        self._run_id = self._dependencies.run_id
+        self._run_started = False
+        self._pending_record: PendingRecord | None = None
+        self._record_receipt: RecordReceipt | None = None
+        self._recording_status = StepRecordingStatus.NOT_CONFIGURED
+        self._observer_dispatcher = ObserverDispatcher(
+            self._dependencies.observers
+        )
+        self._failure_result: ResultBundle | None = None
+        self._adapter_metadata: tuple[dict[str, object], ...] = ()
 
     @property
     def results(self):
@@ -126,6 +166,160 @@ class RsRotorBearingCouple(BaseCSystem):
         self._valid = False
         self._last_output = None
 
+    def _seal_failure(
+        self,
+        context: StepContext | None,
+        phase: str,
+        error: BaseException,
+    ) -> None:
+        """Seal a sanitized pre-commit failure before invalidating runtime."""
+
+        last_result = self._last_output
+        self._failure_result = result_snapshot(
+            {
+                "last_committed_result": (
+                    None
+                    if last_result is None
+                    else {
+                        "values": last_result.values,
+                        "metadata": last_result.metadata,
+                    }
+                )
+            },
+            {
+                "run_id": self._run_id,
+                "attempted_context": (
+                    None
+                    if context is None
+                    else {
+                        "step_index": context.step_index,
+                        "time": context.time,
+                        "dt": context.dt,
+                        "unit_system": context.unit_system.value,
+                    }
+                ),
+                "phase": phase,
+                "component": "rotor-bearing coupling",
+                "error_type": type(error).__name__,
+                "message": str(error),
+                "physical_step_committed": False,
+            },
+        )
+        self._invalidate_runtime()
+
+    def failure_snapshot(self) -> ResultBundle:
+        """Return the latest sanitized pre-commit failure diagnostic."""
+
+        if self._failure_result is None:
+            raise RuntimeError("no coupling failure snapshot is available")
+        return self._failure_result
+
+    def diagnostic_snapshot(self) -> ResultBundle:
+        """Return current post-commit status without exposing mutable state."""
+
+        context = self._step_ledger.last_context
+        return result_snapshot(
+            {
+                "observer_failures": tuple(
+                    {
+                        "observer_name": failure.observer_name,
+                        "event_type": failure.event_type,
+                        "error_type": failure.error_type,
+                        "message": failure.message,
+                    }
+                    for failure in self._observer_dispatcher.failures
+                )
+            },
+            {
+                "run_id": self._run_id,
+                "committed_step_index": (
+                    None if context is None else context.step_index
+                ),
+                "physical_step_committed": context is not None,
+                "recording_status": self._recording_status.value,
+                "pending_record_key": (
+                    None
+                    if self._pending_record is None
+                    else {
+                        "run_id": self._pending_record.run_id,
+                        "step_index": self._pending_record.context.step_index,
+                    }
+                ),
+                "next_advance_blocked": self._pending_record is not None,
+            },
+        )
+
+    def _begin_recorder_if_needed(self) -> None:
+        recorder = self._dependencies.recorder
+        if recorder is not None and not self._run_started:
+            recorder.begin_run(self._run_id)
+            self._run_started = True
+
+    def _after_commit(
+        self,
+        context: StepContext,
+        bundle: ResultBundle,
+    ) -> None:
+        """Record and observe one already committed physical step."""
+
+        recorder = self._dependencies.recorder
+        pending_error: BaseException | None = None
+        if recorder is None:
+            self._recording_status = StepRecordingStatus.NOT_CONFIGURED
+            self._record_receipt = None
+        else:
+            try:
+                self._record_receipt = recorder.record(context, bundle)
+                self._recording_status = StepRecordingStatus.RECORDED
+                self._pending_record = None
+            except Exception as exc:
+                pending_error = exc
+                self._recording_status = StepRecordingStatus.PENDING
+                self._record_receipt = None
+                self._pending_record = PendingRecord(
+                    self._run_id,
+                    context,
+                    bundle,
+                    f"{type(exc).__name__}: {exc}",
+                )
+        event = StepCompleted(
+            self._run_id,
+            context,
+            bundle,
+            self._recording_status,
+            self._record_receipt,
+            self._pending_record,
+        )
+        observer_failures = self._observer_dispatcher.step_completed(event)
+        if (
+            observer_failures
+            and self._dependencies.observer_failure_policy == "raise"
+        ):
+            raise PostCommitObserverError(observer_failures)
+        if (
+            pending_error is not None
+            and self._dependencies.record_failure_policy == "raise"
+        ):
+            raise PostCommitRecordingError(self._pending_record)
+
+    def retry_pending_record(self) -> RecordReceipt:
+        """Retry only post-commit recording without re-running physics."""
+
+        if self._pending_record is None:
+            raise RuntimeError("no pending record is available")
+        recorder = self._dependencies.recorder
+        if recorder is None:
+            raise RuntimeError("no recorder is configured")
+        pending = self._pending_record
+        receipt = recorder.record(pending.context, pending.bundle)
+        self._pending_record = None
+        self._record_receipt = receipt
+        self._recording_status = StepRecordingStatus.RECORDED
+        self._observer_dispatcher.recording_recovered(
+            RecordingRecovered(self._run_id, pending.key, receipt)
+        )
+        return receipt
+
     def _invalidate_topology(self) -> None:
         """Require a fresh init after the coupled component graph changes."""
 
@@ -144,9 +338,15 @@ class RsRotorBearingCouple(BaseCSystem):
     def _validate_bearing(bearing):
         """Validate the minimum dimensional bearing integration contract."""
 
-        for attribute in ("node_link", "signal", "init", "input", "output", "save"):
+        for attribute in ("node_link", "init", "input", "output"):
             if not hasattr(bearing, attribute):
                 raise TypeError(f"bearing must provide '{attribute}'")
+        if hasattr(bearing, "input_dto_type") and not isinstance(
+            bearing, BearingRuntimeProtocol
+        ):
+            raise TypeError("native bearing must satisfy BearingRuntimeProtocol")
+        if UnitSystem.coerce(bearing.unit_system) is UnitSystem.NONDIMENSIONAL:
+            return
         require_unit_system(
             bearing,
             "dimensional",
@@ -154,37 +354,82 @@ class RsRotorBearingCouple(BaseCSystem):
         )
 
     @staticmethod
-    def _evaluate_bearing(bearing, displacement, velocity, time) -> np.ndarray:
+    def _evaluate_bearing(
+        bearing,
+        displacement,
+        velocity,
+        context: StepContext,
+        binding: CoupledBearingBinding | None = None,
+    ) -> tuple[np.ndarray, dict[str, object] | None]:
         """Evaluate a native bearing runtime or a transitional legacy bearing."""
 
         if (
             isinstance(bearing, BearingRuntimeProtocol)
-            and bearing.input_dto_type is BearingInput
+            and bearing.input_dto_type in (BearingInput, DirectSpoolBearingInput)
         ):
-            dto = BearingInput(
+            global_input = BearingInput(
                 displacement=displacement,
                 velocity=velocity,
-                time=time,
+                time=context.time,
                 unit_system=UnitSystem.DIMENSIONAL,
             )
-            try:
-                bearing.input(dto)
-            except TypeError as exc:
-                raise TypeError(
-                    "direct-spool bearings require an explicit spool provider "
-                    "before they can be coupled to a rotor"
-                ) from exc
+            adapter = binding.unit_adapter if binding is not None else None
+            local_context = (
+                adapter.rotor_context_to_bearing(context)
+                if adapter is not None
+                else context
+            )
+            local_input = (
+                adapter.rotor_input_to_bearing(global_input)
+                if adapter is not None
+                else global_input
+            )
+            if bearing.input_dto_type is DirectSpoolBearingInput:
+                if binding is None or binding.spool_provider is None:
+                    raise TypeError(
+                        "direct-spool bearings require an explicit spool provider"
+                    )
+                provider = binding.spool_provider
+                provider.input(context, global_input)
+                provider.evaluate()
+                spool = provider.output()
+                if not isinstance(spool, ValveOutput):
+                    raise TypeError("spool provider output must be ValveOutput")
+                if spool.time != context.time:
+                    raise ValueError("spool command time must match global context")
+                global_direct = DirectSpoolBearingInput(global_input, spool)
+                dto = (
+                    adapter.rotor_direct_spool_to_bearing(global_direct)
+                    if adapter is not None
+                    else global_direct
+                )
+            else:
+                dto = local_input
+            bearing.input(dto)
             bearing.evaluate()
             output = bearing.output()
             if not isinstance(output, BearingOutput):
                 raise TypeError("native bearing output must be BearingOutput")
-            return output.force.copy()
-        bearing.input(uxy=displacement, uxyt=velocity, t=time)
-        return validate_bearing_output(bearing.output())
+            rotor_output = (
+                adapter.bearing_output_to_rotor(output)
+                if adapter is not None
+                else output
+            )
+            metadata = None
+            if adapter is not None:
+                metadata = adapter.scales.descriptor(
+                    applied_transform="bearing_to_rotor",
+                    global_context=context,
+                    bearing_local_context=local_context,
+                )
+            return rotor_output.force.copy(), metadata
+        bearing.input(uxy=displacement, uxyt=velocity, t=context.time)
+        return validate_bearing_output(bearing.output()), None
 
     def init(self, **kwargs):
         self._invalidate_runtime()
         try:
+            self._begin_recorder_if_needed()
             time_values = [float(value) for value in self._time_iter()]
             if not time_values:
                 raise ValueError("rotor-bearing coupling time grid cannot be empty")
@@ -193,7 +438,11 @@ class RsRotorBearingCouple(BaseCSystem):
             for bearing in self.bearings:
                 bearing.init()
             self._fnode_links = get_all_attribute_values(self.forces, "node_link")
-            self._bnode_links = get_all_attribute_values(self.bearings, "node_link")
+            self._bnode_links = (
+                [binding.node_link for binding in self.bindings]
+                if self.bindings
+                else get_all_attribute_values(self.bearings, "node_link")
+            )
             self._fnode_links = np.hstack(
                 [
                     np.array(self._fnode_links, dtype=np.int32),
@@ -212,17 +461,26 @@ class RsRotorBearingCouple(BaseCSystem):
                     columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
                 )
             self._forcef0 = []
+            adapter_metadata = []
             for num, bearing in enumerate(self.bearings):
                 rp_uxy = self._rp["uxy"][num]
                 rp_uxyt = self._rp["uxyt"][num]
-                self._forcef0.append(
-                    self._evaluate_bearing(
+                force, metadata = self._evaluate_bearing(
                         bearing,
                         rp_uxy,
                         rp_uxyt,
-                        initial_time,
+                        StepContext(
+                            0,
+                            initial_time,
+                            self._time_iter.dt,
+                            "dimensional",
+                        ),
+                        self.bindings[num] if self.bindings else None,
                     )
-                )
+                self._forcef0.append(force)
+                if metadata is not None:
+                    adapter_metadata.append(metadata)
+            self._adapter_metadata = tuple(adapter_metadata)
             self._forcef0 = np.array(self._forcef0)
             self._forcen0 = vertical_stack_nonempty(
                 [np.array(self._forceu0), np.array(self._forcef0)]
@@ -233,16 +491,24 @@ class RsRotorBearingCouple(BaseCSystem):
             initial_context = StepContext(
                 0, initial_time, self._time_iter.dt, "dimensional"
             )
-            self._last_output = coupling_snapshot(
+            candidate = coupling_snapshot(
                 self._rp,
                 self._forcef0,
                 self._forcen0,
                 initial_context,
                 initial=True,
+                unit_adapters=self._adapter_metadata,
             )
+            if self._dependencies.recorder is not None:
+                validate_recordable_bundle(candidate)
             self._runtime.publish_initial(initial_context)
-        except BaseException:
-            self._invalidate_runtime()
+            self._last_output = candidate
+            self._failure_result = None
+            self._after_commit(initial_context, candidate)
+        except (PostCommitRecordingError, PostCommitObserverError):
+            raise
+        except BaseException as exc:
+            self._seal_failure(None, "init", exc)
             raise
         self._valid = True
 
@@ -333,6 +599,10 @@ class RsRotorBearingCouple(BaseCSystem):
         """Advance one coupled physical step and commit it exactly once."""
 
         self._require_valid("advancing")
+        if self._pending_record is not None:
+            raise RuntimeError(
+                "result recording is pending; call retry_pending_record()"
+            )
         if not isinstance(context, StepContext):
             raise TypeError("context must be StepContext")
         if context.unit_system.value != "dimensional":
@@ -348,39 +618,67 @@ class RsRotorBearingCouple(BaseCSystem):
                     [force(ts) for force in self.forces]
                 )
                 self._forcef1 = []
+                adapter_metadata = []
                 for num, bearing in enumerate(self.bearings):
-                    self._forcef1.append(
-                        self._evaluate_bearing(
+                    force, metadata = self._evaluate_bearing(
                             bearing,
                             uxy_n1[num],
                             uxyt_n1[num],
-                            ts,
+                            context,
+                            self.bindings[num] if self.bindings else None,
                         )
-                    )
+                    self._forcef1.append(force)
+                    if metadata is not None:
+                        adapter_metadata.append(metadata)
                 self._forcef1 = np.array(self._forcef1)
+                self._adapter_metadata = tuple(adapter_metadata)
 
                 self._forcen0 = vertical_stack_nonempty((self._forceu0, self._forcef0))
                 self._forcen1 = vertical_stack_nonempty((self._forceu1, self._forcef1))
-                self.rotor.input_force2node(
-                    ts, self._forcen1, self._fnode_links, force0=self._forcen0
+                rotor_load = RotorLoadInput(
+                    force=self._forcen1,
+                    previous_force=self._forcen0,
+                    node_links=tuple(
+                        int(value) for value in np.asarray(self._fnode_links)
+                    ),
+                    time=ts,
+                    unit_system=UnitSystem.DIMENSIONAL,
                 )
+                input_load = getattr(self.rotor, "input_load", None)
+                if callable(input_load):
+                    input_load(rotor_load)
+                else:
+                    self.rotor.input_force2node(
+                        ts,
+                        rotor_load.force,
+                        rotor_load.node_links,
+                        force0=rotor_load.previous_force,
+                    )
                 self.rotor.advance()
                 self._rp = self.rotor.output(self._bnode_links)
                 self._forcen0 = self._forcen1
                 self._forceu0 = self._forceu1
                 self._forcef0 = self._forcef1
 
-                self.signal.lead_loop("finish_signal")
-                self._last_output = coupling_snapshot(
+                if not self.bindings:
+                    self.signal.lead_loop("finish_signal")
+                candidate = coupling_snapshot(
                     self._rp,
                     self._forcef1,
                     self._forcen1,
                     context,
+                    unit_adapters=self._adapter_metadata,
                 )
+                if self._dependencies.recorder is not None:
+                    validate_recordable_bundle(candidate)
                 self._runtime.commit(context)
+                self._last_output = candidate
                 self._nt += 1
-        except BaseException:
-            self._invalidate_runtime()
+            self._after_commit(context, candidate)
+        except (PostCommitRecordingError, PostCommitObserverError):
+            raise
+        except BaseException as exc:
+            self._seal_failure(context, "advance", exc)
             raise
         return self.output()
 

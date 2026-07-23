@@ -77,6 +77,7 @@ def coupling_snapshot(
     context: StepContext,
     *,
     initial: bool = False,
+    unit_adapters: tuple[Mapping[str, object], ...] = (),
 ) -> ResultBundle:
     """Build the standard immutable result for one coupled physical step."""
 
@@ -87,6 +88,8 @@ def coupling_snapshot(
     }
     if initial:
         metadata["initial_snapshot"] = True
+    if unit_adapters:
+        metadata["unit_adapters"] = unit_adapters
     return result_snapshot(
         {
             "rotor_displacement": rotor_state["uxy"],
@@ -99,3 +102,31 @@ def coupling_snapshot(
 
 
 __all__ = ["CouplingStepRuntime", "coupling_snapshot"]
+
+
+class PostCommitRecordingError(RuntimeError):
+    """Report recorder failure after the physical step was committed."""
+
+    physical_step_committed = True
+
+    def __init__(self, pending_record: object) -> None:
+        super().__init__("physical step committed but result recording is pending")
+        self.pending_record = pending_record
+
+
+class PostCommitObserverError(RuntimeError):
+    """Report strict observer failure after the physical step was committed."""
+
+    physical_step_committed = True
+
+    def __init__(self, failures: tuple[object, ...]) -> None:
+        super().__init__("physical step committed but an observer failed")
+        self.failures = failures
+
+
+__all__ = [
+    "CouplingStepRuntime",
+    "PostCommitObserverError",
+    "PostCommitRecordingError",
+    "coupling_snapshot",
+]

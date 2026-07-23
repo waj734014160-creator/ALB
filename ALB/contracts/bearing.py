@@ -8,9 +8,15 @@ import numpy.typing as npt
 from .block import EvaluableBlock
 from .lifecycle import LifecycleState
 from .model import ConvergenceStatus
-from .ports import BearingInput, BearingOutput, DirectSpoolBearingInput
+from .ports import (
+    BearingInput,
+    BearingOutput,
+    DirectSpoolBearingInput,
+    ValveOutput,
+)
 from .results import ResultBundle
 from .types import UnitSystem
+from .types import StepContext
 
 
 InputT = TypeVar("InputT", contravariant=True)
@@ -74,6 +80,20 @@ class DirectSpoolBearingRuntimeProtocol(
 
 
 @runtime_checkable
+class SpoolCommandProviderProtocol(Protocol):
+    """Produce one time-aligned normalized spool command for a coupled bearing."""
+
+    def input(self, context: "StepContext", bearing_input: BearingInput) -> None:
+        """Latch the global step and current rotor-domain bearing state."""
+
+    def evaluate(self) -> None:
+        """Compute one spool command."""
+
+    def output(self) -> ValveOutput:
+        """Read the completed normalized spool command."""
+
+
+@runtime_checkable
 class BearingCoefficientProtocol(Protocol):
     """Optional local-linear coefficient capability."""
 
@@ -95,4 +115,5 @@ __all__ = [
     "BearingProtocol",
     "BearingRuntimeProtocol",
     "DirectSpoolBearingRuntimeProtocol",
+    "SpoolCommandProviderProtocol",
 ]
