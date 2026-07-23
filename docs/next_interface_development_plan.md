@@ -211,9 +211,10 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 ### 阶段 0：冻结新边界参考
 
 - 五份 ADR 已全部 Accepted，架构决策门禁完成。
-- 固定当前 raw implementation、block、coupler、signal 历史、保存行为和跨单位转换。
-- 参考必须覆盖普通 ALB、direct-spool、thermal、ALBNN shell、真实 coupling 和异常路径。
+- 已固定当前 raw implementation、block、coupler、signal 历史、保存行为和跨单位转换。
+- 新参考覆盖普通 ALB、direct-spool、thermal、ALBNN shell、真实 coupling 和异常路径，并继续复用既有真实 ROSS 4/6-DOF、Signal 回调顺序及全领域 v1 参考。
 - 单独记录有意改变的生命周期/历史行为，数值数组仍要求精确一致。
+- 阶段 0 已完成；后续不得覆盖这些 v1 参考。
 
 ### 阶段 1：先固定配置，再改善用户入口
 

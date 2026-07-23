@@ -1,0 +1,188 @@
+{
+  "schema": "alb.coupling-failure-save-reference.v1",
+  "baseline_commit": "b025e412e38c2dfb0341e1558637c42d73e00e47",
+  "environment": {
+    "python": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "numpy": "1.24.3"
+  },
+  "contracts": {
+    "success": {
+      "initial_context": {
+        "step_index": 0,
+        "time": 0.0
+      },
+      "last_context": {
+        "step_index": 2,
+        "time": 0.02
+      },
+      "duplicate_error": "physical step has already been committed",
+      "rotor_input_calls": 2,
+      "rotor_advance_calls": 2,
+      "save_tree": {
+        "coupling_reference": {
+          "rotor": null,
+          "_ReferenceBearing0": null
+        }
+      },
+      "save_snapshot_schema": "alb.result-tree.v1",
+      "save_snapshot_root": "coupling_reference"
+    },
+    "failure": {
+      "failure_message": "injected bearing completion failure",
+      "lifecycle_state": "failed",
+      "rotor_input_calls": 1,
+      "rotor_advance_calls": 1,
+      "ledger_last_context": {
+        "step_index": 0,
+        "time": 0.0
+      },
+      "blocked": {
+        "output": "coupling state is invalid; call init() before reading output",
+        "results": "coupling state is invalid; call init() before reading results",
+        "save": "coupling state is invalid; call init() before saving results",
+        "advance": "coupling state is invalid; call init() before advancing"
+      }
+    }
+  },
+  "arrays": {
+    "failure.bearing_force_history": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "6de86296a9944294aafd61d2f640998f35c69e4a4c803d6e78bb7843d29d6b38"
+    },
+    "failure.bearing_input_history": {
+      "shape": [
+        2,
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "2d03fc156150e96ab72f9463e837ed4f6e416ba02939d646c28ac6f45d48f4fd"
+    },
+    "failure.rotor_force_history": {
+      "shape": [
+        1,
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7886fe67ba4484d889aa8ec41f0b242f914fbf6bae1be2ed23f56a007e3547b0"
+    },
+    "failure.rotor_state": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "ffd197f51045b6ab70c0b9e786c2e9d3098dbccdeafa53f32a2d7b0920b3c5c2"
+    },
+    "failure.rotor_velocity": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "96acd5e9efd5340c72f28be4bb3d160367a3d5731e7dd471358bc9347552ec4f"
+    },
+    "success.bearing_force_history": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "122b6e70f578f230a4d7a4332fc2f83ee85356075f8810047a352667b5fb4628"
+    },
+    "success.bearing_input_history": {
+      "shape": [
+        3,
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "cef0b76169a26cee64ee4a4d0444038d1d859489823c51842d4ac65e887655a0"
+    },
+    "success.coupling_history": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "8ceb926bf959711e6a56c5d4bd0e0562de88b5a9aeaf2952ef580909aada3de1"
+    },
+    "success.first_bearing_force": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7886fe67ba4484d889aa8ec41f0b242f914fbf6bae1be2ed23f56a007e3547b0"
+    },
+    "success.first_nodal_force": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7886fe67ba4484d889aa8ec41f0b242f914fbf6bae1be2ed23f56a007e3547b0"
+    },
+    "success.initial_bearing_force": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "7886fe67ba4484d889aa8ec41f0b242f914fbf6bae1be2ed23f56a007e3547b0"
+    },
+    "success.rotor_force_history": {
+      "shape": [
+        2,
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "ec57f21ed8a07d37a4d2c971876b3780619d2e06680e8a56b007b0234631f554"
+    },
+    "success.rotor_previous_force_history": {
+      "shape": [
+        2,
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "6de86296a9944294aafd61d2f640998f35c69e4a4c803d6e78bb7843d29d6b38"
+    },
+    "success.rotor_state": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "b908ca8cb2cfc68c65f8f5a7fb8e6b118544248ad71278c8aa9dc2fbfdfd8d2f"
+    },
+    "success.rotor_velocity": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "38162bc113f31e11df50df7837a050107ba3b1bc9c088defd7a6eee5b829ed60"
+    },
+    "success.second_bearing_force": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "33616a6de65df55f5724a14b3289e41022f014400d8e874ac873b0a6183f6b64"
+    },
+    "success.second_nodal_force": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "33616a6de65df55f5724a14b3289e41022f014400d8e874ac873b0a6183f6b64"
+    }
+  }
+}

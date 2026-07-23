@@ -1,0 +1,562 @@
+{
+  "schema": "alb.runtime-families-reference.v1",
+  "baseline_commit": "b025e412e38c2dfb0341e1558637c42d73e00e47",
+  "random_seed": 20260723,
+  "environment": {
+    "python": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "numpy": "1.24.3",
+    "scipy": "1.10.1",
+    "scikit-fem": "12.0.1"
+  },
+  "contracts": {
+    "dimensional.alb": {
+      "class_name": "ALB",
+      "unit_system": "dimensional",
+      "kind": "ALB",
+      "thermal": false,
+      "history_columns": [
+        "t",
+        "ux",
+        "uy",
+        "uxt",
+        "uyt",
+        "fx",
+        "fy"
+      ],
+      "save_tree": {
+        "dimensional_alb": {
+          "pad0": {
+            "orifice_results\\CSOrifice0": null,
+            "film_results": null
+          },
+          "pad1": {
+            "orifice_results\\CSOrifice0": null,
+            "film_results": null
+          },
+          "pad2": {
+            "orifice_results\\CSOrifice0": null,
+            "film_results": null
+          },
+          "pad3": {
+            "orifice_results\\CSOrifice0": null,
+            "film_results": null
+          },
+          "servovalves0": null,
+          "servovalves1": null
+        }
+      }
+    },
+    "dimensional.albsv": {
+      "class_name": "ALBSV",
+      "unit_system": "dimensional",
+      "kind": "ALBSV",
+      "thermal": false,
+      "history_columns": [
+        "t",
+        "ux",
+        "uy",
+        "uxt",
+        "uyt",
+        "fx",
+        "fy"
+      ],
+      "save_tree": {
+        "dimensional_albsv": {
+          "pad0": {
+            "orifice_results\\CSOrifice0": null,
+            "film_results": null
+          },
+          "pad1": {
+            "orifice_results\\CSOrifice0": null,
+            "film_results": null
+          },
+          "pad2": {
+            "orifice_results\\CSOrifice0": null,
+            "film_results": null
+          },
+          "pad3": {
+            "orifice_results\\CSOrifice0": null,
+            "film_results": null
+          },
+          "servovalves0": null,
+          "servovalves1": null
+        }
+      }
+    },
+    "nondimensional.alb": {
+      "class_name": "NodimALB",
+      "unit_system": "nondimensional",
+      "kind": "ALB",
+      "thermal": false,
+      "history_columns": [
+        "t",
+        "ux",
+        "uy",
+        "uxt",
+        "uyt",
+        "fx",
+        "fy"
+      ],
+      "save_tree": {
+        "nondimensional_alb": {
+          "pad0": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad1": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad2": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad3": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "servovalves0": null,
+          "servovalves1": null,
+          "controller": null
+        }
+      }
+    },
+    "nondimensional.albsv": {
+      "class_name": "NodimALBSV",
+      "unit_system": "nondimensional",
+      "kind": "ALBSV",
+      "thermal": false,
+      "history_columns": [
+        "t",
+        "ux",
+        "uy",
+        "uxt",
+        "uyt",
+        "fx",
+        "fy"
+      ],
+      "save_tree": {
+        "nondimensional_albsv": {
+          "pad0": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad1": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad2": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad3": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "servovalves0": null,
+          "servovalves1": null,
+          "controller": null
+        }
+      }
+    },
+    "nondimensional.albsv_thermal": {
+      "class_name": "NodimALBSV",
+      "unit_system": "nondimensional",
+      "kind": "ALBSV",
+      "thermal": true,
+      "history_columns": [
+        "t",
+        "ux",
+        "uy",
+        "uxt",
+        "uyt",
+        "fx",
+        "fy"
+      ],
+      "save_tree": {
+        "nondimensional_albsv": {
+          "pad0": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad1": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad2": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad3": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "servovalves0": null,
+          "servovalves1": null,
+          "controller": null
+        }
+      },
+      "thermal_converged": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    "harmonic": {
+      "class_name": "ALBHarmonicLinear",
+      "unit_system": "dimensional",
+      "history_columns": [
+        "t",
+        "ux",
+        "uy",
+        "uxt",
+        "uyt",
+        "controller_u_x",
+        "controller_u_y",
+        "xv_x",
+        "xv_y",
+        "xv_quadrature_x",
+        "xv_quadrature_y",
+        "fk_x",
+        "fk_y",
+        "fc_x",
+        "fc_y",
+        "fxv_x",
+        "fxv_y",
+        "fx",
+        "fy",
+        "controller_saturated",
+        "servovalve_saturated"
+      ],
+      "save_tree": {
+        "harmonic": null
+      }
+    },
+    "albnn_shell": {
+      "class_name": "ALBNNAgent",
+      "agent": "ALBNNAgent",
+      "history_columns": [
+        "t",
+        "ux",
+        "uy",
+        "uxt",
+        "uyt",
+        "fx",
+        "fy"
+      ],
+      "compatibility_setup": "injected_missing_FakeOf_symbol",
+      "save_tree": {
+        "albnn": null
+      }
+    }
+  },
+  "arrays": {
+    "albnn_shell.force": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "26435656977728efab04622f6ece7c336fa179e3fc2cec76beaeac7ef2d52505"
+    },
+    "albnn_shell.history": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "1557edbfd3fd426fe3fbc68b8ebdc19562f8fba798593e4dcd3e040d5505fce5"
+    },
+    "dimensional.alb.force": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "fa69a6140462c4a2b314bceb2b859663c900c6c08cf8957ba0534ca048b52f93"
+    },
+    "dimensional.alb.friction": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8546aed985fe1219af34b677d92042a4ee0fa0220aa37fb5a8cafab7d96fecaa"
+    },
+    "dimensional.alb.history": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "7af656580364e32ee9bff357a7cdbf6e0a13878c26312ed89d8819fa5f405883"
+    },
+    "dimensional.alb.pressure": {
+      "shape": [
+        4,
+        128
+      ],
+      "dtype": "float64",
+      "sha256": "2fa2327fbf867781f7fa7ceac849714e9df407686b2928d79eab49194ba89071"
+    },
+    "dimensional.alb.spool": {
+      "shape": [
+        2,
+        2,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "dimensional.albsv.force": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "1e59c17bfe53095369700003a051cf0d82b8ca23386c7d170bb7e20cb5a6f7cf"
+    },
+    "dimensional.albsv.friction": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "f435d44e00f9a42f17a9ca36581a6cef3797dcc2b3bffee600b82fbb3abae7a6"
+    },
+    "dimensional.albsv.history": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "fb57fb2435408ced478a2a0dce2db6864ff1a73f2e76473b14ac180cf900ae8f"
+    },
+    "dimensional.albsv.pressure": {
+      "shape": [
+        4,
+        128
+      ],
+      "dtype": "float64",
+      "sha256": "b17b8626708c1eef24f9ce82f2738edda1338d5569f88355c1444324d0aea56d"
+    },
+    "dimensional.albsv.spool": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "e96c395b15891a2f1e8b2cda1bf247887c3b51592a19c7bffee1222b1282349a"
+    },
+    "harmonic.C": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "26e79aec4ed459e2fe0b1a3d47884af2c2f2fee95cbea4199981aa69e213e04c"
+    },
+    "harmonic.G_xv_imag": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "9e8e607dee7eae9c97b352bcfda84447b732fcb382fb55b40e051649eceb0432"
+    },
+    "harmonic.G_xv_real": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "418e19dddf5e3d823ba13cd22fd2db2cf6b858e61086e9aad3d71c9b7519dca1"
+    },
+    "harmonic.K": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "00012848b4f0ee355a1da9cdc6e3dde1f7a932c656ef7b4a50658ceb6b1d834f"
+    },
+    "harmonic.force": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "37a475d39ba935528bf5afbcbf054c4514a09ba50cae1a4eb6ff44cf80404139"
+    },
+    "harmonic.history": {
+      "shape": [
+        2,
+        21
+      ],
+      "dtype": "float64",
+      "sha256": "68879af72d9dcc41fba2aa2e0facc337c94d13be5a882778ac875f32ba94fa9f"
+    },
+    "harmonic.spool": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "91c2a91e1c9e6711aa7ec7b96eddefa066841814076c6280a6cd8dafa10caba4"
+    },
+    "nondimensional.alb.force": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "5db69649ff4469fb37688294ecd6ce41ea7aee37e247751a3e73a58c83cedb92"
+    },
+    "nondimensional.alb.friction": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "759581057b515a90af094321d43e60afdf5bd45acf7086129673efd5eb564cfd"
+    },
+    "nondimensional.alb.history": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "0abad61d6b7af5adda257e28d47e42d3daff2accc4ca8662ab91adcdb76da9f3"
+    },
+    "nondimensional.alb.pressure": {
+      "shape": [
+        4,
+        128
+      ],
+      "dtype": "float64",
+      "sha256": "85c4ae150990107da5f645c2f3be0398b60a244ad45b2f7102a8bdbf6f94398d"
+    },
+    "nondimensional.alb.spool": {
+      "shape": [
+        2,
+        2,
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925"
+    },
+    "nondimensional.albsv.force": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "a766f2064ce0631a499cfa211eb2f14e008bae06ab100802b9be2ed915728ee0"
+    },
+    "nondimensional.albsv.friction": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "bc75e274ed57bc15040879d8133bdaeb8a07ff89849682860eba00bea799ea59"
+    },
+    "nondimensional.albsv.history": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "baa332fbcea4c9adfbfed41b8fe6181941f1f22ced4fcd7b239ee2f6064c05f2"
+    },
+    "nondimensional.albsv.pressure": {
+      "shape": [
+        4,
+        128
+      ],
+      "dtype": "float64",
+      "sha256": "6d98fd7eefade1d0d1b4faf86527123c76c84f7e1204e0dba0a9836ea4232652"
+    },
+    "nondimensional.albsv.spool": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "e96c395b15891a2f1e8b2cda1bf247887c3b51592a19c7bffee1222b1282349a"
+    },
+    "nondimensional.albsv_thermal.force": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "9198a699c0f5c603a79be64af5ec75f7e475c703e44648261e0d76b772dc3824"
+    },
+    "nondimensional.albsv_thermal.friction": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "c6efca4b78b1e6d2d008b805bdf474006073f94081d1a8642662b8fd1dfdf901"
+    },
+    "nondimensional.albsv_thermal.history": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "a3ad2dc314d996a6cfa7d561d03d983233ab024d3cbfb43b4e641e80d46995ba"
+    },
+    "nondimensional.albsv_thermal.pressure": {
+      "shape": [
+        4,
+        128
+      ],
+      "dtype": "float64",
+      "sha256": "72a8512b4fbb27da856738b4420350ea910a8afaa2fe0b3a1fdc50a2338e3aca"
+    },
+    "nondimensional.albsv_thermal.spool": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "e96c395b15891a2f1e8b2cda1bf247887c3b51592a19c7bffee1222b1282349a"
+    },
+    "nondimensional.albsv_thermal.thermal_iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "18979467483760aa75af65140f22e370a7b929126795ec724f1c38d09dd8e52a"
+    },
+    "nondimensional.albsv_thermal.thermal_newton_residual": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "947540360b0cd8d6212e6c72a37481fc1a765d78e9ee34da3f2498b083e1fb60"
+    },
+    "nondimensional.albsv_thermal.thermal_relax_history": {
+      "shape": [
+        4,
+        0
+      ],
+      "dtype": "float64",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "nondimensional.albsv_thermal.thermal_t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "fa1a897d9fd4865dea05bd0f9b6c560bd4e553aa97fd7cd599c88d28618f76cc"
+    },
+    "nondimensional.albsv_thermal.thermal_viscosity": {
+      "shape": [
+        4,
+        128
+      ],
+      "dtype": "float64",
+      "sha256": "4a9ef1a78a5d3c34a3d99d84c80c24e55e158cc400301f674a9ad45ba177a7fe"
+    }
+  }
+}

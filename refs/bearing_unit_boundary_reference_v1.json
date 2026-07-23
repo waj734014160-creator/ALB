@@ -1,0 +1,153 @@
+{
+  "schema": "alb.bearing-unit-boundary-reference.v1",
+  "baseline_commit": "b025e412e38c2dfb0341e1558637c42d73e00e47",
+  "environment": {
+    "python": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "numpy": "1.24.3",
+    "scipy": "1.10.1",
+    "scikit-fem": "12.0.1"
+  },
+  "contracts": {
+    "schema": "alb.bearing-scale-set.v1",
+    "scale_id": "stage0-explicit-film-scales",
+    "source_unit": "nondimensional",
+    "target_unit": "dimensional",
+    "scale_definition": "dimensional_per_nondimensional",
+    "applied_transforms": [
+      "rotor_to_bearing",
+      "bearing_to_rotor"
+    ],
+    "Sx": 8e-05,
+    "St": 0.0031830988618379067,
+    "Sv": 0.02513274122871835,
+    "Sf": 8400.0,
+    "Sp": 7000000.0,
+    "velocity_definition_id": "journal_surface_time.v1",
+    "residual_definition_id": "film.relative_pressure_change.v1",
+    "residual_unit": "nondimensional",
+    "provenance": "NodimPadConfig explicit scale_* fields",
+    "global_context": {
+      "step_index": 4,
+      "time": 0.0031830988618379067,
+      "dt": 0.0007957747154594767,
+      "unit_system": "dimensional"
+    },
+    "bearing_local_context": {
+      "step_index": 4,
+      "time": 1.0,
+      "dt": 0.25,
+      "unit_system": "nondimensional"
+    }
+  },
+  "arrays": {
+    "context.time_dimensional": {
+      "shape": [
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "685f69b535cf2053ffcb5ac68c6d7b061737144d6dcbcb7205b4b655ce1a8053"
+    },
+    "context.time_nondimensional": {
+      "shape": [
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "ec0d43c87e1844fb40b7cc9a94b6d0fa1594e7b5bcd2f58733175e80f89fe442"
+    },
+    "force.per_pad_dimensional": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8cd242e03c26e6def29ba9d93916a754eaf61cba642a6d6a6f4cb347b4b61d97"
+    },
+    "force.per_pad_nondimensional": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8605db6d4c3e3254d1210d58bb743e95b0e5ef0b283d22a4910d78273e2710fa"
+    },
+    "force.total_dimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "64fa3c7b6f67f5ca7b376b3942e7e8ade908b4e40dedda3d1f9fcd553b8464c1"
+    },
+    "force.total_nondimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "b78a9f6fda7120004974539e088898321938112954d7c5f04829fe89825d846e"
+    },
+    "input.displacement_dimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "0dee50d0c2d6d803f79fb2ad23014a121c88df0a99963ddb8907067c64602bc6"
+    },
+    "input.displacement_nondimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "96acd5e9efd5340c72f28be4bb3d160367a3d5731e7dd471358bc9347552ec4f"
+    },
+    "input.spool_nondimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "539e3fce6e0f1d2c101b9f23d7f4447dc207eebc5de5965b352140d8a6847144"
+    },
+    "input.velocity_dimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "f184371e17f0eb3d4948125e767aa10e64e4b7f77d7e5f548770aa52906477a8"
+    },
+    "input.velocity_nondimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "864d2470c4d063a974757b972dbf2851b8f191467bda5f38c182b0346c6031cf"
+    },
+    "iterations.local": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "664e97bcb821b53c43917921c684304de98126dca114067849552a564e99e4fb"
+    },
+    "pressure.dimensional": {
+      "shape": [
+        4,
+        128
+      ],
+      "dtype": "float64",
+      "sha256": "f3c60716d9c637ecf238e065bff1c55a55fa7b137b454f8b16eb3247cc97bbae"
+    },
+    "pressure.nondimensional": {
+      "shape": [
+        4,
+        128
+      ],
+      "dtype": "float64",
+      "sha256": "d9db477f81a24d90012f0501de7c24e1fa46a462b473653d65b3b2e46b085496"
+    },
+    "residual.local": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "f4ae1eb523a8340294c5d517e6ddd0b2d63c5dec93de5a75a4e63893ab3e904b"
+    }
+  }
+}
