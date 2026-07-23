@@ -29,8 +29,9 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 test environment
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_WHEEL = REPOSITORY_ROOT / "dist/re_alb-0.2.0-1-py3-none-any.whl"
-DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.2.0_build_acceptance.json"
+RELEASE_VERSION = "0.3.0"
+DEFAULT_WHEEL = REPOSITORY_ROOT / "dist/re_alb-0.3.0-1-py3-none-any.whl"
+DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.3.0_build_acceptance.json"
 EXPECTED_EXTRAS = {"all", "control", "dynamics", "film", "io", "surrogate", "test"}
 EXTRA_SMOKES = {
     "core": {
@@ -353,8 +354,8 @@ def validate(
         for line in metadata_lines
         if line.startswith("Provides-Extra: ")
     }
-    if version_values != ["0.2.0"]:
-        raise AssertionError("wheel metadata version is not 0.2.0")
+    if version_values != [RELEASE_VERSION]:
+        raise AssertionError(f"wheel metadata version is not {RELEASE_VERSION}")
     if python_values != [">=3.10"]:
         raise AssertionError("wheel metadata Requires-Python is not >=3.10")
     if extras != EXPECTED_EXTRAS:
@@ -369,7 +370,7 @@ def validate(
             f"wheel build tag mismatch: expected={expected_build_tag}, "
             f"actual={wheel_build_values}"
         )
-    expected_filename_fragment = f"-0.2.0-{expected_build_tag}-"
+    expected_filename_fragment = f"-{RELEASE_VERSION}-{expected_build_tag}-"
     if expected_filename_fragment not in wheel.name:
         raise AssertionError(f"wheel filename does not contain build tag {expected_build_tag}")
     pyproject_requirements = _pyproject_requirements(candidate_sha)
@@ -429,7 +430,7 @@ print(json.dumps({
     smoke_payload = json.loads(smoke.stdout)
     if Path(smoke_payload["alb_file"]).resolve().is_relative_to(REPOSITORY_ROOT / "ALB"):
         raise AssertionError("isolated smoke imported the source tree instead of the wheel")
-    if smoke_payload["version"] != "0.2.0":
+    if smoke_payload["version"] != RELEASE_VERSION:
         raise AssertionError("isolated installation reports the wrong version")
     if any(smoke_payload["removed_specs"].values()):
         raise AssertionError("isolated installation exposes a removed flat module")
@@ -462,7 +463,7 @@ print(json.dumps({
     wheel_payload = wheel.read_bytes()
     return {
         "schema": "alb.build-acceptance.v1",
-        "version": "0.2.0",
+        "version": RELEASE_VERSION,
         "candidate_commit": candidate_sha,
         "source": {
             **source_tree_evidence(candidate_sha),

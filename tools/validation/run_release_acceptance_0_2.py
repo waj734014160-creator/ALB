@@ -28,9 +28,10 @@ from tools.validation.release_phases import (
 )
 
 
-DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.2.0_release_acceptance.json"
-DEFAULT_BUILD_REPORT = REPOSITORY_ROOT / "docs/migrations/0.2.0_build_acceptance.json"
-DEFAULT_PUBLISH_WHEEL = REPOSITORY_ROOT / "dist/re_alb-0.2.0-1-py3-none-any.whl"
+RELEASE_VERSION = "0.3.0"
+DEFAULT_OUTPUT = REPOSITORY_ROOT / "docs/migrations/0.3.0_release_acceptance.json"
+DEFAULT_BUILD_REPORT = REPOSITORY_ROOT / "docs/migrations/0.3.0_build_acceptance.json"
+DEFAULT_PUBLISH_WHEEL = REPOSITORY_ROOT / "dist/re_alb-0.3.0-1-py3-none-any.whl"
 RUNTIME_ROOT = REPOSITORY_ROOT / "outputs/release_acceptance"
 PYTHON = Path("E:/Anaconda2023/envs/ALB/python.exe")
 MYPY_VERSION = "2.3.0"
@@ -985,7 +986,7 @@ def run_acceptance() -> dict[str, Any]:
     pytest_summary["warnings"] = len(recorded_warnings)
     return {
         "schema": "alb.release-acceptance.v1",
-        "version": "0.2.0",
+        "version": RELEASE_VERSION,
         "candidate_commit": candidate_commit,
         "pytest": {
             "command": subprocess.list2cmdline(pytest_command),

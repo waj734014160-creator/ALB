@@ -13,7 +13,7 @@ from tools.validation.validate_wheel_0_2 import source_tree_evidence
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_REPORT_PATH = (
-    REPOSITORY_ROOT / "docs/migrations/0.2.0_build_acceptance.json"
+    REPOSITORY_ROOT / "docs/migrations/0.3.0_build_acceptance.json"
 )
 
 
@@ -32,7 +32,7 @@ def test_wheel_metadata_cli_and_namespace_smokes_passed() -> None:
     report = json.loads(report_path.read_text(encoding="utf-8"))
 
     assert report["overall_status"] == "passed"
-    assert report["version"] == "0.2.0"
+    assert report["version"] == "0.3.0"
     candidate_commit = report["candidate_commit"]
     assert subprocess.run(
         ["git", "merge-base", "--is-ancestor", candidate_commit, "HEAD"],
@@ -61,7 +61,7 @@ def test_wheel_metadata_cli_and_namespace_smokes_passed() -> None:
     assert report["source"]["mismatched_wheel_members"] == []
     assert report["source"]["wheel_source_files_checked"] > 0
     assert report["source"]["source_kind"] == "git_blobs"
-    assert report["metadata"]["version"] == "0.2.0"
+    assert report["metadata"]["version"] == "0.3.0"
     assert report["metadata"]["requires_python"] == ">=3.10"
     assert report["metadata"]["extras"] == [
         "all",
