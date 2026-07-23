@@ -45,6 +45,27 @@ ALLOWED_DEPENDENCIES = {
     },
     "workflows": NAMESPACES,
 }
+LEGACY_SIGNAL_IMPORT_PATHS = {
+    "ALB/core/__init__.py",
+    "ALB/core/component.py",
+    "ALB/core/fem/base.py",
+    "ALB/dynamics/rotor.py",
+    "ALB/infrastructure/legacy_signal.py",
+    "ALB/systems/alb/builder.py",
+    "ALB/systems/alb/factories.py",
+    "ALB/systems/alb/linear.py",
+    "ALB/systems/alb/runtime.py",
+    "ALB/systems/alb/switch.py",
+}
+LEGACY_SIGNAL_LEAD_LOOP_COUNTS = {
+    "ALB/dynamics/coupling.py": 1,
+    "ALB/dynamics/rotor.py": 1,
+    "ALB/infrastructure/legacy_signal.py": 1,
+    "ALB/physics/bearing/solver.py": 1,
+    "ALB/physics/film/solver.py": 3,
+    "ALB/physics/hydraulics/orifice.py": 1,
+    "ALB/systems/alb/linear.py": 1,
+}
 
 
 def _module_name(path: Path) -> tuple[str, str]:
@@ -247,3 +268,37 @@ def test_numerical_namespaces_do_not_import_infrastructure() -> None:
         ):
             violations.append(source_module)
     assert violations == []
+
+
+def test_signal_migration_debt_is_frozen_by_ast_boundary() -> None:
+    """Prevent new Signal consumers while the 0.3 compatibility set is retired."""
+
+    imports: set[str] = set()
+    lead_loop_counts: dict[str, int] = {}
+    for path in PACKAGE_ROOT.rglob("*.py"):
+        relative = path.relative_to(REPOSITORY_ROOT).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        lead_loop_count = 0
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                target = node.module or ""
+                if node.level:
+                    module, package = _module_name(path)
+                    if path.name == "__init__.py":
+                        package = module
+                    target = resolve_name("." * node.level + target, package)
+                if target == "ALB.core.events" and any(
+                    alias.name == "Signal" for alias in node.names
+                ):
+                    imports.add(relative)
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "lead_loop"
+            ):
+                lead_loop_count += 1
+        if lead_loop_count:
+            lead_loop_counts[relative] = lead_loop_count
+
+    assert imports == LEGACY_SIGNAL_IMPORT_PATHS
+    assert lead_loop_counts == LEGACY_SIGNAL_LEAD_LOOP_COUNTS

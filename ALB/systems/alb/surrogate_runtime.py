@@ -19,6 +19,7 @@ from ALB.contracts import (
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.contracts.numeric import finite_real_array
 from ALB.core.component import BaseSimpleModel
+from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
 
 if TYPE_CHECKING:
@@ -254,7 +255,7 @@ class ALBNNAgent(BaseSimpleModel):
                 "schema": "alb.albnn-bearing-failure.v1",
                 "phase": phase,
                 "error_type": type(error).__name__,
-                "message": str(error),
+                "message": sanitize_exception_message(error),
                 "unit_system": self.unit_system.value,
                 "node_link": self.node_link,
             },

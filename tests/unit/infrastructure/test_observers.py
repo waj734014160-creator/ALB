@@ -37,4 +37,5 @@ def test_dispatch_isolates_one_observer_failure() -> None:
     assert good.events == [event]
     assert bad.events == [event]
     assert failures[0].error_type == "RuntimeError"
+    assert "observer failed" not in failures[0].message
     assert dispatcher.failures == failures

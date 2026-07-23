@@ -276,10 +276,22 @@ class ResultRecorderProtocol(Protocol):
         """Close the active run and return its final receipt."""
 
 
+@runtime_checkable
+class PendingAwareResultRecorderProtocol(ResultRecorderProtocol, Protocol):
+    """Recorder capability for run-level pending-record accounting."""
+
+    def register_pending(self, key: RecordKey) -> None:
+        """Register one committed result that has not been recorded."""
+
+    def resolve_pending(self, key: RecordKey) -> None:
+        """Remove one pending key after an idempotent record succeeds."""
+
+
 __all__ = [
     "DIGEST_ALGORITHM",
     "ExpiredRecordKey",
     "PendingRecord",
+    "PendingAwareResultRecorderProtocol",
     "RecordConflictError",
     "RecordDisposition",
     "RecordKey",

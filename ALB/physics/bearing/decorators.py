@@ -1,6 +1,7 @@
 """Compatibility adapters for standard bearing integration."""
 
-from typing import Any, Optional
+import inspect
+from typing import Any, Literal, Optional
 import warnings
 
 from ALB.contracts import (
@@ -14,6 +15,7 @@ from ALB.contracts import (
 )
 from ALB.core.component import BearingComponentBase
 from ALB.core.lifecycle import RuntimeLifecycle
+from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.validation import get_unit_system
 from ALB.core.validation import validate_bearing_output
 
@@ -110,6 +112,7 @@ class LegacyBearingAdapter:
         *,
         node_link: Optional[int] = None,
         unit_system: str = "dimensional",
+        input_style: Literal["keywords", "positional"] | None = None,
     ) -> None:
         warnings.warn(
             "LegacyBearingAdapter is a 0.3.x migration surface",
@@ -133,6 +136,40 @@ class LegacyBearingAdapter:
         self._output: BearingOutput | None = None
         self._result: ResultBundle | None = None
         self._failure: ResultBundle | None = None
+        self._input_style = self._resolve_input_style(
+            self.bearing.input,
+            input_style,
+        )
+
+    @staticmethod
+    def _resolve_input_style(
+        method: Any,
+        declared: Literal["keywords", "positional"] | None,
+    ) -> Literal["keywords", "positional"]:
+        """Resolve the legacy call shape before any mutable input call."""
+
+        if declared is not None:
+            if declared not in {"keywords", "positional"}:
+                raise ValueError("input_style must be 'keywords' or 'positional'")
+            return declared
+        try:
+            call_signature = inspect.signature(method)
+        except (TypeError, ValueError) as exc:
+            raise TypeError(
+                "legacy input signature is not inspectable; provide input_style"
+            ) from exc
+        marker = object()
+        try:
+            call_signature.bind(uxy=marker, uxyt=marker, t=marker)
+        except TypeError:
+            try:
+                call_signature.bind(marker, marker, marker)
+            except TypeError as exc:
+                raise TypeError(
+                    "legacy bearing input must accept uxy, uxyt, and t"
+                ) from exc
+            return "positional"
+        return "keywords"
 
     @property
     def lifecycle_state(self) -> LifecycleState:
@@ -159,7 +196,7 @@ class LegacyBearingAdapter:
                 {
                     "phase": "init",
                     "error_type": type(exc).__name__,
-                    "message": str(exc),
+                    "message": sanitize_exception_message(exc),
                 },
             )
             raise
@@ -178,26 +215,43 @@ class LegacyBearingAdapter:
 
     def evaluate(self) -> None:
         dto = self._input
-        with self._lifecycle.evaluation():
-            assert dto is not None
-            try:
-                self.bearing.input(
-                    uxy=dto.displacement,
-                    uxyt=dto.velocity,
-                    t=dto.time,
+        try:
+            with self._lifecycle.evaluation():
+                assert dto is not None
+                if self._input_style == "keywords":
+                    self.bearing.input(
+                        uxy=dto.displacement,
+                        uxyt=dto.velocity,
+                        t=dto.time,
+                    )
+                else:
+                    self.bearing.input(
+                        dto.displacement,
+                        dto.velocity,
+                        dto.time,
+                    )
+                force = validate_bearing_output(self.bearing.output())
+                self._output = BearingOutput(force, dto.time, self.unit_system)
+                self._result = result_snapshot(
+                    {"force": self._output.force},
+                    {
+                        "time": dto.time,
+                        "unit_system": self.unit_system.value,
+                        "compatibility_adapter": type(self).__name__,
+                    },
                 )
-            except TypeError:
-                self.bearing.input(dto.displacement, dto.velocity, dto.time)
-            force = validate_bearing_output(self.bearing.output())
-            self._output = BearingOutput(force, dto.time, self.unit_system)
-            self._result = result_snapshot(
-                {"force": self._output.force},
+        except BaseException as exc:
+            self._output = None
+            self._result = None
+            self._failure = result_snapshot(
+                {},
                 {
-                    "time": dto.time,
-                    "unit_system": self.unit_system.value,
-                    "compatibility_adapter": type(self).__name__,
+                    "phase": "evaluate",
+                    "error_type": type(exc).__name__,
+                    "message": sanitize_exception_message(exc),
                 },
             )
+            raise
 
     def output(self) -> BearingOutput:
         self._lifecycle.require_output()

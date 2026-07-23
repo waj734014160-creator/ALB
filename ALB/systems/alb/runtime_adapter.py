@@ -12,6 +12,7 @@ from ALB.contracts import (
     UnitSystem,
     result_snapshot,
 )
+from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
 
 
@@ -178,7 +179,7 @@ class LegacyBearingRuntimeAdapter(Generic[InputT]):
                 "schema": "alb.bearing-runtime-failure.v1",
                 "phase": phase,
                 "error_type": type(error).__name__,
-                "message": str(error),
+                "message": sanitize_exception_message(error),
                 "unit_system": self.unit_system.value,
                 "node_link": self.node_link,
             },

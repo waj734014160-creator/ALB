@@ -100,6 +100,33 @@ def test_decorator_and_legacy_adapter_preserve_standard_bearing_contract():
     np.testing.assert_array_equal(output.force, bearing.force)
 
 
+def test_legacy_adapter_calls_mutating_input_once_and_seals_failure():
+    class _InternalTypeErrorBearing(_Bearing):
+        def __init__(self):
+            super().__init__()
+            self.input_calls = 0
+
+        def input(self, uxy, uxyt, t):
+            self.input_calls += 1
+            self.uxy = np.asarray(uxy)
+            raise TypeError("password=private-value C:\\secret\\input.json")
+
+    bearing = _InternalTypeErrorBearing()
+    with pytest.deprecated_call():
+        adapted = LegacyBearingAdapter(bearing)
+    adapted.init()
+    adapted.input(BearingInput([0.0, 0.0], [0.0, 0.0], 0.0, "dimensional"))
+
+    with pytest.raises(TypeError):
+        adapted.evaluate()
+    assert bearing.input_calls == 1
+    failure = adapted.failure_snapshot()
+    assert failure.metadata["phase"] == "evaluate"
+    assert "private-value" not in failure.metadata["message"]
+    with pytest.raises(RuntimeError, match="failed"):
+        adapted.output()
+
+
 def test_signal_and_base_system_attach_each_child_once():
     events = []
     parent = SimpleNamespace(signal=Signal(), finish_signal=lambda: events.append("parent"))

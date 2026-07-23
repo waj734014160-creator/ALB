@@ -138,3 +138,22 @@ def test_gain_matrices_reject_complex_nonfinite_and_wrong_shapes():
         NodimALBConfig(gxyt=np.asarray([[np.inf, 0.0], [0.0, 1.0]]))
     with pytest.raises(ValueError, match="shape"):
         ALBConfig(gxy=np.eye(3))
+
+
+def test_current_envelope_is_recursively_immutable_and_revalidates_materialization():
+    envelope = current_config_envelope(ALBConfig())
+
+    with pytest.raises(TypeError):
+        envelope.config["pad_config"]["n_pad"] = 99
+    with pytest.raises(TypeError):
+        envelope.config["controller_config"]["kp"] = 99.0
+    with pytest.raises((TypeError, ValueError)):
+        envelope.config["gxy"][0][0] = 99.0
+
+    mutable = envelope.to_dict()["config"]
+    mutable["pad_config"]["unknown_after_validation"] = True
+    object.__setattr__(envelope, "config", mutable)
+    from ALB.config import materialize_current_config
+
+    with pytest.raises(ValueError, match="unknown pad_config"):
+        materialize_current_config(envelope)

@@ -7,6 +7,7 @@ from ALB.contracts import (
     ExpiredRecordKey,
     RecordConflictError,
     RecordDisposition,
+    RecordKey,
     ResultBundle,
     RunCloseStatus,
     StepContext,
@@ -14,6 +15,7 @@ from ALB.contracts import (
     bundle_digest,
 )
 from ALB.infrastructure import (
+    FieldFilteringRecorder,
     InMemoryResultRecorder,
     RingBufferResultRecorder,
     SamplingRecorder,
@@ -91,3 +93,39 @@ def test_sampling_recorder_preserves_step_continuity_with_small_placeholders() -
         recorder.record(_context(index), _bundle(float(index + 1)))
     assert inner.records[1][1].metadata["sampling_skipped"] is True
     assert not inner.records[1][1].values
+
+
+def test_run_close_rejects_or_reports_pending_records() -> None:
+    recorder = InMemoryResultRecorder()
+    recorder.begin_run("pending")
+    recorder.record(_context(0), _bundle())
+    recorder.register_pending(RecordKey("pending", 1))
+
+    with pytest.raises(RuntimeError, match="pending records"):
+        recorder.end_run("pending")
+    receipt = recorder.end_run("pending", allow_incomplete=True)
+    assert receipt.close_status is RunCloseStatus.INCOMPLETE
+    assert [(key.run_id, key.step_index) for key in receipt.pending_keys] == [
+        ("pending", 1)
+    ]
+
+
+def test_recorder_composition_enforces_filter_copy_and_ring_bounds() -> None:
+    source = np.array([1.0, 2.0])
+    inner = RingBufferResultRecorder(2)
+    recorder = FieldFilteringRecorder(inner, ("keep",))
+    recorder.begin_run("bounded")
+    for index in range(5):
+        bundle = ResultBundle(
+            {"keep": source + index, "drop": np.ones(1024)},
+            {"step": index},
+        )
+        recorder.record(_context(index), bundle)
+    source[:] = -100.0
+
+    assert len(inner.records) == 2
+    assert len(inner._receipts) == 2
+    for _, stored in inner.records:
+        assert set(stored.values) == {"keep"}
+        assert stored.values["keep"].flags.writeable is False
+        assert not np.any(stored.values["keep"] == -100.0)

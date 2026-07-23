@@ -60,6 +60,25 @@ def _primitive_value(value: Any) -> Any:
     return deepcopy(value)
 
 
+def _freeze_config_value(value: Any) -> Any:
+    """Recursively freeze validated configuration content."""
+
+    if isinstance(value, np.ndarray):
+        array = value.copy()
+        array.setflags(write=False)
+        return array
+    if isinstance(value, Mapping):
+        return MappingProxyType(
+            {
+                str(key): _freeze_config_value(item)
+                for key, item in value.items()
+            }
+        )
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_config_value(item) for item in value)
+    return deepcopy(value)
+
+
 def _field_names(config_type: type[Any]) -> set[str]:
     return {item.name for item in fields(config_type)}
 
@@ -218,7 +237,7 @@ class ALBConfigEnvelope:
         _validate_current_config_fields(copied, self.unit_system)
         _validate_mode_config(mode, copied)
         object.__setattr__(self, "control_mode", mode)
-        object.__setattr__(self, "config", MappingProxyType(copied))
+        object.__setattr__(self, "config", _freeze_config_value(copied))
 
     def to_dict(self) -> dict[str, object]:
         """Return a caller-owned JSON-compatible current-schema mapping."""
@@ -303,7 +322,9 @@ def materialize_current_config(envelope: ALBConfigEnvelope) -> CurrentConfig:
 
     if not isinstance(envelope, ALBConfigEnvelope):
         raise TypeError("envelope must be ALBConfigEnvelope")
-    normalized = deepcopy(dict(envelope.config))
+    normalized = cast(dict[str, object], _primitive_value(envelope.config))
+    _validate_current_config_fields(normalized, envelope.unit_system)
+    _validate_mode_config(envelope.control_mode, normalized)
     if envelope.unit_system == "dimensional":
         return cast(ALBConfig, ALBConfig.from_dict(normalized))
     return cast(NodimALBConfig, NodimALBConfig.from_dict(normalized))

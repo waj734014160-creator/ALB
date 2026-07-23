@@ -20,6 +20,7 @@ from ALB.control.adapters import adapt_controller
 from ALB.control.blocks import run_controller_step, run_valve_step
 from ALB.control.pid import PID
 from ALB.core import BearingComponentBase, LifecycleState, RuntimeLifecycle
+from ALB.core.diagnostics import sanitize_exception_message
 from ALB.contracts import (
     ArtifactManifest,
     BearingInput,
@@ -662,7 +663,7 @@ class ALBHarmonicLinear(BearingComponentBase):
                 "schema": "alb.harmonic-bearing-failure.v1",
                 "phase": phase,
                 "error_type": type(error).__name__,
-                "message": str(error),
+                "message": sanitize_exception_message(error),
                 "unit_system": UnitSystem.DIMENSIONAL.value,
                 "node_link": self.node_link,
             },

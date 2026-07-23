@@ -1,5 +1,7 @@
 """Integration tests for typed coupling bindings and post-commit recovery."""
 
+import importlib
+
 import numpy as np
 import pytest
 
@@ -9,6 +11,7 @@ from ALB.contracts import (
     ConvergenceStatus,
     DirectSpoolBearingInput,
     ResultBundle,
+    RunCloseStatus,
     StepContext,
     StepRecordingStatus,
     UnitSystem,
@@ -30,6 +33,9 @@ class _NativeBearing:
         self._lifecycle = RuntimeLifecycle("test bearing")
         self._input = None
         self._output = None
+        self.output_time_offset = 0.0
+        self.output_unit = None
+        self.fail_evaluate = False
 
     @property
     def lifecycle_state(self):
@@ -51,9 +57,13 @@ class _NativeBearing:
 
     def evaluate(self) -> None:
         with self._lifecycle.evaluation():
+            if self.fail_evaluate:
+                raise RuntimeError("injected bearing failure")
             dto = self._input
             self._output = BearingOutput(
-                [1.0, -2.0], dto.time, self.unit_system
+                [1.0, -2.0],
+                dto.time + self.output_time_offset,
+                self.unit_system if self.output_unit is None else self.output_unit,
             )
 
     def output(self):
@@ -87,11 +97,16 @@ class _DirectBearing(_NativeBearing):
 
 
 class _SpoolProvider:
+    def __init__(self) -> None:
+        self.fail_evaluate = False
+
     def input(self, context, bearing_input) -> None:
         self.context = context
         self.bearing_input = bearing_input
 
     def evaluate(self) -> None:
+        if self.fail_evaluate:
+            raise RuntimeError("injected spool provider failure")
         self.value = ValveOutput(
             [0.25, -0.5],
             self.context.time,
@@ -107,6 +122,7 @@ class _Rotor:
         self.signal = Signal(sys=self)
         self.state = np.zeros((1, 2))
         self.advance_calls = 0
+        self.fail_advance = False
 
     def init(self) -> None:
         self.state[:] = 0.0
@@ -116,6 +132,8 @@ class _Rotor:
         del time, force, node_links, force0
 
     def advance(self) -> None:
+        if self.fail_advance:
+            raise RuntimeError("injected rotor failure")
         self.advance_calls += 1
         self.state += 1.0
 
@@ -187,6 +205,28 @@ def test_record_failure_blocks_next_advance_and_retry_does_not_repeat_physics() 
     assert rotor.advance_calls == 2
 
 
+def test_pending_record_prevents_complete_run_receipt() -> None:
+    recorder = _FailSecondRecord()
+    coupling = RsRotorBearingCouple(
+        _Rotor(),
+        TimeIterDt(0.01, 1),
+        CoupledBearingBinding(_NativeBearing(), node_link=0),
+        dependencies=CouplingRuntimeDependencies("run-close", recorder=recorder),
+    )
+    coupling.init()
+    coupling.advance(StepContext(1, 0.01, 0.01, "dimensional"))
+
+    with pytest.raises(RuntimeError, match="pending record"):
+        coupling.end_run()
+    receipt = coupling.end_run(allow_incomplete=True)
+    assert receipt.close_status is RunCloseStatus.INCOMPLETE
+    assert [(key.run_id, key.step_index) for key in receipt.pending_keys] == [
+        ("run-close", 1)
+    ]
+    with pytest.raises(RuntimeError, match="closed"):
+        coupling.retry_pending_record()
+
+
 def test_observer_failure_is_post_commit_and_does_not_invalidate_runtime() -> None:
     coupling = RsRotorBearingCouple(
         _Rotor(),
@@ -254,3 +294,108 @@ def test_nondimensional_binding_converts_force_back_to_rotor_domain() -> None:
     assert descriptor["scale_definition"] == "dimensional_per_nondimensional"
     assert descriptor["applied_transform"] == "bearing_to_rotor"
     DirectSpoolBearingInput,
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("output_time_offset", 0.001, "output time"),
+        ("output_unit", UnitSystem.NONDIMENSIONAL, "unit_system"),
+    ],
+)
+def test_coupling_rejects_stale_or_wrong_unit_bearing_output(
+    field,
+    value,
+    message,
+) -> None:
+    bearing = _NativeBearing()
+    coupling = RsRotorBearingCouple(
+        _Rotor(),
+        TimeIterDt(0.01, 1),
+        CoupledBearingBinding(bearing, node_link=0),
+    )
+    coupling.init()
+    setattr(bearing, field, value)
+
+    with pytest.raises(ValueError, match=message):
+        coupling.advance(StepContext(1, 0.01, 0.01, "dimensional"))
+    assert coupling.failure_snapshot().metadata["physical_step_committed"] is False
+    with pytest.raises(RuntimeError, match="invalid"):
+        coupling.output()
+
+
+def test_typed_coupling_save_does_not_require_component_save_methods() -> None:
+    coupling = RsRotorBearingCouple(
+        _Rotor(),
+        TimeIterDt(0.01, 1),
+        CoupledBearingBinding(_NativeBearing(), node_link=0),
+    )
+    coupling.init()
+
+    tree = coupling.save(tofile=False, path="typed", name="case")
+
+    assert tree.get_dir() == {"typed": {"_NativeBearing0": None}}
+
+
+def test_binding_and_runtime_dependencies_reject_missing_capabilities_early() -> None:
+    with pytest.raises(TypeError, match="spool_provider"):
+        CoupledBearingBinding(
+            _DirectBearing(),
+            node_link=0,
+            spool_provider=object(),
+        )
+    with pytest.raises(TypeError, match="recorder"):
+        CouplingRuntimeDependencies("run", recorder=object())
+    with pytest.raises(TypeError, match="observers"):
+        CouplingRuntimeDependencies("run", observers=(object(),))
+    with pytest.raises(ValueError, match="record_failure_policy"):
+        CouplingRuntimeDependencies("run", record_failure_policy="invalid")
+    with pytest.raises(ValueError, match="observer_failure_policy"):
+        CouplingRuntimeDependencies("run", observer_failure_policy="invalid")
+
+
+@pytest.mark.parametrize(
+    "failure_point",
+    ["bearing", "rotor", "spool-provider", "candidate-result"],
+)
+def test_precommit_failure_points_seal_without_committing_or_retrying(
+    failure_point,
+    monkeypatch,
+) -> None:
+    rotor = _Rotor()
+    provider = _SpoolProvider()
+    bearing = _DirectBearing() if failure_point == "spool-provider" else _NativeBearing()
+    binding = CoupledBearingBinding(
+        bearing,
+        node_link=0,
+        spool_provider=provider if failure_point == "spool-provider" else None,
+    )
+    coupling = RsRotorBearingCouple(
+        rotor,
+        TimeIterDt(0.01, 1),
+        binding,
+    )
+    coupling.init()
+    if failure_point == "bearing":
+        bearing.fail_evaluate = True
+    elif failure_point == "rotor":
+        rotor.fail_advance = True
+    elif failure_point == "spool-provider":
+        provider.fail_evaluate = True
+    else:
+        module = importlib.import_module("ALB.dynamics.coupling")
+
+        def fail_candidate(*args, **kwargs):
+            del args, kwargs
+            raise RuntimeError("injected candidate construction failure")
+
+        monkeypatch.setattr(module, "coupling_snapshot", fail_candidate)
+
+    context = StepContext(1, 0.01, 0.01, "dimensional")
+    with pytest.raises(RuntimeError, match="injected"):
+        coupling.advance(context)
+
+    assert coupling._step_ledger.last_context.step_index == 0
+    assert coupling.failure_snapshot().metadata["physical_step_committed"] is False
+    with pytest.raises(RuntimeError, match="invalid"):
+        coupling.advance(context)

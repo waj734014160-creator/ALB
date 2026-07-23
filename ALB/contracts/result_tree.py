@@ -148,6 +148,11 @@ def _logical_name(value: str) -> str:
 def _payload_values(data: Any) -> dict[str, Any]:
     if data is None:
         return {}
+    if isinstance(data, ResultBundle):
+        return {
+            "values": dict(data.values),
+            "metadata": dict(data.metadata),
+        }
     if isinstance(data, (DataFrameResult, NpyResult)):
         return dict(data.result)
     if isinstance(data, RossRotorResult):

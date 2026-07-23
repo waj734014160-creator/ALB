@@ -15,6 +15,7 @@ from .computation import (
     StateAdvancingBlock,
 )
 from .events import Signal
+from .diagnostics import sanitize_exception_message
 from .lifecycle import LifecycleState, RuntimeLifecycle
 from .time import TimeIter, TimeIterDt
 from .steps import StepCommitLedger
@@ -42,6 +43,7 @@ __all__ = [
     "LatchedComputationalBlock",
     "LifecycleState",
     "RuntimeLifecycle",
+    "sanitize_exception_message",
     "Signal",
     "SolvingBlock",
     "StateAdvancingBlock",

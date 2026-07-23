@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from ALB.core.component import BaseCSystem, BaseSystem
 from ALB.core.lifecycle import LifecycleState
+from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.validation import require_unit_system, validate_bearing_output
 from ALB.contracts import (
     BearingInput,
@@ -17,9 +18,12 @@ from ALB.contracts import (
     BearingRuntimeProtocol,
     DirectSpoolBearingInput,
     PendingRecord,
+    PendingAwareResultRecorderProtocol,
     RecordingRecovered,
     RecordReceipt,
     ResultBundle,
+    RunCloseStatus,
+    RunReceipt,
     RotorLoadInput,
     StepCompleted,
     StepContext,
@@ -135,6 +139,8 @@ class RsRotorBearingCouple(BaseCSystem):
         )
         self._run_id = self._dependencies.run_id
         self._run_started = False
+        self._run_closed = False
+        self._run_receipt: RunReceipt | None = None
         self._pending_record: PendingRecord | None = None
         self._record_receipt: RecordReceipt | None = None
         self._recording_status = StepRecordingStatus.NOT_CONFIGURED
@@ -143,6 +149,7 @@ class RsRotorBearingCouple(BaseCSystem):
         )
         self._failure_result: ResultBundle | None = None
         self._adapter_metadata: tuple[dict[str, object], ...] = ()
+        self._pending_accounting_error: str | None = None
 
     @property
     def results(self):
@@ -205,7 +212,7 @@ class RsRotorBearingCouple(BaseCSystem):
                 "phase": phase,
                 "component": "rotor-bearing coupling",
                 "error_type": type(error).__name__,
-                "message": str(error),
+                "message": sanitize_exception_message(error),
                 "physical_step_committed": False,
             },
         )
@@ -232,7 +239,8 @@ class RsRotorBearingCouple(BaseCSystem):
                         "message": failure.message,
                     }
                     for failure in self._observer_dispatcher.failures
-                )
+                ),
+                "pending_accounting_error": self._pending_accounting_error,
             },
             {
                 "run_id": self._run_id,
@@ -250,10 +258,19 @@ class RsRotorBearingCouple(BaseCSystem):
                     }
                 ),
                 "next_advance_blocked": self._pending_record is not None,
+                "run_close_status": (
+                    None
+                    if self._run_receipt is None
+                    else self._run_receipt.close_status.value
+                ),
             },
         )
 
     def _begin_recorder_if_needed(self) -> None:
+        if self._run_closed:
+            raise RuntimeError(
+                "coupling run is closed; create a new runtime with a new run_id"
+            )
         recorder = self._dependencies.recorder
         if recorder is not None and not self._run_started:
             recorder.begin_run(self._run_id)
@@ -276,6 +293,7 @@ class RsRotorBearingCouple(BaseCSystem):
                 self._record_receipt = recorder.record(context, bundle)
                 self._recording_status = StepRecordingStatus.RECORDED
                 self._pending_record = None
+                self._pending_accounting_error = None
             except Exception as exc:
                 pending_error = exc
                 self._recording_status = StepRecordingStatus.PENDING
@@ -284,8 +302,21 @@ class RsRotorBearingCouple(BaseCSystem):
                     self._run_id,
                     context,
                     bundle,
-                    f"{type(exc).__name__}: {exc}",
+                    (
+                        f"{type(exc).__name__}: "
+                        f"{sanitize_exception_message(exc)}"
+                    ),
                 )
+                if isinstance(
+                    recorder,
+                    PendingAwareResultRecorderProtocol,
+                ):
+                    try:
+                        recorder.register_pending(self._pending_record.key)
+                    except Exception as accounting_error:
+                        self._pending_accounting_error = (
+                            sanitize_exception_message(accounting_error)
+                        )
         event = StepCompleted(
             self._run_id,
             context,
@@ -311,17 +342,70 @@ class RsRotorBearingCouple(BaseCSystem):
 
         if self._pending_record is None:
             raise RuntimeError("no pending record is available")
+        if self._run_closed:
+            raise RuntimeError("closed recorder runs cannot recover pending records")
         recorder = self._dependencies.recorder
         if recorder is None:
             raise RuntimeError("no recorder is configured")
         pending = self._pending_record
         receipt = recorder.record(pending.context, pending.bundle)
+        if isinstance(recorder, PendingAwareResultRecorderProtocol):
+            recorder.resolve_pending(pending.key)
         self._pending_record = None
+        self._pending_accounting_error = None
         self._record_receipt = receipt
         self._recording_status = StepRecordingStatus.RECORDED
         self._observer_dispatcher.recording_recovered(
             RecordingRecovered(self._run_id, pending.key, receipt)
         )
+        return receipt
+
+    def end_run(self, *, allow_incomplete: bool = False) -> RunReceipt:
+        """Close recorder state without mislabeling unresolved gaps."""
+
+        if self._run_closed:
+            raise RuntimeError("coupling run is already closed")
+        recorder = self._dependencies.recorder
+        if recorder is None:
+            receipt = RunReceipt(
+                self._run_id,
+                RunCloseStatus.COMPLETE,
+                0,
+                (),
+                None,
+                None,
+            )
+        else:
+            if not self._run_started:
+                raise RuntimeError("coupling recorder run has not started")
+            pending = self._pending_record
+            if pending is not None and not allow_incomplete:
+                raise RuntimeError(
+                    "coupling run has a pending record; recover it or use "
+                    "allow_incomplete=True"
+                )
+            receipt = recorder.end_run(
+                self._run_id,
+                allow_incomplete=allow_incomplete,
+            )
+            if pending is not None and pending.key not in receipt.pending_keys:
+                pending_keys = tuple(
+                    sorted(
+                        {*receipt.pending_keys, pending.key},
+                        key=lambda key: key.step_index,
+                    )
+                )
+                receipt = RunReceipt(
+                    receipt.run_id,
+                    RunCloseStatus.INCOMPLETE,
+                    receipt.record_count,
+                    pending_keys,
+                    receipt.first_step_index,
+                    receipt.last_step_index,
+                )
+            self._run_started = False
+        self._run_closed = True
+        self._run_receipt = receipt
         return receipt
 
     def _invalidate_topology(self) -> None:
@@ -392,6 +476,15 @@ class RsRotorBearingCouple(BaseCSystem):
                 if adapter is not None
                 else global_input
             )
+            bearing_unit = UnitSystem.coerce(bearing.unit_system)
+            if local_context.unit_system is not bearing_unit:
+                raise ValueError(
+                    "bearing-local context unit_system must match the runtime"
+                )
+            if local_input.unit_system is not bearing_unit:
+                raise ValueError(
+                    "bearing-local input unit_system must match the runtime"
+                )
             dto: BearingInput | DirectSpoolBearingInput
             if bearing.input_dto_type is DirectSpoolBearingInput:
                 if binding is None or binding.spool_provider is None:
@@ -414,16 +507,45 @@ class RsRotorBearingCouple(BaseCSystem):
                 )
             else:
                 dto = local_input
+            dto_bearing = (
+                dto.bearing
+                if isinstance(dto, DirectSpoolBearingInput)
+                else dto
+            )
+            if dto_bearing.time != local_context.time:
+                raise ValueError(
+                    "bearing input time must match the local step context"
+                )
+            if dto_bearing.unit_system is not bearing_unit:
+                raise ValueError(
+                    "bearing input unit_system must match the runtime"
+                )
             bearing.input(dto)
             bearing.evaluate()
             output = bearing.output()
             if not isinstance(output, BearingOutput):
                 raise TypeError("native bearing output must be BearingOutput")
+            if output.time != local_context.time:
+                raise ValueError(
+                    "bearing output time must match the local step context"
+                )
+            if output.unit_system is not bearing_unit:
+                raise ValueError(
+                    "bearing output unit_system must match the bearing runtime"
+                )
             rotor_output = (
                 adapter.bearing_output_to_rotor(output)
                 if adapter is not None
                 else output
             )
+            if rotor_output.time != context.time:
+                raise ValueError(
+                    "rotor-domain bearing output time must match global context"
+                )
+            if rotor_output.unit_system is not UnitSystem.DIMENSIONAL:
+                raise ValueError(
+                    "rotor-domain bearing output must be dimensional"
+                )
             metadata = None
             if adapter is not None:
                 metadata = adapter.scales.descriptor(
@@ -613,6 +735,8 @@ class RsRotorBearingCouple(BaseCSystem):
         """Advance one coupled physical step and commit it exactly once."""
 
         self._require_valid("advancing")
+        if self._run_closed:
+            raise RuntimeError("coupling run is closed")
         if self._pending_record is not None:
             raise RuntimeError(
                 "result recording is pending; call retry_pending_record()"

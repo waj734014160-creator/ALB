@@ -9,6 +9,7 @@ from scipy.sparse import linalg as sl
 
 from ALB.core.component import BaseCSystem, BaseSimpleModel
 from ALB.core.events import Signal
+from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
 from ALB.physics.bearing import four_pads_bearings, nodim_four_pads_bearings
 from ALB.config import (
@@ -439,7 +440,7 @@ class ALB(BaseCSystem):
                 "schema": "alb.bearing-runtime-failure.v1",
                 "phase": phase,
                 "error_type": type(error).__name__,
-                "message": str(error),
+                "message": sanitize_exception_message(error),
                 "unit_system": self.unit_system.value,
                 "node_link": self.node_link,
             },

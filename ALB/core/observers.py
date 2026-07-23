@@ -11,6 +11,7 @@ from ALB.contracts import (
     StepCompleted,
     StepObserverProtocol,
 )
+from ALB.core.diagnostics import sanitize_exception_message
 
 
 class ObserverDispatcher:
@@ -40,30 +41,43 @@ class ObserverDispatcher:
     def step_completed(self, event: StepCompleted) -> tuple[ObserverFailure, ...]:
         """Send a committed-step event once to every configured observer."""
 
-        return self._dispatch("on_step_completed", event)
+        current = []
+        for observer in self._observers:
+            try:
+                observer.on_step_completed(event)
+            except Exception as exc:
+                current.append(self._record_failure(observer, event, exc))
+        return tuple(current)
 
     def recording_recovered(
         self, event: RecordingRecovered
     ) -> tuple[ObserverFailure, ...]:
         """Send a record-recovery event without repeating StepCompleted."""
 
-        return self._dispatch("on_recording_recovered", event)
-
-    def _dispatch(self, method_name: str, event: object) -> tuple[ObserverFailure, ...]:
         current = []
         for observer in self._observers:
             try:
-                getattr(observer, method_name)(event)
+                observer.on_recording_recovered(event)
             except Exception as exc:
-                failure = ObserverFailure(
-                    observer_name=type(observer).__name__,
-                    event_type=type(event).__name__,
-                    error_type=type(exc).__name__,
-                    message=str(exc),
-                )
-                self._failures.append(failure)
-                current.append(failure)
+                current.append(self._record_failure(observer, event, exc))
         return tuple(current)
+
+    def _record_failure(
+        self,
+        observer: StepObserverProtocol,
+        event: StepCompleted | RecordingRecovered,
+        error: Exception,
+    ) -> ObserverFailure:
+        """Store one bounded sanitized observer diagnostic."""
+
+        failure = ObserverFailure(
+            observer_name=type(observer).__name__,
+            event_type=type(event).__name__,
+            error_type=type(error).__name__,
+            message=sanitize_exception_message(error),
+        )
+        self._failures.append(failure)
+        return failure
 
 
 __all__ = ["ObserverDispatcher"]
