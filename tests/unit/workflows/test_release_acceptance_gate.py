@@ -287,6 +287,21 @@ def test_required_nodeid_preflight_detects_renamed_nodes_before_build():
         )
 
 
+def test_release_feature_manifest_covers_f01_f64_with_one_declared_deferral():
+    features = acceptance.FEATURE_MANIFEST["features"]
+
+    assert {item["id"] for item in features} == {
+        f"F{index:02d}" for index in range(1, 65)
+    }
+    assert sum(item["status"] == "implemented" for item in features) == 63
+    assert [
+        item["id"]
+        for item in features
+        if item["status"] == "deferred_to_0.4.0"
+    ] == ["F35"]
+    assert acceptance.FEATURE_NODEIDS
+
+
 def test_python_module_commands_ignore_environment_and_user_site():
     """Every worker Python module command carries explicit isolation flags."""
 

@@ -38,6 +38,9 @@ MYPY_VERSION = "2.3.0"
 BUILD_VERSION = "1.5.0"
 IMPORT_LINTER_VERSION = "2.13"
 PYTEST_VERSION = "9.0.3"
+FEATURE_MANIFEST_PATH = (
+    REPOSITORY_ROOT / "tools/validation/release_feature_manifest_0_3.json"
+)
 ACCEPTANCE_POLICY = (
     REPOSITORY_ROOT / "tools/validation/release_acceptance_policy_v7.json"
 )
@@ -385,6 +388,52 @@ P2_ARCHITECTURE_NODEIDS = {
     ),
 }
 
+def _load_feature_manifest() -> dict[str, Any]:
+    """Load and validate the complete F01-F64 release feature map."""
+
+    payload = cast(
+        dict[str, Any],
+        json.loads(FEATURE_MANIFEST_PATH.read_text(encoding="utf-8")),
+    )
+    if payload.get("schema") != "alb.release-feature-manifest.v1":
+        raise ValueError("release feature manifest schema is invalid")
+    if payload.get("release") != RELEASE_VERSION:
+        raise ValueError("release feature manifest version is invalid")
+    features = payload.get("features")
+    if not isinstance(features, list):
+        raise TypeError("release feature manifest requires a feature list")
+    expected_ids = {f"F{index:02d}" for index in range(1, 65)}
+    observed_ids = {
+        item.get("id") for item in features if isinstance(item, dict)
+    }
+    if observed_ids != expected_ids or len(features) != 64:
+        raise ValueError("release feature manifest must cover F01-F64 exactly")
+    allowed_status = {"implemented", "deferred_to_0.4.0"}
+    for item in features:
+        if not isinstance(item, dict):
+            raise TypeError("release feature entries must be mappings")
+        if item.get("status") not in allowed_status:
+            raise ValueError(f"invalid feature status for {item.get('id')}")
+        nodeids = item.get("required_nodeids")
+        if (
+            not isinstance(nodeids, list)
+            or not nodeids
+            or any(not isinstance(nodeid, str) or not nodeid for nodeid in nodeids)
+        ):
+            raise ValueError(
+                f"feature {item.get('id')} requires nonempty nodeids"
+            )
+    return payload
+
+
+FEATURE_MANIFEST = _load_feature_manifest()
+FEATURE_NODEIDS = {
+    nodeid
+    for feature in FEATURE_MANIFEST["features"]
+    for nodeid in feature["required_nodeids"]
+}
+
+
 REQUIRED_NODESETS = {
     "s0011": S0011_NODEIDS,
     "ross_rotor_time": ROSS_ROTOR_TIME_NODEIDS,
@@ -396,6 +445,7 @@ REQUIRED_NODESETS = {
     "seventh_review": SEVENTH_REVIEW_NODEIDS,
     "eighth_review": EIGHTH_REVIEW_NODEIDS,
     "p2_architecture": P2_ARCHITECTURE_NODEIDS,
+    "f01_f64_manifest": FEATURE_NODEIDS,
 }
 
 
@@ -908,6 +958,13 @@ def run_acceptance() -> dict[str, Any]:
         raise AssertionError("The complete P2 architecture node set was not recorded")
     if any(item["outcome"] != "passed" for item in p2_architecture_reports):
         raise AssertionError("A P2 architecture node did not pass")
+    feature_reports = [
+        item for item in reports["reports"] if item["nodeid"] in FEATURE_NODEIDS
+    ]
+    if {item["nodeid"] for item in feature_reports} != FEATURE_NODEIDS:
+        raise AssertionError("The complete F01-F64 feature node set was not recorded")
+    if any(item["outcome"] != "passed" for item in feature_reports):
+        raise AssertionError("An F01-F64 feature node did not pass")
 
     mypy_command = [
         str(PYTHON),
@@ -1014,6 +1071,21 @@ def run_acceptance() -> dict[str, Any]:
             "seventh_review_reports": seventh_review_reports,
             "eighth_review_reports": eighth_review_reports,
             "p2_architecture_reports": p2_architecture_reports,
+            "feature_manifest": {
+                "path": FEATURE_MANIFEST_PATH.relative_to(
+                    REPOSITORY_ROOT
+                ).as_posix(),
+                "implemented": sum(
+                    feature["status"] == "implemented"
+                    for feature in FEATURE_MANIFEST["features"]
+                ),
+                "deferred": sum(
+                    feature["status"] != "implemented"
+                    for feature in FEATURE_MANIFEST["features"]
+                ),
+                "features": FEATURE_MANIFEST["features"],
+                "reports": feature_reports,
+            },
         },
         "mypy": {
             "install_command": subprocess.list2cmdline(mypy_install_command),

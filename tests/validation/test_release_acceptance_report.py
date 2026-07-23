@@ -9,7 +9,7 @@ import pytest
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-REPORT_PATH = REPOSITORY_ROOT / "docs/migrations/0.2.0_release_acceptance.json"
+REPORT_PATH = REPOSITORY_ROOT / "docs/migrations/0.3.0_release_acceptance.json"
 
 
 def test_release_acceptance_reports_real_pytest_mypy_and_status_gates() -> None:
@@ -17,7 +17,7 @@ def test_release_acceptance_reports_real_pytest_mypy_and_status_gates() -> None:
         pytest.skip("Release evidence is created by the acceptance runner")
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     assert report["overall_status"] == "passed"
-    assert report["version"] == "0.2.0"
+    assert report["version"] == "0.3.0"
     assert report["pytest"]["returncode"] == 0
     assert report["pytest"]["summary"]["passed"] > 0
     assert report["pytest"]["summary"]["skipped"] == len(
