@@ -54,6 +54,8 @@
 | `ALB_MAIN/docs/migrations/0.2.0_p2_architecture_closure.md` | P2 架构收敛审计报告 | 逐项记录 P2-1 至 P2-12 的完成标准、实现、验证和明确保留边界。 | 已实现架构边界、阶段提交、稳定验证入口、正式机器证据指针。 | 未执行的通过数字、外部实时任务、原始日志正文。 | P2 完成边界或正式候选证据发生变化时。 |
 | `ALB_MAIN/docs/migrations/0.2.0_p2_architecture_acceptance.json` | P2 架构正式机器验收证据 | 记录最终候选的完整 pytest、分层 mypy、detached worktree 和精确发布 wheel 身份。 | 只能由正式验收工具从干净 P2 candidate SHA 生成。 | 手工填写通过结论、复用旧 wheel、覆盖其他轮次证据。 | P2 最终候选形成或实现变化后。 |
 | `ALB_MAIN/docs/migrations/0.2.0_p2_architecture_build_acceptance.json` | P2 架构 wheel 机器证据 | 记录 P2 候选的 Git blob 源摘要、双构建、METADATA、隔离安装、extras/CLI smoke 与 wheel SHA。 | 只能由同一次 P2 正式验收生成。 | 手工填写 SHA、复制旧构建报告、与正式验收使用不同制品。 | P2 最终候选或发布输入变化后。 |
+| `ALB_MAIN/docs/migrations/0.3.0_release_acceptance.json` | 0.3 ADR 架构机器验收证据 | 记录 0.3 候选的全量 pytest、分层 mypy、冻结参考、detached worktree 和发布制品身份。 | 只能由正式验收工具从干净 0.3 candidate SHA 生成。 | 手工填写通过结论、复用旧 wheel、覆盖 0.2 历史证据。 | 0.3 候选或实现变化后。 |
+| `ALB_MAIN/docs/migrations/0.3.0_build_acceptance.json` | 0.3 wheel 机器证据 | 记录 0.3 候选的 Git blob 源摘要、双构建、METADATA、隔离安装、extras/CLI smoke 与 wheel SHA。 | 只能由同一次 0.3 正式验收生成。 | 手工填写 SHA、复制旧构建报告或使用不同制品。 | 0.3 候选或发布输入变化后。 |
 | `ALB_MAIN/docs/migrations/0.2.0_external_consumer_audit.md` | 版本化只读迁移证据 | declared 外部调用者的路径、哈希、旧 import 和迁移目标汇总。 | 外部只读快照口径、文件清单、迁移门槛和证据指针。 | 修改外部文件、记录外部实时任务状态、复制原始日志。 | declared 快照或 0.2 迁移目标变化时。 |
 | `ALB_MAIN/docs/file_classification.md` | ALB_MAIN 文件归属和清理策略 | 文件组、归属边界、归档/删除策略。 | 文件类别、代表路径、保留/归档规则、清理风险说明。 | 实时运行状态、模型进度、详细 run 历史。 | 主要文件组、归档类别或清理策略变化时。 |
 | `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS 全局 run 规则和路径索引 | 项目前缀 run 编号、run ID、current-status 归属和规范路径指针。 | run 编号规则、项目前缀映射、current-status 指针、规范路径和归档指针规则。 | 原始日志、详细进度尾部、模型指标、实时 tick、清理动作。 | run 编号、项目前缀、current-status 归属、路径族或归档指针规则变化时。 |
