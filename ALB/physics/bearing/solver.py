@@ -21,6 +21,7 @@ from ALB.config import (
 from ALB.contracts import (
     BearingInput,
     BearingOutput,
+    BearingRuntimeProtocol,
     ConvergenceStatus,
     LifecycleState,
     ResultBundle,
@@ -282,10 +283,11 @@ class HydrostaticBearing(FilmSystem):
 
     unit_system = "dimensional"
 
-    def __init__(self, hyd_config: HydConfig = HydConfig(), **kwargs):
+    def __init__(self, hyd_config: HydConfig | None = None, **kwargs):
         """
         :param hyd_config: HydConfig, bearing parameters
         """
+        hyd_config = HydConfig() if hyd_config is None else copy.deepcopy(hyd_config)
         mesh = Mesh()
         elems = ElemManager()
         nodes = NodeManager()
@@ -768,7 +770,7 @@ class HybridBearing(_HybridBearingRuntimeMixin, HydrostaticBearing):
             config = HydConfig()
         if not isinstance(config, HydConfig):
             raise TypeError("config must be HydConfig")
-        super().__init__(copy.deepcopy(config))
+        super().__init__(config)
         self._configure_hybrid_runtime(orifices)
 
 
@@ -853,41 +855,72 @@ def build_hybrid_bearing(
 
 
 class MultiPad(BaseCSystem):
-    """
-    Multi-pad bearing.
-    """
+    """Strict composite runtime that aggregates multiple film-bearing pads."""
+
+    input_dto_type = BearingInput
 
     def __init__(self, *bearings):
-        """
-        :param bearings: List of bearings, [HydroStaticBearing]
-        """
+        """Build and initialize one composite from compatible child pads."""
+
         if len(bearings) == 0:
             raise ValueError("MultiPad requires at least one bearing")
         super().__init__()
         self.bearings = tuple(bearings)
-        self.signal.children = [b.signal for b in self.bearings]
         unit_systems = {get_unit_system(bearing) for bearing in self.bearings}
         if len(unit_systems) != 1:
             raise ValueError("All MultiPad bearings must use the same unit_system")
-        self.unit_system = unit_systems.pop()
+        self.unit_system = UnitSystem.coerce(unit_systems.pop())
         node_links = {getattr(bearing, "node_link", None) for bearing in self.bearings}
         if len(node_links) != 1:
             raise ValueError("All MultiPad bearings must use the same node_link")
         self.node_link = node_links.pop()
         self.dyc = []
-        self.result = pd.DataFrame(columns=["t", "fx", "fy"])
-        self.t = None
-        self.force = None
+        self._lifecycle = RuntimeLifecycle(
+            type(self).__name__,
+            input_label="bearing input",
+        )
+        self._pending_input: BearingInput | None = None
+        self._latest_output: BearingOutput | None = None
+        self._latest_result: ResultBundle | None = None
+        self._failure: ResultBundle | None = None
+        self._latest_friction = 0.0
+        self._convergence_status = ConvergenceStatus.pending(
+            "runtime is not initialized"
+        )
+        self.init()
+
+    @property
+    def lifecycle_state(self) -> LifecycleState:
+        """Return the current composite runtime state."""
+
+        return self._lifecycle.state
+
+    @property
+    def convergence_status(self) -> ConvergenceStatus:
+        """Return cached child convergence without advancing any pad."""
+
+        return self._convergence_status
 
     @property
     def results(self):
-        """Return the aggregate multi-pad force history."""
+        """Return only the latest aggregate result as a compatibility table."""
 
-        return self.result
+        if self._latest_output is None:
+            return pd.DataFrame(columns=["t", "fx", "fy"])
+        return pd.DataFrame(
+            [
+                {
+                    "t": self._latest_output.time,
+                    "fx": self._latest_output.force[0],
+                    "fy": self._latest_output.force[1],
+                }
+            ]
+        )
 
     def solve(self):
-        for bearing in self.bearings:
-            bearing.solve()
+        """Evaluate the currently latched input."""
+
+        self.evaluate()
 
     def set_thickness(self, method, **kwargs):
         """
@@ -904,35 +937,183 @@ class MultiPad(BaseCSystem):
 
     @property
     def margs(self):
-        return self.bearings[0].args
+        bearing = self.bearings[0]
+        main_model = getattr(bearing, "main_model", None)
+        if main_model is not None:
+            return main_model.args
+        return bearing.args
 
     def init(self):
-        for bearing in self.bearings:
-            bearing.init()
+        """Reset child pads and start a fresh composite runtime session."""
 
-    def input(self, uxy, uxyt, *args, **kwargs):
-        self.t = kwargs.get("t", 0)
-        for bearing in self.bearings:
-            bearing.input(uxy=uxy, uxyt=uxyt, *args, **kwargs)
+        self._lifecycle.fail()
+        self._pending_input = None
+        self._latest_output = None
+        self._latest_result = None
+        self._failure = None
+        self._latest_friction = 0.0
+        try:
+            for bearing in self.bearings:
+                bearing.init()
+        except BaseException as exc:
+            self._failure = self._build_failure_snapshot(exc, "init")
+            raise
+        self._convergence_status = ConvergenceStatus.pending(
+            "input not evaluated"
+        )
+        self._lifecycle.reset()
 
-    def output(self, **kwargs):
-        ops = []
-        for bearing in self.bearings:
-            ops.append(bearing.output(**kwargs))
-        forces = [op["force"] for op in ops]
-        frictions = [op.get("friction", 0.0) for op in ops]
-        force = np.sum(forces, axis=0)
-        frictions = np.sum(frictions, axis=0)
-        op = dict(ops[0])
-        op["force"] = force
-        op["friction"] = frictions
-        logging.info("Total load of multi-pad bearing is: {}".format(force))
-        self.force = force
-        self.signal.lead_loop("finish_signal")
-        return op
+    def input(self, dto: BearingInput) -> None:
+        """Latch one typed input without evaluating child pads."""
 
-    def finish_signal(self):
-        self.result.loc[self.result.shape[0]] = [self.t, self.force[0], self.force[1]]
+        self._lifecycle.require_input_slot()
+        if not isinstance(dto, BearingInput):
+            raise TypeError("MultiPad input must be BearingInput")
+        if dto.unit_system is not self.unit_system:
+            raise ValueError("MultiPad input unit_system does not match runtime")
+        self._pending_input = dto
+        self._latest_output = None
+        self._latest_result = None
+        self._convergence_status = ConvergenceStatus.pending(
+            "input not evaluated"
+        )
+        self._lifecycle.latch()
+
+    def evaluate(self) -> None:
+        """Evaluate every child exactly once and publish one aggregate force."""
+
+        dto = self._pending_input
+        try:
+            with self._lifecycle.evaluation():
+                assert dto is not None
+                forces = []
+                frictions = []
+                child_convergence = []
+                for bearing in self.bearings:
+                    if isinstance(bearing, BearingRuntimeProtocol):
+                        child_output = bearing.step(dto)
+                        force = child_output.force
+                        friction = 0.0
+                        child_convergence.append(
+                            bearing.convergence_status.converged
+                        )
+                    else:
+                        nodim = self.unit_system is UnitSystem.NONDIMENSIONAL
+                        bearing.input(
+                            uxy=dto.displacement,
+                            uxyt=dto.velocity,
+                            t=dto.time,
+                            nodim=nodim,
+                        )
+                        raw_output = bearing.output(nodim=nodim)
+                        force = validate_bearing_output(raw_output)
+                        friction = float(raw_output.get("friction", 0.0))
+                        child_convergence.append(
+                            bool(bearing.calc_is_finished())
+                        )
+                    forces.append(force)
+                    frictions.append(friction)
+
+                aggregate_force = np.sum(forces, axis=0)
+                self._latest_friction = float(np.sum(frictions))
+                self._latest_output = BearingOutput(
+                    aggregate_force,
+                    dto.time,
+                    dto.unit_system,
+                )
+                converged = all(child_convergence)
+                self._convergence_status = (
+                    ConvergenceStatus(
+                        0.0,
+                        True,
+                        message="all MultiPad children finished",
+                    )
+                    if converged
+                    else ConvergenceStatus.pending(
+                        "one or more MultiPad children are incomplete"
+                    )
+                )
+                self._latest_result = result_snapshot(
+                    {
+                        "force": self._latest_output.force,
+                        "friction": self._latest_friction,
+                    },
+                    {
+                        "schema": "alb.multi-pad-result.v1",
+                        "time": dto.time,
+                        "unit_system": dto.unit_system.value,
+                        "pad_count": len(self.bearings),
+                        "converged": converged,
+                    },
+                )
+                self._pending_input = None
+        except BaseException as exc:
+            self._latest_output = None
+            self._latest_result = None
+            self._failure = self._build_failure_snapshot(exc, "evaluate")
+            raise
+
+    def output(self) -> BearingOutput:
+        """Return the completed immutable aggregate without recalculation."""
+
+        self._lifecycle.require_output()
+        assert self._latest_output is not None
+        return self._latest_output
+
+    def step(self, dto: BearingInput) -> BearingOutput:
+        """Compose input, evaluation, and output for one local calculation."""
+
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    def result_snapshot(self) -> ResultBundle:
+        """Return the current immutable aggregate result."""
+
+        self._lifecycle.require_output()
+        assert self._latest_result is not None
+        return self._latest_result
+
+    def failure_snapshot(self) -> ResultBundle:
+        """Return the latest sealed composite failure."""
+
+        if self._failure is None:
+            raise RuntimeError("no MultiPad failure is available")
+        return self._failure
+
+    def diagnostic_snapshot(self) -> ResultBundle:
+        """Return immutable lifecycle and topology diagnostics."""
+
+        return result_snapshot(
+            {},
+            {
+                "schema": "alb.multi-pad-diagnostic.v1",
+                "lifecycle_state": self.lifecycle_state.value,
+                "unit_system": self.unit_system.value,
+                "node_link": self.node_link,
+                "pad_count": len(self.bearings),
+                "converged": self._convergence_status.converged,
+                "has_result": self._latest_result is not None,
+                "has_failure": self._failure is not None,
+            },
+        )
+
+    def _build_failure_snapshot(
+        self,
+        error: BaseException,
+        phase: str,
+    ) -> ResultBundle:
+        return result_snapshot(
+            {},
+            {
+                "schema": "alb.multi-pad-failure.v1",
+                "phase": phase,
+                "error_type": type(error).__name__,
+                "message": sanitize_exception_message(error),
+                "unit_system": self.unit_system.value,
+                "node_link": self.node_link,
+            },
+        )
 
     def calc_capacity(self, **kwargs):
         forces = []
@@ -954,7 +1135,7 @@ class MultiPad(BaseCSystem):
         return force
 
     def calc_is_finished(self):
-        return all([bearing.calc_is_finished() for bearing in self.bearings])
+        return self._convergence_status.converged
 
     def calc_k(self, **kwargs):
         """
@@ -990,7 +1171,7 @@ class MultiPad(BaseCSystem):
         """
         if path is None:
             path = "multipads"
-        result = DataFrameResult({"multipads_result": self.result})
+        result = DataFrameResult({"multipads_result": self.results})
         parent_node = SaveTreeNode(path, result)
         child_node = [
             sm.save(
@@ -1121,8 +1302,22 @@ class StaticPosition:
 
     def _evaluate_static_force(self, wx, wy, ex, ey, nodim=True, include_dim=False):
         """Evaluate force and convergence diagnostics at one static position."""
-        self.bearing.input(uxy=[ex, ey], uxyt=[0, 0], t=0, nodim=nodim)
-        self.bearing.output(nodim=nodim)
+        if isinstance(self.bearing, BearingRuntimeProtocol):
+            bearing_unit = UnitSystem.coerce(self.bearing.unit_system)
+            displacement = np.asarray([ex, ey], dtype=float)
+            if nodim and bearing_unit is UnitSystem.DIMENSIONAL:
+                displacement = displacement * float(self.bearing.margs["c"])
+            self.bearing.step(
+                BearingInput(
+                    displacement,
+                    [0.0, 0.0],
+                    0.0,
+                    bearing_unit,
+                )
+            )
+        else:
+            self.bearing.input(uxy=[ex, ey], uxyt=[0, 0], t=0, nodim=nodim)
+            self.bearing.output(nodim=nodim)
         force = np.asarray(self.bearing.calc_capacity(calc=True, nodim=nodim))
         dim_force = (
             np.asarray(self.bearing.calc_capacity(calc=True, nodim=False))
@@ -1962,8 +2157,28 @@ def solve_tilting_pad_equilibrium(
 
     for i in range(int(max_iter)):
         multipad.init()
-        multipad.input(uxy=uxy, uxyt=uxyt, t=t, nodim=nodim)
-        multipad.output()
+        displacement = np.asarray(uxy, dtype=float)
+        velocity = np.asarray(uxyt, dtype=float)
+        if nodim and multipad.unit_system is UnitSystem.DIMENSIONAL:
+            args = multipad.margs
+            displacement = displacement * args["c"]
+            velocity = (
+                velocity
+                * args["c"]
+                * args["vf"]
+                * args["w"]
+                / 60.0
+                * 2.0
+                * np.pi
+            )
+        multipad.step(
+            BearingInput(
+                displacement=displacement,
+                velocity=velocity,
+                time=t,
+                unit_system=multipad.unit_system,
+            )
+        )
 
         max_offset = 0.0
         iter_state = {"iter": i + 1, "pads": {}}
@@ -2005,18 +2220,43 @@ def solve_tilting_pad_equilibrium(
             break
 
     multipad.init()
-    multipad.input(uxy=uxy, uxyt=uxyt, t=t, nodim=nodim)
-    out = multipad.output()
-    out["tilt_equilibrium"] = {
-        "converged": converged,
-        "iterations": len(history),
-        "tol": float(tol),
-        "history": history,
-        "tilts": {
-            label: (float(pad.tilt_x), float(pad.tilt_z)) for label, pad in pad_items
+    displacement = np.asarray(uxy, dtype=float)
+    velocity = np.asarray(uxyt, dtype=float)
+    if nodim and multipad.unit_system is UnitSystem.DIMENSIONAL:
+        args = multipad.margs
+        displacement = displacement * args["c"]
+        velocity = (
+            velocity
+            * args["c"]
+            * args["vf"]
+            * args["w"]
+            / 60.0
+            * 2.0
+            * np.pi
+        )
+    output = multipad.step(
+        BearingInput(
+            displacement=displacement,
+            velocity=velocity,
+            time=t,
+            unit_system=multipad.unit_system,
+        )
+    )
+    snapshot = multipad.result_snapshot()
+    return {
+        "force": output.force.copy(),
+        "friction": snapshot.values["friction"],
+        "tilt_equilibrium": {
+            "converged": converged,
+            "iterations": len(history),
+            "tol": float(tol),
+            "history": history,
+            "tilts": {
+                label: (float(pad.tilt_x), float(pad.tilt_z))
+                for label, pad in pad_items
+            },
         },
     }
-    return out
 
 
 if __name__ == "__main__":

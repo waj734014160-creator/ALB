@@ -20,8 +20,6 @@ from ALB.config import (
     PIDConfig,
     ServoConfig,
     TankConfig,
-    ThermalConfig,
-    build_thermal_config,
 )
 from ALB.control.fuzzy import FuzzyPID
 from ALB.control.pid import PID
@@ -52,6 +50,7 @@ _NODIM_ALB_LEGACY_REQUIRED_KEYS = [
 _NODIM_ALB_PAD_MAIN_KEYS = {"lambda_value", "lr", "lx", "lz", "nx", "nz", "bias"}
 
 from .runtime import ALB, ALBSV
+from .thermal_config import resolve_alb_thermal_config
 
 class ALBBuilder:
     """
@@ -212,15 +211,12 @@ class ALBBuilder:
 
     def _create_thermal_config(self):
         """Resolve the pad-level thermal config and apply ALB-level defaults."""
-        thermal_config = getattr(self.alb_config.pad_config, "thermal_config", None)
-        if thermal_config is None:
-            return None
-        thermal_args = vars(thermal_config).copy()
-        if thermal_args.get("dt") is None:
-            thermal_args["dt"] = self.alb_config.dt
-        if not thermal_args.get("transient_enabled"):
-            thermal_args["transient_enabled"] = self.alb_config.servo != "static"
-        return ThermalConfig.from_dict(thermal_args)
+        thermal_config = getattr(self.pad_config, "thermal_config", None)
+        return resolve_alb_thermal_config(
+            self.alb_config,
+            thermal_config,
+            args_nodim=False,
+        )
 
     # -------------------------- Wiring / Assembly --------------------------
 

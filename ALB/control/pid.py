@@ -141,12 +141,13 @@ class PID(BaseSimpleModel):
         time = finite_real_scalar(t, "controller time")
         inp = finite_real_vector(error, "controller error", 2)
         projected_error = self._sensor(inp)
+        bounded_error = limit_signal(projected_error)
         self.inp = inp
         if self._committed_error is None:
-            self.delta_error = np.zeros_like(projected_error)
+            self.delta_error = np.zeros_like(bounded_error)
         else:
-            self.delta_error = projected_error - self._committed_error
-        self.error = limit_signal(projected_error)
+            self.delta_error = bounded_error - self._committed_error
+        self.error = bounded_error
         self.t = time
         self._last_output = None
         self._lifecycle.latch()

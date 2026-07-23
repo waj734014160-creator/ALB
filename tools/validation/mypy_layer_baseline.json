@@ -96,7 +96,8 @@
     "ALB/systems/alb/runtime_adapter.py",
     "ALB/systems/alb/scales.py",
     "ALB/systems/alb/surrogate_runtime.py",
-    "ALB/systems/alb/switch.py"
+    "ALB/systems/alb/switch.py",
+    "ALB/systems/alb/thermal_config.py"
   ],
   "legacy_relaxations": [
     "--allow-untyped-defs",

@@ -4,51 +4,82 @@ import numpy as np
 import pytest
 
 from ALB import StepContext
-from ALB.core import LifecycleState, Signal, TimeIterDt
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    UnitSystem,
+    result_snapshot,
+)
+from ALB.core import LifecycleState, RuntimeLifecycle, TimeIterDt
 from ALB.dynamics.coupling import RsRotorBearingCouple
 
 
 class _Bearing:
     node_link = 0
-    unit_system = "dimensional"
+    unit_system = UnitSystem.DIMENSIONAL
+    input_dto_type = BearingInput
 
     def __init__(self):
-        self.signal = Signal(sys=self)
+        self._lifecycle = RuntimeLifecycle("test bearing")
+        self._input = None
+        self._output = None
+        self.init()
+
+    @property
+    def lifecycle_state(self):
+        return self._lifecycle.state
+
+    @property
+    def convergence_status(self):
+        return ConvergenceStatus(0.0, True)
 
     def init(self):
-        return None
+        self._input = None
+        self._output = None
+        self._lifecycle.reset()
 
-    def input(self, uxy, uxyt, t):
-        del uxy, uxyt, t
+    def input(self, dto):
+        self._lifecycle.require_input_slot()
+        self._input = dto
+        self._lifecycle.latch()
+
+    def evaluate(self):
+        with self._lifecycle.evaluation():
+            self._output = BearingOutput(
+                [0.0, 0.0],
+                self._input.time,
+                self.unit_system,
+            )
 
     def output(self):
-        return {"force": np.array([0.0, 0.0])}
+        self._lifecycle.require_output()
+        return self._output
 
-    def finish_signal(self):
-        return None
+    def step(self, dto):
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    def result_snapshot(self):
+        return result_snapshot({"force": self.output().force}, {})
+
+    def failure_snapshot(self):
+        raise RuntimeError("no failure")
+
+    def diagnostic_snapshot(self):
+        return result_snapshot({}, {"state": self.lifecycle_state.value})
 
     def save(self, *args, **kwargs):
         del args, kwargs
         raise AssertionError("save is outside this test")
 
 
-class _FailingBearing(_Bearing):
-    """Bearing that fails after component state has already been advanced."""
-
-    def __init__(self):
-        super().__init__()
-        self.fail_on_finish = True
-
-    def finish_signal(self):
-        if self.fail_on_finish:
-            raise RuntimeError("injected finish failure")
-
-
 class _Rotor:
     def __init__(self):
-        self.signal = Signal(sys=self)
         self.input_calls = 0
         self.state = np.zeros((1, 2))
+        self.fail_after_advance = False
 
     def init(self):
         self.input_calls = 0
@@ -60,6 +91,8 @@ class _Rotor:
 
     def advance(self):
         self.state = self.state + 1.0
+        if self.fail_after_advance:
+            raise RuntimeError("injected rotor failure")
 
     def output(self, node_links):
         count = len(np.asarray(node_links).reshape(-1))
@@ -68,13 +101,15 @@ class _Rotor:
             "uxyt": np.zeros((count, 2)),
         }
 
-    def finish_signal(self):
-        return None
+def _coupling(rotor, bearing):
+    coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.01, 1))
+    coupling.add_bearing(bearing, node_link=0)
+    return coupling
 
 
 def test_duplicate_context_is_rejected_before_second_mutation():
     rotor = _Rotor()
-    coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.01, 1), _Bearing())
+    coupling = _coupling(rotor, _Bearing())
     coupling.init()
     assert coupling.lifecycle_state is LifecycleState.READY
     initial = coupling.output()
@@ -95,7 +130,7 @@ def test_duplicate_context_is_rejected_before_second_mutation():
 
 def test_add_unbalance_forwards_soft_start_selection():
     rotor = _Rotor()
-    coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.01, 1), _Bearing())
+    coupling = _coupling(rotor, _Bearing())
 
     coupling.add_unbalance(
         node_link=0,
@@ -113,13 +148,14 @@ def test_add_unbalance_forwards_soft_start_selection():
 
 
 def test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization():
-    bearing = _FailingBearing()
+    bearing = _Bearing()
     rotor = _Rotor()
-    coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.01, 1), bearing)
+    coupling = _coupling(rotor, bearing)
     coupling.init()
     context = StepContext(1, 0.01, 0.01, "dimensional")
+    rotor.fail_after_advance = True
 
-    with pytest.raises(RuntimeError, match="injected finish failure"):
+    with pytest.raises(RuntimeError, match="injected rotor failure"):
         coupling.advance(context)
     assert coupling.lifecycle_state is LifecycleState.FAILED
     assert rotor.input_calls == 1
@@ -134,7 +170,7 @@ def test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization():
         coupling.save(tofile=False)
     assert rotor.input_calls == 1
 
-    bearing.fail_on_finish = False
+    rotor.fail_after_advance = False
     coupling.init()
     result = coupling.advance(context)
 
@@ -145,7 +181,7 @@ def test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization():
 @pytest.mark.parametrize(
     "mutate_topology",
     [
-        lambda coupling: coupling.add_bearing(_Bearing()),
+        lambda coupling: coupling.add_bearing(_Bearing(), node_link=0),
         lambda coupling: coupling.add_static_force([1.0, -2.0], node_link=0),
         lambda coupling: coupling.add_unbalance(
             node_link=0,
@@ -160,9 +196,7 @@ def test_mid_step_failure_invalidates_coupler_until_explicit_reinitialization():
     ids=["bearing", "static-force", "unbalance"],
 )
 def test_topology_change_requires_reinitialization(mutate_topology):
-    coupling = RsRotorBearingCouple(
-        _Rotor(), TimeIterDt(0.01, 1), _Bearing()
-    )
+    coupling = _coupling(_Rotor(), _Bearing())
     coupling.init()
     assert coupling.output().metadata["initial_snapshot"] is True
 

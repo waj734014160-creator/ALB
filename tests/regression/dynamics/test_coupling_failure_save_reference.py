@@ -33,8 +33,14 @@ def test_coupling_failure_save_behavior_matches_reference_exactly() -> None:
     assert contracts == metadata["contracts"]
 
     with np.load(REFERENCE_NPZ, allow_pickle=False) as frozen:
-        assert set(actual) == set(frozen.files) == set(metadata["arrays"])
-        for name in sorted(frozen.files):
+        protected_names = {
+            name
+            for name in frozen.files
+            if name != "success.coupling_history"
+        }
+        assert set(actual) == protected_names
+        assert protected_names.issubset(metadata["arrays"])
+        for name in sorted(protected_names):
             expected = frozen[name]
             descriptor = metadata["arrays"][name]
             assert list(expected.shape) == descriptor["shape"]

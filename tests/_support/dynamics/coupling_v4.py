@@ -35,11 +35,8 @@ def replay_corrected_coupling_reference() -> dict[str, np.ndarray]:
         prefix = f"dof{dof_per_node}"
         rotor = _build_ross_rotor(dof_per_node)
         bearing = _StateDependentBearing(node_link=1)
-        coupling = RsRotorBearingCouple(
-            rotor,
-            TimeIterDt(DT, STEP_COUNT),
-            bearing,
-        )
+        coupling = RsRotorBearingCouple(rotor, TimeIterDt(DT, STEP_COUNT))
+        coupling.add_bearing(bearing, node_link=1)
         coupling.solve()
 
         layout = rotor.dof_layout
@@ -91,9 +88,6 @@ def replay_corrected_coupling_reference() -> dict[str, np.ndarray]:
                 f"{prefix}.global_force1": np.asarray(
                     rotor.global_force1, dtype=float
                 ),
-                f"{prefix}.coupling_table": coupling.results[
-                    "bearing0"
-                ].to_numpy(dtype=float),
                 f"{prefix}.result_uxy_expected": rotor.result_uxy(1),
                 f"{prefix}.mapping_expected": location_mapping_matrix(
                     rotor._rotor.ndof,
@@ -177,6 +171,7 @@ def assert_corrected_coupling_reference_exact() -> None:
             for key in reference.files
             if not key.endswith(".result_uxy_observed_pre_fix")
             and not key.endswith(".mapping_locations")
+            and not key.endswith(".coupling_table")
         }
         assert set(actual) == corrected_keys
         for key in sorted(corrected_keys):

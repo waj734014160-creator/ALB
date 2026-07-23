@@ -1255,18 +1255,19 @@ from ALB.dynamics.coupling import RsRotorBearingCouple
 
 # dt must equal the rotor-coupling time step.
 bearing = alb_harmonic_linear(node_link=12, dt=time_iter.dt)
-rotor_couple = RsRotorBearingCouple(rotor, time_iter, bearing)
+rotor_couple = RsRotorBearingCouple(rotor, time_iter)
+rotor_couple.add_bearing(bearing, node_link=12)
+rotor_couple.solve()
 ```
 
 返回的 `ALBHarmonicLinear` 与标准轴承对象具有相同的耦合契约：
 
 | 接口 | 作用 |
 | --- | --- |
-| `node_link` | 指定力施加到 ROSS 转子的节点。 |
-| `signal` | 接入 `RsRotorBearingCouple` 的完成信号树。 |
-| `init()` | 重建 PD 和伺服阀状态，并在严格基态预热。 |
-| `input(uxy, uxyt, t)` | 接收有量纲轴颈位移、速度和共同时间步。 |
-| `output()["force"]` | 返回总力 `F_0+δF_K+δF_C+δF_{x_v}`。 |
+| `node_link` | 兼容节点属性；新 coupling 以 binding/`add_bearing(..., node_link)` 中的显式节点为准。 |
+| `init()` | 由 owning workflow/coupler 在整体 session 重置时调用；普通用户不显式调用。 |
+| `input(BearingInput)` | 锁存有量纲轴颈位移、速度和共同时间。 |
+| `evaluate()` / `output()` | 前者完成一次计算，后者只读返回含总力 `F_0+δF_K+δF_C+δF_{x_v}` 的 `BearingOutput`。 |
 | `K`、`C`、`G_xv` | 返回方程推导的刚度、阻尼和复阀芯力传递矩阵；`fdxv` 是兼容旧 `ALBLinearAgent` 的 `G_xv` 别名。 |
 | `static_force`、`uxy0`、`xv0`、`xv` | 保留旧线性包装常用的基态力、基态位置、基态阀芯及当前阀芯属性。 |
 | `save()` | 返回与耦合保存流程兼容的 `SaveTreeNode`。 |

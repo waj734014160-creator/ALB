@@ -287,13 +287,13 @@ def test_required_nodeid_preflight_detects_renamed_nodes_before_build():
         )
 
 
-def test_release_feature_manifest_covers_f01_f64_with_one_declared_deferral():
+def test_release_feature_manifest_covers_f01_f66_with_one_declared_deferral():
     features = acceptance.FEATURE_MANIFEST["features"]
 
     assert {item["id"] for item in features} == {
-        f"F{index:02d}" for index in range(1, 65)
+        f"F{index:02d}" for index in range(1, 67)
     }
-    assert sum(item["status"] == "implemented" for item in features) == 63
+    assert sum(item["status"] == "implemented" for item in features) == 65
     assert [
         item["id"]
         for item in features

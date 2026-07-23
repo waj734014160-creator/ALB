@@ -199,19 +199,20 @@ alb_with_nn = nn_agent(physical_shell, model_config)
 
 ## 接入转子耦合与显式历史
 
-新 coupling 使用 `CoupledBearingBinding` 明确节点、单位 adapter 和 direct-spool provider。
-普通同量纲轴承的最小形式如下：
+新 coupling 以 `CoupledBearingBinding` 作为唯一内部拓扑。普通有量纲
+`BearingInput` runtime 可使用简易入口：
 
 ```python
-from ALB.dynamics import CoupledBearingBinding, RsRotorBearingCouple
+from ALB.dynamics import RsRotorBearingCouple
 
-binding = CoupledBearingBinding(bearing=bearing, node_link=0)
-coupling = RsRotorBearingCouple(rotor, time_grid, binding)
-coupling.init()
-result = coupling.advance(step_context)
+coupling = RsRotorBearingCouple(rotor, time_grid)
+coupling.add_bearing(dimensional_bearing, node_link=0)
+coupling.solve()
+result = coupling.output()
 ```
 
-若 bearing 是 direct-spool 类型，binding 必须注入
+`solve()` 在内部开启一致的 coupling session；普通用户不显式调用 `init()`。若 bearing 是
+无量纲或 direct-spool 类型，必须显式构造 `CoupledBearingBinding`；direct-spool binding 注入
 `SpoolCommandProviderProtocol`；缺失时构造立即失败，不会默认为零阀芯。若 rotor 与 bearing
 单位不同，必须注入带完整 `Sx/St/Sv/Sf/Sp` 的 `BearingUnitAdapter`。
 

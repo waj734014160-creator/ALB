@@ -10,9 +10,9 @@ import pytest
 from ALB.contracts import ControllerProtocol
 from ALB.control.adapters import LegacyControllerAdapter
 from ALB.control.controllers import ALBLQGController, RCConfig, RepetitiveController
-from ALB.control.pid import PID
+from ALB.control import FuzzyPID, PID
 from ALB.control.valve import moog_2nd_servovalve
-from ALB.config import PIDConfig
+from ALB.config import FuzzyPIDConfig, PIDConfig
 from ALB.core import LifecycleState
 
 
@@ -166,3 +166,37 @@ def test_pid_shared_numeric_boundary_rejects_invalid_input_atomically(invalid):
     assert controller.lifecycle_state is LifecycleState.READY
     with pytest.raises(RuntimeError, match="unavailable"):
         controller.output()
+
+
+@pytest.mark.parametrize(
+    "controller",
+    [
+        PID(
+            PIDConfig(
+                dt=0.01,
+                kp=0.0,
+                ki=0.0,
+                kd=1.0,
+                freq=5.0,
+                sensor_angles=[0.0, 90.0],
+            )
+        ),
+        FuzzyPID(
+            FuzzyPIDConfig(
+                dt=0.01,
+                freq=5.0,
+                rule_path=None,
+                sensor_angles=[0.0, 90.0],
+            )
+        ),
+    ],
+    ids=["pid", "fuzzy-pid"],
+)
+def test_repeated_saturated_error_has_no_false_derivative(controller):
+    controller.input(0.0, [1.2, -1.2])
+    controller.evaluate()
+    controller.input(0.01, [1.2, -1.2])
+    controller.evaluate()
+
+    np.testing.assert_array_equal(controller.delta_error, np.zeros(2))
+    np.testing.assert_array_equal(controller.kd_calc, np.zeros(2))

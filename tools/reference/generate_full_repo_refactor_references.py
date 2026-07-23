@@ -101,7 +101,7 @@ from ALB.infrastructure.remote.transport import (
     remote_path,
 )
 from ALB.contracts.result_tree import DataFrameResult, NpyResult, SaveTreeNode
-from ALB.contracts import BearingInput
+from ALB.contracts import BearingInput, UnitSystem
 from ALB.dynamics.rotor import RossRotor
 from ALB.control.valve import moog_2nd_servovalve
 from ALB.config import ThermalConfig
@@ -540,14 +540,24 @@ def _bearing_case() -> CaseData:
     bearing.init()
     uxy = np.array([0.04, -0.03])
     uxyt = np.array([0.01, -0.02])
-    bearing.input(uxy, uxyt, t=0.125, nodim=True)
-    output = bearing.output(nodim=True)
+    output = bearing.step(
+        BearingInput(
+            displacement=uxy,
+            velocity=uxyt,
+            time=0.125,
+            unit_system=UnitSystem.NONDIMENSIONAL,
+        )
+    )
+    snapshot = bearing.result_snapshot()
     residual_offsets = np.cumsum([0, *[len(values) for values in residuals]])
     arrays = {
         "input_uxy": uxy,
         "input_uxyt": uxyt,
-        "aggregate_force": np.asarray(output["force"], dtype=float),
-        "aggregate_friction": np.asarray([output["friction"]], dtype=float),
+        "aggregate_force": np.asarray(output.force, dtype=float),
+        "aggregate_friction": np.asarray(
+            [snapshot.values["friction"]],
+            dtype=float,
+        ),
         "pad_force": np.vstack(
             [pad.calc_capacity(calc=False, nodim=True) for pad in bearing.bearings]
         ),
@@ -831,8 +841,8 @@ def _dynamics_coupling_case() -> CaseData:
     coupling = RsRotorBearingCouple(
         reference_rotor,
         TimeIterDt(bearing.dt, num=3),
-        bearing,
     )
+    coupling.add_bearing(bearing, node_link=12)
     coupling.init()
     for index in range(3):
         coupling.advance(
@@ -855,9 +865,6 @@ def _dynamics_coupling_case() -> CaseData:
         "coupling_forces": np.stack(reference_rotor.force_history),
         "coupling_previous_forces": np.stack(
             reference_rotor.previous_force_history
-        ),
-        "coupling_bearing_results": coupling.results["bearing0"].to_numpy(
-            dtype=float
         ),
     }
     return CaseData(

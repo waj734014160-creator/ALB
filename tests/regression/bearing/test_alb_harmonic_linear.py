@@ -180,7 +180,8 @@ def test_rs_rotor_bearing_couple_accepts_harmonic_linear_bearing():
     bearing = alb_harmonic_linear(node_link=12)
     rotor = _FakeRotor(bearing.coefficients.equilibrium_position)
     time_iter = TimeIterDt(bearing.dt, num=2)
-    couple = RsRotorBearingCouple(rotor, time_iter, bearing)
+    couple = RsRotorBearingCouple(rotor, time_iter)
+    couple.add_bearing(bearing, node_link=12)
 
     couple.init()
     couple.advance(StepContext(1, bearing.dt, bearing.dt, "dimensional"))
@@ -195,8 +196,8 @@ def test_rs_rotor_bearing_couple_accepts_harmonic_linear_bearing():
         rtol=0.0,
         atol=1.0e-9,
     )
-    assert len(couple.results["bearing0"]) == 2
-    assert len(bearing.results) == 2
+    assert couple.results["bearing0"].empty
+    assert bearing.results.empty
     save_node = couple.save(tofile=False)
     assert isinstance(save_node, SaveTreeNode)
     assert len(save_node.children) == 2

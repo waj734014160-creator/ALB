@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 
+from ALB.contracts import BearingInput
 from ALB.physics.bearing import (
     MultiPad,
     TiltingPadHydrodynamicPad,
@@ -53,11 +54,16 @@ class TestTiltingPadMultiPad(unittest.TestCase):
 
         mp = MultiPad(*pads.values())
         mp.init()
-        mp.input(uxy=[0.25, 0.0], uxyt=[0.0, 0.0], t=0.0, nodim=True)
-        out = mp.output()
+        out = mp.step(
+            BearingInput(
+                displacement=[0.25 * mp.margs["c"], 0.0],
+                velocity=[0.0, 0.0],
+                time=0.0,
+                unit_system="dimensional",
+            )
+        )
 
-        self.assertIn("force", out)
-        self.assertTrue(np.all(np.isfinite(out["force"])))
+        self.assertTrue(np.all(np.isfinite(out.force)))
 
         fields = get_pad_pressure_fields(pads)
         self.assertEqual(set(fields.keys()), {"up", "down", "right", "left"})
@@ -116,8 +122,14 @@ class TestTiltingPadMultiPad(unittest.TestCase):
         pads = tilting_pads_bearings(cfg)
         mp = MultiPad(*pads.values())
         mp.init()
-        mp.input(uxy=[0.25, 0.0], uxyt=[0.0, 0.0], t=0.0, nodim=True)
-        mp.output()
+        mp.step(
+            BearingInput(
+                displacement=[0.25 * mp.margs["c"], 0.0],
+                velocity=[0.0, 0.0],
+                time=0.0,
+                unit_system="dimensional",
+            )
+        )
 
         # Pick the most-loaded pad so the tilt update has a non-zero moment.
         fields = get_pad_pressure_fields(pads)

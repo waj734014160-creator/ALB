@@ -110,7 +110,8 @@ class TestPaperTaskConfigBuild(unittest.TestCase):
         self.assertIn("tp3", data)
 
         config = ALBConfig.from_dict(data)
-        alb = alb2(config)
+        with self.assertWarnsRegex(RuntimeWarning, "dynamic servo"):
+            alb = alb2(config)
 
         self.assertIsInstance(alb, ALB)
         self.assertEqual(alb.node_link, 12)
@@ -162,7 +163,8 @@ class TestPaperTaskConfigBuild(unittest.TestCase):
         self.assertIn("rule_path", data)
 
         config = ALBConfig.from_dict(data, controller="FuzzyPID")
-        alb = alb2_fuzzy(config)
+        with self.assertWarnsRegex(RuntimeWarning, "dynamic servo"):
+            alb = alb2_fuzzy(config)
 
         self.assertIsInstance(alb, ALB)
         self.assertEqual(alb.node_link, 12)

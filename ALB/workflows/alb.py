@@ -351,7 +351,9 @@ def task_alb_rotor_couple(config_dir, save_dir=None, bearing="alb", save_name="r
     rotor_config = config_factory.read_config("rotor.json5")
     rotor = rotor0(**rotor_config)
 
-    rbc = RsRotorBearingCouple(rotor, ti, alb, hb)
+    rbc = RsRotorBearingCouple(rotor, ti)
+    rbc.add_bearing(alb, alb.node_link)
+    rbc.add_bearing(hb, hb.node_link)
 
     ubf_config = config_factory.read_config("unbalance_force.json5")
     rbc.add_unbalance(**ubf_config)
@@ -395,7 +397,9 @@ def task_albf_rotor_couple(config_dir, save_dir=None, save_name="result"):
     rotor_config = config_factory.read_config("rotor.json5")
     rotor = rotor0(**rotor_config)
 
-    rbc = RsRotorBearingCouple(rotor, ti, alb, hb)
+    rbc = RsRotorBearingCouple(rotor, ti)
+    rbc.add_bearing(alb, alb.node_link)
+    rbc.add_bearing(hb, hb.node_link)
 
     ubf_config = config_factory.read_config("unbalance_force.json5")
     rbc.add_unbalance(**ubf_config)
@@ -433,7 +437,9 @@ def task_albnn_rotor_couple(config_dir, save_dir=None, save_name="result"):
     rotor_config = config_factory.read_config("rotor.json5")
     rotor = rotor0(**rotor_config)
 
-    rbc = RsRotorBearingCouple(rotor, ti, alb, hb)
+    rbc = RsRotorBearingCouple(rotor, ti)
+    rbc.add_bearing(alb, alb.node_link)
+    rbc.add_bearing(hb, hb.node_link)
 
     ubf_config = config_factory.read_config("unbalance_force.json5")
     rbc.add_unbalance(**ubf_config)

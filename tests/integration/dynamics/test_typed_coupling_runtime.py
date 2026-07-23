@@ -17,9 +17,13 @@ from ALB.contracts import (
     UnitSystem,
     ValveOutput,
 )
-from ALB.core import RuntimeLifecycle, Signal, TimeIterDt
+from ALB.core import LifecycleState, RuntimeLifecycle, Signal, TimeIterDt
 from ALB.dynamics import CoupledBearingBinding, CouplingRuntimeDependencies
 from ALB.dynamics.coupling import RsRotorBearingCouple
+from ALB.dynamics.coupling_runtime import (
+    PostCommitObserverError,
+    PostCommitRecordingError,
+)
 from ALB.infrastructure import InMemoryResultRecorder
 from ALB.physics.bearing import BearingScaleSet, BearingUnitAdapter
 
@@ -36,6 +40,8 @@ class _NativeBearing:
         self.output_time_offset = 0.0
         self.output_unit = None
         self.fail_evaluate = False
+        self.init_calls = 0
+        self.evaluate_calls = 0
 
     @property
     def lifecycle_state(self):
@@ -46,6 +52,7 @@ class _NativeBearing:
         return ConvergenceStatus(0.0, True)
 
     def init(self) -> None:
+        self.init_calls += 1
         self._lifecycle.reset()
         self._input = None
         self._output = None
@@ -57,6 +64,7 @@ class _NativeBearing:
 
     def evaluate(self) -> None:
         with self._lifecycle.evaluation():
+            self.evaluate_calls += 1
             if self.fail_evaluate:
                 raise RuntimeError("injected bearing failure")
             dto = self._input
@@ -122,9 +130,11 @@ class _Rotor:
         self.signal = Signal(sys=self)
         self.state = np.zeros((1, 2))
         self.advance_calls = 0
+        self.init_calls = 0
         self.fail_advance = False
 
     def init(self) -> None:
+        self.init_calls += 1
         self.state[:] = 0.0
         self.advance_calls = 0
 
@@ -166,6 +176,37 @@ class _FailSecondRecord:
 class _FailingObserver:
     def on_step_completed(self, event) -> None:
         raise RuntimeError("monitor unavailable")
+
+    def on_recording_recovered(self, event) -> None:
+        return None
+
+
+class _FailInitialRecord:
+    def __init__(self) -> None:
+        self.inner = InMemoryResultRecorder()
+        self.failed = False
+
+    def begin_run(self, run_id):
+        return self.inner.begin_run(run_id)
+
+    def record(self, context, bundle):
+        if context.step_index == 0 and not self.failed:
+            self.failed = True
+            raise OSError("injected initial recorder failure")
+        return self.inner.record(context, bundle)
+
+    def end_run(self, run_id, *, allow_incomplete=False):
+        return self.inner.end_run(run_id, allow_incomplete=allow_incomplete)
+
+
+class _FailInitialObserver:
+    def __init__(self) -> None:
+        self.failed = False
+
+    def on_step_completed(self, event) -> None:
+        if event.context.step_index == 0 and not self.failed:
+            self.failed = True
+            raise RuntimeError("injected initial observer failure")
 
     def on_recording_recovered(self, event) -> None:
         return None
@@ -293,7 +334,104 @@ def test_nondimensional_binding_converts_force_back_to_rotor_domain() -> None:
     descriptor = result.metadata["unit_adapters"][0]
     assert descriptor["scale_definition"] == "dimensional_per_nondimensional"
     assert descriptor["applied_transform"] == "bearing_to_rotor"
-    DirectSpoolBearingInput,
+
+
+def test_add_bearing_creates_binding_and_requires_reinitialization() -> None:
+    first = _NativeBearing()
+    second = _NativeBearing()
+    coupling = RsRotorBearingCouple(
+        _Rotor(),
+        TimeIterDt(0.01, 1),
+        CoupledBearingBinding(first, node_link=0),
+    )
+    coupling.init()
+
+    binding = coupling.add_bearing(second, node_link=0)
+    assert binding is coupling.bindings[-1]
+    assert coupling.bearings == (first, second)
+    assert coupling.lifecycle_state is LifecycleState.FAILED
+    with pytest.raises(RuntimeError, match="invalid"):
+        coupling.output()
+
+    coupling.init()
+    result = coupling.advance(StepContext(1, 0.01, 0.01, "dimensional"))
+    np.testing.assert_array_equal(
+        result.values["bearing_force"],
+        [[1.0, -2.0], [1.0, -2.0]],
+    )
+
+
+def test_simple_add_bearing_rejects_advanced_topologies_immediately() -> None:
+    coupling = RsRotorBearingCouple(_Rotor(), TimeIterDt(0.01, 1))
+    with pytest.raises(TypeError, match="node_link"):
+        coupling.add_bearing(_NativeBearing())
+    with pytest.raises(TypeError, match="integer"):
+        coupling.add_bearing(_NativeBearing(), node_link=None)
+
+    nondimensional = _NativeBearing()
+    nondimensional.unit_system = UnitSystem.NONDIMENSIONAL
+    with pytest.raises(TypeError, match="unit_system='dimensional'"):
+        coupling.add_bearing(nondimensional, node_link=0)
+    with pytest.raises(TypeError, match="ordinary BearingInput"):
+        coupling.add_bearing(_DirectBearing(), node_link=0)
+    with pytest.raises(TypeError, match="CoupledBearingBinding"):
+        RsRotorBearingCouple(
+            _Rotor(),
+            TimeIterDt(0.01, 1),
+            _NativeBearing(),
+        )
+
+
+def test_initial_record_failure_keeps_committed_runtime_ready() -> None:
+    recorder = _FailInitialRecord()
+    rotor = _Rotor()
+    bearing = _NativeBearing()
+    coupling = RsRotorBearingCouple(
+        rotor,
+        TimeIterDt(0.01, 2),
+        CoupledBearingBinding(bearing, node_link=0),
+        dependencies=CouplingRuntimeDependencies(
+            "initial-record",
+            recorder=recorder,
+            record_failure_policy="raise",
+        ),
+    )
+
+    with pytest.raises(PostCommitRecordingError):
+        coupling.init()
+    assert coupling.lifecycle_state is LifecycleState.READY
+    assert rotor.init_calls == 1
+    assert bearing.init_calls == 1
+    assert bearing.evaluate_calls == 1
+
+    coupling.retry_pending_record()
+    coupling.advance(StepContext(1, 0.01, 0.01, "dimensional"))
+    assert rotor.init_calls == 1
+    assert bearing.init_calls == 1
+    assert bearing.evaluate_calls == 2
+
+
+def test_initial_strict_observer_failure_keeps_committed_runtime_ready() -> None:
+    rotor = _Rotor()
+    bearing = _NativeBearing()
+    coupling = RsRotorBearingCouple(
+        rotor,
+        TimeIterDt(0.01, 2),
+        CoupledBearingBinding(bearing, node_link=0),
+        dependencies=CouplingRuntimeDependencies(
+            "initial-observer",
+            observers=(_FailInitialObserver(),),
+            observer_failure_policy="raise",
+        ),
+    )
+
+    with pytest.raises(PostCommitObserverError):
+        coupling.init()
+    assert coupling.lifecycle_state is LifecycleState.READY
+    coupling.advance(StepContext(1, 0.01, 0.01, "dimensional"))
+    assert rotor.init_calls == 1
+    assert bearing.init_calls == 1
+    assert bearing.evaluate_calls == 2
 
 
 @pytest.mark.parametrize(

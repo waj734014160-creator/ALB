@@ -58,10 +58,8 @@ LEGACY_SIGNAL_IMPORT_PATHS = {
     "ALB/systems/alb/switch.py",
 }
 LEGACY_SIGNAL_LEAD_LOOP_COUNTS = {
-    "ALB/dynamics/coupling.py": 1,
     "ALB/dynamics/rotor.py": 1,
     "ALB/infrastructure/legacy_signal.py": 1,
-    "ALB/physics/bearing/solver.py": 1,
     "ALB/physics/film/solver.py": 3,
     "ALB/physics/hydraulics/orifice.py": 1,
     "ALB/systems/alb/linear.py": 1,

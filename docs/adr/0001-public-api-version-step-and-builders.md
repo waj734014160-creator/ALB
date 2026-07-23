@@ -45,7 +45,8 @@
    创建、调用或传入。`build_alb()`、`build_direct_spool_alb()` 和
    `build_hybrid_bearing()` 接收当前类型化配置或等价的显式构造参数，并在 builder 内部完成
    envelope 创建与校验；`build_alb_from_file()` 在内部加载和校验文件中的 envelope。无版本平铺
-   字典仍不进入公共 builder，legacy 配置仍必须先经过单向迁移。
+   字典仍不进入公共 builder，legacy 配置仍必须先经过单向迁移。envelope 的构造与
+   materialize helper 不从用户 namespace 导出，公共 Python builder 也不接受 envelope 实例。
 7. 用户直接创建 runtime 时，`__init__()` 必须在所有字段和直属子组件完成装配后自动执行一次
    `init()`；所有公共 builder 返回的对象也必须已经处于可接收输入的 `READY` 状态。用户示例、
    quickstart 和正常业务代码不得再要求 `bearing.init()`。
@@ -102,6 +103,9 @@
    `bearing.step()` 因此不会出现“持有但不应调用”的副作用依赖。
 13. builder、coupler 和 workflow 必须拒绝放错层或与 `control_mode` 不兼容的依赖。例如普通
     closed-loop bearing 不能携带 direct-spool provider，数值 bearing 不能取得 artifact writer。
+    `RsRotorBearingCouple` 以 `CoupledBearingBinding` 作为唯一内部拓扑源：高级构造入口只接收
+    显式 binding；简易 `add_bearing(bearing, node_link)` 只为有量纲、普通
+    `BearingInput` runtime 创建 binding。无量纲和 direct-spool 轴承必须显式提供 adapter/provider。
 14. 普通对象不直接暴露 mutable implementation。诊断使用不可变
    `diagnostic_snapshot()`；确需迁移旧插件时，只能通过明确命名的兼容 adapter 解包。
 15. `BearingBlock`、`DirectSpoolBearingBlock`、`LegacyBearingAdapter`、
@@ -112,6 +116,13 @@
    - declared 内部和外部消费者为零；
    - quickstart、迁移表和替代 API 已完成；
    - 对应兼容参考可以被明确归档而不是静默删除。
+16. `MultiPad` 是正式的组合 bearing runtime。它在构造结束时进入 `READY`，接收
+    `BearingInput`，在一次 `evaluate()` 中各推进一个子瓦一次，并只发布当前不可变
+    `BearingOutput`、收敛状态及结果/失败快照；默认不保存无限步骤历史。单瓦 film solver 仍是
+    其内部数值实现。
+17. `ThermalConfig.transient_enabled` 是默认 `False` 的严格布尔值。当前 typed/schema 配置拒绝
+    `None`，legacy 缺失或 `None` 迁移为 `False`；builder 不再根据 servo 类型覆盖该选择。
+    动态阀配稳态热、静态阀配瞬态热均允许构建，但每次 build 只发出一次提示性警告。
 
 ## 影响
 

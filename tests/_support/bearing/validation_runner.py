@@ -2,6 +2,7 @@
 
 import numpy as np
 
+from ALB.contracts import BearingInput, UnitSystem
 from ALB.physics.bearing import HydrostaticBearing, MultiPad
 from ALB.config import HydConfig
 
@@ -22,7 +23,17 @@ def run_validation_case(e, angle):
     bearing2 = HydrostaticBearing(hyd_config1)
     mp = MultiPad(bearing1, bearing2)
 
-    mp.solve()
+    mp.step(
+        BearingInput(
+            displacement=[
+                e * hyd_config0.c * np.sin(np.deg2rad(angle)),
+                -e * hyd_config0.c * np.cos(np.deg2rad(angle)),
+            ],
+            velocity=[0.0, 0.0],
+            time=0.0,
+            unit_system=UnitSystem.DIMENSIONAL,
+        )
+    )
     force = mp.calc_capacity(nodim=False)
     load = float(np.linalg.norm(force))
     friction = float(mp.calc_friction(nodim=True))

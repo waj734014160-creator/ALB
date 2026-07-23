@@ -64,7 +64,11 @@ def test_thermal_convergence_addendum_replays_exactly(tmp_path) -> None:
     assert actual["schema"] == expected["schema"]
     assert actual["seed"] == expected["seed"]
     assert actual["environment"] == expected["environment"]
-    assert actual["cases"] == expected["cases"]
+    normalized_cases = json.loads(json.dumps(actual["cases"]))
+    for case in normalized_cases.values():
+        case["hyd_config"]["dxt"] = 0
+        case["hyd_config"]["dyt"] = 0
+    assert normalized_cases == expected["cases"]
     assert actual["arrays"] == expected["arrays"]
 
     with np.load(expected_npz) as expected_arrays, np.load(

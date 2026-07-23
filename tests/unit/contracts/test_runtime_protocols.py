@@ -8,10 +8,15 @@ import numpy as np
 import pytest
 
 from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
     ControllerProtocol,
     ResultSnapshotProtocol,
     RuntimeLifecycleProtocol,
     ServoValveProtocol,
+    UnitSystem,
+    result_snapshot,
 )
 from ALB.control.controllers import ALBLQGController
 from ALB.control.valve import moog_2nd_servovalve
@@ -70,28 +75,58 @@ def test_runtime_lifecycle_has_one_output_generation_per_evaluation():
 def test_coupling_exposes_result_snapshot_protocol():
     class Bearing:
         node_link = 0
-        unit_system = "dimensional"
+        unit_system = UnitSystem.DIMENSIONAL
+        input_dto_type = BearingInput
 
         def __init__(self):
-            from ALB.core import Signal
+            self._lifecycle = RuntimeLifecycle("test bearing")
+            self._input = None
+            self._output = None
+            self.init()
 
-            self.signal = Signal(sys=self)
+        @property
+        def lifecycle_state(self):
+            return self._lifecycle.state
+
+        @property
+        def convergence_status(self):
+            return ConvergenceStatus(0.0, True)
 
         def init(self):
-            return None
+            self._input = None
+            self._output = None
+            self._lifecycle.reset()
 
-        def input(self, uxy, uxyt, t):
-            del uxy, uxyt, t
+        def input(self, dto):
+            self._lifecycle.require_input_slot()
+            self._input = dto
+            self._lifecycle.latch()
+
+        def evaluate(self):
+            with self._lifecycle.evaluation():
+                self._output = BearingOutput(
+                    np.zeros(2),
+                    self._input.time,
+                    self.unit_system,
+                )
 
         def output(self):
-            return {"force": np.zeros(2)}
+            self._lifecycle.require_output()
+            return self._output
 
-        def finish_signal(self):
-            return None
+        def step(self, dto):
+            self.input(dto)
+            self.evaluate()
+            return self.output()
 
-        def save(self, *args, **kwargs):
-            del args, kwargs
-            raise AssertionError("not used")
+        def result_snapshot(self):
+            return result_snapshot({"force": self.output().force}, {})
+
+        def failure_snapshot(self):
+            raise RuntimeError("no failure")
+
+        def diagnostic_snapshot(self):
+            return result_snapshot({}, {"state": self.lifecycle_state.value})
 
     class Rotor:
         def __init__(self):
@@ -109,7 +144,8 @@ def test_coupling_exposes_result_snapshot_protocol():
         def finish_signal(self):
             return None
 
-    coupling = RsRotorBearingCouple(Rotor(), TimeIterDt(0.01, 1), Bearing())
+    coupling = RsRotorBearingCouple(Rotor(), TimeIterDt(0.01, 1))
+    coupling.add_bearing(Bearing(), node_link=0)
     coupling.init()
 
     assert isinstance(coupling, ResultSnapshotProtocol)

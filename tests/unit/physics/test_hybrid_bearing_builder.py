@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import inspect
+
 import numpy as np
 import pytest
 
@@ -105,6 +107,7 @@ def test_constructor_supplied_orifices_enable_coupled_calculation(
 def test_hybrid_builder_dispatches_nondimensional_config_without_mode_flag():
     runtime = build_hybrid_bearing(_nondimensional_config(), x0=10.0)
 
+    assert "mode" not in inspect.signature(build_hybrid_bearing).parameters
     assert isinstance(runtime, NodimHybridBearing)
     assert isinstance(runtime, BearingRuntimeProtocol)
     assert runtime.lifecycle_state is LifecycleState.READY

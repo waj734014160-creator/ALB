@@ -14,6 +14,7 @@ from ALB.contracts import (
     BearingInput,
     BearingProtocol,
     ConvergenceStatus,
+    LifecycleState,
     NotifierProtocol,
     TimeGridProtocol,
 )
@@ -92,8 +93,8 @@ def test_decorator_and_legacy_adapter_preserve_standard_bearing_contract():
     assert isinstance(decorated, BearingProtocol)
     assert decorated.node_link == 4
     assert adapted.node_link == 7
+    assert adapted.lifecycle_state is LifecycleState.READY
     np.testing.assert_array_equal(decorated.output()["force"], bearing.force)
-    adapted.init()
     output = adapted.step(
         BearingInput([0.0, 0.0], [0.0, 0.0], 0.0, "dimensional")
     )
@@ -178,10 +179,25 @@ def test_multipad_rejects_empty_and_mixed_unit_collections():
 
 
 def test_rotor_coupling_rejects_explicit_nondimensional_bearing():
-    rotor = SimpleNamespace(signal=Signal())
-    bearing = _Bearing(unit_system="nondimensional")
+    rotor = SimpleNamespace()
+    bearing = SimpleNamespace(
+        node_link=1,
+        unit_system="nondimensional",
+        input_dto_type=BearingInput,
+        init=lambda: None,
+        lifecycle_state=LifecycleState.READY,
+        convergence_status=ConvergenceStatus(0.0, True),
+        input=lambda dto: None,
+        evaluate=lambda: None,
+        output=lambda: None,
+        step=lambda dto: None,
+        result_snapshot=lambda: None,
+        failure_snapshot=lambda: None,
+        diagnostic_snapshot=lambda: None,
+    )
+    coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.01, 1))
     with pytest.raises(TypeError, match="unit_system='dimensional'"):
-        RsRotorBearingCouple(rotor, TimeIterDt(0.01, 1), bearing)
+        coupling.add_bearing(bearing, node_link=1)
 
 
 def test_film_failure_uses_injected_notifier_without_infrastructure_import():

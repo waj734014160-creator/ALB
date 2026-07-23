@@ -144,7 +144,7 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | F26 | 复用现有 rotor 载荷 DTO | `force0/force1` 继续使用 `RotorLoadInput.previous_force/force` 表达，不新增重复端点 DTO；内部可使用不可变 step workspace 避免半写入共享列表。 |
 | F27 | 推进采用失败封锁和发布原子性 | 顺序固定为 `ledger.validate_next` 在内的 validate -> mutable execute -> candidate result -> ledger commit -> 不可失败 publish。提交前失败不发布正常结果且不自动重算，不宣称回滚内部状态。 |
 | F28 | 每个物理步只提交一次且不与 recorder 伪原子化 | candidate 完成后先提交 ledger，再用不可失败引用发布；recorder/observer 原始异常先捕获并完成单次事件派发，最后才按策略返回或抛出明确的 post-commit 错误。 |
-| F29 | 用类型化 binding 构建 coupling | `CoupledBearingBinding` 明确包含 bearing runtime、节点、可选单位 adapter 和可选 spool provider；factory 集中验证拓扑、协议、单位和 provider 能力。 |
+| F29 | 用类型化 binding 构建 coupling | `CoupledBearingBinding` 是唯一内部拓扑源。高级构造入口只接收显式 binding；`add_bearing(bearing, node_link)` 只为有量纲普通 `BearingInput` runtime 创建 binding，无量纲/direct-spool 必须显式提供 adapter/provider。 |
 
 ### E. `Signal` 替换
 
@@ -153,7 +153,7 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | F30 | 数值正确性改用显式调用 | `init/evaluate/advance/commit` 不再依赖 `Signal.lead_loop("...")` 触发关键计算或状态更新。 |
 | F31 | 完成事件携带共享不可变数据 | `StepCompleted` 在物理提交后只发送一次，状态只能为 `NOT_CONFIGURED/RECORDED/PENDING`；恢复改发 `RecordingRecovered`，incomplete close 由 run receipt 表达。observer 异常默认隔离且 bounded。 |
 | F32 | 观察者采用类型化 Protocol | 引入 `StepObserverProtocol.on_step_completed(event)`；不使用字符串属性名和 `getattr()` 反射回调，也不允许 observer 参与推进或 ledger。 |
-| F33 | 组件拓扑由拥有者显式维护 | ALB/coupler 保存明确的 pads、bearings、valves、recorders/observers 列表，不用父子 signal 树表达所有权。 |
+| F33 | 组件拓扑由拥有者显式维护 | ALB 保存明确的 pads/valves，coupler 只保存 bindings 并派生 bearing 序列，不维护平行列表；拓扑改变后由 owner 重新初始化，不用父子 signal 树表达所有权。 |
 | F34 | legacy Signal 仅保留一个兼容周期 | 如果外部旧调用仍依赖 signal，0.3.x 使用单独 `LegacySignalAdapter`；声明消费者清零且完成一个 minor 弃用周期后，最早在 0.4.0 移除。新代码不得新增 signal 依赖。 |
 | F35 | 最终移除数值核心中的 `Signal` | 当声明的内部/外部消费者全部迁移并有参考保护后，从 film、thermal、bearing、ALB、rotor 和 coupler 核心路径删除 signal。 |
 
@@ -183,7 +183,7 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | ID | 新增特性目标 | 对应修改方案 |
 | --- | --- | --- |
 | F47 | 用户入口只接受当前 schema | 在实现 builder 前先固定配置语义；`build_alb_from_file()` 使用 `load_current_config()`，legacy 配置报出迁移命令，不在运行入口中宽松猜测。 |
-| F48 | 配置可精确往返 | dimensional/nondimensional、controller none/PID/FuzzyPID、ALB/ALBSV 和 thermal 设置必须带类型标签精确 round-trip。 |
+| F48 | 配置可精确往返 | dimensional/nondimensional、controller none/PID/FuzzyPID、ALB/ALBSV 和 thermal 设置必须带类型标签精确 round-trip。`transient_enabled` 是默认 `False` 的严格 bool，typed/schema 拒绝 `None`，legacy 缺失/`None` 迁移为 `False`；servo 类型不得覆盖该值。 |
 | F49 | 控制模式成为显式配置 | 用枚举/带标签字段区分闭环控制、无控制器和 direct-spool，避免从 `controller=None` 或类名推测含义。 |
 | F50 | 单位制成为构建必需信息 | envelope 明确 `unit_system`；旧配置迁移时根据明确旧类型转换并在报告中记录来源。 |
 | F51 | 依赖按拥有者注入且不配置反序列化 | `BearingBuildDependencies` 只含 controller/component factories；spool provider 属于 binding，recorder/observer 属于 coupling runtime，artifact writer 属于 workflow output。 |
@@ -196,11 +196,11 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | --- | --- | --- |
 | F54 | 配置到可运行对象的端到端测试 | 覆盖“读取当前配置 -> build -> READY -> step”，验证用户无需手动创建 block、envelope 或调用 `init()`。 |
 | F55 | 单步与三阶段调用等价 | 对相同输入精确比较 `step()` 和 `input/evaluate/output`，并验证重复 `output()` 不重复求解或记录。 |
-| F56 | 数值与 post-commit 状态测试 | 覆盖内部 NEW 转换、公开构造后的 READY、RUNNING、FAILED、`COMMITTED_RECORDING_PENDING`、owner 重新初始化、pending 恢复以及输入改变使旧输出失效。 |
-| F57 | native 与旧参考数值一致 | 对 film、thermal、控制、ALB/ALBSV 和 ALBNN shell 建立修改前新参考；固定 CPU、device、dtype、依赖和随机种子的路径使用精确相等，GPU/并行路径另建有理由的容差参考。 |
+| F56 | 数值与 post-commit 状态测试 | 覆盖内部 NEW 转换、公开构造后的 READY、RUNNING、FAILED、`COMMITTED_RECORDING_PENDING`、owner 重新初始化、pending 恢复以及输入改变使旧输出失效；`MultiPad` 同样覆盖三阶段生命周期和只读输出。 |
+| F57 | native 与旧参考数值一致 | 对 film、thermal、控制、ALB/ALBSV、ALBNN shell、MultiPad 聚合和 Hydrostatic 配置派生建立修改前参考；固定 CPU、device、dtype、依赖和随机种子的路径使用精确相等，GPU/并行路径另建有理由的容差参考。 |
 | F58 | direct-spool 全链路测试 | 覆盖合法 `sx/sy`、复杂数/NaN/Inf/越界、时间不一致、失败封锁和重新初始化。 |
 | F59 | 真实 ROSS coupling 回归 | 正式门禁必须覆盖真实 ROSS 4/6-DOF rotor、非零状态相关 bearing force、`previous_force/force` 插值、最终状态和时间长度；等价 mock 只能补充失败注入，不能替代。 |
-| F60 | coupling 失败封锁和提交后故障测试 | 分别在 bearing、rotor、spool provider、结果构造、recorder 和 observer 阶段注入异常，区分提交前封锁与提交后诊断，确认任何路径都不会静默重复物理推进。 |
+| F60 | coupling 失败封锁和提交后故障测试 | 分别在 bearing、rotor、spool provider、结果构造、recorder 和 observer 阶段注入异常，覆盖 step 0 与后续步，区分提交前封锁与提交后诊断。唯一有效性源是 `CouplingStepRuntime`；post-commit 异常不得使已提交状态失效或重复物理推进。 |
 | F61 | recorder 选择性测试 | 验证无 recorder 不增长历史；内存、ring buffer、降采样和字段筛选的步序、拷贝隔离及内存上界。 |
 | F62 | Signal 移除边界测试 | import/AST 门禁禁止新数值模块依赖 `ALB.core.events.Signal`，legacy adapter 是唯一暂时允许位置。 |
 | F63 | 数值、时间和内存性能门禁 | 每阶段先过精确参考；使用下文固定的机器身份、批量时间下限、预热、样本数、中位数/MAD 和峰值内存规则比较 film、thermal、ALB、ALBNN、coupling。 |
@@ -210,7 +210,7 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 
 | ID | 新增特性目标 | 对应修改方案 |
 | --- | --- | --- |
-| F65 | bearing 实例构造后即可计算 | ALB、ALBNN、harmonic、混合轴承及兼容 runtime 在构造结束时处于 `READY`；内部组合仍可调用可重复的 `init()` 完成整体 session 重置。 |
+| F65 | bearing 实例构造后即可计算 | ALB、ALBNN、harmonic、混合轴承、`MultiPad` 及兼容 runtime 在构造结束时处于 `READY`；内部组合仍可调用可重复的 `init()` 完成整体 session 重置。 |
 | F66 | 中性动静压混合轴承 | 新增 `build_hybrid_bearing()`、`HybridBearing`、`NodimHybridBearing` 和 `HybridOrificeConfig`。未给节流器时执行动压油膜计算，给出构造期节流器时自动装配节流-压力耦合；不提供动压/静压模式字段。 |
 
 ## 分阶段实施顺序
@@ -227,10 +227,10 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | F35 | 延期到 0.4.0 | legacy Signal 仅保留给尚未清零的 film/thermal/rotor 消费者；AST 门禁禁止增加新消费者 |
 | F54-F63 | 已实现 | 64 项 manifest、故障注入、recorder 选择性/内存上界、Signal AST、精确参考和五领域时间/峰值内存报告均已落地 |
 | F64 | 已实现 | 文档、测试映射、26 个 strict 目标、564 节点、detached pytest、wheel/extras smoke 和可复现制品证据均已通过 |
-| F02/F13/F16/F54 修订、F65-F66 | 已实现，待正式发布验收 | 类型化配置 builder、内部 envelope、自动 `READY`、构造期节流器混合轴承和针对性回归已落地 |
+| F02/F13/F16/F29/F33/F48/F54/F56/F57/F60 修订、F65-F66 | 已实现并纳入 manifest，待正式发布验收 | 类型化配置 builder、内部 envelope、自动 `READY`、构造期节流器混合轴承、binding-only coupling、正式 MultiPad runtime、thermal resolver 和针对性回归已落地；F65-F66 已加入 0.3 feature manifest |
 
-66 项中 65 项已经实现；唯一未完成项仍是 F35。F01-F64 的既有正式 manifest 保持历史证据，
-F65-F66 需要在下一次正式发布验收中纳入新 manifest。F35 尚未物理删除全部旧 Signal，不是方案未确定，
+66 项中 65 项已经实现；唯一未完成项仍是 F35。当前 manifest 已覆盖 F01-F66，
+F65-F66 仍需要在下一次正式发布验收中从 detached 候选执行。F35 尚未物理删除全部旧 Signal，不是方案未确定，
 而是 ADR-0001 要求至少保留一个 0.3.x minor
 兼容周期并先取得消费者清零证据。旧 film/thermal/rotor 消费者尚未清零，因此不能在 0.3.0
 提前删除兼容面；新代码不得再增加 Signal 依赖。
@@ -240,6 +240,7 @@ F65-F66 需要在下一次正式发布验收中纳入新 manifest。F35 尚未�
 - 五份 ADR 已全部 Accepted，架构决策门禁完成。
 - 已固定当前 raw implementation、block、coupler、signal 历史、保存行为和跨单位转换。
 - 新参考覆盖普通 ALB、direct-spool、thermal、ALBNN shell、真实 coupling 和异常路径，并继续复用既有真实 ROSS 4/6-DOF、Signal 回调顺序及全领域 v1 参考。
+- `refs/review_fix_unaffected_reference_v1.json` 在本轮实现前冻结 PID 非饱和区、MultiPad 数值汇总和 Hydrostatic 速度派生，并由精确回归持续保护。
 - 单独记录有意改变的生命周期/历史行为，数值数组仍要求精确一致。
 - 阶段 0 已完成；后续不得覆盖这些 v1 参考。
 

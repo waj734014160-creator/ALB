@@ -389,7 +389,7 @@ P2_ARCHITECTURE_NODEIDS = {
 }
 
 def _load_feature_manifest() -> dict[str, Any]:
-    """Load and validate the complete F01-F64 release feature map."""
+    """Load and validate the complete F01-F66 release feature map."""
 
     payload = cast(
         dict[str, Any],
@@ -402,12 +402,12 @@ def _load_feature_manifest() -> dict[str, Any]:
     features = payload.get("features")
     if not isinstance(features, list):
         raise TypeError("release feature manifest requires a feature list")
-    expected_ids = {f"F{index:02d}" for index in range(1, 65)}
+    expected_ids = {f"F{index:02d}" for index in range(1, 67)}
     observed_ids = {
         item.get("id") for item in features if isinstance(item, dict)
     }
-    if observed_ids != expected_ids or len(features) != 64:
-        raise ValueError("release feature manifest must cover F01-F64 exactly")
+    if observed_ids != expected_ids or len(features) != 66:
+        raise ValueError("release feature manifest must cover F01-F66 exactly")
     allowed_status = {"implemented", "deferred_to_0.4.0"}
     for item in features:
         if not isinstance(item, dict):
@@ -445,7 +445,7 @@ REQUIRED_NODESETS = {
     "seventh_review": SEVENTH_REVIEW_NODEIDS,
     "eighth_review": EIGHTH_REVIEW_NODEIDS,
     "p2_architecture": P2_ARCHITECTURE_NODEIDS,
-    "f01_f64_manifest": FEATURE_NODEIDS,
+    "f01_f66_manifest": FEATURE_NODEIDS,
 }
 
 
@@ -962,9 +962,9 @@ def run_acceptance() -> dict[str, Any]:
         item for item in reports["reports"] if item["nodeid"] in FEATURE_NODEIDS
     ]
     if {item["nodeid"] for item in feature_reports} != FEATURE_NODEIDS:
-        raise AssertionError("The complete F01-F64 feature node set was not recorded")
+        raise AssertionError("The complete F01-F66 feature node set was not recorded")
     if any(item["outcome"] != "passed" for item in feature_reports):
-        raise AssertionError("An F01-F64 feature node did not pass")
+        raise AssertionError("An F01-F66 feature node did not pass")
 
     mypy_command = [
         str(PYTHON),

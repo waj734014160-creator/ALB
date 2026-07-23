@@ -106,6 +106,11 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 `HybridOrificeConfig` 在构造期固定节流孔位置、压力及 `radius`/`cq`；无节流器即按动压油膜
 计算，有节流器则自动进入节流-压力耦合，不再使用静压/动压模式标签。
 
+`MultiPad` 是原生 `BearingRuntimeProtocol[BearingInput]` 组合 runtime，构造后自动处于
+`READY`。它把一次输入在 `evaluate()` 中显式传给每个子瓦一次，汇总力与摩擦并发布只读
+`BearingOutput`、收敛状态和 result/failure snapshot；重复读取 `output()` 不重复求解，默认结果
+表只反映当前快照，不再随步数无限增长。刚度、阻尼、承载力、摩擦和倾瓦平衡等分析入口仍保留。
+
 跨单位轴承接入使用 `ALB.physics.bearing.BearingScaleSet` 和
 `BearingUnitAdapter`。`ALB.systems.alb.bearing_scale_set_from_config()` 只从
 `NodimALBConfig` 中已经明确给出的 `scale_c/scale_l/scale_r/scale_ps/scale_w/vf`
@@ -139,6 +144,10 @@ direct-spool 端口。
 `RsRotorBearingCouple` 通过 `CoupledBearingBinding` 接收原生 bearing runtime、节点、可选单位
 adapter 和 direct-spool provider。转子载荷统一使用 `RotorLoadInput` 表达当前/上一时刻力；
 direct-spool 缺少 provider 时立即失败，跨单位调用缺少完整 adapter 时立即失败。
+coupler 内部只保存 bindings，`bearings` 序列由 bindings 派生，不维护可漂移的平行列表。高级
+构造入口只接受显式 binding；普通有量纲 `BearingInput` runtime 可使用
+`add_bearing(bearing, node_link)`，该方法内部创建 binding。无量纲或 direct-spool runtime
+不能使用简易入口，必须显式构造带 adapter/provider 的 binding。
 每个 bearing 输出还必须与当前局部 `StepContext.time` 和 bearing 侧 `UnitSystem` 一致；单位
 adapter 返回到 rotor 侧后再次校验时间和 rotor 侧单位，旧快照或错误单位不会进入当前时步。
 `init()` 把时间网格首点登记为只读初始快照，`solve()` 只对后续目标时刻
@@ -147,7 +156,11 @@ adapter 返回到 rotor 侧后再次校验时间和 rotor 侧单位，旧快照�
 中途异常会使 coupler 整体失效；此后 `advance()`、`output()`、`results` 和 `save()` 都拒绝
 暴露可能只推进了一部分的状态，必须显式 `init()` 后才能继续。
 初始化后调用 `add_bearing()`、`add_static_force()`、`add_unbalance()` 或 `add_gravity()` 修改
-耦合拓扑也会立即使 coupler 失效；重新 `init()` 会重建节点映射后才允许读取或推进。
+耦合拓扑也会立即使 coupler 失效；拥有 coupler 的 workflow 在下一次 `solve()` 中重新初始化并
+重建节点映射后才允许读取或推进。普通用户不把 `init()` 当作业务步骤。
+step 0 或后续步骤的 recorder/严格 observer 异常发生在物理提交之后，不会使
+`CouplingStepRuntime` 失效；pending record 恢复只重试记录，严格 observer 异常后也可直接进入
+下一物理步。coupler 不再维护第二份 `_valid` 标志。
 
 ### 配置
 
@@ -166,6 +179,15 @@ Python 用户向 builder 传递类型化配置，文件 workflow 在内部读取
 非默认参数。`controller_config=None` 能稳定往返为无控制器配置，缺少显式标签的旧配置仍保留
 历史默认 PID。带标签的嵌套 `controller_config` 使用严格字段白名单：标签、对象类型或字段集合
 冲突时立即报错；只有没有嵌套 payload 的旧式顶层平铺配置保留宽松迁移解析。
+
+dimensional/nondimensional ALB 共用一个 thermal resolver。`ThermalConfig.transient_enabled`
+保持严格 `bool` 且默认 `False`，typed/schema 配置拒绝 `None`，legacy 缺失或 `None` 迁移为
+`False`。resolver 使用 builder 当前 `pad_config`，因此 fluent pad override 生效；它只补齐
+`dt` 和 `args_nodim`，不根据 servo 类型改写用户选择。动态阀配稳态热、静态阀配瞬态热均允许，
+每次 build 各最多发出一次提示性 `RuntimeWarning`。
+
+`HydrostaticBearing` 构造时创建默认 `HydConfig` 或深拷贝调用方配置，再在私有副本中计算
+`dxt/dyt/vf`；多个默认实例和复用的调用方配置不会互相污染。
 
 `ALBSV`、`NodimALB` 和 `NodimALBSV` 省略 `alb_config` 时会为每个实例新建配置，配置中的
 `gxy`、`gxyt` 和嵌套对象不会通过函数默认参数在实例之间共享。

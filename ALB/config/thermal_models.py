@@ -102,6 +102,8 @@ class ThermalConfig(ConfigData):
     """Optional heat-partition continuation schedule ending at heat_partition."""
 
     def __post_init__(self):
+        if not isinstance(self.transient_enabled, bool):
+            raise TypeError("transient_enabled must be a bool")
         self.adaptive_damp = normalize_adaptive_damp_config(self.adaptive_damp)
         self.iter_method = _normalize_thermal_iter_method(self.iter_method)
         self.miu_update = _normalize_thermal_miu_update(self.miu_update)
@@ -214,21 +216,19 @@ def build_thermal_config(
     thermal_data: Optional[dict] = None,
     *,
     dt: Optional[float] = None,
-    transient_default: bool = False,
 ) -> Optional[ThermalConfig]:
     """Build a :class:`ThermalConfig` from a flat dict, or return ``None``.
 
     :param thermal_enabled: ``False`` short-circuits to ``None``.
     :param thermal_data: Optional dict whose keys match :class:`ThermalConfig` fields.
     :param dt: Optional time step for transient solves; fills in when missing.
-    :param transient_default: Default for ``transient_enabled`` when not provided.
     """
     if not thermal_enabled:
         return None
 
     thermal_args = dict(thermal_data or {})
     if thermal_args.get("transient_enabled") is None:
-        thermal_args["transient_enabled"] = transient_default
+        thermal_args["transient_enabled"] = False
     if thermal_args.get("dt") is None and dt is not None:
         thermal_args["dt"] = dt
     return ThermalConfig.from_dict(thermal_args)

@@ -24,7 +24,14 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from ALB.core import Signal, TimeIterDt
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    UnitSystem,
+    result_snapshot,
+)
+from ALB.core import RuntimeLifecycle, TimeIterDt
 from ALB.dynamics.coupling import RsRotorBearingCouple
 
 
@@ -36,36 +43,84 @@ class _ReferenceBearing:
     """Minimal zero-force bearing for deterministic exchange timing."""
 
     node_link = 0
-    unit_system = "dimensional"
+    unit_system = UnitSystem.DIMENSIONAL
+    input_dto_type = BearingInput
 
     def __init__(self) -> None:
-        self.signal = Signal(sys=self)
+        self._lifecycle = RuntimeLifecycle("reference bearing")
+        self._input = None
+        self._output = None
+        self.init()
+
+    @property
+    def lifecycle_state(self):
+        """Return the formal runtime state."""
+
+        return self._lifecycle.state
+
+    @property
+    def convergence_status(self):
+        """Return deterministic convergence."""
+
+        return ConvergenceStatus(0.0, True)
 
     def init(self) -> None:
         """Reset the stateless bearing."""
 
-    def input(self, uxy, uxyt, t) -> None:
-        """Accept the coupling input without changing zero force."""
-        del uxy, uxyt, t
+        self._input = None
+        self._output = None
+        self._lifecycle.reset()
 
-    def output(self) -> dict[str, np.ndarray]:
-        """Return a deterministic zero force."""
-        return {"force": np.zeros(2, dtype=float)}
+    def input(self, dto: BearingInput) -> None:
+        """Latch the coupling input without changing zero force."""
 
-    def finish_signal(self) -> None:
-        """Provide the signal callback required by the coupling."""
+        self._lifecycle.require_input_slot()
+        self._input = dto
+        self._lifecycle.latch()
 
-    def save(self, *args, **kwargs):
-        """Reject persistence because it is outside reference generation."""
-        del args, kwargs
-        raise AssertionError("save is outside coupling-time reference generation")
+    def evaluate(self) -> None:
+        """Publish the deterministic zero force."""
+
+        with self._lifecycle.evaluation():
+            self._output = BearingOutput(
+                np.zeros(2, dtype=float),
+                self._input.time,
+                self.unit_system,
+            )
+
+    def output(self) -> BearingOutput:
+        """Return a deterministic zero force without recalculation."""
+
+        self._lifecycle.require_output()
+        return self._output
+
+    def step(self, dto: BearingInput) -> BearingOutput:
+        """Compose the formal three-phase lifecycle."""
+
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    def result_snapshot(self):
+        """Return the current deterministic force."""
+
+        return result_snapshot({"force": self.output().force}, {})
+
+    def failure_snapshot(self):
+        """Reject failure access for this deterministic runtime."""
+
+        raise RuntimeError("no reference bearing failure")
+
+    def diagnostic_snapshot(self):
+        """Return the current lifecycle state."""
+
+        return result_snapshot({}, {"state": self.lifecycle_state.value})
 
 
 class _ReferenceRotor:
     """Rotor whose state increases by one on every physical advance."""
 
     def __init__(self) -> None:
-        self.signal = Signal(sys=self)
         self.input_times: list[float] = []
         self.states: list[np.ndarray] = []
         self.state = np.zeros((1, 2), dtype=float)
@@ -94,10 +149,6 @@ class _ReferenceRotor:
             "uxyt": np.zeros((count, 2), dtype=float),
         }
 
-    def finish_signal(self) -> None:
-        """Provide the signal callback required by the coupling."""
-
-
 def _sha256(array: np.ndarray) -> str:
     """Return the digest of one contiguous array."""
     return hashlib.sha256(np.ascontiguousarray(array).tobytes()).hexdigest()
@@ -113,7 +164,8 @@ def _git_head() -> str:
 def _legacy_arrays() -> dict[str, np.ndarray]:
     """Run the unmodified coupling and expose its extra t=0 advance."""
     rotor = _ReferenceRotor()
-    coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.1, 3), _ReferenceBearing())
+    coupling = RsRotorBearingCouple(rotor, TimeIterDt(0.1, 3))
+    coupling.add_bearing(_ReferenceBearing(), node_link=0)
     coupling.solve()
     output = coupling.output()
     return {

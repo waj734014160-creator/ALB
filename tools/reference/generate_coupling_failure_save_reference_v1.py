@@ -19,8 +19,15 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from ALB import StepContext
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    UnitSystem,
+    result_snapshot,
+)
 from ALB.contracts.result_tree import NpyResult, SaveTreeNode
-from ALB.core import Signal, TimeIterDt
+from ALB.core import RuntimeLifecycle, TimeIterDt
 from ALB.dynamics.coupling import RsRotorBearingCouple
 
 
@@ -33,45 +40,89 @@ class _ReferenceBearing:
     """Small state-dependent bearing with an injectable completion failure."""
 
     node_link = 0
-    unit_system = "dimensional"
+    unit_system = UnitSystem.DIMENSIONAL
+    input_dto_type = BearingInput
 
-    def __init__(self, *, fail_on_finish: bool = False) -> None:
-        self.signal = Signal(sys=self)
-        self.fail_on_finish = fail_on_finish
+    def __init__(self) -> None:
+        self._lifecycle = RuntimeLifecycle("reference bearing")
         self.init()
 
+    @property
+    def lifecycle_state(self):
+        """Return the formal runtime state."""
+
+        return self._lifecycle.state
+
+    @property
+    def convergence_status(self):
+        """Return deterministic convergence."""
+
+        return ConvergenceStatus(0.0, True)
+
     def init(self) -> None:
-        self.time = 0.0
-        self.displacement = np.zeros(2, dtype=float)
-        self.velocity = np.zeros(2, dtype=float)
+        self._input = None
+        self._output = None
         self.force = np.zeros(2, dtype=float)
         self.input_history: list[np.ndarray] = []
         self.force_history: list[np.ndarray] = []
+        self._lifecycle.reset()
 
-    def input(self, uxy, uxyt, t) -> None:
-        self.time = float(t)
-        self.displacement = np.asarray(uxy, dtype=float).reshape(2)
-        self.velocity = np.asarray(uxyt, dtype=float).reshape(2)
+    def input(self, dto: BearingInput) -> None:
+        """Latch one typed coupling input."""
+
+        self._lifecycle.require_input_slot()
+        self._input = dto
         self.input_history.append(
-            np.concatenate(
-                ([self.time], self.displacement, self.velocity)
+            np.concatenate(([dto.time], dto.displacement, dto.velocity))
+        )
+        self._lifecycle.latch()
+
+    def evaluate(self) -> None:
+        """Evaluate the deterministic state-dependent force."""
+
+        with self._lifecycle.evaluation():
+            dto = self._input
+            stiffness = np.asarray([[2.0, 0.5], [-0.25, 1.5]])
+            damping = np.asarray([[0.1, 0.0], [0.0, 0.2]])
+            self.force = (
+                np.asarray([1.0, -2.0])
+                - stiffness @ dto.displacement
+                - damping @ dto.velocity
             )
-        )
+            self.force_history.append(self.force.copy())
+            self._output = BearingOutput(
+                self.force,
+                dto.time,
+                self.unit_system,
+            )
 
-    def output(self) -> dict[str, np.ndarray]:
-        stiffness = np.asarray([[2.0, 0.5], [-0.25, 1.5]])
-        damping = np.asarray([[0.1, 0.0], [0.0, 0.2]])
-        self.force = (
-            np.asarray([1.0, -2.0])
-            - stiffness @ self.displacement
-            - damping @ self.velocity
-        )
-        self.force_history.append(self.force.copy())
-        return {"force": self.force.copy()}
+    def output(self) -> BearingOutput:
+        """Return the completed force without recalculation."""
 
-    def finish_signal(self) -> None:
-        if self.fail_on_finish:
-            raise RuntimeError("injected bearing completion failure")
+        self._lifecycle.require_output()
+        return self._output
+
+    def step(self, dto: BearingInput) -> BearingOutput:
+        """Compose the formal three-phase lifecycle."""
+
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    def result_snapshot(self):
+        """Return the current force snapshot."""
+
+        return result_snapshot({"force": self.output().force}, {})
+
+    def failure_snapshot(self):
+        """Reject failure access for this deterministic runtime."""
+
+        raise RuntimeError("no reference bearing failure")
+
+    def diagnostic_snapshot(self):
+        """Return the current lifecycle state."""
+
+        return result_snapshot({}, {"state": self.lifecycle_state.value})
 
     def save(self, *args: Any, **kwargs: Any) -> SaveTreeNode:
         del args
@@ -84,10 +135,10 @@ class _ReferenceBearing:
 
 
 class _ReferenceRotor:
-    """Deterministic rotor exposing old save and Signal interfaces."""
+    """Deterministic rotor with an optional post-mutation failure."""
 
-    def __init__(self) -> None:
-        self.signal = Signal(sys=self)
+    def __init__(self, *, fail_after_advance: bool = False) -> None:
+        self.fail_after_advance = fail_after_advance
         self.init()
 
     def init(self) -> None:
@@ -110,6 +161,8 @@ class _ReferenceRotor:
         self.advance_calls += 1
         self.state = self.state + np.asarray([[0.25, -0.5]])
         self.velocity = self.velocity + np.asarray([[0.1, -0.2]])
+        if self.fail_after_advance:
+            raise RuntimeError("injected bearing completion failure")
 
     def output(self, node_links) -> dict[str, np.ndarray]:
         count = len(np.asarray(node_links).reshape(-1))
@@ -117,9 +170,6 @@ class _ReferenceRotor:
             "uxy": np.repeat(self.state, count, axis=0),
             "uxyt": np.repeat(self.velocity, count, axis=0),
         }
-
-    def finish_signal(self) -> None:
-        return None
 
     def save(self, *args: Any, **kwargs: Any) -> SaveTreeNode:
         del args, kwargs
@@ -134,11 +184,8 @@ def _success_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
 
     rotor = _ReferenceRotor()
     bearing = _ReferenceBearing()
-    coupling = RsRotorBearingCouple(
-        rotor,
-        TimeIterDt(DT, 2),
-        bearing,
-    )
+    coupling = RsRotorBearingCouple(rotor, TimeIterDt(DT, 2))
+    coupling.add_bearing(bearing, node_link=0)
     coupling.init()
     initial = coupling.output()
     first_context = StepContext(1, DT, DT, "dimensional")
@@ -201,9 +248,6 @@ def _success_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
             bearing.force_history,
             dtype=float,
         ),
-        "success.coupling_history": coupling.results[
-            "bearing0"
-        ].to_numpy(dtype=float),
     }
     metadata = {
         "initial_context": {
@@ -227,13 +271,10 @@ def _success_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
 def _failure_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """Fail after mutable advancement and capture the sealed public state."""
 
-    rotor = _ReferenceRotor()
-    bearing = _ReferenceBearing(fail_on_finish=True)
-    coupling = RsRotorBearingCouple(
-        rotor,
-        TimeIterDt(DT, 1),
-        bearing,
-    )
+    rotor = _ReferenceRotor(fail_after_advance=True)
+    bearing = _ReferenceBearing()
+    coupling = RsRotorBearingCouple(rotor, TimeIterDt(DT, 1))
+    coupling.add_bearing(bearing, node_link=0)
     coupling.init()
     context = StepContext(1, DT, DT, "dimensional")
     failure_message = None

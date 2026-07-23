@@ -21,7 +21,6 @@ from ALB.config import (
     ServoConfig,
     TankConfig,
     ThermalConfig,
-    build_thermal_config,
 )
 from ALB.control.fuzzy import FuzzyPID
 from ALB.control.pid import PID
@@ -52,6 +51,7 @@ _NODIM_ALB_LEGACY_REQUIRED_KEYS = [
 _NODIM_ALB_PAD_MAIN_KEYS = {"lambda_value", "lr", "lx", "lz", "nx", "nz", "bias"}
 
 from .builder import ALBBuilder
+from .thermal_config import resolve_alb_thermal_config
 from .linear import ALBLinear, ALBLinearAgent, FakeOf
 from .runtime import ALB, ALBSV, NodimALB, NodimALBSV
 from .surrogate_runtime import ALBNNAgent
@@ -196,16 +196,11 @@ def _nodim_thermal_config(alb_config, thermal_config):
     """Resolve the thermal config and force the nondimensional argument mode."""
     if thermal_config is None:
         thermal_config = getattr(alb_config, "thermal_config", None)
-    if thermal_config is None:
-        return None
-    thermal_args = vars(thermal_config).copy()
-    if thermal_args.get("dt") is None:
-        thermal_args["dt"] = alb_config.dt
-    if not thermal_args.get("transient_enabled"):
-        thermal_args["transient_enabled"] = alb_config.servo != "static"
-    # The nodim entry always drives the thermal wrapper with nondimensional states.
-    thermal_args["args_nodim"] = True
-    return ThermalConfig.from_dict(thermal_args)
+    return resolve_alb_thermal_config(
+        alb_config,
+        thermal_config,
+        args_nodim=True,
+    )
 
 def nodim_alb(
     *args,

@@ -1,7 +1,7 @@
 ﻿# coding: utf-8
 
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 import numpy as np
@@ -11,7 +11,7 @@ from tqdm import tqdm
 from ALB.core.component import BaseCSystem, BaseSystem
 from ALB.core.lifecycle import LifecycleState
 from ALB.core.diagnostics import sanitize_exception_message
-from ALB.core.validation import require_unit_system, validate_bearing_output
+from ALB.core.validation import require_unit_system
 from ALB.contracts import (
     BearingInput,
     BearingOutput,
@@ -90,30 +90,22 @@ class RsRotorBearingCouple(BaseCSystem):
     cannot be retried as if it were untouched.
     """
 
-    def __init__(self, rotor: RossRotor, time_iter, *bearings, **kwargs):
+    def __init__(self, rotor: RossRotor, time_iter, *bindings, **kwargs):
         """
         options:
             save_path:default="./rotor_bearing_couple"
         """
         super().__init__()
         self.rotor = rotor
-        binding_flags = [isinstance(item, CoupledBearingBinding) for item in bearings]
-        if any(binding_flags) and not all(binding_flags):
-            raise TypeError("cannot mix coupled bindings and legacy bearing objects")
-        self.bindings = list(bearings) if all(binding_flags) and bearings else []
-        self.bearings = (
-            [binding.bearing for binding in self.bindings]
-            if self.bindings
-            else list(bearings)
-        )
-        for bearing in self.bearings:
-            self._validate_bearing(
-                bearing,
-                allow_nondimensional=bool(self.bindings),
+        if any(
+            not isinstance(binding, CoupledBearingBinding)
+            for binding in bindings
+        ):
+            raise TypeError(
+                "coupling constructor accepts only CoupledBearingBinding objects; "
+                "use add_bearing(bearing, node_link) for ordinary dimensional bearings"
             )
-        if not self.bindings:
-            self.signal.children = [bearing.signal for bearing in self.bearings]
-            self.signal.add_child(self.rotor.signal)
+        self.bindings = list(bindings)
         self.forces = []
         self._time_iter = time_iter
         self._result = {}
@@ -133,7 +125,6 @@ class RsRotorBearingCouple(BaseCSystem):
         self._last_output: ResultBundle | None = None
         self._runtime = CouplingStepRuntime()
         self._step_ledger = self._runtime.ledger
-        self._valid = False
         self._dependencies = kwargs.get("dependencies") or CouplingRuntimeDependencies(
             run_id=f"coupling-{uuid4().hex}"
         )
@@ -150,6 +141,12 @@ class RsRotorBearingCouple(BaseCSystem):
         self._failure_result: ResultBundle | None = None
         self._adapter_metadata: tuple[dict[str, object], ...] = ()
         self._pending_accounting_error: str | None = None
+
+    @property
+    def bearings(self) -> tuple[BearingRuntimeProtocol[object], ...]:
+        """Return the bearing runtimes derived from canonical bindings."""
+
+        return tuple(binding.bearing for binding in self.bindings)
 
     @property
     def results(self):
@@ -174,7 +171,6 @@ class RsRotorBearingCouple(BaseCSystem):
         """Block access after a partial step or a topology change."""
 
         self._runtime.fail()
-        self._valid = False
         self._last_output = None
 
     def _seal_failure(
@@ -418,46 +414,43 @@ class RsRotorBearingCouple(BaseCSystem):
         self._fnode_links = None
         self._bnode_links = None
 
-    def add_bearing(self, bearing):
-        self._validate_bearing(bearing)
-        self.bearings.append(bearing)
-        self.signal.children.append(bearing.signal)
-        bearing.signal.father = self.signal
-        self._invalidate_topology()
+    def add_bearing(
+        self,
+        bearing: BearingRuntimeProtocol[BearingInput],
+        node_link: int,
+    ) -> CoupledBearingBinding:
+        """Bind one ordinary dimensional bearing to a rotor node.
 
-    @staticmethod
-    def _validate_bearing(bearing, *, allow_nondimensional: bool = False):
-        """Validate the minimum dimensional bearing integration contract."""
+        Nondimensional and direct-spool runtimes require callers to construct a
+        full :class:`CoupledBearingBinding` with their adapter or provider and
+        pass it to the coupling constructor.
+        """
 
-        for attribute in ("node_link", "init", "input", "output"):
-            if not hasattr(bearing, attribute):
-                raise TypeError(f"bearing must provide '{attribute}'")
-        if hasattr(bearing, "input_dto_type") and not isinstance(
-            bearing, BearingRuntimeProtocol
-        ):
-            raise TypeError("native bearing must satisfy BearingRuntimeProtocol")
-        if (
-            allow_nondimensional
-            and UnitSystem.coerce(bearing.unit_system)
-            is UnitSystem.NONDIMENSIONAL
-        ):
-            return
+        if not isinstance(bearing, BearingRuntimeProtocol):
+            raise TypeError("bearing must satisfy BearingRuntimeProtocol")
+        if bearing.input_dto_type is not BearingInput:
+            raise TypeError("add_bearing accepts only ordinary BearingInput runtimes")
         require_unit_system(
             bearing,
             "dimensional",
-            component_name="rotor-coupled bearing",
+            component_name="add_bearing bearing",
         )
+        erased_bearing = cast(BearingRuntimeProtocol[object], bearing)
+        binding = CoupledBearingBinding(erased_bearing, node_link=node_link)
+        self.bindings.append(binding)
+        self._invalidate_topology()
+        return binding
 
     @staticmethod
     def _evaluate_bearing(
-        bearing,
+        binding: CoupledBearingBinding,
         displacement,
         velocity,
         context: StepContext,
-        binding: CoupledBearingBinding | None = None,
     ) -> tuple[np.ndarray, dict[str, object] | None]:
-        """Evaluate a native bearing runtime or a transitional legacy bearing."""
+        """Evaluate one formally bound bearing runtime."""
 
+        bearing = binding.bearing
         if (
             isinstance(bearing, BearingRuntimeProtocol)
             and bearing.input_dto_type in (BearingInput, DirectSpoolBearingInput)
@@ -468,7 +461,7 @@ class RsRotorBearingCouple(BaseCSystem):
                 time=context.time,
                 unit_system=UnitSystem.DIMENSIONAL,
             )
-            adapter = binding.unit_adapter if binding is not None else None
+            adapter = binding.unit_adapter
             local_context = (
                 adapter.rotor_context_to_bearing(context)
                 if adapter is not None
@@ -490,11 +483,8 @@ class RsRotorBearingCouple(BaseCSystem):
                 )
             dto: BearingInput | DirectSpoolBearingInput
             if bearing.input_dto_type is DirectSpoolBearingInput:
-                if binding is None or binding.spool_provider is None:
-                    raise TypeError(
-                        "direct-spool bearings require an explicit spool provider"
-                    )
                 provider = binding.spool_provider
+                assert provider is not None
                 provider.input(context, global_input)
                 provider.evaluate()
                 spool = provider.output()
@@ -557,8 +547,7 @@ class RsRotorBearingCouple(BaseCSystem):
                     bearing_local_context=local_context,
                 )
             return rotor_output.force.copy(), metadata
-        bearing.input(uxy=displacement, uxyt=velocity, t=context.time)
-        return validate_bearing_output(bearing.output()), None
+        raise TypeError("binding bearing must satisfy BearingRuntimeProtocol")
 
     def init(self, **kwargs):
         self._invalidate_runtime()
@@ -567,16 +556,16 @@ class RsRotorBearingCouple(BaseCSystem):
             time_values = [float(value) for value in self._time_iter()]
             if not time_values:
                 raise ValueError("rotor-bearing coupling time grid cannot be empty")
+            if not self.bindings:
+                raise ValueError("rotor-bearing coupling requires at least one binding")
             initial_time = time_values[0]
             self.rotor.init()
-            for bearing in self.bearings:
-                bearing.init()
+            for binding in self.bindings:
+                binding.bearing.init()
             self._fnode_links = get_all_attribute_values(self.forces, "node_link")
-            self._bnode_links = (
-                [binding.node_link for binding in self.bindings]
-                if self.bindings
-                else get_all_attribute_values(self.bearings, "node_link")
-            )
+            self._bnode_links = [
+                binding.node_link for binding in self.bindings
+            ]
             self._fnode_links = np.hstack(
                 [
                     np.array(self._fnode_links, dtype=np.int32),
@@ -590,17 +579,17 @@ class RsRotorBearingCouple(BaseCSystem):
                     [force(t=initial_time) for force in self.forces]
                 )
             self._rp = self.rotor.output(self._bnode_links)
-            for num, bearing in enumerate(self.bearings):
+            for num, _binding in enumerate(self.bindings):
                 self._result["bearing" + str(num)] = pd.DataFrame(
                     columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
                 )
             self._forcef0 = []
             adapter_metadata = []
-            for num, bearing in enumerate(self.bearings):
+            for num, binding in enumerate(self.bindings):
                 rp_uxy = self._rp["uxy"][num]
                 rp_uxyt = self._rp["uxyt"][num]
                 force, metadata = self._evaluate_bearing(
-                    bearing,
+                    binding,
                     rp_uxy,
                     rp_uxyt,
                     StepContext(
@@ -609,7 +598,6 @@ class RsRotorBearingCouple(BaseCSystem):
                         self._time_iter.dt,
                         UnitSystem.DIMENSIONAL,
                     ),
-                    self.bindings[num] if self.bindings else None,
                 )
                 self._forcef0.append(force)
                 if metadata is not None:
@@ -644,7 +632,6 @@ class RsRotorBearingCouple(BaseCSystem):
         except BaseException as exc:
             self._seal_failure(None, "init", exc)
             raise
-        self._valid = True
 
     def add_unbalance(
         self, node_link, phase=0, t_max: float = 1, m=0, freq=0, e=0, no_step=False
@@ -760,14 +747,13 @@ class RsRotorBearingCouple(BaseCSystem):
                 )
                 self._forcef1 = []
                 adapter_metadata = []
-                for num, bearing in enumerate(self.bearings):
+                for num, binding in enumerate(self.bindings):
                     force, metadata = self._evaluate_bearing(
-                            bearing,
-                            uxy_n1[num],
-                            uxyt_n1[num],
-                            context,
-                            self.bindings[num] if self.bindings else None,
-                        )
+                        binding,
+                        uxy_n1[num],
+                        uxyt_n1[num],
+                        context,
+                    )
                     self._forcef1.append(force)
                     if metadata is not None:
                         adapter_metadata.append(metadata)
@@ -801,8 +787,6 @@ class RsRotorBearingCouple(BaseCSystem):
                 self._forceu0 = self._forceu1
                 self._forcef0 = self._forcef1
 
-                if not self.bindings:
-                    self.signal.lead_loop("finish_signal")
                 candidate = coupling_snapshot(
                     self._rp,
                     self._forcef1,
@@ -851,22 +835,6 @@ class RsRotorBearingCouple(BaseCSystem):
             tofile=tofile,
             writer=kwargs.get("writer"),
         )
-
-    def finish_signal(self):
-        uxy_n1 = self._rp["uxy"]
-        uxyt_n1 = self._rp["uxyt"]
-        for num, bearing in enumerate(self.bearings):
-            res = self._result["bearing" + str(num)]
-            res.loc[len(res)] = np.hstack(
-                (
-                    self._ts,
-                    uxy_n1[num],
-                    uxyt_n1[num],
-                    self._forcef1[num][0],
-                    self._forcef1[num][1],
-                )
-            )
-
 
 def get_all_attribute_values(objects, attribute_name):
     """

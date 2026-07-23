@@ -24,7 +24,14 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from ALB.core import Signal, TimeIterDt
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    UnitSystem,
+    result_snapshot,
+)
+from ALB.core import RuntimeLifecycle, TimeIterDt
 from ALB.dynamics.coupling import RsRotorBearingCouple
 from ALB.dynamics.rotor import RossRotor
 
@@ -39,50 +46,96 @@ SPEED_RAD_S = 30.0
 class _StateDependentBearing:
     """Nonzero bearing whose force changes with displacement and velocity."""
 
-    unit_system = "dimensional"
+    unit_system = UnitSystem.DIMENSIONAL
+    input_dto_type = BearingInput
 
     def __init__(self, node_link: int) -> None:
         self.node_link = node_link
-        self.signal = Signal(sys=self)
         self._stiffness = np.asarray([[2.0e5, 1.0e4], [-2.0e4, 1.5e5]])
         self._damping = np.asarray([[80.0, 5.0], [3.0, 60.0]])
         self._bias = np.asarray([2.5, -1.25])
+        self._lifecycle = RuntimeLifecycle("state-dependent reference bearing")
+        self._input = None
+        self._output = None
         self.init()
+
+    @property
+    def lifecycle_state(self):
+        """Return the formal runtime state."""
+
+        return self._lifecycle.state
+
+    @property
+    def convergence_status(self):
+        """Return deterministic convergence."""
+
+        return ConvergenceStatus(0.0, True)
 
     def init(self) -> None:
         """Reset latched states and complete input/output histories."""
-        self.uxy = np.zeros(2, dtype=float)
-        self.uxyt = np.zeros(2, dtype=float)
-        self.time = 0.0
+
+        self._input = None
+        self._output = None
         self.input_history: list[np.ndarray] = []
         self.force_history: list[np.ndarray] = []
+        self._lifecycle.reset()
 
-    def input(self, uxy, uxyt, t) -> None:
+    def input(self, dto: BearingInput) -> None:
         """Latch one rotor state used by the deterministic force law."""
-        self.uxy = np.asarray(uxy, dtype=float).reshape(2)
-        self.uxyt = np.asarray(uxyt, dtype=float).reshape(2)
-        self.time = float(t)
+
+        self._lifecycle.require_input_slot()
+        self._input = dto
         self.input_history.append(
-            np.concatenate(([self.time], self.uxy, self.uxyt))
+            np.concatenate(
+                ([dto.time], dto.displacement, dto.velocity)
+            )
         )
+        self._output = None
+        self._lifecycle.latch()
 
-    def output(self) -> dict[str, np.ndarray]:
+    def evaluate(self) -> None:
         """Evaluate and record a nonzero force at the latched state."""
-        harmonic = np.asarray(
-            [0.4 * np.sin(200.0 * self.time), 0.3 * np.cos(150.0 * self.time)]
-        )
-        force = self._bias + harmonic - self._stiffness @ self.uxy
-        force -= self._damping @ self.uxyt
-        self.force_history.append(force.copy())
-        return {"force": force}
 
-    def finish_signal(self) -> None:
-        """Accept the coupling completion signal without extra mutation."""
+        with self._lifecycle.evaluation():
+            dto = self._input
+            harmonic = np.asarray(
+                [
+                    0.4 * np.sin(200.0 * dto.time),
+                    0.3 * np.cos(150.0 * dto.time),
+                ]
+            )
+            force = self._bias + harmonic - self._stiffness @ dto.displacement
+            force -= self._damping @ dto.velocity
+            self.force_history.append(force.copy())
+            self._output = BearingOutput(force, dto.time, self.unit_system)
 
-    def save(self, *args, **kwargs):
-        """Reject persistence because reference generation is in-memory only."""
-        del args, kwargs
-        raise AssertionError("save is outside coupling reference generation")
+    def output(self) -> BearingOutput:
+        """Return the completed force without recalculation."""
+
+        self._lifecycle.require_output()
+        return self._output
+
+    def step(self, dto: BearingInput) -> BearingOutput:
+        """Compose the formal three-phase lifecycle."""
+
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    def result_snapshot(self):
+        """Return the current force snapshot."""
+
+        return result_snapshot({"force": self.output().force}, {})
+
+    def failure_snapshot(self):
+        """Reject failure access for this deterministic runtime."""
+
+        raise RuntimeError("no state-dependent bearing failure")
+
+    def diagnostic_snapshot(self):
+        """Return the current lifecycle state."""
+
+        return result_snapshot({}, {"state": self.lifecycle_state.value})
 
 
 class _RecordingRossRotor(RossRotor):
@@ -176,11 +229,8 @@ def _run_case(dof_per_node: int) -> dict[str, np.ndarray]:
     """Run one real coupling case and construct independent target arrays."""
     rotor = _build_ross_rotor(dof_per_node)
     bearing = _StateDependentBearing(node_link=1)
-    coupling = RsRotorBearingCouple(
-        rotor,
-        TimeIterDt(DT, STEP_COUNT),
-        bearing,
-    )
+    coupling = RsRotorBearingCouple(rotor, TimeIterDt(DT, STEP_COUNT))
+    coupling.add_bearing(bearing, node_link=1)
     coupling.solve()
 
     prefix = f"dof{dof_per_node}"
@@ -238,7 +288,6 @@ def _run_case(dof_per_node: int) -> dict[str, np.ndarray]:
         f"{prefix}.nodal_force1": np.asarray(rotor.nodal_force1, dtype=float),
         f"{prefix}.global_force0": np.asarray(rotor.global_force0, dtype=float),
         f"{prefix}.global_force1": np.asarray(rotor.global_force1, dtype=float),
-        f"{prefix}.coupling_table": coupling.results["bearing0"].to_numpy(dtype=float),
         f"{prefix}.result_uxy_expected": corrected_youts[:, xy_columns],
         f"{prefix}.result_uxy_observed_pre_fix": np.asarray(
             rotor.result_uxy(node), dtype=float

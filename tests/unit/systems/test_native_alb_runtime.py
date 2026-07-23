@@ -218,6 +218,7 @@ def test_albnn_inference_failure_is_sealed_until_init():
 
 def test_harmonic_runtime_latches_before_control_and_publishes_dto():
     runtime = alb_harmonic_linear(node_link=12)
+    assert runtime.lifecycle_state is LifecycleState.READY
     dto = BearingInput(
         runtime.uxy0,
         [0.0, 0.0],
