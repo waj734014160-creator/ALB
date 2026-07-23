@@ -349,11 +349,11 @@ P2_ARCHITECTURE_NODEIDS = {
     ),
     (
         "tests/unit/config/test_versioned_schema.py::"
-        "test_current_loader_rejects_unversioned_flat_payload"
+        "test_current_loader_rejects_unversioned_and_old_envelopes"
     ),
     (
         "tests/unit/config/test_versioned_schema.py::"
-        "test_legacy_migration_is_non_mutating_and_one_way"
+        "test_legacy_migration_is_non_mutating_one_way_and_auditable"
     ),
     (
         "tests/unit/contracts/test_numeric_boundaries.py::"
