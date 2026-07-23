@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import math
-from typing import Callable
-
 from ALB.contracts import StepContext
 
 
@@ -21,17 +19,16 @@ class StepCommitLedger:
 
         return self._last_context
 
-    def commit_step(
-        self,
-        context: StepContext,
-        recorder: Callable[[StepContext], None] | None = None,
-    ) -> None:
-        """Commit one strictly increasing context and optionally record it."""
+    def commit_step(self, context: StepContext) -> None:
+        """Commit one strictly increasing context without invoking user code."""
 
         self.validate_next(context)
-        if recorder is not None:
-            recorder(context)
         self._last_context = context
+
+    def is_last_committed(self, context: StepContext) -> bool:
+        """Return whether ``context`` is the most recent committed step."""
+
+        return self._last_context == context
 
     def validate_next(self, context: StepContext) -> None:
         """Validate a prospective commit without mutating the ledger."""

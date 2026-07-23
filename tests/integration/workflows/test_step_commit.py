@@ -8,17 +8,16 @@ from ALB.workflows import StepCommitLedger
 
 def test_workflow_commits_each_physical_step_once():
     ledger = StepCommitLedger()
-    recorded = []
     first = StepContext(0, 0.0, 0.01, "dimensional")
     second = StepContext(1, 0.01, 0.01, "dimensional")
 
-    ledger.commit_step(first, recorded.append)
+    ledger.commit_step(first)
     with pytest.raises(RuntimeError, match="already"):
-        ledger.commit_step(first, recorded.append)
-    ledger.commit_step(second, recorded.append)
+        ledger.commit_step(first)
+    ledger.commit_step(second)
 
-    assert recorded == [first, second]
     assert ledger.last_context == second
+    assert ledger.is_last_committed(second)
 
 
 @pytest.mark.parametrize(

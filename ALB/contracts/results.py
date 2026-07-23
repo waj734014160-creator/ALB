@@ -12,6 +12,10 @@ from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
 import numpy as np
 
 
+class _FrozenList(tuple):
+    """Immutable list snapshot that preserves the original container type."""
+
+
 def _snapshot_value(value: Any) -> Any:
     if isinstance(value, np.ndarray):
         array = value.copy()
@@ -20,7 +24,7 @@ def _snapshot_value(value: Any) -> Any:
     if isinstance(value, Mapping):
         return MappingProxyType({key: _snapshot_value(item) for key, item in value.items()})
     if isinstance(value, list):
-        return tuple(_snapshot_value(item) for item in value)
+        return _FrozenList(_snapshot_value(item) for item in value)
     if isinstance(value, tuple):
         return tuple(_snapshot_value(item) for item in value)
     return deepcopy(value)
@@ -104,11 +108,3 @@ class ResultSnapshotProtocol(Protocol):
 
     def result_snapshot(self) -> ResultBundle:
         """Return a detached snapshot without advancing component state."""
-
-
-@runtime_checkable
-class ResultRecorderProtocol(Protocol):
-    """Receive immutable results without exposing filesystem concerns."""
-
-    def record(self, bundle: ResultBundle) -> None:
-        """Record one completed bundle exactly once."""

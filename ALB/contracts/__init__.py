@@ -25,6 +25,12 @@ from .model import (
 )
 from .notification import NotifierProtocol
 from .optional import import_optional_module, missing_optional_dependency
+from .observer import (
+    ObserverFailure,
+    RecordingRecovered,
+    StepCompleted,
+    StepObserverProtocol,
+)
 from .ports import (
     BearingInput,
     BearingOutput,
@@ -41,9 +47,24 @@ from .results import (
     ArtifactRecord,
     ArtifactWriterProtocol,
     ResultBundle,
-    ResultRecorderProtocol,
     ResultSnapshotProtocol,
     result_snapshot,
+)
+from .recording import (
+    DIGEST_ALGORITHM,
+    ExpiredRecordKey,
+    PendingRecord,
+    RecordConflictError,
+    RecordDisposition,
+    RecordKey,
+    RecordReceipt,
+    ResultRecorderProtocol,
+    RunCloseStatus,
+    RunReceipt,
+    StepRecordingStatus,
+    UnsupportedResultValueError,
+    bundle_digest,
+    validate_recordable_bundle,
 )
 from .result_tree import DataFrameResult, NpyResult, RossRotorResult, SaveTreeNode
 from .types import StepContext, UnitSystem
@@ -65,6 +86,7 @@ __all__ = [
     "ControlOutput",
     "DirectSpoolBearingInput",
     "DirectSpoolBearingRuntimeProtocol",
+    "DIGEST_ALGORITHM",
     "ControllerProtocol",
     "ConvergenceStatus",
     "EvaluableBlock",
@@ -72,6 +94,7 @@ __all__ = [
     "LifecycleState",
     "LegacyControllerProtocol",
     "NotifierProtocol",
+    "ObserverFailure",
     "import_optional_module",
     "missing_optional_dependency",
     "PersistableProtocol",
@@ -79,8 +102,21 @@ __all__ = [
     "RotorStateMap",
     "RotorLoadInput",
     "RotorState",
+    "RecordingRecovered",
     "ResultBundle",
     "ResultRecorderProtocol",
+    "PendingRecord",
+    "RecordConflictError",
+    "RecordDisposition",
+    "RecordKey",
+    "RecordReceipt",
+    "RunCloseStatus",
+    "RunReceipt",
+    "StepRecordingStatus",
+    "UnsupportedResultValueError",
+    "ExpiredRecordKey",
+    "bundle_digest",
+    "validate_recordable_bundle",
     "ResultSnapshotProtocol",
     "RuntimeLifecycleProtocol",
     "NpyResult",
@@ -90,6 +126,8 @@ __all__ = [
     "SignalProtocol",
     "SolvableBlock",
     "StepContext",
+    "StepCompleted",
+    "StepObserverProtocol",
     "TimeGridProtocol",
     "UnitSystem",
     "ValveInput",
