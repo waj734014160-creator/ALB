@@ -1,0 +1,393 @@
+{
+  "schema": "alb.runtime-transition-reference.v1",
+  "baseline_commit": "f93bed21f28ae47995b3fe07c1b89246d2e75bc1",
+  "random_seed": 20260723,
+  "environment": {
+    "python": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "numpy": "1.24.3",
+    "scipy": "1.10.1",
+    "scikit-fem": "12.0.1",
+    "ross-rotordynamics": "1.4.2"
+  },
+  "config": {
+    "alb": "ALBSV",
+    "servo": "static",
+    "switch": false,
+    "dt": 0.0006667,
+    "lambda_value": 1.2,
+    "lr": 1.0,
+    "lx": 80.0,
+    "lz": 2.0,
+    "nx": 15,
+    "nz": 7,
+    "coe": false,
+    "max_iter": 80,
+    "error_set": 1e-06,
+    "damp": 0.7,
+    "position": [
+      [
+        0.5,
+        0.25
+      ],
+      [
+        0.5,
+        0.5
+      ],
+      [
+        0.5,
+        0.75
+      ]
+    ],
+    "cq0": 6.0557,
+    "cq1": 0.02313,
+    "cq2": 0.002173,
+    "ps": 1.0,
+    "p0": 0.0,
+    "xrange": [
+      0.49,
+      0.51
+    ],
+    "zrange": [
+      0.2,
+      0.8
+    ],
+    "h_tank": 2.0,
+    "thermal_enabled": false
+  },
+  "inputs": [
+    {
+      "time": 0.0,
+      "displacement": [
+        0.1,
+        -0.2
+      ],
+      "velocity": [
+        0.03,
+        -0.04
+      ],
+      "spool": [
+        0.2,
+        -0.3
+      ]
+    },
+    {
+      "time": 0.0006667,
+      "displacement": [
+        0.08,
+        -0.17
+      ],
+      "velocity": [
+        0.01,
+        -0.02
+      ],
+      "spool": [
+        -0.15,
+        0.25
+      ]
+    }
+  ],
+  "contracts": {
+    "raw": {
+      "signal_history_columns": [
+        "t",
+        "ux",
+        "uy",
+        "uxt",
+        "uyt",
+        "fx",
+        "fy"
+      ],
+      "save_tree": {
+        "runtime_reference": {
+          "pad0": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad1": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad2": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "pad3": {
+            "orifice_results\\NodimCSOrifice0": null,
+            "film_results": null
+          },
+          "servovalves0": null,
+          "servovalves1": null,
+          "controller": null
+        }
+      },
+      "save_snapshot_schema": "alb.result-tree.v1",
+      "save_snapshot_root": "runtime_reference"
+    },
+    "scale": {
+      "clearance_scale": 0.00025,
+      "rpm_scale": 3600.0,
+      "angular_speed_scale": 376.99111843077515,
+      "velocity_factor": 0.5,
+      "velocity_scale": 0.047123889803846894,
+      "scale_definition": "dimensional_per_nondimensional"
+    }
+  },
+  "arrays": {
+    "block.force": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8a7a333c39a5025a540f8b41d3f7cf754c59dc3a3f408f6a30eb1cb6cdcf44e8"
+    },
+    "block.signal_history": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "8dbaae8f8ef7b9aad5a0bae2a8cd161000c46077894697d3cf2366135ca46456"
+    },
+    "coupling.dof4.bearing_forces": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "2aafea138ea5352160a4707382635ae38f66f807efa6dec0c73a6d4a23f08664"
+    },
+    "coupling.dof4.bearing_inputs": {
+      "shape": [
+        4,
+        5
+      ],
+      "dtype": "float64",
+      "sha256": "b61f3df061aa35db229d4669ad4d42f8e0f4ee74ac8a974cb4c736467e0a72ed"
+    },
+    "coupling.dof4.corrected_xouts": {
+      "shape": [
+        3,
+        16
+      ],
+      "dtype": "float64",
+      "sha256": "b5a83db26e2a64eac87037b1fd9a18727e0299d70dbf80e66cae0b8a076e0ebc"
+    },
+    "coupling.dof4.corrected_youts": {
+      "shape": [
+        3,
+        8
+      ],
+      "dtype": "float64",
+      "sha256": "cc9745ec136096b8d53fb63baf18994ef854622963d83b3f084b1745eb13aee8"
+    },
+    "coupling.dof4.coupling_table": {
+      "shape": [
+        3,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "33212398368c154d784d79d3115b0bf1b936b7b9a4809445957988c83b495fa3"
+    },
+    "coupling.dof4.final_state": {
+      "shape": [
+        16
+      ],
+      "dtype": "float64",
+      "sha256": "ef162afe77395faf779db21ccf3ca6b67ceb52c705ba833ab0f4ef0614f79c2f"
+    },
+    "coupling.dof4.global_force0": {
+      "shape": [
+        3,
+        8
+      ],
+      "dtype": "float64",
+      "sha256": "74f5285869fce2a69f031a1666f8eaa0a3e2460644e20d4cd0125b58a09bf66e"
+    },
+    "coupling.dof4.global_force1": {
+      "shape": [
+        3,
+        8
+      ],
+      "dtype": "float64",
+      "sha256": "355ce9d1328fe3246162d403d2b39f4ebc44f7201e8eeef2c8de002d37780d54"
+    },
+    "coupling.dof4.layout": {
+      "shape": [
+        5
+      ],
+      "dtype": "int64",
+      "sha256": "2afadcc129cef8ca117c401ca7325c567f67e9df34374b564754c64acb467371"
+    },
+    "coupling.dof4.lqg_H_actuator": {
+      "shape": [
+        2,
+        16
+      ],
+      "dtype": "float64",
+      "sha256": "9adcd2cba636138807c62d1fcb98b5ede9c85528fe5537cbb58c609b563f41ed"
+    },
+    "coupling.dof4.lqg_H_sensor": {
+      "shape": [
+        2,
+        16
+      ],
+      "dtype": "float64",
+      "sha256": "fa22435bb6b2117800bb40a08aba1c7d38d21f4879c44ffc68889a2ca8ab026e"
+    },
+    "coupling.dof4.lqg_H_velocity": {
+      "shape": [
+        2,
+        16
+      ],
+      "dtype": "float64",
+      "sha256": "aca24ebe43388566ee70e15eb5b5c3e971087f7703ba2d3e5c82ef15e0471734"
+    },
+    "coupling.dof4.lqg_T_act": {
+      "shape": [
+        8,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8ac495ab210124e2ebfd1693eb42de183b7c47f6b11c24ae1239e30cb423a3d9"
+    },
+    "coupling.dof4.mapping_expected": {
+      "shape": [
+        8,
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "4d1c83f5fbc16b471e8c7c405cfa7c8c8e7a45be0702650d21532630705f64ee"
+    },
+    "coupling.dof4.mapping_locations": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "int64",
+      "sha256": "44a81a55f1d8652c88bcc95e44918df05077d396c6708a5b850b7b245a42d027"
+    },
+    "coupling.dof4.nodal_force0": {
+      "shape": [
+        3,
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "2c0b5b6679581601b6e037608a394cfa9c398123bbda9540b08bd37f7bb845f3"
+    },
+    "coupling.dof4.nodal_force1": {
+      "shape": [
+        3,
+        1,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "baa3db151d60c74ec173079cc49553da17a9db4376e228b7fa8aed5ef607a35b"
+    },
+    "coupling.dof4.result_uxy_expected": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "1e07a48444e6eeeb4b3550e232dc231e53cc3b839205ceb2c10f57973a0be2fa"
+    },
+    "coupling.dof4.result_uxy_observed_pre_fix": {
+      "shape": [
+        3,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "1e07a48444e6eeeb4b3550e232dc231e53cc3b839205ceb2c10f57973a0be2fa"
+    },
+    "coupling.dof4.times": {
+      "shape": [
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "b1420cd3fcbb4a4085ea9358aea90778000498f2ecda82c12247b381472755ec"
+    },
+    "raw.final_pressure": {
+      "shape": [
+        4,
+        128
+      ],
+      "dtype": "float64",
+      "sha256": "d241a36ac034a665c0b87bd70b7782827503e49f8fd36f8975c8c8ee4af70087"
+    },
+    "raw.final_spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "09fc9253e03b1ff55697426c56a3becdc7d68c1c7363e2c0e5973c849e50c8a7"
+    },
+    "raw.force": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8a7a333c39a5025a540f8b41d3f7cf754c59dc3a3f408f6a30eb1cb6cdcf44e8"
+    },
+    "raw.friction": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "e43d2a8a7681ae10eb0f719c806921a5b2cbe02c967cf107a065aa8f0a1b79fc"
+    },
+    "raw.signal_history": {
+      "shape": [
+        2,
+        7
+      ],
+      "dtype": "float64",
+      "sha256": "8dbaae8f8ef7b9aad5a0bae2a8cd161000c46077894697d3cf2366135ca46456"
+    },
+    "scale.displacement_dimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "a44379f7516146bddd477162858e73c9a1bc22da1e4af07d785821f3fea9ae12"
+    },
+    "scale.input_displacement_nondimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "2324c0a0e68c718bfad4c50cd7f40fc0ea17fd8bb6ee5752188eb60af6415f48"
+    },
+    "scale.input_velocity_nondimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "1123659e8aaf36b0c484fc672de42a4626943b36cbd61a1fcc410538e8a20e06"
+    },
+    "scale.roundtrip_displacement_nondimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "2324c0a0e68c718bfad4c50cd7f40fc0ea17fd8bb6ee5752188eb60af6415f48"
+    },
+    "scale.roundtrip_velocity_nondimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "1123659e8aaf36b0c484fc672de42a4626943b36cbd61a1fcc410538e8a20e06"
+    },
+    "scale.velocity_dimensional": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "e73d1c371e3a48cc5d1f574d272720cd4884d2b177a3fd13f81dda8450076850"
+    }
+  }
+}
