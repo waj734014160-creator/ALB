@@ -9,6 +9,7 @@ from unittest import mock
 
 import numpy as np
 import pytest
+from ALB.contracts import BearingInput
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -254,14 +255,25 @@ class TestAlbGuiBackend(unittest.TestCase):
             ],
             dtype=float,
         )
-        script_model.input(uxy=uxy, uxyt=np.zeros(2), t=0.0, nodim=True)
-        script_output = script_model.output(nodim=False)
+        script_model.input(
+            BearingInput(
+                uxy * script_model._c,
+                np.zeros(2),
+                0.0,
+                "dimensional",
+            )
+        )
+        script_model.evaluate()
+        script_output = script_model.output()
         script_pads = list(script_model.pads)
         script_pressure = pressure_map_from_pads(script_pads)
         script_temperature = temperature_map_from_pads(script_pads)
 
-        np.testing.assert_allclose(gui_result.force, script_output["force"])
-        np.testing.assert_allclose(gui_result.friction, script_output["friction"])
+        np.testing.assert_allclose(gui_result.force, script_output.force)
+        np.testing.assert_allclose(
+            gui_result.friction,
+            script_model.result_snapshot().values["friction"],
+        )
         np.testing.assert_allclose(
             gui_result.pressure.values, script_pressure.values
         )

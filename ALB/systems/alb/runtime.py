@@ -9,6 +9,7 @@ from scipy.sparse import linalg as sl
 
 from ALB.core.component import BaseCSystem, BaseSimpleModel
 from ALB.core.events import Signal
+from ALB.core.lifecycle import RuntimeLifecycle
 from ALB.physics.bearing import four_pads_bearings, nodim_four_pads_bearings
 from ALB.config import (
     ALBConfig,
@@ -29,6 +30,17 @@ from ALB.control.adapters import adapt_controller
 from ALB.control.blocks import run_controller_step, run_valve_step
 from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    BearingRuntimeProtocol,
+    ConvergenceStatus,
+    DirectSpoolBearingInput,
+    LifecycleState,
+    ResultBundle,
+    UnitSystem,
+    result_snapshot,
+)
 from ALB.control.valve import moog_2nd_servovalve, moog_servovalve, static_sv
 from ALB.physics.thermal import (
     NodimThermalHydroBearing,
@@ -52,11 +64,10 @@ _NODIM_ALB_LEGACY_REQUIRED_KEYS = [
 _NODIM_ALB_PAD_MAIN_KEYS = {"lambda_value", "lr", "lx", "lz", "nx", "nz", "bias"}
 
 class ALB(BaseCSystem):
-    """
-    Active Lubricated Bearing (ALB) System
-    """
+    """Active lubricated bearing with a strict DTO lifecycle."""
 
-    unit_system = "dimensional"
+    input_dto_type = BearingInput
+    unit_system = UnitSystem.DIMENSIONAL
 
     def __init__(
         self,
@@ -103,6 +114,17 @@ class ALB(BaseCSystem):
         self._control_enabled = bool(alb_config.switch)
         self._t_on: float | None = None
         self._switch = self._control_enabled
+        self._lifecycle = RuntimeLifecycle(
+            type(self).__name__,
+            input_label="bearing input",
+        )
+        self._latest_output: BearingOutput | None = None
+        self._latest_result: ResultBundle | None = None
+        self._failure: ResultBundle | None = None
+        self._convergence_status = ConvergenceStatus.pending(
+            "runtime is not initialized"
+        )
+        self._friction: float | None = None
         self._results = pd.DataFrame(
             columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
         )
@@ -127,22 +149,56 @@ class ALB(BaseCSystem):
 
     @property
     def results(self):
+        self._require_valid("read legacy results")
         return self._results
 
-    def init(self):
-        """
-        Initialize the ALB system, including pads, servovalves, and controller.
-        """
+    @property
+    def lifecycle_state(self) -> LifecycleState:
+        """Return the current strict runtime state."""
+
+        return self._lifecycle.state
+
+    @property
+    def convergence_status(self) -> ConvergenceStatus:
+        """Return cached local convergence without advancing child solvers."""
+
+        return self._convergence_status
+
+    def _initialize_children(self) -> None:
         for pad in self.pads:
             pad.init()
         for servovalve in self.servovalves:
             servovalve.init()
         if self.controller is not None:
             self.controller.init()
+
+    def init(self) -> None:
+        """Start a fresh runtime session after every child initializes."""
+
+        self._lifecycle.fail()
+        self._latest_output = None
+        self._latest_result = None
+        self._failure = None
+        self.force = None
+        self._friction = None
+        self._t = None
+        self._uxy = None
+        self._uxyt = None
+        self._uxy_nodim = None
+        self._uxyt_nodim = None
+        try:
+            self._initialize_children()
+        except BaseException as exc:
+            self._failure = self._build_failure_snapshot(exc, "init")
+            raise
         self._switch = self._control_enabled and self._t_on is None
         self._results = pd.DataFrame(
             columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
         )
+        self._convergence_status = ConvergenceStatus.pending(
+            "input not evaluated"
+        )
+        self._lifecycle.reset()
 
     def _create_static_sv(self, servovalves=None):
         """
@@ -178,41 +234,47 @@ class ALB(BaseCSystem):
         else:
             self._switch = t >= self._t_on
 
-    def input(self, uxy: np.ndarray, uxyt: np.ndarray, t: float, *args, **kwargs):
-        """
-        input the displacement and velocity with dimension of the rotor
-        """
-        self._t = t
-        nodim = kwargs.get("nodim", False)
-        uxy = np.array(uxy)
-        uxyt = np.array(uxyt)
-        if nodim:
-            self._uxy = uxy * self._c
-            self._uxyt = uxyt * self._c * (self._vf * self._w_rad)
-            self._uxy_nodim = uxy
-            self._uxyt_nodim = uxyt
-        else:
-            self._uxy = uxy
-            self._uxyt = uxyt
-            self._uxy_nodim = uxy / self._c
-            self._uxyt_nodim = uxyt / self._c / (self._vf * self._w_rad)
-        self._turn_on(t)
+    def _latch_bearing_input(self, dto: BearingInput) -> None:
+        if not isinstance(dto, BearingInput):
+            raise TypeError("bearing input must be BearingInput")
+        if dto.unit_system is not self.unit_system:
+            raise ValueError("bearing input unit_system does not match runtime")
+        self._t = dto.time
+        self._uxy = dto.displacement
+        self._uxyt = dto.velocity
+        self._uxy_nodim = dto.displacement / self._c
+        self._uxyt_nodim = (
+            dto.velocity / self._c / (self._vf * self._w_rad)
+        )
+        self._turn_on(dto.time)
 
-    def output(self, *args, **kwargs) -> dict:
-        """
-        Output the bearing force.
-        """
-        nodim = kwargs.pop("nodim", False)
+    def input(self, dto: BearingInput) -> None:
+        """Validate and latch a dimensional bearing sample without solving."""
+
+        self._lifecycle.require_input_slot()
+        self._latch_bearing_input(dto)
+        self._latest_output = None
+        self._latest_result = None
+        self._convergence_status = ConvergenceStatus.pending(
+            "input not evaluated"
+        )
+        self._lifecycle.latch()
+
+    def _calculate_output(
+        self,
+        *,
+        nodim: bool,
+        static: bool = False,
+    ) -> tuple[np.ndarray, float]:
+        """Execute the historical child calculation order exactly once."""
+
         if self._switch:
-            # The control program receives non-dimensional rotor displacement and velocity
             self._uv = self._control_process(self._uxy_nodim, self._uxyt_nodim, self._t)
         else:
             self._uv = np.zeros(2)
-        static = kwargs.get("static", False)
         if static:
             sv = self.static_sv
-            # TODO: Servovalve initialization
-            self.init()
+            self._initialize_children()
         else:
             sv = self.servovalves
         for num, servovalve in enumerate(sv):
@@ -220,21 +282,175 @@ class ALB(BaseCSystem):
         forces = []
         frictions = []
         for pad in self.pads:
-            pad.input(t=self._t, uxy=self._uxy, uxyt=self._uxyt, nodim=False)
-            po = pad.output(nodim=nodim)
-            force = po["force"]
-            if "friction" in po:
-                friction = po["friction"]
-            else:
-                friction = None
+            force, friction = self._evaluate_pad(
+                pad,
+                displacement=self._uxy,
+                velocity=self._uxyt,
+                nodim=nodim,
+            )
             forces.append(force)
             frictions.append(friction)
         forces = np.array(forces)
         frictions = np.sum(np.array(frictions))
         self.force = np.sum(forces, axis=0)
         self._uv = None
-        self.signal.lead_loop("finish_signal")
-        return {"force": self.force, "friction": frictions}
+        return self.force, float(frictions)
+
+    def _evaluate_pad(
+        self,
+        pad,
+        *,
+        displacement: np.ndarray,
+        velocity: np.ndarray,
+        nodim: bool,
+    ) -> tuple[np.ndarray, float]:
+        """Evaluate one native or legacy pad without changing calculation order."""
+
+        if isinstance(pad, BearingRuntimeProtocol):
+            pad.input(
+                BearingInput(
+                    displacement,
+                    velocity,
+                    self._t,
+                    self.unit_system,
+                )
+            )
+            pad.evaluate()
+            output = pad.output()
+            result = pad.result_snapshot()
+            return output.force, float(result.values.get("friction", 0.0))
+        pad.input(
+            t=self._t,
+            uxy=displacement,
+            uxyt=velocity,
+            nodim=nodim,
+        )
+        output = pad.output(nodim=nodim)
+        return output["force"], float(output.get("friction", 0.0))
+
+    def _collect_convergence_status(self) -> ConvergenceStatus:
+        components = [*self.pads, *self.servovalves]
+        completed = all(
+            bool(check())
+            for component in components
+            if callable(check := getattr(component, "calc_is_finished", None))
+        )
+        if completed:
+            return ConvergenceStatus(
+                residual=0.0,
+                converged=True,
+                message="all ALB child calculations finished",
+            )
+        return ConvergenceStatus.pending("one or more ALB children are incomplete")
+
+    def _evaluate(self, *, static: bool = False) -> None:
+        try:
+            with self._lifecycle.evaluation():
+                force, friction = self._calculate_output(
+                    nodim=self.unit_system is UnitSystem.NONDIMENSIONAL,
+                    static=static,
+                )
+                output = BearingOutput(force, self._t, self.unit_system)
+                convergence = self._collect_convergence_status()
+                self._friction = friction
+                self.signal.lead_loop("finish_signal")
+                bundle = result_snapshot(
+                    {
+                        "force": output.force,
+                        "friction": friction,
+                    },
+                    {
+                        "schema": "alb.bearing-runtime-result.v1",
+                        "time": output.time,
+                        "unit_system": output.unit_system.value,
+                        "converged": convergence.converged,
+                    },
+                )
+                self._latest_output = output
+                self._latest_result = bundle
+                self._convergence_status = convergence
+        except BaseException as exc:
+            self._latest_output = None
+            self._latest_result = None
+            self._failure = self._build_failure_snapshot(exc, "evaluate")
+            raise
+
+    def evaluate(self) -> None:
+        """Evaluate the latched input exactly once."""
+
+        self._evaluate()
+
+    def evaluate_static(self) -> None:
+        """Evaluate one static linearization sample with reset child models."""
+
+        self._evaluate(static=True)
+
+    def output(self) -> BearingOutput:
+        """Read the completed force snapshot without numerical work."""
+
+        self._lifecycle.require_output()
+        assert self._latest_output is not None
+        return self._latest_output
+
+    def step(self, dto: BearingInput) -> BearingOutput:
+        """Compose input, evaluate, and output without committing a step."""
+
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    def result_snapshot(self) -> ResultBundle:
+        """Return the complete immutable result for the latest evaluation."""
+
+        self._lifecycle.require_output()
+        assert self._latest_result is not None
+        return self._latest_result
+
+    def failure_snapshot(self) -> ResultBundle:
+        """Return the latest failure diagnostic while normal output is sealed."""
+
+        if self._failure is None:
+            raise RuntimeError("no ALB runtime failure is available")
+        return self._failure
+
+    def diagnostic_snapshot(self) -> ResultBundle:
+        """Return immutable lifecycle and convergence diagnostics."""
+
+        return result_snapshot(
+            {},
+            {
+                "schema": "alb.bearing-runtime-diagnostic.v1",
+                "lifecycle_state": self.lifecycle_state.value,
+                "unit_system": self.unit_system.value,
+                "node_link": self.node_link,
+                "converged": self._convergence_status.converged,
+                "has_result": self._latest_result is not None,
+                "has_failure": self._failure is not None,
+            },
+        )
+
+    def _build_failure_snapshot(
+        self,
+        error: BaseException,
+        phase: str,
+    ) -> ResultBundle:
+        return result_snapshot(
+            {},
+            {
+                "schema": "alb.bearing-runtime-failure.v1",
+                "phase": phase,
+                "error_type": type(error).__name__,
+                "message": str(error),
+                "unit_system": self.unit_system.value,
+                "node_link": self.node_link,
+            },
+        )
+
+    def _require_valid(self, action: str) -> None:
+        if self._lifecycle.state is LifecycleState.FAILED:
+            raise RuntimeError(
+                f"{type(self).__name__} is failed; call init() before {action}"
+            )
 
     def _control_process(self, uxy: np.ndarray, uxyt: np.ndarray, t: np.float64):
         """Return one controller command, or zero when no controller is installed."""
@@ -245,9 +461,9 @@ class ALB(BaseCSystem):
         return np.zeros_like(uv)
 
     def calc_is_finished(self):
-        return all([pad.calc_is_finished() for pad in self.pads]) and all(
-            [servovalve.calc_is_finished() for servovalve in self.servovalves]
-        )
+        """Return the cached completion state without querying child solvers."""
+
+        return self._convergence_status.converged
 
     def set_thickness(self, *args, **kwargs):
         """
@@ -264,15 +480,17 @@ class ALB(BaseCSystem):
         return np.sum(ans, axis=0)
 
     def solve(self, *args, **kwargs):
-        """
-        Execute the model solving calculation, an interface for trajectory calculation.
-        """
-        self.output(*args, **kwargs)
+        """Compatibility alias for explicit evaluation."""
+
+        if args or kwargs:
+            raise TypeError("solve() no longer accepts output options")
+        self.evaluate()
 
     def save(self, tofile, path, name, *args, **kwargs):
         """
         Save the calculation results.
         """
+        self._require_valid("save")
         if path is None:
             path = "alb"
         if name is None:
@@ -321,9 +539,9 @@ class ALB(BaseCSystem):
         return True
 
 class ALBSV(ALB):
-    """
-    ALB with servovalve input, this class is used to control the servovalve directly
-    """
+    """Direct-spool dimensional ALB runtime."""
+
+    input_dto_type = DirectSpoolBearingInput
 
     def __init__(
         self,
@@ -337,42 +555,59 @@ class ALBSV(ALB):
         super().__init__(pads, servovalves, controller, alb_config)
         self._sv = None
 
-    def input(
-        self, uxy: np.ndarray, uxyt: np.ndarray, t: float, sv=None, *args, **kwargs
-    ):
-        if sv is None:
-            sv = np.zeros(2)
-        sv = np.array(sv)
-        if sv.shape != (2,):
-            raise ValueError("sv must be a 2-element array")
-        self._sv = sv
-        super().input(uxy, uxyt, t, *args, **kwargs)
+    def input(self, dto: DirectSpoolBearingInput) -> None:
+        """Latch state and an explicit normalized spool command."""
 
-    def output(self, *args, **kwargs) -> dict:
-        nodim = kwargs.pop("nodim", False)
+        self._lifecycle.require_input_slot()
+        if not isinstance(dto, DirectSpoolBearingInput):
+            raise TypeError("direct spool input must be DirectSpoolBearingInput")
+        self._latch_bearing_input(dto.bearing)
+        self._sv = dto.spool.spool
+        self._latest_output = None
+        self._latest_result = None
+        self._convergence_status = ConvergenceStatus.pending(
+            "input not evaluated"
+        )
+        self._lifecycle.latch()
+
+    def _calculate_output(
+        self,
+        *,
+        nodim: bool,
+        static: bool = False,
+    ) -> tuple[np.ndarray, float]:
+        del static
         for n, sv in enumerate(self.servovalves):
             sv.set_spool(self._sv[n])
 
         forces = []
         frictions = []
         for pad in self.pads:
-            pad.input(t=self._t, uxy=self._uxy, uxyt=self._uxyt)
-            po = pad.output(nodim=nodim)
-            force = po["force"]
-            friction = po["friction"]
+            force, friction = self._evaluate_pad(
+                pad,
+                displacement=self._uxy,
+                velocity=self._uxyt,
+                nodim=nodim,
+            )
             forces.append(force)
             frictions.append(friction)
         forces = np.array(forces)
         frictions = np.sum(np.array(frictions))
         self.force = np.sum(forces, axis=0)
         self._uv = None
-        self.signal.lead_loop("finish_signal")
-        return {"force": self.force, "friction": frictions}
+        return self.force, float(frictions)
+
+    def step(self, dto: DirectSpoolBearingInput) -> BearingOutput:
+        """Compose direct-spool input, evaluation, and read-only output."""
+
+        self.input(dto)
+        self.evaluate()
+        return self.output()
 
 class NodimALB(ALB):
     """ALB assembled from nondimensional pads and driven by nondimensional states."""
 
-    unit_system = "nondimensional"
+    unit_system = UnitSystem.NONDIMENSIONAL
 
     def __init__(
         self,
@@ -385,29 +620,33 @@ class NodimALB(ALB):
             alb_config = NodimALBConfig()
         super().__init__(pads, servovalves, controller, alb_config)
 
-    def input(self, uxy: np.ndarray, uxyt: np.ndarray, t: float, *args, **kwargs):
-        nodim = kwargs.pop("nodim", True)
-        if not nodim:
-            raise ValueError("NodimALB only accepts nondimensional rotor input")
-        self._t = t
-        self._uxy = np.array(uxy)
-        self._uxyt = np.array(uxyt)
-        self._uxy_nodim = self._uxy
-        self._uxyt_nodim = self._uxyt
-        self._turn_on(t)
+    def _latch_bearing_input(self, dto: BearingInput) -> None:
+        if not isinstance(dto, BearingInput):
+            raise TypeError("bearing input must be BearingInput")
+        if dto.unit_system is not UnitSystem.NONDIMENSIONAL:
+            raise ValueError("NodimALB requires nondimensional BearingInput")
+        self._t = dto.time
+        self._uxy = dto.displacement
+        self._uxyt = dto.velocity
+        self._uxy_nodim = dto.displacement
+        self._uxyt_nodim = dto.velocity
+        self._turn_on(dto.time)
 
-    def output(self, *args, **kwargs) -> dict:
-        nodim = kwargs.pop("nodim", True)
+    def _calculate_output(
+        self,
+        *,
+        nodim: bool,
+        static: bool = False,
+    ) -> tuple[np.ndarray, float]:
         if not nodim:
-            raise ValueError("NodimALB only outputs nondimensional force")
+            raise ValueError("NodimALB only evaluates nondimensional force")
         if self._switch:
             self._uv = self._control_process(self._uxy_nodim, self._uxyt_nodim, self._t)
         else:
             self._uv = np.zeros(2)
-        static = kwargs.get("static", False)
         if static:
             sv = self.static_sv
-            self.init()
+            self._initialize_children()
         else:
             sv = self.servovalves
         for num, servovalve in enumerate(sv):
@@ -415,18 +654,23 @@ class NodimALB(ALB):
         forces = []
         frictions = []
         for pad in self.pads:
-            pad.input(t=self._t, uxy=self._uxy_nodim, uxyt=self._uxyt_nodim, nodim=True)
-            po = pad.output(nodim=True)
-            forces.append(po["force"])
-            frictions.append(po.get("friction"))
+            force, friction = self._evaluate_pad(
+                pad,
+                displacement=self._uxy_nodim,
+                velocity=self._uxyt_nodim,
+                nodim=True,
+            )
+            forces.append(force)
+            frictions.append(friction)
         self.force = np.sum(np.array(forces), axis=0)
         frictions = np.sum(np.array(frictions))
         self._uv = None
-        self.signal.lead_loop("finish_signal")
-        return {"force": self.force, "friction": frictions}
+        return self.force, float(frictions)
 
 class NodimALBSV(NodimALB):
-    """Nondimensional ALB with direct servovalve input."""
+    """Direct-spool nondimensional ALB runtime."""
+
+    input_dto_type = DirectSpoolBearingInput
 
     def __init__(
         self,
@@ -440,19 +684,28 @@ class NodimALBSV(NodimALB):
         super().__init__(pads, servovalves, controller, alb_config)
         self._sv = None
 
-    def input(
-        self, uxy: np.ndarray, uxyt: np.ndarray, t: float, sv=None, *args, **kwargs
-    ):
-        if sv is None:
-            sv = np.zeros(2)
-        sv = np.array(sv)
-        if sv.shape != (2,):
-            raise ValueError("sv must be a 2-element array")
-        self._sv = sv
-        super().input(uxy, uxyt, t, *args, **kwargs)
+    def input(self, dto: DirectSpoolBearingInput) -> None:
+        """Latch nondimensional state and normalized spool command."""
 
-    def output(self, *args, **kwargs) -> dict:
-        nodim = kwargs.pop("nodim", True)
+        self._lifecycle.require_input_slot()
+        if not isinstance(dto, DirectSpoolBearingInput):
+            raise TypeError("direct spool input must be DirectSpoolBearingInput")
+        self._latch_bearing_input(dto.bearing)
+        self._sv = dto.spool.spool
+        self._latest_output = None
+        self._latest_result = None
+        self._convergence_status = ConvergenceStatus.pending(
+            "input not evaluated"
+        )
+        self._lifecycle.latch()
+
+    def _calculate_output(
+        self,
+        *,
+        nodim: bool,
+        static: bool = False,
+    ) -> tuple[np.ndarray, float]:
+        del static
         if not nodim:
             raise ValueError("NodimALBSV only outputs nondimensional force")
         for num, servovalve in enumerate(self.servovalves):
@@ -461,14 +714,24 @@ class NodimALBSV(NodimALB):
         forces = []
         frictions = []
         for pad in self.pads:
-            pad.input(t=self._t, uxy=self._uxy_nodim, uxyt=self._uxyt_nodim, nodim=True)
-            po = pad.output(nodim=True)
-            forces.append(po["force"])
-            frictions.append(po.get("friction"))
+            force, friction = self._evaluate_pad(
+                pad,
+                displacement=self._uxy_nodim,
+                velocity=self._uxyt_nodim,
+                nodim=True,
+            )
+            forces.append(force)
+            frictions.append(friction)
         self.force = np.sum(np.array(forces), axis=0)
         frictions = np.sum(np.array(frictions))
         self._uv = None
-        self.signal.lead_loop("finish_signal")
-        return {"force": self.force, "friction": frictions}
+        return self.force, float(frictions)
+
+    def step(self, dto: DirectSpoolBearingInput) -> BearingOutput:
+        """Compose direct-spool input, evaluation, and read-only output."""
+
+        self.input(dto)
+        self.evaluate()
+        return self.output()
 
 __all__ = ['ALB', 'ALBSV', 'NodimALB', 'NodimALBSV']

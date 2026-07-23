@@ -12,6 +12,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from ALB.systems.alb import alb2, nodim_alb
 from ALB.config import ALBConfig, CsoArgs, NodimALBConfig, ThermalConfig
+from ALB.contracts import (
+    BearingInput,
+    DirectSpoolBearingInput,
+    ValveOutput,
+)
 from ALB.physics.thermal import FilmNondimScales
 
 BASE = dict(
@@ -125,13 +130,21 @@ def _run_dimensional(case):
     model = alb2(ALBConfig.from_dict(BASE))
     model.init()
     model.input(
-        uxy=np.array([ex * BASE["c"], ey * BASE["c"]]),
-        uxyt=np.array([vx * BASE["c"] * scales.w_rad, vy * BASE["c"] * scales.w_rad]),
-        t=0.0,
-        sv=np.array([sx, sy]),
-        nodim=False,
+        DirectSpoolBearingInput(
+            BearingInput(
+                [ex * BASE["c"], ey * BASE["c"]],
+                [
+                    vx * BASE["c"] * scales.w_rad,
+                    vy * BASE["c"] * scales.w_rad,
+                ],
+                0.0,
+                "dimensional",
+            ),
+            ValveOutput([sx, sy], 0.0, "nondimensional"),
+        )
     )
-    force = model.output(nodim=False)["force"] / _force_scale()
+    model.evaluate()
+    force = model.output().force / _force_scale()
     return model, force
 
 
@@ -140,13 +153,13 @@ def _run_nodim(case, cq0=1.0, cq1=1.0, cq2=0.0):
     model = nodim_alb(_nodim_config(cq0=cq0, cq1=cq1, cq2=cq2))
     model.init()
     model.input(
-        uxy=np.array([ex, ey]),
-        uxyt=np.array([vx, vy]),
-        t=0.0,
-        sv=np.array([sx, sy]),
-        nodim=True,
+        DirectSpoolBearingInput(
+            BearingInput([ex, ey], [vx, vy], 0.0, "nondimensional"),
+            ValveOutput([sx, sy], 0.0, "nondimensional"),
+        )
     )
-    return model, model.output(nodim=True)["force"]
+    model.evaluate()
+    return model, model.output().force
 
 
 def _orifice_coefficients(dim_model=None, orifice=None):
@@ -185,13 +198,21 @@ def _run_dimensional_thermal(case):
     model = alb2(config)
     model.init()
     model.input(
-        uxy=np.array([ex * BASE["c"], ey * BASE["c"]]),
-        uxyt=np.array([vx * BASE["c"] * scales.w_rad, vy * BASE["c"] * scales.w_rad]),
-        t=0.0,
-        sv=np.array([sx, sy]),
-        nodim=False,
+        DirectSpoolBearingInput(
+            BearingInput(
+                [ex * BASE["c"], ey * BASE["c"]],
+                [
+                    vx * BASE["c"] * scales.w_rad,
+                    vy * BASE["c"] * scales.w_rad,
+                ],
+                0.0,
+                "dimensional",
+            ),
+            ValveOutput([sx, sy], 0.0, "nondimensional"),
+        )
     )
-    force = model.output(nodim=False)["force"] / _force_scale()
+    model.evaluate()
+    force = model.output().force / _force_scale()
     return model, force
 
 
@@ -218,13 +239,13 @@ def _run_nodim_thermal(
             orifice.cq2 = float(branch_cq2)
     model.init()
     model.input(
-        uxy=np.array([ex, ey]),
-        uxyt=np.array([vx, vy]),
-        t=0.0,
-        sv=np.array([sx, sy]),
-        nodim=True,
+        DirectSpoolBearingInput(
+            BearingInput([ex, ey], [vx, vy], 0.0, "nondimensional"),
+            ValveOutput([sx, sy], 0.0, "nondimensional"),
+        )
     )
-    return model, model.output(nodim=True)["force"]
+    model.evaluate()
+    return model, model.output().force
 
 
 def _max_thermal_field_delta(dim_model, nd_model):

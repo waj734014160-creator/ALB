@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from ALB.surrogate.inference import ALBNet
 
 from .runtime import ALB
+from ALB.contracts import BearingInput, UnitSystem
 
 _NODIM_ALB_FORBIDDEN_PAD_KWARGS = {"miu", "c", "r", "l", "ps", "rho", "w", "w_rad"}
 _NODIM_ALB_LEGACY_REQUIRED_KEYS = [
@@ -80,9 +81,16 @@ class ALBLinear:
         """
         Calculate the static force and reinitialize the model.
         """
-        self.alb.input(t=0, uxy=uxy, uxyt=np.zeros_like(uxy))
-        force = self.alb.output(static=True, nodim=False)["force"]
-        return force
+        self.alb.input(
+            BearingInput(
+                displacement=uxy,
+                velocity=np.zeros_like(uxy),
+                time=0.0,
+                unit_system=UnitSystem.DIMENSIONAL,
+            )
+        )
+        self.alb.evaluate_static()
+        return self.alb.output().force
 
     def _record_results(self, force, fdxv, K, C):
         """

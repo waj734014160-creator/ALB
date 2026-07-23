@@ -27,9 +27,13 @@ from ALB.config import (
     OrificeConfig,
     TankConfig,
 )
+from ALB.contracts import (
+    BearingInput,
+    DirectSpoolBearingInput,
+    ValveOutput,
+)
 from ALB.systems.alb import alb_harmonic_linear
 from ALB.systems.alb.factories import alb2, nodim_alb
-from ALB.systems.alb.linear import FakeOf
 import ALB.systems.alb.surrogate_runtime as surrogate_runtime
 from tools.reference.generate_albsv_direct_spool_reference_v1 import (
     CONFIG as NODIM_CONFIG,
@@ -113,21 +117,31 @@ def _run_family_case(
     friction_rows = []
     spool_rows = []
     for index in range(2):
-        input_kwargs = dict(nodim_kwargs)
-        if kind == "ALBSV":
-            input_kwargs["sv"] = np.asarray(
-                [0.2 - 0.05 * index, -0.3 + 0.1 * index],
-                dtype=float,
-            )
-        model.input(
+        bearing_input = BearingInput(
             displacement * (1.0 - 0.1 * index),
             velocity * (1.0 - 0.2 * index),
             DT * index,
-            **input_kwargs,
+            unit,
         )
-        output = model.output(**nodim_kwargs)
-        force_rows.append(np.asarray(output["force"], dtype=float))
-        friction_rows.append(float(output["friction"]))
+        if kind == "ALBSV":
+            spool = np.asarray(
+                [0.2 - 0.05 * index, -0.3 + 0.1 * index],
+                dtype=float,
+            )
+            model.input(
+                DirectSpoolBearingInput(
+                    bearing_input,
+                    ValveOutput(spool, DT * index, "nondimensional"),
+                )
+            )
+        else:
+            model.input(bearing_input)
+        model.evaluate()
+        output = model.output()
+        force_rows.append(np.asarray(output.force, dtype=float))
+        friction_rows.append(
+            float(model.result_snapshot().values["friction"])
+        )
         spool_rows.append(
             np.asarray([valve.xv for valve in model.servovalves], dtype=float)
         )
@@ -227,10 +241,18 @@ def _run_harmonic_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
             * model.coefficients.whirl_omega_rad_s
             * np.asarray([-np.sin(phase), np.cos(phase)], dtype=float)
         )
-        model.input(model.uxy0 + displacement, velocity, index * model.dt)
+        model.input(
+            BearingInput(
+                model.uxy0 + displacement,
+                velocity,
+                index * model.dt,
+                "dimensional",
+            )
+        )
+        model.evaluate()
         output = model.output()
-        force_rows.append(output["force"])
-        spool_rows.append(output["spool"])
+        force_rows.append(output.force)
+        spool_rows.append(model.result_snapshot().values["spool"])
     arrays = {
         "force": np.asarray(force_rows, dtype=float),
         "spool": np.asarray(spool_rows, dtype=float),
@@ -283,25 +305,28 @@ class _DeterministicNet:
 def _run_albnn_shell_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """Capture the legacy ALBNN bearing shell around deterministic inference."""
 
-    # The pre-migration module omitted this import. Injecting the exact class
-    # records the intended shell behavior while preserving the defect in metadata.
-    surrogate_runtime.FakeOf = FakeOf
-    model = surrogate_runtime.ALBNNAgent(_DeterministicNet())
+    model = surrogate_runtime.ALBNNAgent(
+        _DeterministicNet(),
+        unit_system="nondimensional",
+    )
     model.init()
     force_rows = []
     for index in range(2):
         model.of[0].xv = 0.1 + 0.05 * index
         model.of[1].xv = -0.2 + 0.02 * index
         model.input(
-            index * DT,
-            np.asarray([0.1, -0.2]) * (index + 1),
-            np.asarray([0.03, -0.04]) * (index + 1),
-            nodim=True,
+            BearingInput(
+                np.asarray([0.1, -0.2]) * (index + 1),
+                np.asarray([0.03, -0.04]) * (index + 1),
+                index * DT,
+                "nondimensional",
+            )
         )
-        force_rows.append(model.output(nodim=True)["force"])
+        model.evaluate()
+        force_rows.append(model.output().force)
     arrays = {
         "force": np.asarray(force_rows, dtype=float),
-        "history": model._results.to_numpy(dtype=float),
+        "history": model.results.to_numpy(dtype=float),
     }
     metadata = {
         "class_name": type(model).__name__,

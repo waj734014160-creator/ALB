@@ -28,6 +28,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import ALB  # noqa: E402
 from ALB import StepContext  # noqa: E402
+from ALB.contracts import BearingInput  # noqa: E402
 from ALB.systems.alb import alb_harmonic_linear  # noqa: E402
 from ALB.systems.alb import ALBLinearAgent  # noqa: E402
 from ALB.core import Signal, TimeIterDt  # noqa: E402
@@ -227,8 +228,9 @@ def _bearing_reference() -> tuple[dict[str, object], dict[str, np.ndarray]]:
         velocity = amplitude_m * omega * np.array([-np.sin(phase), np.cos(phase)])
         time_s = step * bearing.dt
         position = bearing.uxy0 + displacement
-        bearing.input(position, velocity, time_s)
-        outputs.append(bearing.output())
+        bearing.input(BearingInput(position, velocity, time_s, "dimensional"))
+        bearing.evaluate()
+        outputs.append(dict(bearing.result_snapshot().values))
         times.append(time_s)
         positions.append(position)
         velocities.append(velocity)

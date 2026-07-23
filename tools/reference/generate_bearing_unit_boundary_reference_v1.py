@@ -19,6 +19,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from ALB.config import NodimALBConfig
+from ALB.contracts import (
+    BearingInput,
+    DirectSpoolBearingInput,
+    ValveOutput,
+)
 from ALB.systems.alb.factories import nodim_alb
 from tools.reference.generate_albsv_direct_spool_reference_v1 import (
     CONFIG as BASE_CONFIG,
@@ -73,13 +78,18 @@ def collect_reference() -> tuple[dict[str, np.ndarray], dict[str, object]]:
     velocity_nd = np.asarray([0.03, -0.04], dtype=float)
     spool = np.asarray([0.2, -0.3], dtype=float)
     model.input(
-        displacement_nd,
-        velocity_nd,
-        0.0,
-        sv=spool,
-        nodim=True,
+        DirectSpoolBearingInput(
+            BearingInput(
+                displacement_nd,
+                velocity_nd,
+                0.0,
+                "nondimensional",
+            ),
+            ValveOutput(spool, 0.0, "nondimensional"),
+        )
     )
-    output = model.output(nodim=True)
+    model.evaluate()
+    output = model.output()
 
     angular_speed = SCALE_VALUES["w_rpm"] / 60.0 * 2.0 * np.pi
     sx = SCALE_VALUES["Sx"]
@@ -125,7 +135,7 @@ def collect_reference() -> tuple[dict[str, np.ndarray], dict[str, object]]:
         "pressure.dimensional": pressure_nd * sp,
         "force.per_pad_nondimensional": per_pad_force_nd,
         "force.per_pad_dimensional": per_pad_force_dim,
-        "force.total_nondimensional": np.asarray(output["force"], dtype=float),
+        "force.total_nondimensional": np.asarray(output.force, dtype=float),
         "force.total_dimensional": np.sum(per_pad_force_dim, axis=0),
         "residual.local": np.asarray(
             [pad.main_model.errors for pad in model.pads],

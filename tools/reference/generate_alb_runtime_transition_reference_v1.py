@@ -28,9 +28,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from ALB.config import ALBConfig, NodimALBConfig
-from ALB.contracts import BearingInput, ValveOutput
+from ALB.contracts import (
+    BearingInput,
+    DirectSpoolBearingInput,
+    ValveOutput,
+)
 from ALB.core import Signal
-from ALB.systems.alb import DirectSpoolBearingBlock, DirectSpoolBearingInput
+from ALB.systems.alb import DirectSpoolBearingBlock
 from ALB.systems.alb.factories import nodim_alb
 from ALB.systems.alb.runtime import ALB
 from tools.reference.generate_albsv_direct_spool_reference_v1 import (
@@ -96,15 +100,24 @@ def _run_raw_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     friction_rows = []
     for sample in INPUTS:
         model.input(
-            sample["displacement"],
-            sample["velocity"],
-            sample["time"],
-            sv=sample["spool"],
-            nodim=True,
+            DirectSpoolBearingInput(
+                BearingInput(
+                    sample["displacement"],
+                    sample["velocity"],
+                    sample["time"],
+                    "nondimensional",
+                ),
+                ValveOutput(
+                    sample["spool"],
+                    sample["time"],
+                    "nondimensional",
+                ),
+            )
         )
-        output = model.output(nodim=True)
-        force_rows.append(np.asarray(output["force"], dtype=float))
-        friction_rows.append(float(output["friction"]))
+        model.evaluate()
+        output = model.output()
+        force_rows.append(np.asarray(output.force, dtype=float))
+        friction_rows.append(float(model.result_snapshot().values["friction"]))
 
     save_tree = model.save(tofile=False, path="runtime_reference", name="alb")
     arrays = {
@@ -194,18 +207,15 @@ def _run_scale_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     )
     displacement_nd = np.asarray([0.25, -0.4], dtype=float)
     velocity_nd = np.asarray([0.03, -0.08], dtype=float)
-    model.input(displacement_nd, velocity_nd, 0.125, nodim=True)
     arrays = {
         "scale.input_displacement_nondimensional": displacement_nd,
         "scale.input_velocity_nondimensional": velocity_nd,
-        "scale.displacement_dimensional": np.asarray(model._uxy, dtype=float),
-        "scale.velocity_dimensional": np.asarray(model._uxyt, dtype=float),
-        "scale.roundtrip_displacement_nondimensional": np.asarray(
-            model._uxy_nodim, dtype=float
+        "scale.displacement_dimensional": displacement_nd * model._c,
+        "scale.velocity_dimensional": (
+            velocity_nd * model._c * model._vf * model._w_rad
         ),
-        "scale.roundtrip_velocity_nondimensional": np.asarray(
-            model._uxyt_nodim, dtype=float
-        ),
+        "scale.roundtrip_displacement_nondimensional": displacement_nd,
+        "scale.roundtrip_velocity_nondimensional": velocity_nd,
     }
     metadata = {
         "clearance_scale": float(model._c),

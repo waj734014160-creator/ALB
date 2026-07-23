@@ -20,6 +20,8 @@ from ALB.core import EvaluatingBlock
 class BearingBlock(EvaluatingBlock[BearingInput, BearingOutput]):
     """Adapt an ALB numerical implementation to the strict bearing port."""
 
+    input_dto_type = BearingInput
+
     def __init__(self, implementation: Any) -> None:
         super().__init__()
         self.implementation = implementation
@@ -36,10 +38,20 @@ class BearingBlock(EvaluatingBlock[BearingInput, BearingOutput]):
 
     def evaluate(self) -> None:
         dto = self._require_input()
-        self.implementation.input(dto.displacement, dto.velocity, dto.time)
+        native_evaluate = getattr(self.implementation, "evaluate", None)
+        if callable(native_evaluate):
+            self.implementation.input(dto)
+            native_evaluate()
+            self._publish_output(self.implementation.output())
+            return
+        self.implementation.input(
+            dto.displacement,
+            dto.velocity,
+            dto.time,
+        )
         legacy_output = self.implementation.output()
         if not isinstance(legacy_output, dict) or "force" not in legacy_output:
-            raise TypeError("bearing implementation must return a force mapping")
+            raise TypeError("legacy bearing must return a force mapping")
         self._publish_output(
             BearingOutput(legacy_output["force"], dto.time, self.unit_system)
         )
@@ -49,6 +61,8 @@ class DirectSpoolBearingBlock(
     EvaluatingBlock[DirectSpoolBearingInput, BearingOutput]
 ):
     """Adapt direct-spool ALBSV evaluation without adding valve dynamics."""
+
+    input_dto_type = DirectSpoolBearingInput
 
     def __init__(self, implementation: Any) -> None:
         super().__init__()
@@ -81,6 +95,13 @@ class DirectSpoolBearingBlock(
 
     def evaluate(self) -> None:
         dto = self._require_input()
+        native_evaluate = getattr(self.implementation, "evaluate", None)
+        if callable(native_evaluate):
+            self.implementation.input(dto)
+            native_evaluate()
+            self._convergence_status = self.implementation.convergence_status
+            self._publish_output(self.implementation.output())
+            return
         nodim = self.unit_system is UnitSystem.NONDIMENSIONAL
         self.implementation.input(
             dto.bearing.displacement,
@@ -91,7 +112,7 @@ class DirectSpoolBearingBlock(
         )
         legacy_output = self.implementation.output(nodim=nodim)
         if not isinstance(legacy_output, dict) or "force" not in legacy_output:
-            raise TypeError("bearing implementation must return a force mapping")
+            raise TypeError("legacy direct-spool bearing must return a force mapping")
         converged = bool(self.implementation.calc_is_finished())
         self._convergence_status = (
             ConvergenceStatus(0.0, True, message="legacy calculation finished")
@@ -100,7 +121,9 @@ class DirectSpoolBearingBlock(
         )
         self._publish_output(
             BearingOutput(
-                legacy_output["force"], dto.bearing.time, self.unit_system
+                legacy_output["force"],
+                dto.bearing.time,
+                self.unit_system,
             )
         )
 

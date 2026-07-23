@@ -73,11 +73,11 @@ def test_standard_builder_hides_block_and_output_is_read_only():
         "nondimensional",
     )
     output = runtime.step(dto)
-    history_rows = len(runtime._implementation.results)
+    history_rows = len(runtime.results)
 
     assert runtime.output() is output
     assert runtime.output() is output
-    assert len(runtime._implementation.results) == history_rows == 1
+    assert len(runtime.results) == history_rows == 1
     assert runtime.result_snapshot().values["force"] is not output.force
     np.testing.assert_array_equal(
         runtime.result_snapshot().values["force"],

@@ -16,6 +16,7 @@ from ALB.systems.alb.harmonic import (
 )
 from ALB.core import Signal, TimeIterDt
 from ALB.dynamics.coupling import RsRotorBearingCouple
+from ALB.contracts import BearingInput
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 
 
@@ -95,12 +96,16 @@ def _run_pd_orbit(bearing: ALBHarmonicLinear) -> pd.DataFrame:
                 ]
             )
             bearing.input(
-                bearing.coefficients.equilibrium_position + displacement,
-                velocity,
-                step * bearing.dt,
+                BearingInput(
+                    bearing.coefficients.equilibrium_position + displacement,
+                    velocity,
+                    step * bearing.dt,
+                    "dimensional",
+                )
             )
+            bearing.evaluate()
             force_increment = (
-                bearing.output()["force"] - bearing.coefficients.static_force
+                bearing.output().force - bearing.coefficients.static_force
             )
             if step >= points * (cycles - 1):
                 rows.append(
@@ -138,10 +143,18 @@ def test_builtin_coefficient_contract_and_base_match():
         rtol=0.0,
         atol=1.0e-15,
     )
-    bearing.input(coefficients.equilibrium_position, np.zeros(2), t=0.0)
+    bearing.input(
+        BearingInput(
+            coefficients.equilibrium_position,
+            np.zeros(2),
+            0.0,
+            "dimensional",
+        )
+    )
+    bearing.evaluate()
     output = bearing.output()
     np.testing.assert_allclose(
-        output["force"], coefficients.static_force, rtol=0.0, atol=1.0e-9
+        output.force, coefficients.static_force, rtol=0.0, atol=1.0e-9
     )
     assert isinstance(bearing.save(tofile=False), SaveTreeNode)
 

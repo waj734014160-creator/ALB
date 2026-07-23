@@ -16,14 +16,11 @@ from ALB.config import (
 from ALB.contracts import (
     BearingInput,
     BearingRuntimeProtocol,
-    DirectSpoolBearingInput,
     DirectSpoolBearingRuntimeProtocol,
 )
 from ALB.control.adapters import adapt_controller
 
 from .factories import alb2, nodim_alb
-from .ports import BearingBlock, DirectSpoolBearingBlock
-from .runtime_adapter import LegacyBearingRuntimeAdapter
 
 
 class ControllerFactoryProtocol(Protocol):
@@ -140,13 +137,11 @@ def build_alb(
             "direct_spool configuration requires build_direct_spool_alb()"
         )
     implementation = _build_implementation(envelope, dependencies)
-    return cast(
-        BearingRuntimeProtocol[BearingInput],
-        LegacyBearingRuntimeAdapter(
-            BearingBlock(implementation),
-            implementation,
-        ),
-    )
+    if not isinstance(implementation, BearingRuntimeProtocol):
+        raise TypeError(
+            "component_factory must return a BearingRuntimeProtocol runtime"
+        )
+    return cast(BearingRuntimeProtocol[BearingInput], implementation)
 
 
 def build_direct_spool_alb(
@@ -161,13 +156,11 @@ def build_direct_spool_alb(
             "build_direct_spool_alb() requires direct_spool control_mode"
         )
     implementation = _build_implementation(envelope, dependencies)
-    return cast(
-        DirectSpoolBearingRuntimeProtocol,
-        LegacyBearingRuntimeAdapter[DirectSpoolBearingInput](
-            DirectSpoolBearingBlock(implementation),
-            implementation,
-        ),
-    )
+    if not isinstance(implementation, DirectSpoolBearingRuntimeProtocol):
+        raise TypeError(
+            "component_factory must return a direct-spool bearing runtime"
+        )
+    return cast(DirectSpoolBearingRuntimeProtocol, implementation)
 
 
 def build_typed_bearing(

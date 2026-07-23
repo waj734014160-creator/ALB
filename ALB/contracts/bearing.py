@@ -30,6 +30,7 @@ class BearingRuntimeProtocol(Protocol, Generic[InputT]):
 
     node_link: int | None
     unit_system: UnitSystem
+    input_dto_type: type[InputT]
 
     def init(self) -> None:
         """Start a fresh runtime session after child initialization succeeds."""

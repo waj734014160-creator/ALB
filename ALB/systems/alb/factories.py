@@ -382,7 +382,12 @@ def nn_agent(alb, albnet_config) -> ALB:
 
     alb = copy.deepcopy(alb)
     nn = alb_agent_nn(albnet_config)
-    ala = ALBNNAgent(nn, agent=albnet_config.agent)
+    ala = ALBNNAgent(
+        nn,
+        agent=albnet_config.agent,
+        unit_system=alb.unit_system,
+        node_link=alb.node_link,
+    )
     alb.servovalves[0].simple_models = [ala.of[0]]
     alb.servovalves[1].simple_models = [ala.of[1]]
     alb.pads = [ala]

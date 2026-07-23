@@ -20,6 +20,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from ALB.config import ALBConfig, PIDConfig
+from ALB.contracts import BearingInput
 from ALB.core import Signal
 from ALB.systems.alb.assembly import ALB
 from ALB.systems.alb.harmonic import alb_harmonic_linear
@@ -127,11 +128,15 @@ def _run_harmonic_trajectory() -> dict[str, np.ndarray]:
             zip(positions, velocities, strict=True)
         ):
             bearing.input(
-                bearing.coefficients.equilibrium_position + position_delta,
-                velocity,
-                step * bearing.dt,
+                BearingInput(
+                    bearing.coefficients.equilibrium_position + position_delta,
+                    velocity,
+                    step * bearing.dt,
+                    "dimensional",
+                )
             )
-            output = bearing.output()
+            bearing.evaluate()
+            output = bearing.result_snapshot().values
             bearing.finish_signal()
             forces.append(output["force"])
             commands.append(output["spool_command"])
@@ -178,8 +183,16 @@ def _run_enabled_alb() -> dict[str, np.ndarray]:
         (0.01, [-0.1, 0.3]),
         (0.02, [0.5, 0.25]),
     ):
-        alb.input(position, np.zeros(2, dtype=float), time)
-        forces.append(alb.output()["force"])
+        alb.input(
+            BearingInput(
+                position,
+                np.zeros(2, dtype=float),
+                time,
+                "dimensional",
+            )
+        )
+        alb.evaluate()
+        forces.append(alb.output().force)
     return {
         "alb_enabled.valve_commands": np.column_stack(
             [valve.commands for valve in valves]

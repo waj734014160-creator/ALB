@@ -9,7 +9,14 @@ from tqdm import tqdm
 from ALB.core.component import BaseCSystem, BaseSystem
 from ALB.core.lifecycle import LifecycleState
 from ALB.core.validation import require_unit_system, validate_bearing_output
-from ALB.contracts import ResultBundle, StepContext
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    BearingRuntimeProtocol,
+    ResultBundle,
+    StepContext,
+    UnitSystem,
+)
 from ALB.dynamics.rotor import Gravity, StaticLoad
 
 # from ALB.infrastructure.logging import logger
@@ -146,6 +153,35 @@ class RsRotorBearingCouple(BaseCSystem):
             component_name="rotor-coupled bearing",
         )
 
+    @staticmethod
+    def _evaluate_bearing(bearing, displacement, velocity, time) -> np.ndarray:
+        """Evaluate a native bearing runtime or a transitional legacy bearing."""
+
+        if (
+            isinstance(bearing, BearingRuntimeProtocol)
+            and bearing.input_dto_type is BearingInput
+        ):
+            dto = BearingInput(
+                displacement=displacement,
+                velocity=velocity,
+                time=time,
+                unit_system=UnitSystem.DIMENSIONAL,
+            )
+            try:
+                bearing.input(dto)
+            except TypeError as exc:
+                raise TypeError(
+                    "direct-spool bearings require an explicit spool provider "
+                    "before they can be coupled to a rotor"
+                ) from exc
+            bearing.evaluate()
+            output = bearing.output()
+            if not isinstance(output, BearingOutput):
+                raise TypeError("native bearing output must be BearingOutput")
+            return output.force.copy()
+        bearing.input(uxy=displacement, uxyt=velocity, t=time)
+        return validate_bearing_output(bearing.output())
+
     def init(self, **kwargs):
         self._invalidate_runtime()
         try:
@@ -179,8 +215,14 @@ class RsRotorBearingCouple(BaseCSystem):
             for num, bearing in enumerate(self.bearings):
                 rp_uxy = self._rp["uxy"][num]
                 rp_uxyt = self._rp["uxyt"][num]
-                bearing.input(uxy=rp_uxy, uxyt=rp_uxyt, t=initial_time)
-                self._forcef0.append(validate_bearing_output(bearing.output()))
+                self._forcef0.append(
+                    self._evaluate_bearing(
+                        bearing,
+                        rp_uxy,
+                        rp_uxyt,
+                        initial_time,
+                    )
+                )
             self._forcef0 = np.array(self._forcef0)
             self._forcen0 = vertical_stack_nonempty(
                 [np.array(self._forceu0), np.array(self._forcef0)]
@@ -307,8 +349,14 @@ class RsRotorBearingCouple(BaseCSystem):
                 )
                 self._forcef1 = []
                 for num, bearing in enumerate(self.bearings):
-                    bearing.input(uxy=uxy_n1[num], uxyt=uxyt_n1[num], t=ts)
-                    self._forcef1.append(validate_bearing_output(bearing.output()))
+                    self._forcef1.append(
+                        self._evaluate_bearing(
+                            bearing,
+                            uxy_n1[num],
+                            uxyt_n1[num],
+                            ts,
+                        )
+                    )
                 self._forcef1 = np.array(self._forcef1)
 
                 self._forcen0 = vertical_stack_nonempty((self._forceu0, self._forcef0))

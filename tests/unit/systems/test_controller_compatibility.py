@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 from ALB.config import ALBConfig, Moog2ndServoConfig
+from ALB.contracts import BearingInput, LifecycleState
 from ALB.control.controllers import ALBLQGController, RCConfig, RepetitiveController
 from ALB.core import Signal
 from ALB.systems.alb.assembly import ALB, ALBSV, NodimALB, NodimALBSV
@@ -310,8 +311,16 @@ def test_harmonic_public_lifecycle_supports_injected_controllers(controller_kind
             phase = 2.0 * np.pi * step / 20.0
             position = 1.0e-6 * np.asarray([np.cos(phase), np.sin(phase)])
             velocity = 1.0e-3 * np.asarray([-np.sin(phase), np.cos(phase)])
-            bearing.input(position, velocity, step * bearing.dt)
-            output = bearing.output()
+            bearing.input(
+                BearingInput(
+                    position,
+                    velocity,
+                    step * bearing.dt,
+                    "dimensional",
+                )
+            )
+            bearing.evaluate()
+            output = bearing.result_snapshot().values
             rows.append(
                 np.hstack(
                     (output["spool_command"], output["spool"], output["force"])
@@ -362,7 +371,15 @@ def test_failed_harmonic_reinitialization_invalidates_runtime(
         controller_factory=controller_factory,
         warmup_steps=24,
     )
-    bearing.input(np.asarray([1.0e-6, -2.0e-6]), np.zeros(2), 0.0)
+    bearing.input(
+        BearingInput(
+            [1.0e-6, -2.0e-6],
+            [0.0, 0.0],
+            0.0,
+            "dimensional",
+        )
+    )
+    bearing.evaluate()
     bearing.output()
     assert len(bearing.results) == 1
 
@@ -373,7 +390,9 @@ def test_failed_harmonic_reinitialization_invalidates_runtime(
     assert bearing._has_input is False
     invalid_operations = (
         bearing.output,
-        lambda: bearing.input(np.zeros(2), np.zeros(2), 0.0),
+        lambda: bearing.input(
+            BearingInput([0.0, 0.0], [0.0, 0.0], 0.0, "dimensional")
+        ),
         lambda: bearing.results,
         lambda: bearing.save(tofile=False, path=tmp_path),
         lambda: bearing.xv,
@@ -384,8 +403,11 @@ def test_failed_harmonic_reinitialization_invalidates_runtime(
             operation()
 
     assert bearing.init() is True
-    bearing.input(np.zeros(2), np.zeros(2), 0.0)
-    assert bearing.output()["force"].shape == (2,)
+    bearing.input(
+        BearingInput([0.0, 0.0], [0.0, 0.0], 0.0, "dimensional")
+    )
+    bearing.evaluate()
+    assert bearing.output().force.shape == (2,)
 
 
 @pytest.mark.parametrize(
@@ -427,18 +449,28 @@ def test_harmonic_runtime_failure_invalidates_partial_step(failure_point):
         )
         bearing.servovalves = [first_valve, second_valve]
 
+    bearing.input(
+        BearingInput(
+            [1.0e-6, -2.0e-6],
+            [0.0, 0.0],
+            0.0,
+            "dimensional",
+        )
+    )
     with pytest.raises(
         (RuntimeError, ValueError, FloatingPointError),
         match="failed|exactly|finite|shape",
     ):
-        bearing.input(np.asarray([1.0e-6, -2.0e-6]), np.zeros(2), 0.0)
+        bearing.evaluate()
 
     assert bearing._valid is False
     assert bearing._has_input is False
     if first_valve is not None:
         assert first_valve.input_calls == 1
     for operation in (
-        lambda: bearing.input(np.zeros(2), np.zeros(2), 0.0),
+        lambda: bearing.input(
+            BearingInput([0.0, 0.0], [0.0, 0.0], 0.0, "dimensional")
+        ),
         bearing.output,
         lambda: bearing.results,
     ):
@@ -446,8 +478,11 @@ def test_harmonic_runtime_failure_invalidates_partial_step(failure_point):
             operation()
 
     assert bearing.init() is True
-    bearing.input(np.zeros(2), np.zeros(2), 0.0)
-    assert bearing.output()["force"].shape == (2,)
+    bearing.input(
+        BearingInput([0.0, 0.0], [0.0, 0.0], 0.0, "dimensional")
+    )
+    bearing.evaluate()
+    assert bearing.output().force.shape == (2,)
 
 
 @pytest.mark.parametrize(
@@ -479,17 +514,25 @@ def test_harmonic_complex_runtime_input_requires_reinitialization(failure_source
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         with pytest.raises(ValueError, match="complex|real"):
-            bearing.input(position, velocity, 0.0)
+            dto = BearingInput(position, velocity, 0.0, "dimensional")
+            bearing.input(dto)
+            bearing.evaluate()
     assert recorded == []
 
-    assert bearing._valid is False
-    assert bearing._has_input is False
-    with pytest.raises(RuntimeError, match="runtime is invalid"):
-        bearing.output()
-
-    assert bearing.init() is True
-    bearing.input(np.zeros(2), np.zeros(2), 0.0)
-    assert bearing.output()["force"].shape == (2,)
+    if failure_source in {"controller", "valve"}:
+        assert bearing._valid is False
+        assert bearing._has_input is False
+        with pytest.raises(RuntimeError, match="runtime is invalid"):
+            bearing.output()
+        assert bearing.init() is True
+    else:
+        assert bearing._valid is True
+        assert bearing.lifecycle_state is LifecycleState.READY
+    bearing.input(
+        BearingInput([0.0, 0.0], [0.0, 0.0], 0.0, "dimensional")
+    )
+    bearing.evaluate()
+    assert bearing.output().force.shape == (2,)
 
 
 def test_harmonic_output_overflow_invalidates_runtime():
@@ -503,10 +546,12 @@ def test_harmonic_output_overflow_invalidates_runtime():
         warmup_steps=24,
     )
     bearing.controller = _RuntimeFailureController(output_size=2)
-    bearing.input(np.asarray([1.0e303, 0.0]), np.zeros(2), 0.0)
+    bearing.input(
+        BearingInput([1.0e303, 0.0], [0.0, 0.0], 0.0, "dimensional")
+    )
 
     with pytest.raises(FloatingPointError, match="overflow|finite"):
-        bearing.output()
+        bearing.evaluate()
 
     assert bearing._valid is False
     assert bearing._has_input is False
@@ -514,8 +559,11 @@ def test_harmonic_output_overflow_invalidates_runtime():
         bearing.results
 
     assert bearing.init() is True
-    bearing.input(np.zeros(2), np.zeros(2), 0.0)
-    assert bearing.output()["force"].shape == (2,)
+    bearing.input(
+        BearingInput([0.0, 0.0], [0.0, 0.0], 0.0, "dimensional")
+    )
+    bearing.evaluate()
+    assert bearing.output().force.shape == (2,)
 
 
 def test_harmonic_output_failure_invalidates_partial_result(monkeypatch):
@@ -528,7 +576,14 @@ def test_harmonic_output_failure_invalidates_partial_result(monkeypatch):
         controller_factory=_FactoryLegacyController,
         warmup_steps=24,
     )
-    bearing.input(np.asarray([1.0e-6, -2.0e-6]), np.zeros(2), 0.0)
+    bearing.input(
+        BearingInput(
+            [1.0e-6, -2.0e-6],
+            [0.0, 0.0],
+            0.0,
+            "dimensional",
+        )
+    )
 
     def fail_recording(name):
         del name
@@ -536,7 +591,7 @@ def test_harmonic_output_failure_invalidates_partial_result(monkeypatch):
 
     monkeypatch.setattr(bearing.signal, "lead_loop", fail_recording)
     with pytest.raises(RuntimeError, match="result recording failed"):
-        bearing.output()
+        bearing.evaluate()
 
     assert bearing._valid is False
     assert bearing._has_input is False
@@ -580,7 +635,10 @@ def test_switch_false_stays_disabled_for_nonnegative_times():
     model, valves = _make_alb(switch=False, controller=controller)
 
     for time in (0.0, 0.01, 1.0):
-        model.input(np.asarray([0.4, -0.2]), np.zeros(2), time)
+        model.input(
+            BearingInput([0.4, -0.2], [0.0, 0.0], time, "dimensional")
+        )
+        model.evaluate()
         model.output()
 
     np.testing.assert_array_equal(
@@ -592,7 +650,8 @@ def test_switch_false_stays_disabled_for_nonnegative_times():
 def test_missing_controller_produces_zero_command():
     model, valves = _make_alb(switch=True, controller=None)
 
-    model.input(np.asarray([0.4, -0.2]), np.zeros(2), 0.0)
+    model.input(BearingInput([0.4, -0.2], [0.0, 0.0], 0.0, "dimensional"))
+    model.evaluate()
     model.output()
 
     np.testing.assert_array_equal([valve.command for valve in valves], [0.0, 0.0])
@@ -603,14 +662,17 @@ def test_timed_start_is_recomputed_after_reinitialization():
     model, valves = _make_alb(switch=True, controller=controller)
     model.turn_on_at(0.01)
 
-    model.input(np.asarray([0.4, -0.2]), np.zeros(2), 0.0)
+    model.input(BearingInput([0.4, -0.2], [0.0, 0.0], 0.0, "dimensional"))
+    model.evaluate()
     model.output()
-    model.input(np.asarray([0.4, -0.2]), np.zeros(2), 0.01)
+    model.input(BearingInput([0.4, -0.2], [0.0, 0.0], 0.01, "dimensional"))
+    model.evaluate()
     model.output()
     assert np.any(np.asarray([valve.commands for valve in valves])[:, 1] != 0.0)
 
     model.init()
-    model.input(np.asarray([0.4, -0.2]), np.zeros(2), 0.0)
+    model.input(BearingInput([0.4, -0.2], [0.0, 0.0], 0.0, "dimensional"))
+    model.evaluate()
     model.output()
 
     np.testing.assert_array_equal([valve.command for valve in valves], [0.0, 0.0])

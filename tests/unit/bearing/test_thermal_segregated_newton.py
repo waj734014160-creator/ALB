@@ -12,6 +12,7 @@ import pytest
 from ALB.systems.alb import alb2
 from ALB.physics.bearing import HydrostaticBearing, NodimHydrostaticBearing
 from ALB.config import ALBConfig, HydConfig, ThermalConfig
+from ALB.contracts import BearingInput, DirectSpoolBearingInput, ValveOutput
 from ALB.physics.thermal import (
     FilmNondimScales,
     NodimThermalHydroBearing,
@@ -221,16 +222,33 @@ def _run_s0011_reference(metadata):
         model = alb2(ALBConfig.from_dict(cfg))
         model.init()
         model.input(
-            uxy=np.array([float(sample["ex"]), float(sample["ey"])], dtype=float),
-            uxyt=np.array([float(sample["vx"]), float(sample["vy"])], dtype=float),
-            t=0.0,
-            sv=np.array([float(sample["sx"]), float(sample["sy"])], dtype=float),
-            nodim=True,
+            DirectSpoolBearingInput(
+                BearingInput(
+                    np.array(
+                        [float(sample["ex"]), float(sample["ey"])],
+                        dtype=float,
+                    )
+                    * model._c,
+                    np.array(
+                        [float(sample["vx"]), float(sample["vy"])],
+                        dtype=float,
+                    )
+                    * model._c
+                    * (model._vf * model._w_rad),
+                    0.0,
+                    "dimensional",
+                ),
+                ValveOutput(
+                    [float(sample["sx"]), float(sample["sy"])],
+                    0.0,
+                    "nondimensional",
+                ),
+            )
         )
         with contextlib.redirect_stdout(io.StringIO()), warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            out = model.output(nodim=False)
-        force_dim = np.asarray(out["force"], dtype=np.float64)
+            model.evaluate()
+        force_dim = np.asarray(model.output().force, dtype=np.float64)
         force = force_dim / force_scale
         pads = _pad_summary(model)
         sid = int(record["sample_id"])
@@ -271,15 +289,33 @@ def _run_s0011_case(sample_id, thermal_overrides):
     model = alb2(ALBConfig.from_dict(cfg))
     model.init()
     model.input(
-        uxy=np.array([float(sample["ex"]), float(sample["ey"])], dtype=float),
-        uxyt=np.array([float(sample["vx"]), float(sample["vy"])], dtype=float),
-        t=0.0,
-        sv=np.array([float(sample["sx"]), float(sample["sy"])], dtype=float),
-        nodim=True,
+        DirectSpoolBearingInput(
+            BearingInput(
+                np.array(
+                    [float(sample["ex"]), float(sample["ey"])],
+                    dtype=float,
+                )
+                * model._c,
+                np.array(
+                    [float(sample["vx"]), float(sample["vy"])],
+                    dtype=float,
+                )
+                * model._c
+                * (model._vf * model._w_rad),
+                0.0,
+                "dimensional",
+            ),
+            ValveOutput(
+                [float(sample["sx"]), float(sample["sy"])],
+                0.0,
+                "nondimensional",
+            ),
+        )
     )
     with contextlib.redirect_stdout(io.StringIO()), warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        out = model.output(nodim=False)
+        model.evaluate()
+    out = {"force": model.output().force}
     return model, out
 
 

@@ -101,6 +101,7 @@ from ALB.infrastructure.remote.transport import (
     remote_path,
 )
 from ALB.contracts.result_tree import DataFrameResult, NpyResult, SaveTreeNode
+from ALB.contracts import BearingInput
 from ALB.dynamics.rotor import RossRotor
 from ALB.control.valve import moog_2nd_servovalve
 from ALB.config import ThermalConfig
@@ -886,9 +887,17 @@ def _systems_alb_harmonic_case() -> CaseData:
             [-np.sin(phase), np.cos(phase)]
         )
         position = harmonic.uxy0 + displacement
-        harmonic.input(position, velocity, step * harmonic.dt)
-        harmonic_last_output = dict(harmonic.output())
-        harmonic_outputs.append(harmonic_last_output["force"])
+            harmonic.input(
+                BearingInput(
+                    position,
+                    velocity,
+                    step * harmonic.dt,
+                    "dimensional",
+                )
+            )
+            harmonic.evaluate()
+            harmonic_last_output = dict(harmonic.result_snapshot().values)
+            harmonic_outputs.append(harmonic.output().force)
         harmonic_positions.append(position)
         harmonic_velocities.append(velocity)
 
@@ -920,8 +929,16 @@ def _systems_alb_harmonic_case() -> CaseData:
     alb_velocities = np.array([[0.0, 0.0], [0.01, -0.005]])
     alb_outputs = []
     for index, (uxy, uxyt) in enumerate(zip(alb_inputs, alb_velocities)):
-        system.input(uxy, uxyt, t=index * config.dt, nodim=True)
-        alb_outputs.append(system.output(nodim=True)["force"])
+        system.input(
+            BearingInput(
+                uxy,
+                uxyt,
+                index * config.dt,
+                "nondimensional",
+            )
+        )
+        system.evaluate()
+        alb_outputs.append(system.output().force)
     arrays = {
         "harmonic_positions": np.vstack(harmonic_positions),
         "harmonic_velocities": np.vstack(harmonic_velocities),

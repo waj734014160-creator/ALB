@@ -12,6 +12,7 @@ import numpy as np
 
 from ALB.systems.alb import alb2, alb2_static
 from ALB.config import ALBConfig
+from ALB.contracts import BearingInput
 from ALB.dynamics.orbit import EllipseTrack, orbitime, test_bearing_orbit_parallel
 
 from .config_io import build_flat_alb_config, resolve_gui_time_grid
@@ -91,10 +92,17 @@ def run_static_calculation(
     model = alb2_static(alb_config)
     model.init()
     uxy = _eccentricity_vector(config)
-    model.input(uxy=uxy, uxyt=np.zeros(2), t=0.0, nodim=True)
-    out = model.output(nodim=False)
-    force = np.asarray(out["force"], dtype=float)
-    friction = float(out.get("friction", np.nan))
+    model.input(
+        BearingInput(
+            uxy * alb_config.c,
+            np.zeros(2),
+            0.0,
+            "dimensional",
+        )
+    )
+    model.evaluate()
+    force = np.asarray(model.output().force, dtype=float)
+    friction = float(model.result_snapshot().values["friction"])
     pads = list(model.pads)
     return StaticResult(
         force=force,

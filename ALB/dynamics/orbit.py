@@ -10,6 +10,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from ALB.config import TimeGridConfig
+from ALB.contracts import BearingInput, BearingProtocol, UnitSystem
 from ALB.contracts.results import ArtifactManifest, ArtifactWriterProtocol, ResultBundle, result_snapshot
 from ALB.dynamics.identification import recognize_kc
 
@@ -134,6 +135,30 @@ class BearingForceTrack:
             columns=["t", "ux", "uy", "vx", "vy", "ax", "ay", "fx", "fy"]
         )
 
+    def _evaluate_sample(self, t, u, v, a, *, nodim: bool) -> np.ndarray:
+        """Evaluate one strict or legacy bearing sample."""
+
+        if (
+            isinstance(self.bearing, BearingProtocol)
+            and getattr(self.bearing, "input_dto_type", None) is BearingInput
+        ):
+            unit_system = (
+                UnitSystem.NONDIMENSIONAL
+                if nodim
+                else UnitSystem.DIMENSIONAL
+            )
+            self.bearing.input(BearingInput(u, v, t, unit_system))
+            self.bearing.evaluate()
+            return self.bearing.output().force
+        self.bearing.input(
+            uxy=u,
+            uxyt=v,
+            uxytt=a,
+            t=t,
+            nodim=nodim,
+        )
+        return self.bearing.output()["force"]
+
     def calculate_bearing_force(self, **kwargs):
         """
         Calculate the bearing forces along the trajectory.
@@ -147,10 +172,9 @@ class BearingForceTrack:
             bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
         )
         for t, u, v, a in progress_bar:
-            self.bearing.input(uxy=u, uxyt=v, uxytt=a, t=t, nodim=nodim)
-            output = self.bearing.output()
+            force = self._evaluate_sample(t, u, v, a, nodim=nodim)
             self.bearing_forces.loc[len(self.bearing_forces)] = np.hstack(
-                (t, u, v, a, output["force"])
+                (t, u, v, a, force)
             )
 
     def run(self, **kwargs):
@@ -263,10 +287,9 @@ def _calculate_bearing_force_track(bearing, t, u, v, a, progress_callback=None):
 
     bft = BearingForceTrack(bearing, t, u, v, a)
     for index, (ti, ui, vi, ai) in enumerate(zip(t, u, v, a), start=1):
-        bearing.input(uxy=ui, uxyt=vi, uxytt=ai, t=ti, nodim=False)
-        output = bearing.output()
+        force = bft._evaluate_sample(ti, ui, vi, ai, nodim=False)
         bft.bearing_forces.loc[len(bft.bearing_forces)] = np.hstack(
-            (ti, ui, vi, ai, output["force"])
+            (ti, ui, vi, ai, force)
         )
         if progress_callback is not None:
             progress_callback(index, len(u))

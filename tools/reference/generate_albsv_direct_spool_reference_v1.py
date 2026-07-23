@@ -18,6 +18,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from ALB.config.system import NodimALBConfig
+from ALB.contracts import (
+    BearingInput,
+    DirectSpoolBearingInput,
+    ValveOutput,
+)
 from ALB.systems.alb.assembly import nodim_alb
 
 
@@ -99,20 +104,26 @@ def _run_case(spool: list[float]) -> tuple[dict[str, np.ndarray], dict]:
     model = nodim_alb(config, thermal_config=config.thermal_config)
     model.init()
     model.input(
-        np.asarray(BEARING_INPUT["displacement"], dtype=float),
-        np.asarray(BEARING_INPUT["velocity"], dtype=float),
-        BEARING_INPUT["time"],
-        sv=np.asarray(spool, dtype=float),
-        nodim=True,
+        DirectSpoolBearingInput(
+            BearingInput(
+                BEARING_INPUT["displacement"],
+                BEARING_INPUT["velocity"],
+                BEARING_INPUT["time"],
+                "nondimensional",
+            ),
+            ValveOutput(spool, BEARING_INPUT["time"], "nondimensional"),
+        )
     )
-    output = model.output(nodim=True)
+    model.evaluate()
+    output = model.output()
+    result = model.result_snapshot()
     thermal = [pad._last_thermal for pad in model.pads]
     arrays = {
         "input.displacement": np.asarray(BEARING_INPUT["displacement"], dtype=float),
         "input.velocity": np.asarray(BEARING_INPUT["velocity"], dtype=float),
         "input.spool": np.asarray(spool, dtype=float),
-        "output.force": np.asarray(output["force"], dtype=float),
-        "output.friction": np.asarray([output["friction"]], dtype=float),
+        "output.force": np.asarray(output.force, dtype=float),
+        "output.friction": np.asarray([result.values["friction"]], dtype=float),
         "output.servovalve_spool": np.asarray(
             [servovalve.xv for servovalve in model.servovalves], dtype=float
         ),

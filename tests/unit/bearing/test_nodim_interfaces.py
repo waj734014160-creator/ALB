@@ -22,6 +22,7 @@ from ALB.control.pid import PID
 from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
 from ALB.control.valve import static_sv
 from ALB.config import ThermalConfig
+from ALB.contracts import BearingInput
 from ALB.physics.thermal import NodimThermalHydroBearing, ThermalHydroBearing
 
 
@@ -165,8 +166,16 @@ class TestNodimInterfaces(unittest.TestCase):
         self.assertIsInstance(alb, NodimALB)
         self.assertAlmostEqual(alb.pads[0].main_model.args["lambda"], 1.2)
         alb.init()
-        alb.input(np.array([0.05, 0.0]), np.array([0.0, 0.0]), t=0.0, nodim=True)
-        out = alb.output(nodim=True)
+        alb.input(
+            BearingInput(
+                [0.05, 0.0],
+                [0.0, 0.0],
+                0.0,
+                "nondimensional",
+            )
+        )
+        alb.evaluate()
+        out = alb.result_snapshot().values
 
         self.assertIn("force", out)
         self.assertTrue(np.all(np.isfinite(out["force"])))
@@ -391,18 +400,28 @@ class TestNodimInterfaces(unittest.TestCase):
         uxyt = np.array([0.0, 0.0])
 
         dim_alb.init()
-        dim_alb.input(uxy, uxyt, t=0.0, nodim=True)
-        dim_out = dim_alb.output(nodim=True)
+        dim_alb.input(BearingInput(uxy, uxyt, 0.0, "dimensional"))
+        dim_alb.evaluate()
+        dim_out = dim_alb.result_snapshot().values
+        dim_friction_nondim = np.sum(
+            [pad.calc_friction(calc=False, nodim=True) for pad in dim_alb.pads]
+        )
 
         nodim_alb_model.init()
-        nodim_alb_model.input(uxy, uxyt, t=0.0, nodim=True)
-        nodim_out = nodim_alb_model.output(nodim=True)
+        nodim_alb_model.input(
+            BearingInput(uxy, uxyt, 0.0, "nondimensional")
+        )
+        nodim_alb_model.evaluate()
+        nodim_out = nodim_alb_model.result_snapshot().values
 
         np.testing.assert_allclose(
             nodim_out["force"], dim_out["force"], rtol=1e-7, atol=1e-9
         )
         np.testing.assert_allclose(
-            nodim_out["friction"], dim_out["friction"], rtol=1e-7, atol=1e-9
+            nodim_out["friction"],
+            dim_friction_nondim,
+            rtol=1e-7,
+            atol=1e-9,
         )
 
 

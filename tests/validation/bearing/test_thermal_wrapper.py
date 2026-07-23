@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from ALB.systems.alb import ALB, ALBBuilder
+from ALB.contracts import BearingInput
 from ALB.core import TimeIterDt
 from ALB.physics.bearing import HydrostaticBearing, four_pads_bearings
 from ALB.config import (
@@ -742,7 +743,7 @@ class TestALBThermal(unittest.TestCase):
         t = 0.0
 
         # Test ALB input/output
-        alb.input(uxy=uxy, uxyt=uxyt, t=t)
+        alb.input(BearingInput(uxy, uxyt, t, "dimensional"))
 
         # Set xv for CSOrifices (simulate servo output)
         xv_val = 0.3
@@ -750,16 +751,15 @@ class TestALBThermal(unittest.TestCase):
             cso.input(xv=xv_val)
 
         # Standard ALB output (without thermal wrapper)
-        out_alb = alb.output(nodim=True)
-        self.assertIn("force", out_alb)
-        force = out_alb["force"]
+        alb.evaluate()
+        force = alb.output().force
         self.assertEqual(len(force), 2)
         self.assertTrue(np.all(np.isfinite(force)))
 
         # --- Now test individual thermal pad outputs ---
         # Re-init and set positions
         alb.init()
-        alb.input(uxy=uxy, uxyt=uxyt, t=t)
+        alb.input(BearingInput(uxy, uxyt, t, "dimensional"))
         for cso in [soa_y, sob_y, soa_x, sob_x]:
             cso.input(xv=xv_val)
 
@@ -808,11 +808,18 @@ class TestALBThermal(unittest.TestCase):
         alb.init()
 
         c = alb_cfg.c
-        alb.input(uxy=np.array([0.1 * c, 0.05 * c]), uxyt=np.array([0.0, 0.0]), t=0.0)
-        out = alb.output(nodim=True)
+        alb.input(
+            BearingInput(
+                [0.1 * c, 0.05 * c],
+                [0.0, 0.0],
+                0.0,
+                "dimensional",
+            )
+        )
+        alb.evaluate()
+        out = alb.output()
 
-        self.assertIn("force", out)
-        force = out["force"]
+        force = out.force
         self.assertEqual(len(force), 2)
         self.assertTrue(np.all(np.isfinite(force)))
 
