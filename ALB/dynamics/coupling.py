@@ -260,7 +260,10 @@ class RsRotorBearingCouple(BaseCSystem):
                 "next_advance_blocked": self._pending_record is not None,
                 "run_close_status": (
                     None
-                    if self._run_receipt is None
+                    if (
+                        self._run_receipt is None
+                        or self._run_receipt.close_status is None
+                    )
                     else self._run_receipt.close_status.value
                 ),
             },

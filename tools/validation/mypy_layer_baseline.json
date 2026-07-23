@@ -134,7 +134,6 @@
     "ALB/control/state_space.py|arg-type": 1,
     "ALB/control/valve.py|assignment": 2,
     "ALB/control/valve.py|attr-defined": 2,
-    "ALB/dynamics/coupling.py|arg-type": 1,
     "ALB/dynamics/coupling.py|attr-defined": 1,
     "ALB/dynamics/rotor.py|arg-type": 2,
     "ALB/dynamics/rotor.py|assignment": 8,
