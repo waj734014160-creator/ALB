@@ -1,0 +1,698 @@
+{
+  "schema": "alb.adr-review-performance-baseline.v1",
+  "candidate_commit": "4982b68c197a7349999af3514c8fcf14ef34798a",
+  "environment": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
+    "logical_cpu_count": 16,
+    "python": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "executable": "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+    "packages": {
+      "numpy": "1.24.3",
+      "scipy": "1.10.1",
+      "torch": "2.11.0+cu128",
+      "ross-rotordynamics": "1.4.2"
+    },
+    "native_threads": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "power_plan": "电源方案 GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (高性能)",
+    "measurement_process": 38972,
+    "memory_tool": "tracemalloc"
+  },
+  "gate": {
+    "minimum_sample_seconds": 0.05,
+    "maximum_time_ratio": 1.15,
+    "maximum_memory_ratio": 1.15,
+    "maximum_memory_absolute_increase_bytes": 16777216
+  },
+  "benchmarks": [
+    {
+      "case": "film",
+      "domain_reference": "film",
+      "exact_reference_passed": true,
+      "exact_arrays": {
+        "force_dimensional": {
+          "shape": [
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "7307f52f5402666bfc5861e96793eac39356988aaf48b9280a820aa0b4710ed0"
+        },
+        "force_nondim": {
+          "shape": [
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "c224664cfd48fbf871c6a6bd853d33eabbe1925698153701468ff7ac90c9300f"
+        },
+        "friction_nondim": {
+          "shape": [
+            1
+          ],
+          "dtype": "float64",
+          "sha256": "6b34df8ab8448cb7ca298c4854c640dc19136b3257524ddb604cae5a83dcf254"
+        },
+        "input_uxy": {
+          "shape": [
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "b2eff439f4eba700442adeb6bc40a1f2c01ce195e9009fbd6966e7f87ce129d6"
+        },
+        "input_uxyt": {
+          "shape": [
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "ee119baaae059ac3130a1abc9085fb071f3dd3e6f81155eb397fe8e11184bb69"
+        },
+        "pressure": {
+          "shape": [
+            48
+          ],
+          "dtype": "float64",
+          "sha256": "5b85677008a769ba536caaac8a80dffc96b1a2ff99ede1f1380958832e9052a6"
+        },
+        "pressure_field": {
+          "shape": [
+            8,
+            6
+          ],
+          "dtype": "float64",
+          "sha256": "5b85677008a769ba536caaac8a80dffc96b1a2ff99ede1f1380958832e9052a6"
+        },
+        "residual_history": {
+          "shape": [
+            8
+          ],
+          "dtype": "float64",
+          "sha256": "f3c63805a3e31f5a3e38362b34379de015067a23e2b8e28056d06918b30d913e"
+        },
+        "thickness": {
+          "shape": [
+            48
+          ],
+          "dtype": "float64",
+          "sha256": "41cc42f6d2ed4b1dd328e472a8cf9b46e7eb85c1a2e3734264ee3b1663b13930"
+        }
+      },
+      "warmup_count": 3,
+      "sample_count": 9,
+      "work_units_per_sample": 30,
+      "samples_seconds": [
+        0.20935760000429582,
+        0.19871470000362024,
+        0.20150850000209175,
+        0.2150275000021793,
+        0.21324209999875166,
+        0.21258700000180397,
+        0.19599950000701938,
+        0.20289870000851806,
+        0.21226080000633374
+      ],
+      "median_seconds_per_sample": 0.20935760000429582,
+      "median_seconds_per_work_unit": 0.006978586666809861,
+      "mad_seconds_per_sample": 0.005669899997883476,
+      "p25_seconds_per_sample": 0.20150850000209175,
+      "p75_seconds_per_sample": 0.21258700000180397,
+      "memory_sample_count": 5,
+      "peak_memory_samples_bytes": [
+        158040,
+        158365,
+        158607,
+        158739,
+        159116
+      ],
+      "peak_memory_median_bytes": 158607,
+      "timing_noise_ratio": 0.027082370058536854
+    },
+    {
+      "case": "thermal",
+      "domain_reference": "thermal",
+      "exact_reference_passed": true,
+      "exact_arrays": {
+        "force": {
+          "shape": [
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "0dffbd91c116d7ad7323063bcc14168af193e329754e1c9dc6234506859fdb46"
+        },
+        "input_uxy": {
+          "shape": [
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "294e233b476e1912598343094bfbdffcd135347406f2900fbdc0deb3c066c17f"
+        },
+        "input_uxyt": {
+          "shape": [
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+        },
+        "pressure_field": {
+          "shape": [
+            8,
+            6
+          ],
+          "dtype": "float64",
+          "sha256": "97accc5ad945bc664527485c33f008645ab8a5ee1b1efb8e60c117b6b606072e"
+        },
+        "pressure_residual_history": {
+          "shape": [
+            0
+          ],
+          "dtype": "float64",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "temperature_field": {
+          "shape": [
+            8,
+            6
+          ],
+          "dtype": "float64",
+          "sha256": "eb5662bc00258062aac7919198fb284aa7709435ab5329dae073c505195f7e9b"
+        },
+        "temperature_film": {
+          "shape": [
+            48
+          ],
+          "dtype": "float64",
+          "sha256": "eb5662bc00258062aac7919198fb284aa7709435ab5329dae073c505195f7e9b"
+        },
+        "thermal_relax_history": {
+          "shape": [
+            0
+          ],
+          "dtype": "float64",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "thermal_scalars": {
+          "shape": [
+            5
+          ],
+          "dtype": "float64",
+          "sha256": "85fdc24cbf262cac9fe3a30435ddf048f813bb72746e0cc7dab5ccbca70803d3"
+        },
+        "transient_committed_temperature": {
+          "shape": [
+            3,
+            24
+          ],
+          "dtype": "float64",
+          "sha256": "8cdb6100f52fea6dff14fe8b5143cad6adfc3b04a73bc34f123438f27c389419"
+        },
+        "transient_force": {
+          "shape": [
+            3,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "b2e90360dd100469773ac12be9a0f0ae98f3b0b7679f8b26146c9eeee0e92ed9"
+        },
+        "transient_positions": {
+          "shape": [
+            3,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "791fd2bd4c640003b47a267d9a1102160e770d64b8910c41b4de6a38dba813e9"
+        },
+        "transient_t_eff": {
+          "shape": [
+            3
+          ],
+          "dtype": "float64",
+          "sha256": "216b7474cbb656e15a3ab5b726f5f9aabc74cf611eee90943b854f9d5240fea6"
+        },
+        "transient_temperature": {
+          "shape": [
+            3,
+            24
+          ],
+          "dtype": "float64",
+          "sha256": "8cdb6100f52fea6dff14fe8b5143cad6adfc3b04a73bc34f123438f27c389419"
+        },
+        "transient_velocities": {
+          "shape": [
+            3,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "835d41188c15c1c921ac2942675b24a5e01bdec2dc67f955ec39ab2ac8825479"
+        },
+        "viscosity_field": {
+          "shape": [
+            48
+          ],
+          "dtype": "float64",
+          "sha256": "203fd9b15c1b48bb82a7f12d85922de74c54de64bd3275a03d275c09d867eea4"
+        },
+        "viscosity_field_grid": {
+          "shape": [
+            8,
+            6
+          ],
+          "dtype": "float64",
+          "sha256": "203fd9b15c1b48bb82a7f12d85922de74c54de64bd3275a03d275c09d867eea4"
+        }
+      },
+      "warmup_count": 3,
+      "sample_count": 9,
+      "work_units_per_sample": 5,
+      "samples_seconds": [
+        0.5594038999988697,
+        0.5682243000046583,
+        0.5488726999901701,
+        0.5540594999911264,
+        0.5640280999941751,
+        0.5795865000109188,
+        0.5465314000030048,
+        0.5337379000120563,
+        0.5572864999994636
+      ],
+      "median_seconds_per_sample": 0.5572864999994636,
+      "median_seconds_per_work_unit": 0.1114572999998927,
+      "mad_seconds_per_sample": 0.008413800009293482,
+      "p25_seconds_per_sample": 0.5488726999901701,
+      "p75_seconds_per_sample": 0.5640280999941751,
+      "memory_sample_count": 5,
+      "peak_memory_samples_bytes": [
+        533122,
+        532799,
+        533609,
+        531569,
+        531220
+      ],
+      "peak_memory_median_bytes": 532799,
+      "timing_noise_ratio": 0.015097799801900066
+    },
+    {
+      "case": "alb",
+      "domain_reference": "systems_alb_harmonic",
+      "exact_reference_passed": true,
+      "exact_arrays": {
+        "alb_forces": {
+          "shape": [
+            2,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "a5173ced662128e7a9ed5615b45c60bc70f8624ad9893ab4c8ada4c2bd4586b4"
+        },
+        "alb_inputs": {
+          "shape": [
+            2,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "d78d831571d82c9940a30fda9621e1d3861a63aad0d60d3d01c2eaf583b1c8a3"
+        },
+        "alb_pad_pressures": {
+          "shape": [
+            4,
+            24
+          ],
+          "dtype": "float64",
+          "sha256": "2e42a45f2c8e3cbf12d538800b0977c13feb2250894e12e542526e3d1cad5043"
+        },
+        "alb_velocities": {
+          "shape": [
+            2,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "8c81b3896cc7dfce063e5409377a8edd7718facc93659c3dd15caa7651e05317"
+        },
+        "harmonic_C": {
+          "shape": [
+            2,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "26e79aec4ed459e2fe0b1a3d47884af2c2f2fee95cbea4199981aa69e213e04c"
+        },
+        "harmonic_G_xv_imag": {
+          "shape": [
+            2,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "9e8e607dee7eae9c97b352bcfda84447b732fcb382fb55b40e051649eceb0432"
+        },
+        "harmonic_G_xv_real": {
+          "shape": [
+            2,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "418e19dddf5e3d823ba13cd22fd2db2cf6b858e61086e9aad3d71c9b7519dca1"
+        },
+        "harmonic_K": {
+          "shape": [
+            2,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "00012848b4f0ee355a1da9cdc6e3dde1f7a932c656ef7b4a50658ceb6b1d834f"
+        },
+        "harmonic_forces": {
+          "shape": [
+            6,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "aa0b29425dc66a555a4c8e31371ef6ed712d8e4345a92282878e475290b7ee83"
+        },
+        "harmonic_positions": {
+          "shape": [
+            6,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "3cc37458d22912cbe958620d32ff2af9588df2e757431377083a0456e3370ee7"
+        },
+        "harmonic_velocities": {
+          "shape": [
+            6,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "55805ac9bb4bd7363530bcc72d9e3ac268751b28dcdc3a508e2a25e151e8675f"
+        }
+      },
+      "warmup_count": 3,
+      "sample_count": 9,
+      "work_units_per_sample": 20,
+      "samples_seconds": [
+        2.771542499991483,
+        2.6473044000013033,
+        2.6721027000021422,
+        2.6950811999995494,
+        2.793577499993262,
+        2.6783352000056766,
+        2.7244359000033,
+        2.692732600000454,
+        2.7292257999943104
+      ],
+      "median_seconds_per_sample": 2.6950811999995494,
+      "median_seconds_per_work_unit": 0.13475405999997747,
+      "mad_seconds_per_sample": 0.029354700003750622,
+      "p25_seconds_per_sample": 2.6783352000056766,
+      "p75_seconds_per_sample": 2.7292257999943104,
+      "memory_sample_count": 5,
+      "peak_memory_samples_bytes": [
+        873766,
+        873019,
+        873078,
+        873745,
+        874296
+      ],
+      "peak_memory_median_bytes": 873745,
+      "timing_noise_ratio": 0.010891953831949675
+    },
+    {
+      "case": "albnn",
+      "domain_reference": "surrogate_training",
+      "exact_reference_passed": true,
+      "exact_arrays": {
+        "augmented_frame": {
+          "shape": [
+            4,
+            28
+          ],
+          "dtype": "float64",
+          "sha256": "096c4940e2ec2fee6111a71f09a6492329c2b207daf29f77c04cc9f933a5c1e8"
+        },
+        "base_frame": {
+          "shape": [
+            4,
+            12
+          ],
+          "dtype": "float64",
+          "sha256": "ad064e1bf8c23c9f7c9800d557db996f439b0b9fa374a83b1c556728a151dcaa"
+        },
+        "canonical_forces": {
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "6173f95cbb747900de6e4b99b21944e2513de0028384df04185394ecf7505416"
+        },
+        "canonical_frame": {
+          "shape": [
+            4,
+            12
+          ],
+          "dtype": "float64",
+          "sha256": "fc43aaa46bed0055139a92da5d3a46a5637be60a9b17ca276661f18a3676bc5f"
+        },
+        "canonical_steps": {
+          "shape": [
+            4
+          ],
+          "dtype": "int64",
+          "sha256": "a1e03200f1f82ad2c1cec8795c271aaecf98f5aa2d151d2229ec5fa0c177cf77"
+        },
+        "network_input": {
+          "shape": [
+            4,
+            12
+          ],
+          "dtype": "float32",
+          "sha256": "eca7d2ea07cdc95caa865699ba11f2ecdbcb8e479634f529277b21d1c011b1fb"
+        },
+        "network_output": {
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "float32",
+          "sha256": "5128fcf8286f46a4abec3c2e160bffab40e0cdc26dfb5ac3a516af2f740e3ab5"
+        },
+        "network_parameters": {
+          "shape": [
+            122
+          ],
+          "dtype": "float32",
+          "sha256": "f5db03c5f4f19847d9a760041f52b1831623001963226ea9a0000701345c1201"
+        },
+        "sample_losses": {
+          "shape": [
+            2
+          ],
+          "dtype": "float32",
+          "sha256": "f215ad6794ecf7749882847497e64036014da8e984d740a83531290b2433e949"
+        },
+        "scaler_input": {
+          "shape": [
+            3,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "78be66bb703857aa699e3155221bbc3d5050b4cd0a6d00fce78e3e7d636bc1d1"
+        },
+        "scaler_output": {
+          "shape": [
+            3,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "e31191d8e1d3f4f6f862ab752d1cc5e37d964f7db3faa5dd5c5a3bb8e24a6ae8"
+        },
+        "training_losses": {
+          "shape": [
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "e8b023c2ce9d59cd6571bb9df9e3fdde2f1a829f0c6ac66971f5e51b88d12177"
+        },
+        "training_parameters": {
+          "shape": [
+            2,
+            122
+          ],
+          "dtype": "float32",
+          "sha256": "8ad977c73c88dbed3b96bf85af8b239ad615f3932d4d7e2c34c65b32b1ee0e6c"
+        },
+        "training_target": {
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "float32",
+          "sha256": "fd11ac76f6453d32d6a0b9b8ea54c846abd616c0d4136c444321ddcc345c493d"
+        },
+        "weighted_loss": {
+          "shape": [
+            1
+          ],
+          "dtype": "float64",
+          "sha256": "b6643c12c15ec8081392e1572a58231e08b3928d6985a75609ff0fc18d14aa17"
+        }
+      },
+      "warmup_count": 3,
+      "sample_count": 9,
+      "work_units_per_sample": 200,
+      "samples_seconds": [
+        1.029648099996848,
+        1.034417000002577,
+        1.032798600004753,
+        1.006347000002279,
+        1.037741799998912,
+        1.0440114999946672,
+        1.048100300002261,
+        1.030795999991824,
+        1.0337909999943804
+      ],
+      "median_seconds_per_sample": 1.0337909999943804,
+      "median_seconds_per_work_unit": 0.005168954999971902,
+      "mad_seconds_per_sample": 0.003950800004531629,
+      "p25_seconds_per_sample": 1.030795999991824,
+      "p75_seconds_per_sample": 1.037741799998912,
+      "memory_sample_count": 5,
+      "peak_memory_samples_bytes": [
+        99339,
+        100292,
+        100401,
+        100199,
+        100055
+      ],
+      "peak_memory_median_bytes": 100199,
+      "timing_noise_ratio": 0.003821662216592237
+    },
+    {
+      "case": "coupling",
+      "domain_reference": "dynamics_coupling",
+      "exact_reference_passed": true,
+      "exact_arrays": {
+        "coupling_bearing_results": {
+          "shape": [
+            3,
+            7
+          ],
+          "dtype": "float64",
+          "sha256": "75b0e5bf4345c1c97180c3b00659ceb3cf9de6e7b0cb599f2315940ff3594faf"
+        },
+        "coupling_forces": {
+          "shape": [
+            3,
+            1,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "b1d11541ce261b5e1ccba7408df49256d6e8a5b8a9cc46cb7ae6e4e6b16823bb"
+        },
+        "coupling_previous_forces": {
+          "shape": [
+            3,
+            1,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "60fb5503af670c8a5d462b3e260f667d0ba16f778fce4a9e9c529f928f9b65a3"
+        },
+        "coupling_times": {
+          "shape": [
+            3
+          ],
+          "dtype": "float64",
+          "sha256": "a2354f49831dd6831ceed1e844b60943343dc6eba2000acc403a4531639ead0a"
+        },
+        "rotor_Ad": {
+          "shape": [
+            2,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "8a3d35ae7115c547823a3668d60456d96edff5c4fe17d8767a6f17d519a8a3d7"
+        },
+        "rotor_Bd0": {
+          "shape": [
+            1,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "9ce5339462c3a0846a019d9734e632925ae24081c6fc4f3e938edc75c594980d"
+        },
+        "rotor_Bd1": {
+          "shape": [
+            1,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "0661350d5c41d60258ec7e5eb925e362bc3cce65a75b2cd4de3af122909e591e"
+        },
+        "rotor_forces": {
+          "shape": [
+            4,
+            1
+          ],
+          "dtype": "float64",
+          "sha256": "8973d05d50122ec06def9b5bc27fe3d9d1978bb88144db0f400a95ec7c5346d4"
+        },
+        "rotor_output_history": {
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "aad2496dd94b56eb88069b5241e54c3463f91cd42d27f3a75cb3ac77354755ce"
+        },
+        "rotor_state_history": {
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "aad2496dd94b56eb88069b5241e54c3463f91cd42d27f3a75cb3ac77354755ce"
+        },
+        "rotor_states": {
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "float64",
+          "sha256": "aad2496dd94b56eb88069b5241e54c3463f91cd42d27f3a75cb3ac77354755ce"
+        }
+      },
+      "warmup_count": 3,
+      "sample_count": 9,
+      "work_units_per_sample": 20,
+      "samples_seconds": [
+        1.8449793000036152,
+        1.85065300000133,
+        1.9844188999995822,
+        1.9407606000022497,
+        1.8372219000011683,
+        1.81386389999534,
+        1.8268912999919849,
+        1.8375694999995176,
+        1.8541193999990355
+      ],
+      "median_seconds_per_sample": 1.8449793000036152,
+      "median_seconds_per_work_unit": 0.09224896500018076,
+      "mad_seconds_per_sample": 0.009140099995420314,
+      "p25_seconds_per_sample": 1.8372219000011683,
+      "p75_seconds_per_sample": 1.8541193999990355,
+      "memory_sample_count": 5,
+      "peak_memory_samples_bytes": [
+        558432,
+        554595,
+        557642,
+        554449,
+        554325
+      ],
+      "peak_memory_median_bytes": 554595,
+      "timing_noise_ratio": 0.004954039319250034
+    }
+  ],
+  "overall_status": "passed"
+}
