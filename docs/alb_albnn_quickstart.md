@@ -72,14 +72,14 @@ response = bearing.output()
 谐波实现使用同一个端口，并额外提供正式系数能力：
 
 ```python
-from ALB.systems.alb import HarmonicBearingBlock, alb_harmonic_linear
+from ALB.systems.alb import alb_harmonic_linear
 
-implementation = alb_harmonic_linear(node_link=0)
-block = HarmonicBearingBlock(implementation)
+bearing = alb_harmonic_linear(node_link=0)
+bearing.init()
 
-K = block.K
-C = block.C
-G_xv = block.G_xv
+K = bearing.K
+C = bearing.C
+G_xv = bearing.G_xv
 ```
 
 构建参数以 `ALB.systems.alb.harmonic.alb_harmonic_linear` 的签名为准。`K`、`C` 和复数 `G_xv` 均返回副本。
@@ -169,7 +169,50 @@ physical_shell = nodim_alb(alb_config=NodimALBConfig())
 alb_with_nn = nn_agent(physical_shell, model_config)
 ```
 
-`nn_agent` 是明确 assembly 子模块中的集成函数，不在 package 根重新导出。完成组合后仍应通过 `BearingBlock` 暴露标准端口，并用该模型训练条件内的固定样本比较 `fx, fy`。
+`nn_agent` 是明确 assembly 子模块中的集成函数，不在 package 根重新导出。组合结果已经原生满足
+`BearingRuntimeProtocol`，不再需要用户额外创建 `BearingBlock`；仍应使用模型训练条件内的固定
+样本比较 `fx, fy`。
+
+## 接入转子耦合与显式历史
+
+新 coupling 使用 `CoupledBearingBinding` 明确节点、单位 adapter 和 direct-spool provider。
+普通同量纲轴承的最小形式如下：
+
+```python
+from ALB.dynamics import CoupledBearingBinding, RsRotorBearingCouple
+
+binding = CoupledBearingBinding(bearing=bearing, node_link=0)
+coupling = RsRotorBearingCouple(rotor, time_grid, binding)
+coupling.init()
+result = coupling.advance(step_context)
+```
+
+若 bearing 是 direct-spool 类型，binding 必须注入
+`SpoolCommandProviderProtocol`；缺失时构造立即失败，不会默认为零阀芯。若 rotor 与 bearing
+单位不同，必须注入带完整 `Sx/St/Sv/Sf/Sp` 的 `BearingUnitAdapter`。
+
+轴承自身默认只保存当前不可变结果。需要时间历史时由 coupling 注入 recorder：
+
+```python
+from ALB.dynamics import CouplingRuntimeDependencies
+from ALB.infrastructure import InMemoryResultRecorder
+
+recorder = InMemoryResultRecorder()
+dependencies = CouplingRuntimeDependencies(
+    run_id="case-001",
+    recorder=recorder,
+)
+coupling = RsRotorBearingCouple(
+    rotor,
+    time_grid,
+    binding,
+    dependencies=dependencies,
+)
+```
+
+recorder 在物理步提交后执行。记录失败不会重复推进 rotor/bearing；默认阻止下一步，调用
+`coupling.retry_pending_record()` 只重试记录。GUI、日志或监控使用
+`StepObserverProtocol`，observer 异常默认隔离为诊断信息。
 
 ## 常见问题
 

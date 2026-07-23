@@ -1,9 +1,21 @@
 """Compatibility adapters for standard bearing integration."""
 
 from typing import Any, Optional
+import warnings
 
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    LifecycleState,
+    ResultBundle,
+    UnitSystem,
+    result_snapshot,
+)
 from ALB.core.component import BearingComponentBase
+from ALB.core.lifecycle import RuntimeLifecycle
 from ALB.core.validation import get_unit_system
+from ALB.core.validation import validate_bearing_output
 
 
 class BearingDecoratorBase(BearingComponentBase):
@@ -83,8 +95,14 @@ class BearingDecoratorBase(BearingComponentBase):
         )
 
 
-class LegacyBearingAdapter(BearingDecoratorBase):
-    """Attach explicit node and unit metadata to an older bearing object."""
+class LegacyBearingAdapter:
+    """Isolate a calculating-output bearing behind the strict 0.3 runtime.
+
+    This compatibility adapter is deprecated for removal no earlier than
+    0.4.0. New in-repository bearings must implement the native lifecycle.
+    """
+
+    input_dto_type = BearingInput
 
     def __init__(
         self,
@@ -93,11 +111,115 @@ class LegacyBearingAdapter(BearingDecoratorBase):
         node_link: Optional[int] = None,
         unit_system: str = "dimensional",
     ) -> None:
+        warnings.warn(
+            "LegacyBearingAdapter is a 0.3.x migration surface",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         wrapped_unit_system = get_unit_system(bearing)
         if wrapped_unit_system != unit_system:
             raise TypeError("legacy adapter cannot relabel an explicit unit system")
-        super().__init__(bearing)
-        if node_link is not None:
-            self.node_link = int(node_link)
-        self.unit_system = unit_system
-        get_unit_system(self)
+        self.bearing = bearing
+        self.node_link = (
+            int(node_link)
+            if node_link is not None
+            else getattr(bearing, "node_link", None)
+        )
+        self.unit_system = UnitSystem.coerce(unit_system)
+        self._lifecycle = RuntimeLifecycle(
+            type(self).__name__, input_label="bearing input"
+        )
+        self._input: BearingInput | None = None
+        self._output: BearingOutput | None = None
+        self._result: ResultBundle | None = None
+        self._failure: ResultBundle | None = None
+
+    @property
+    def lifecycle_state(self) -> LifecycleState:
+        return self._lifecycle.state
+
+    @property
+    def convergence_status(self) -> ConvergenceStatus:
+        finished = getattr(self.bearing, "calc_is_finished", None)
+        if callable(finished) and not bool(finished()):
+            return ConvergenceStatus.pending("legacy calculation is incomplete")
+        return ConvergenceStatus(0.0, True, message="legacy calculation finished")
+
+    def init(self) -> None:
+        self._lifecycle.fail()
+        try:
+            self.bearing.init()
+            self._input = None
+            self._output = None
+            self._result = None
+            self._failure = None
+        except BaseException as exc:
+            self._failure = result_snapshot(
+                {},
+                {
+                    "phase": "init",
+                    "error_type": type(exc).__name__,
+                    "message": str(exc),
+                },
+            )
+            raise
+        self._lifecycle.reset()
+
+    def input(self, dto: BearingInput) -> None:
+        self._lifecycle.require_input_slot()
+        if not isinstance(dto, BearingInput):
+            raise TypeError("legacy bearing input must be BearingInput")
+        if dto.unit_system is not self.unit_system:
+            raise ValueError("bearing input unit_system does not match adapter")
+        self._input = dto
+        self._output = None
+        self._result = None
+        self._lifecycle.latch()
+
+    def evaluate(self) -> None:
+        dto = self._input
+        with self._lifecycle.evaluation():
+            assert dto is not None
+            try:
+                self.bearing.input(
+                    uxy=dto.displacement,
+                    uxyt=dto.velocity,
+                    t=dto.time,
+                )
+            except TypeError:
+                self.bearing.input(dto.displacement, dto.velocity, dto.time)
+            force = validate_bearing_output(self.bearing.output())
+            self._output = BearingOutput(force, dto.time, self.unit_system)
+            self._result = result_snapshot(
+                {"force": self._output.force},
+                {
+                    "time": dto.time,
+                    "unit_system": self.unit_system.value,
+                    "compatibility_adapter": type(self).__name__,
+                },
+            )
+
+    def output(self) -> BearingOutput:
+        self._lifecycle.require_output()
+        assert self._output is not None
+        return self._output
+
+    def step(self, dto: BearingInput) -> BearingOutput:
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    def result_snapshot(self) -> ResultBundle:
+        self._lifecycle.require_output()
+        assert self._result is not None
+        return self._result
+
+    def failure_snapshot(self) -> ResultBundle:
+        if self._failure is None:
+            raise RuntimeError("no legacy bearing failure snapshot is available")
+        return self._failure
+
+    def diagnostic_snapshot(self) -> ResultBundle:
+        if self._failure is not None:
+            return self._failure
+        return self.result_snapshot()

@@ -82,7 +82,7 @@ def test_native_runtime_has_strict_read_only_output(unit: str, kind: str):
     assert runtime.lifecycle_state is LifecycleState.READY
     assert runtime.output() is output
     assert runtime.output() is output
-    assert len(runtime.results) == history_rows == 1
+    assert len(runtime.results) == history_rows == 0
     np.testing.assert_array_equal(result.values["force"], output.force)
 
     runtime.input(_input(unit, kind, 6.667e-4))
@@ -188,7 +188,7 @@ def test_albnn_shell_is_a_native_read_only_bearing_runtime():
     assert isinstance(runtime, BearingRuntimeProtocol)
     assert runtime.node_link == 5
     assert runtime.output() is output
-    assert len(runtime.results) == history_rows == 1
+    assert len(runtime.results) == history_rows == 0
     np.testing.assert_array_equal(
         runtime.result_snapshot().values["force"],
         output.force,

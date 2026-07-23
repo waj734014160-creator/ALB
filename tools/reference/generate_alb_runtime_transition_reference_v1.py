@@ -118,6 +118,7 @@ def _run_raw_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
         output = model.output()
         force_rows.append(np.asarray(output.force, dtype=float))
         friction_rows.append(float(model.result_snapshot().values["friction"]))
+        model.finish_signal()
 
     save_tree = model.save(tofile=False, path="runtime_reference", name="alb")
     arrays = {
@@ -169,6 +170,7 @@ def _run_block_case() -> dict[str, np.ndarray]:
             )
         )
         force_rows.append(output.force)
+        model.finish_signal()
     return {
         "block.force": np.asarray(force_rows, dtype=float),
         "block.signal_history": model.results.to_numpy(dtype=float),

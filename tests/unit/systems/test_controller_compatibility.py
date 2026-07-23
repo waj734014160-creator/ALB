@@ -381,7 +381,7 @@ def test_failed_harmonic_reinitialization_invalidates_runtime(
     )
     bearing.evaluate()
     bearing.output()
-    assert len(bearing.results) == 1
+    assert len(bearing.results) == 0
 
     with pytest.raises(RuntimeError, match="failed"):
         bearing.init()
@@ -585,11 +585,14 @@ def test_harmonic_output_failure_invalidates_partial_result(monkeypatch):
         )
     )
 
-    def fail_recording(name):
-        del name
+    def fail_recording(*args, **kwargs):
+        del args, kwargs
         raise RuntimeError("result recording failed")
 
-    monkeypatch.setattr(bearing.signal, "lead_loop", fail_recording)
+    monkeypatch.setattr(
+        "ALB.systems.alb.harmonic.result_snapshot",
+        fail_recording,
+    )
     with pytest.raises(RuntimeError, match="result recording failed"):
         bearing.evaluate()
 

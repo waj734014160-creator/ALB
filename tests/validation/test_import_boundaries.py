@@ -29,7 +29,7 @@ ALLOWED_DEPENDENCIES = {
     "core": {"contracts", "core"},
     "config": {"config", "contracts", "core"},
     "physics": {"config", "contracts", "core", "physics"},
-    "infrastructure": {"config", "contracts", "infrastructure"},
+    "infrastructure": {"config", "contracts", "core", "infrastructure"},
     "dynamics": {"config", "contracts", "core", "dynamics"},
     "control": {"config", "contracts", "control", "core", "dynamics"},
     "surrogate": {"config", "contracts", "core", "infrastructure", "surrogate"},

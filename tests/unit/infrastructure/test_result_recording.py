@@ -13,7 +13,11 @@ from ALB.contracts import (
     UnsupportedResultValueError,
     bundle_digest,
 )
-from ALB.infrastructure import InMemoryResultRecorder, RingBufferResultRecorder
+from ALB.infrastructure import (
+    InMemoryResultRecorder,
+    RingBufferResultRecorder,
+    SamplingRecorder,
+)
 
 
 def _context(index: int) -> StepContext:
@@ -63,6 +67,10 @@ def test_in_memory_recorder_is_run_scoped_continuous_and_idempotent() -> None:
     assert receipt.record_count == 2
     with pytest.raises(RuntimeError, match="reopened"):
         recorder.begin_run("run-1")
+    recorder.begin_run("run-2")
+    recorder.record(_context(0), _bundle(3.0))
+    recorder.end_run("run-2")
+    assert len(recorder.records) == 3
 
 
 def test_ring_buffer_expires_old_idempotency_keys() -> None:
@@ -73,3 +81,13 @@ def test_ring_buffer_expires_old_idempotency_keys() -> None:
     assert len(recorder.records) == 2
     with pytest.raises(ExpiredRecordKey):
         recorder.record(_context(0), _bundle(1.0))
+
+
+def test_sampling_recorder_preserves_step_continuity_with_small_placeholders() -> None:
+    inner = InMemoryResultRecorder()
+    recorder = SamplingRecorder(inner, lambda context: context.step_index % 2 == 0)
+    recorder.begin_run("sampled")
+    for index in range(3):
+        recorder.record(_context(index), _bundle(float(index + 1)))
+    assert inner.records[1][1].metadata["sampling_skipped"] is True
+    assert not inner.records[1][1].values

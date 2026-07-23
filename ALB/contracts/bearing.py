@@ -1,6 +1,6 @@
 """Bearing-side computation and runtime contracts."""
 
-from typing import Generic, Protocol, TypeVar, runtime_checkable
+from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 
 import numpy as np
 import numpy.typing as npt
@@ -94,6 +94,27 @@ class SpoolCommandProviderProtocol(Protocol):
 
 
 @runtime_checkable
+class BearingUnitAdapterProtocol(Protocol):
+    """Convert rotor-domain bearing ports through an explicit scale set."""
+
+    scales: Any
+
+    def rotor_context_to_bearing(self, context: StepContext) -> StepContext:
+        """Return the bearing-local step context."""
+
+    def rotor_input_to_bearing(self, value: BearingInput) -> BearingInput:
+        """Convert a rotor-domain bearing input."""
+
+    def rotor_direct_spool_to_bearing(
+        self, value: DirectSpoolBearingInput
+    ) -> DirectSpoolBearingInput:
+        """Convert direct-spool state while preserving normalized spool."""
+
+    def bearing_output_to_rotor(self, value: BearingOutput) -> BearingOutput:
+        """Convert bearing force back to the rotor domain."""
+
+
+@runtime_checkable
 class BearingCoefficientProtocol(Protocol):
     """Optional local-linear coefficient capability."""
 
@@ -114,6 +135,7 @@ __all__ = [
     "BearingCoefficientProtocol",
     "BearingProtocol",
     "BearingRuntimeProtocol",
+    "BearingUnitAdapterProtocol",
     "DirectSpoolBearingRuntimeProtocol",
     "SpoolCommandProviderProtocol",
 ]

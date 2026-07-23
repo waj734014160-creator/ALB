@@ -353,7 +353,6 @@ class ALB(BaseCSystem):
                 output = BearingOutput(force, self._t, self.unit_system)
                 convergence = self._collect_convergence_status()
                 self._friction = friction
-                self.signal.lead_loop("finish_signal")
                 bundle = result_snapshot(
                     {
                         "force": output.force,

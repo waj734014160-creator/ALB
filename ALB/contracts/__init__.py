@@ -4,6 +4,7 @@ from .bearing import (
     BearingCoefficientProtocol,
     BearingProtocol,
     BearingRuntimeProtocol,
+    BearingUnitAdapterProtocol,
     DirectSpoolBearingRuntimeProtocol,
     SpoolCommandProviderProtocol,
 )
@@ -81,6 +82,7 @@ __all__ = [
     "BearingCoefficientProtocol",
     "BearingProtocol",
     "BearingRuntimeProtocol",
+    "BearingUnitAdapterProtocol",
     "CommandBlock",
     "ComputationalBlock",
     "ControlInput",

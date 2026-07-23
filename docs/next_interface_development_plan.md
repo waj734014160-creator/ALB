@@ -208,6 +208,21 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 
 ## 分阶段实施顺序
 
+### 2026-07-23 实施状态
+
+| 范围 | 状态 | 主要实现 |
+| --- | --- | --- |
+| F47-F53、F01-F07 | 已实现 | 0.3 envelope、显式 control mode、非覆盖迁移、类型化 builder、配置文件入口、完整尺度对象 |
+| F08-F20 | 已实现 | ALB/ALBSV/Nodim/ALBNN/harmonic 原生 DTO 生命周期、只读 output、诊断与失败封锁 |
+| F36-F41 | 已实现 | run-scoped recorder、v1 规范摘要、pending 恢复、内存/ring/sampling/filtering 组合策略、writer 分离 |
+| F21-F29 | 已实现 | `CoupledBearingBinding`、direct-spool provider、单位 adapter、`RotorLoadInput`、提交后发布顺序 |
+| F30-F35、F42-F46 | 0.3 边界已实现 | 新 coupling 正确性路径不依赖 Signal；原生 ALB/ALBNN/harmonic 默认不写 Signal 历史；legacy adapter 按 ADR 保留至至少 0.4.0 |
+| F54-F64 | 持续门禁 | 已增加 config-build-step、native/adapter/coupling、recorder/observer、单位和 failure injection 测试；最终全量、类型、性能、测试映射和 wheel 证据在候选提交后生成 |
+
+F35 尚未物理删除全部旧 Signal，不是方案未确定，而是 ADR-0001 要求至少保留一个 0.3.x minor
+兼容周期并先取得消费者清零证据。旧 film/thermal/rotor 消费者尚未清零，因此不能在 0.3.0
+提前删除兼容面；新代码不得再增加 Signal 依赖。
+
 ### 阶段 0：冻结新边界参考
 
 - 五份 ADR 已全部 Accepted，架构决策门禁完成。

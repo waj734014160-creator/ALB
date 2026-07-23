@@ -48,8 +48,6 @@ class InMemoryResultRecorder:
             raise RuntimeError("closed run_id cannot be reopened")
         self._active_run = run_id
         self._ledger = StepCommitLedger()
-        self._bundles.clear()
-        self._receipts.clear()
         return RunReceipt(run_id, None, 0, (), None, None)
 
     def record(self, context: StepContext, bundle: ResultBundle) -> RecordReceipt:
@@ -84,7 +82,9 @@ class InMemoryResultRecorder:
     ) -> RunReceipt:
         if run_id != self._active_run:
             raise RuntimeError("run_id is not the active recorder run")
-        indexes = [key.step_index for key in self._bundles]
+        indexes = [
+            key.step_index for key in self._bundles if key.run_id == run_id
+        ]
         receipt = RunReceipt(
             run_id,
             RunCloseStatus.COMPLETE,
@@ -139,9 +139,12 @@ class SamplingRecorder:
 
     def record(self, context: StepContext, bundle: ResultBundle) -> RecordReceipt:
         if not self._predicate(context):
-            raise RuntimeError(
-                "sampling decisions must be coordinated by the workflow "
-                "to preserve recorder continuity"
+            bundle = ResultBundle(
+                {},
+                {
+                    "sampling_skipped": True,
+                    "original_step_index": context.step_index,
+                },
             )
         return self._recorder.record(context, bundle)
 
@@ -160,6 +163,12 @@ class RingBufferResultRecorder(InMemoryResultRecorder):
         super().__init__()
         self.idempotency_window = capacity
         self._expired_through: int | None = None
+
+    def begin_run(self, run_id: str) -> RunReceipt:
+        """Begin a run with a fresh run-local expiration boundary."""
+
+        self._expired_through = None
+        return super().begin_run(run_id)
 
     def record(self, context: StepContext, bundle: ResultBundle) -> RecordReceipt:
         if (

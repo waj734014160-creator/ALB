@@ -145,6 +145,7 @@ def _run_family_case(
         spool_rows.append(
             np.asarray([valve.xv for valve in model.servovalves], dtype=float)
         )
+        model.finish_signal()
 
     arrays = {
         "force": np.asarray(force_rows, dtype=float),
@@ -253,6 +254,7 @@ def _run_harmonic_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
         output = model.output()
         force_rows.append(output.force)
         spool_rows.append(model.result_snapshot().values["spool"])
+        model.finish_signal()
     arrays = {
         "force": np.asarray(force_rows, dtype=float),
         "spool": np.asarray(spool_rows, dtype=float),
@@ -324,6 +326,7 @@ def _run_albnn_shell_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
         )
         model.evaluate()
         force_rows.append(model.output().force)
+        model.finish_signal()
     arrays = {
         "force": np.asarray(force_rows, dtype=float),
         "history": model.results.to_numpy(dtype=float),

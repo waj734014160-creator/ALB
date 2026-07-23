@@ -887,17 +887,17 @@ def _systems_alb_harmonic_case() -> CaseData:
             [-np.sin(phase), np.cos(phase)]
         )
         position = harmonic.uxy0 + displacement
-            harmonic.input(
-                BearingInput(
-                    position,
-                    velocity,
-                    step * harmonic.dt,
-                    "dimensional",
-                )
+        harmonic.input(
+            BearingInput(
+                position,
+                velocity,
+                step * harmonic.dt,
+                "dimensional",
             )
-            harmonic.evaluate()
-            harmonic_last_output = dict(harmonic.result_snapshot().values)
-            harmonic_outputs.append(harmonic.output().force)
+        )
+        harmonic.evaluate()
+        harmonic_last_output = dict(harmonic.result_snapshot().values)
+        harmonic_outputs.append(harmonic.output().force)
         harmonic_positions.append(position)
         harmonic_velocities.append(velocity)
 

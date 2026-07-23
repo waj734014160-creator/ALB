@@ -2,6 +2,7 @@
 
 from ALB.contracts.optional import import_optional_module
 from .units import AppliedTransform, BearingScaleSet, BearingUnitAdapter
+from .decorators import LegacyBearingAdapter
 
 
 _NAMES = (
@@ -35,5 +36,6 @@ __all__ = [
     "AppliedTransform",
     "BearingScaleSet",
     "BearingUnitAdapter",
+    "LegacyBearingAdapter",
     *_NAMES,
 ]

@@ -11,6 +11,7 @@ from ALB.core import BaseSystem, Signal, TimeIterDt
 from ALB.physics.bearing import MultiPad
 from ALB.config import CsoArgs as ConfigCsoArgs
 from ALB.contracts import (
+    BearingInput,
     BearingProtocol,
     ConvergenceStatus,
     NotifierProtocol,
@@ -85,12 +86,18 @@ def test_protocols_and_specialized_bearing_template_are_runtime_checkable():
 def test_decorator_and_legacy_adapter_preserve_standard_bearing_contract():
     bearing = _Bearing(node_link=4)
     decorated = BearingDecoratorBase(bearing)
-    adapted = LegacyBearingAdapter(bearing, node_link=7)
+    with pytest.deprecated_call():
+        adapted = LegacyBearingAdapter(bearing, node_link=7)
 
     assert isinstance(decorated, BearingProtocol)
     assert decorated.node_link == 4
     assert adapted.node_link == 7
     np.testing.assert_array_equal(decorated.output()["force"], bearing.force)
+    adapted.init()
+    output = adapted.step(
+        BearingInput([0.0, 0.0], [0.0, 0.0], 0.0, "dimensional")
+    )
+    np.testing.assert_array_equal(output.force, bearing.force)
 
 
 def test_signal_and_base_system_attach_each_child_once():

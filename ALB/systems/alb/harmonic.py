@@ -594,7 +594,6 @@ class ALBHarmonicLinear(BearingComponentBase):
                 self._force_damping = evaluated.damping
                 self._force_spool = evaluated.spool
                 self.force = evaluated.total
-                self.signal.lead_loop("finish_signal")
                 self._last_output = output
                 self._latest_result = result_snapshot(
                     {

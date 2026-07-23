@@ -8,22 +8,20 @@ from typing import Literal
 from ALB.contracts import (
     BearingInput,
     BearingRuntimeProtocol,
+    BearingUnitAdapterProtocol,
     DirectSpoolBearingInput,
     ResultRecorderProtocol,
     SpoolCommandProviderProtocol,
     StepObserverProtocol,
     UnitSystem,
 )
-from ALB.physics.bearing.units import BearingUnitAdapter
-
-
 @dataclass(frozen=True, slots=True)
 class CoupledBearingBinding:
     """Bind one bearing runtime to a rotor node and optional boundary adapters."""
 
     bearing: BearingRuntimeProtocol[object]
     node_link: int
-    unit_adapter: BearingUnitAdapter | None = None
+    unit_adapter: BearingUnitAdapterProtocol | None = None
     spool_provider: SpoolCommandProviderProtocol | None = None
 
     def __post_init__(self) -> None:

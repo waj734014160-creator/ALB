@@ -46,6 +46,8 @@ ALB.infrastructure 通过 Protocol 注入需要副作用的边界
 
 - `contracts` 不导入 `core`、领域实现、systems、workflows 或 infrastructure。
 - `core` 不导入 physics、control、dynamics、surrogate、systems、workflows 或 infrastructure。
+- infrastructure 可以复用 contracts/core 的通用时序验证与 observer dispatch；数值层不得反向
+  导入 infrastructure。
 - physics、control、dynamics 和 surrogate 的数值代码不直接依赖 exporter、SMTP 或远程执行。
 - systems 可以组合领域组件，但不反向成为领域底层依赖。
 - workflows 可以协调完整任务并提交物理时步。
@@ -132,7 +134,7 @@ adapter。不得根据数值大小、变量名或调用路径推测单位。
 
 ## 时步和收敛
 
-`StepContext` 使用 `step_index`、`time`、正 `dt` 和 `unit_system` 标识一个物理时步。`ALB.core.steps.StepCommitLedger` 拒绝重复或乱序提交。
+`StepContext` 使用 `step_index`、`time`、正 `dt` 和 `unit_system` 标识一个物理时步。`ALB.core.steps.StepCommitLedger` 拒绝重复或乱序提交。`commit_step()` 不接受 callback，只在验证后执行一次最近 context 引用替换；`is_last_committed()` 只判断最近一步，不保存无界历史。
 
 只有顶层 coupler/workflow 可以调用 `commit_step(StepContext)`。轴承、阀、控制器、热模型和转子子组件只报告局部 `ConvergenceStatus`，不得分别写一条全局步记录。这样一个物理步无论包含多少局部迭代都只提交一次。
 
@@ -157,11 +159,26 @@ adapter。不得根据数值大小、变量名或调用路径推测单位。
   结果提取和保存只读取已完成快照。推进失败后进入 `FAILED`，必须重新 `init()`。
 - 转子结果/保存树组装位于 `ALB.dynamics.rotor_results`；谐波系数契约和资源加载位于
   `ALB.systems.alb.harmonic_coefficients`，避免运行时同时承担持久化和配置 IO。
-- 顶层 rotor-bearing coupler 负责一次 `advance()` 后的一次全局 step commit。
+- 顶层 rotor-bearing coupler 只接收 `CoupledBearingBinding` 作为新接口。binding 明确 runtime、
+  节点、可选 `BearingUnitAdapter` 和可选 direct-spool provider；`RotorLoadInput` 表达
+  `previous_force/force`。
+- `advance()` 顺序固定为预检、mutable execute、构造不可变 candidate、ledger commit、不可失败
+  发布、recorder、observer。提交前失败封锁 runtime；提交后 recorder/observer 失败不伪装成
+  未执行物理步。
 
 ## 结果和副作用边界
 
-统一结果形式为 `ResultBundle`，通过 `result_snapshot()` 得到不可变快照。保存必须注入 `ArtifactWriterProtocol` 并返回 `ArtifactManifest`：
+统一结果形式为 `ResultBundle`，通过 `result_snapshot()` 得到不可变快照。
+`ResultRecorderProtocol` 的 run 由 `begin_run()`/`end_run()` 显式管理，记录键固定为
+`(run_id, step_index)`。摘要算法 `alb.result-bundle.sha256.v1` 拒绝 object dtype、非有限数值、
+非字符串 mapping key 和任意领域对象，并把 NumPy scalar 规范化为 Python scalar。
+
+默认不配置 recorder 时，原生 ALB、ALBNN 和 harmonic runtime 只保留当前快照。完整内存、
+ring buffer、固定 sampling 和字段 filtering 使用组合 recorder；pending 恢复只重新记录已经
+提交的 `ResultBundle`。`StepCompleted` 每个物理步只发送一次，恢复另发
+`RecordingRecovered`。
+
+保存必须注入 `ArtifactWriterProtocol` 并返回 `ArtifactManifest`：
 
 ```python
 from pathlib import Path
@@ -193,7 +210,9 @@ manifest = writer.write(bundle, Path("outputs") / "case_001")
 - 用于保持数值行为的旧参数名称解析。
 - 旧 JSON5 到 0.3 schema 的只读转换。
 - 旧模型 artifact 到 versioned package 的非破坏复制。
-- 数值实现到强类型端口的 adapter。
+- `BearingBlock`、`DirectSpoolBearingBlock`、`LegacyBearingAdapter`、
+  `LegacyControllerAdapter` 和 `LegacySignalAdapter` 只作为 0.3.x 迁移面，最早在 0.4.0
+  且声明消费者清零后删除。
 
 任何数值或物理修正必须独立于机械重构提交，并生成新的 v2 行为参考。
 

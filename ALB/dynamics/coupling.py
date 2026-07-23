@@ -41,7 +41,7 @@ from .coupling_runtime import (
 from .coupling_results import build_coupling_save_tree
 from .bindings import CoupledBearingBinding, CouplingRuntimeDependencies
 from ALB.core.numerics.arrays import vertical_stack_nonempty
-from ALB.infrastructure.observers import ObserverDispatcher
+from ALB.core.observers import ObserverDispatcher
 
 
 class RotorBearingCouple(BaseSystem):
@@ -102,7 +102,10 @@ class RsRotorBearingCouple(BaseCSystem):
             else list(bearings)
         )
         for bearing in self.bearings:
-            self._validate_bearing(bearing)
+            self._validate_bearing(
+                bearing,
+                allow_nondimensional=bool(self.bindings),
+            )
         if not self.bindings:
             self.signal.children = [bearing.signal for bearing in self.bearings]
             self.signal.add_child(self.rotor.signal)
@@ -335,7 +338,7 @@ class RsRotorBearingCouple(BaseCSystem):
         self._invalidate_topology()
 
     @staticmethod
-    def _validate_bearing(bearing):
+    def _validate_bearing(bearing, *, allow_nondimensional: bool = False):
         """Validate the minimum dimensional bearing integration contract."""
 
         for attribute in ("node_link", "init", "input", "output"):
@@ -345,7 +348,11 @@ class RsRotorBearingCouple(BaseCSystem):
             bearing, BearingRuntimeProtocol
         ):
             raise TypeError("native bearing must satisfy BearingRuntimeProtocol")
-        if UnitSystem.coerce(bearing.unit_system) is UnitSystem.NONDIMENSIONAL:
+        if (
+            allow_nondimensional
+            and UnitSystem.coerce(bearing.unit_system)
+            is UnitSystem.NONDIMENSIONAL
+        ):
             return
         require_unit_system(
             bearing,

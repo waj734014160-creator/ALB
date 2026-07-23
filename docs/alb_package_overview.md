@@ -50,11 +50,11 @@ from ALB.workflows import build_alb_from_file
 | `ALB.physics.gas` | 气体轴承 | gas-film solver |
 | `ALB.physics.thermal` | 热耦合 | 热模型、黏温/尺度转换和热惯性状态 |
 | `ALB.control` | 控制和阀 | 独立 `pid`、`fuzzy`、`lqg`、`repetitive`、`reduction_core`、状态空间、伺服阀和严格端口 blocks；`controllers` 只保留内部兼容重导出 |
-| `ALB.dynamics` | 转子与耦合 | `rotor_layout`、`rotor_results`、rotor 数值推进、`coupling_runtime`、`coupling_results`、orbit、FFT/KC 识别 |
+| `ALB.dynamics` | 转子与耦合 | `CoupledBearingBinding`、`CouplingRuntimeDependencies`、`rotor_layout`、rotor 数值推进、`coupling_runtime`、orbit、FFT/KC 识别 |
 | `ALB.surrogate` | 部署侧代理模型 | features、networks、scalers、inference、versioned model package、非破坏迁移 |
 | `ALB.surrogate.training` | 训练侧公共能力 | config、data、loss、transform、report、run 和 ALBNN 专用远程队列 |
 | `ALB.systems.alb` | 顶层 ALB 系统装配 | typed `building`、`runtime`、兼容 `builder/factories`、`linear`、`surrogate_runtime`、`switch`、harmonic runtime/result/coefficient contract |
-| `ALB.infrastructure` | 外部副作用 | UTF-8 配置 IO、日志、`SmtpNotifier`、artifact writer、generic remote engine |
+| `ALB.infrastructure` | 外部副作用 | UTF-8 配置 IO、日志、显式 recorder、observer 兼容桥、`SmtpNotifier`、artifact writer、generic remote engine |
 | `ALB.workflows` | 可执行流程和后处理 | ALB workflow、DoE、配置装配、命名、绘图、后处理和顶层执行 |
 
 ## 依赖方向
@@ -125,7 +125,10 @@ harmonic 重新初始化从入口即使旧运行时失效，只有控制器创�
 普通 `ALB` 没有控制器时输出零阀命令；需要直接指定阀芯位置时使用 `ALBSV` 或对应的
 direct-spool 端口。
 
-`RsRotorBearingCouple.init()` 把时间网格首点登记为只读初始快照，`solve()` 只对后续目标时刻
+`RsRotorBearingCouple` 通过 `CoupledBearingBinding` 接收原生 bearing runtime、节点、可选单位
+adapter 和 direct-spool provider。转子载荷统一使用 `RotorLoadInput` 表达当前/上一时刻力；
+direct-spool 缺少 provider 时立即失败，跨单位调用缺少完整 adapter 时立即失败。
+`init()` 把时间网格首点登记为只读初始快照，`solve()` 只对后续目标时刻
 推进。时步 ledger 要求序号恰好加 1、时间增量与固定 `dt` 一致，因此 `t=0` 不再对应
 已经推进到 `dt` 的转子状态。
 中途异常会使 coupler 整体失效；此后 `advance()`、`output()`、`results` 和 `save()` 都拒绝
@@ -165,7 +168,13 @@ thermal ALBNN 的实际输入列、feature set、target transform 和模型选�
 
 ### 结果与持久化
 
-数值模块通过 `result_snapshot()` 生成 `ResultBundle`。写文件由 workflow 注入 `ArtifactWriterProtocol`；`ALB.infrastructure.persistence.DirectoryArtifactWriter` 返回含相对路径、媒体类型、字节数和 SHA-256 的 `ArtifactManifest`。纯数值结果对象不直接选择目录或 exporter。
+数值模块通过 `result_snapshot()` 生成 `ResultBundle`。`ResultRecorderProtocol` 使用显式
+`begin_run/record/end_run`、`run_id + step_index` 幂等键和
+`alb.result-bundle.sha256.v1` 摘要；默认无 recorder 时不积累 ALB/ALBNN/harmonic 时间历史。
+完整内存、ring buffer、sampling 和字段 filtering 是可组合策略。record 失败发生在物理提交后，
+只生成 pending record，恢复不会重复物理计算。
+
+写文件由 workflow 注入 `ArtifactWriterProtocol`；`ALB.infrastructure.persistence.DirectoryArtifactWriter` 返回含相对路径、媒体类型、字节数和 SHA-256 的 `ArtifactManifest`。纯数值结果对象不直接选择目录或 exporter。
 
 ### 远程执行
 

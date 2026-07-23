@@ -77,7 +77,7 @@ def test_standard_builder_hides_block_and_output_is_read_only():
 
     assert runtime.output() is output
     assert runtime.output() is output
-    assert len(runtime.results) == history_rows == 1
+    assert len(runtime.results) == history_rows == 0
     assert runtime.result_snapshot().values["force"] is not output.force
     np.testing.assert_array_equal(
         runtime.result_snapshot().values["force"],

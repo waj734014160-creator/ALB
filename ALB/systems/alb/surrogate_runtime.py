@@ -173,7 +173,6 @@ class ALBNNAgent(BaseSimpleModel):
                 self.uxyt = dto.velocity
                 self.xv = spool
                 self.force = output.force
-                self.signal.lead_loop("finish_signal")
                 self._latest_output = output
                 self._latest_result = result_snapshot(
                     {
