@@ -24,7 +24,7 @@
 
 | ADR | 状态 | 主题 |
 | --- | --- | --- |
-| [ADR-0001](0001-public-api-version-step-and-builders.md) | Accepted | 0.3.0 公共版本、`step()`、builder 返回类型、分层依赖注入和兼容周期 |
+| [ADR-0001](0001-public-api-version-step-and-builders.md) | Accepted | 0.3.0 公共版本、自动初始化、混合轴承、配置封装、builder 返回类型和兼容周期 |
 | [ADR-0002](0002-failure-sealing-and-step-publication.md) | Accepted | mutable 数值组件的失败封锁、原子 ledger 提交与结果发布顺序 |
 | [ADR-0003](0003-result-recorder-and-idempotency.md) | Accepted | recorder、run/session、分型状态、RecordableValue、规范摘要、pending 和失败恢复 |
 | [ADR-0004](0004-observer-and-failure-snapshot.md) | Accepted | observer 异常隔离、post-commit 诊断和 failure snapshot |

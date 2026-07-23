@@ -12,8 +12,24 @@ from tqdm import tqdm
 
 from ALB.core.component import BaseCSystem
 from ALB.core.fem import ElemManager, MatrixProcess, Mesh, NodeManager
-from ALB.config import FPBConfig, HydConfig
-from ALB.core.validation import get_unit_system
+from ALB.config import (
+    FPBConfig,
+    HydConfig,
+    HybridOrificeConfig,
+    NodimPadConfig,
+)
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    LifecycleState,
+    ResultBundle,
+    UnitSystem,
+    result_snapshot,
+)
+from ALB.core.diagnostics import sanitize_exception_message
+from ALB.core.lifecycle import RuntimeLifecycle
+from ALB.core.validation import get_unit_system, validate_bearing_output
 from ALB.physics.film import (
     FilmBoundary,
     FilmModel,
@@ -495,6 +511,345 @@ class NodimHydrostaticBearing(FilmSystem):
 
     def reynold_boundary(self, reynold=True):
         self.main_model.args["reynold"] = reynold
+
+
+def _attach_hybrid_orifices(
+    bearing,
+    orifices: HybridOrificeConfig | None,
+) -> None:
+    """Attach constructor-supplied orifices before runtime initialization."""
+
+    if orifices is None:
+        return
+    pressure = (
+        bearing.main_model.args["ps"]
+        if orifices.pressure is None
+        else orifices.pressure
+    )
+    if orifices.cq is not None:
+        cq = orifices.cq
+    else:
+        assert orifices.radius is not None
+        args = bearing.main_model.args
+        area = np.pi * orifices.radius**2
+        if pressure <= 0.0:
+            raise ValueError("radius-based orifices require pressure > 0")
+        cq = (
+            12.0
+            * args["miu"]
+            * args["lr"]
+            * orifices.discharge_coefficient
+            * area
+            / args["c"] ** 3
+            * math.sqrt(2.0 / args["rho"] / pressure)
+        )
+    group = Orifices(pressure=pressure, cq=cq)
+    group.build_by_positions(orifices.positions)
+    bearing.add_simple_model(group)
+
+
+class _HybridBearingRuntimeMixin:
+    """Provide a strict DTO lifecycle around one mixed film solver."""
+
+    input_dto_type = BearingInput
+    _hybrid_nodim: bool
+
+    def _configure_hybrid_runtime(
+        self,
+        orifices: HybridOrificeConfig | None,
+    ) -> None:
+        if orifices is not None and not isinstance(
+            orifices,
+            HybridOrificeConfig,
+        ):
+            raise TypeError("orifices must be HybridOrificeConfig or None")
+        _attach_hybrid_orifices(self, orifices)
+        self.orifice_config = orifices
+        self._lifecycle = RuntimeLifecycle(
+            type(self).__name__,
+            input_label="bearing input",
+        )
+        self._pending_input: BearingInput | None = None
+        self._latest_output: BearingOutput | None = None
+        self._latest_result: ResultBundle | None = None
+        self._failure: ResultBundle | None = None
+        self._convergence_status = ConvergenceStatus.pending(
+            "runtime is not initialized"
+        )
+        self.init()
+
+    @property
+    def lifecycle_state(self) -> LifecycleState:
+        """Return the current initialized runtime state."""
+
+        return self._lifecycle.state
+
+    @property
+    def convergence_status(self) -> ConvergenceStatus:
+        """Return cached convergence without advancing the film solver."""
+
+        return self._convergence_status
+
+    def init(self) -> None:
+        """Reset this runtime when invoked by its owning composite module."""
+
+        self._lifecycle.fail()
+        self._pending_input = None
+        self._latest_output = None
+        self._latest_result = None
+        self._failure = None
+        try:
+            super().init()
+        except BaseException as exc:
+            self._failure = self._build_failure_snapshot(exc, "init")
+            raise
+        self._convergence_status = ConvergenceStatus.pending(
+            "input not evaluated"
+        )
+        self._lifecycle.reset()
+
+    def input(self, dto: BearingInput) -> None:
+        """Latch one typed bearing input without running the film solve."""
+
+        self._lifecycle.require_input_slot()
+        if not isinstance(dto, BearingInput):
+            raise TypeError("hybrid bearing input must be BearingInput")
+        expected = (
+            UnitSystem.NONDIMENSIONAL
+            if self._hybrid_nodim
+            else UnitSystem.DIMENSIONAL
+        )
+        if dto.unit_system is not expected:
+            raise ValueError(
+                "hybrid bearing input unit_system does not match runtime"
+            )
+        self._pending_input = dto
+        self._latest_output = None
+        self._latest_result = None
+        self._convergence_status = ConvergenceStatus.pending(
+            "input not evaluated"
+        )
+        self._lifecycle.latch()
+
+    def evaluate(self) -> None:
+        """Run exactly one mixed film/restrictor calculation."""
+
+        dto = self._pending_input
+        try:
+            with self._lifecycle.evaluation():
+                assert dto is not None
+                super().input(
+                    dto.displacement,
+                    dto.velocity,
+                    t=dto.time,
+                    nodim=self._hybrid_nodim,
+                )
+                raw_output = super().output(nodim=self._hybrid_nodim)
+                force = validate_bearing_output(raw_output)
+                self._latest_output = BearingOutput(
+                    force,
+                    dto.time,
+                    dto.unit_system,
+                )
+                converged = bool(self.last_converged)
+                self._convergence_status = (
+                    ConvergenceStatus(
+                        0.0,
+                        True,
+                        iterations=int(self.final_iter) + 1,
+                        message="hybrid bearing calculation finished",
+                    )
+                    if converged
+                    else ConvergenceStatus.pending(
+                        "hybrid bearing calculation did not converge"
+                    )
+                )
+                self._latest_result = result_snapshot(
+                    {"force": self._latest_output.force},
+                    {
+                        "schema": "alb.hybrid-bearing-result.v1",
+                        "time": dto.time,
+                        "unit_system": dto.unit_system.value,
+                        "orifice_count": (
+                            0
+                            if self.orifice_config is None
+                            else len(self.orifice_config.positions)
+                        ),
+                        "converged": converged,
+                    },
+                )
+                self._pending_input = None
+        except BaseException as exc:
+            self._latest_output = None
+            self._latest_result = None
+            self._failure = self._build_failure_snapshot(exc, "evaluate")
+            raise
+
+    def output(self) -> BearingOutput:
+        """Return the completed immutable port output without recalculation."""
+
+        self._lifecycle.require_output()
+        assert self._latest_output is not None
+        return self._latest_output
+
+    def step(self, dto: BearingInput) -> BearingOutput:
+        """Compose input, evaluation, and output without committing time."""
+
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    def result_snapshot(self) -> ResultBundle:
+        """Return the current immutable mixed-bearing result."""
+
+        self._lifecycle.require_output()
+        assert self._latest_result is not None
+        return self._latest_result
+
+    def failure_snapshot(self) -> ResultBundle:
+        """Return the latest sealed mixed-bearing failure."""
+
+        if self._failure is None:
+            raise RuntimeError("no hybrid bearing failure is available")
+        return self._failure
+
+    def diagnostic_snapshot(self) -> ResultBundle:
+        """Return immutable lifecycle and topology diagnostics."""
+
+        return result_snapshot(
+            {},
+            {
+                "schema": "alb.hybrid-bearing-diagnostic.v1",
+                "lifecycle_state": self.lifecycle_state.value,
+                "unit_system": self.unit_system.value,
+                "node_link": self.node_link,
+                "orifice_count": (
+                    0
+                    if self.orifice_config is None
+                    else len(self.orifice_config.positions)
+                ),
+                "converged": self._convergence_status.converged,
+                "has_result": self._latest_result is not None,
+                "has_failure": self._failure is not None,
+            },
+        )
+
+    def _build_failure_snapshot(
+        self,
+        error: BaseException,
+        phase: str,
+    ) -> ResultBundle:
+        return result_snapshot(
+            {},
+            {
+                "schema": "alb.hybrid-bearing-failure.v1",
+                "phase": phase,
+                "error_type": type(error).__name__,
+                "message": sanitize_exception_message(error),
+                "unit_system": self.unit_system.value,
+                "node_link": self.node_link,
+            },
+        )
+
+
+class HybridBearing(_HybridBearingRuntimeMixin, HydrostaticBearing):
+    """Dimensional mixed bearing selected by constructor-time orifice topology."""
+
+    unit_system = UnitSystem.DIMENSIONAL
+    _hybrid_nodim = False
+
+    def __init__(
+        self,
+        config: HydConfig | None = None,
+        *,
+        orifices: HybridOrificeConfig | None = None,
+    ) -> None:
+        if config is None:
+            config = HydConfig()
+        if not isinstance(config, HydConfig):
+            raise TypeError("config must be HydConfig")
+        super().__init__(copy.deepcopy(config))
+        self._configure_hybrid_runtime(orifices)
+
+
+class NodimHybridBearing(_HybridBearingRuntimeMixin, NodimHydrostaticBearing):
+    """Nondimensional mixed bearing with the same topology-driven semantics."""
+
+    unit_system = UnitSystem.NONDIMENSIONAL
+    _hybrid_nodim = True
+
+    def __init__(
+        self,
+        config: NodimPadConfig | None = None,
+        *,
+        x0: float = 0.0,
+        orifices: HybridOrificeConfig | None = None,
+    ) -> None:
+        if config is None:
+            config = NodimPadConfig()
+        if not isinstance(config, NodimPadConfig):
+            raise TypeError("config must be NodimPadConfig")
+        pad = copy.deepcopy(config)
+        super().__init__(
+            lambda_value=pad.lambda_value,
+            lambda0=pad.lambda0,
+            lr=pad.lr,
+            lx=pad.lx,
+            lz=pad.lz,
+            x0=x0,
+            nx=pad.nx,
+            nz=pad.nz,
+            reynold=pad.reynold,
+            coe=pad.coe,
+            p_set=pad.p_set,
+            error_set=pad.error_set,
+            max_iter=pad.max_iter,
+            damp=pad.damp,
+            adaptive_damp=pad.adaptive_damp,
+            e=pad.e,
+            angle=pad.angle,
+            node_link=pad.node_link,
+            save_p=pad.save_p,
+            save_h=pad.save_h,
+            miu=pad.scale_miu,
+            c=pad.scale_c,
+            r=pad.scale_r,
+            l=pad.scale_l,
+            ps=pad.scale_ps,
+            rho=pad.scale_rho,
+            w=pad.scale_w,
+            dxt=pad.dxt,
+            dyt=pad.dyt,
+            vf=pad.vf,
+            xct=pad.xct,
+            yct=pad.yct,
+            path=pad.path,
+        )
+        self._configure_hybrid_runtime(orifices)
+
+
+def build_hybrid_bearing(
+    config: HydConfig | NodimPadConfig,
+    *,
+    orifices: HybridOrificeConfig | None = None,
+    x0: float | None = None,
+) -> HybridBearing | NodimHybridBearing:
+    """Build an initialized mixed bearing without a hydrostatic mode flag."""
+
+    if isinstance(config, HydConfig):
+        if x0 is not None:
+            dimensional_config = copy.deepcopy(config)
+            dimensional_config.x0 = float(x0)
+        else:
+            dimensional_config = config
+        return HybridBearing(dimensional_config, orifices=orifices)
+    if isinstance(config, NodimPadConfig):
+        return NodimHybridBearing(
+            config,
+            x0=0.0 if x0 is None else float(x0),
+            orifices=orifices,
+        )
+    raise TypeError("config must be HydConfig or NodimPadConfig")
 
 
 class MultiPad(BaseCSystem):

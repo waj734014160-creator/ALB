@@ -369,6 +369,8 @@ def linear_alb(alb, uxy) -> ALB:
     cb.servovalves[0].simple_models = [ala.of[0]]
     cb.servovalves[1].simple_models = [ala.of[1]]
     cb.pads = [ala]
+    cb.signal.children = [pad.signal for pad in cb.pads]
+    cb.init()
     return cb
 
 def nn_agent(alb, albnet_config) -> ALB:
@@ -392,6 +394,7 @@ def nn_agent(alb, albnet_config) -> ALB:
     alb.servovalves[1].simple_models = [ala.of[1]]
     alb.pads = [ala]
     alb.signal.children = [pad.signal for pad in alb.pads]
+    alb.init()
     return alb
 
 __all__ = ['alb2', 'alb2_fuzzy', 'alb2_static', 'nodim_alb', 'alb_no_controller', 'linear_alb', 'nn_agent']

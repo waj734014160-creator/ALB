@@ -43,7 +43,7 @@
 - 八轮制品身份参考：commit `a29290e` 在工具修正前创建 `refs/eighth_review_wheel_identity_reference_v8.json`，冻结 candidate `4d6e609` 的 119 个 release Git blob、规范源码摘要 `39bece7c…`、v7 行为参考哈希，以及两份旧 wheel 证据的差异；生产 `ALB/**` 与运行时 `pyproject.toml` 内容保持精确一致。
 - 原生控制生命周期参考：commit `00a842b` 创建 `refs/native_control_lifecycle_reference_v9.{json,npz}`，在生产修改前冻结 LQG、重复控制器和二阶伺服阀的 18 个多步数组；迁移后逐元素精确相等，既有 v1-v8 参考均未覆盖。
 - ADR 审查闭环参考：commit `4982b68` 创建 `refs/adr_review_closure_reference_v1.{json,npz}`，在本轮生产修正前冻结 coupling 时间/单位、recorder、legacy adapter、配置和保存边界；commit `30dc5cc` 创建同机性能与峰值内存基线，既有参考均未覆盖。
-- 当前阶段：0.3.0 五份 Accepted ADR 的已承诺边界完成实现和 detached 正式验收。F01-F64 中 63 项已实现；F35 按 ADR 保留到最早 0.4.0，不宣称 64/64。候选 `056e319` 已通过 551 passed、13 skipped、0 warnings、27 subtests；564 节点全部收集，134 个版本化 required nodeid 通过，26 个 strict mypy 目标通过，领域历史诊断从 221 降至 151。
+- 当前阶段：0.3.0 五份 Accepted ADR 的既有边界已完成 detached 正式验收；F01-F64 中 63 项已实现，F35 按 ADR 保留到最早 0.4.0。2026-07-24 对 ADR-0001 的新增修订已在当前工作树实现：公开 ALB/ALBNN/兼容 bearing runtime 构造后自动进入 `READY`，类型化 builder 内部创建 envelope，并新增由构造期节流器拓扑驱动的混合轴承。当前工作树通过 560 passed、13 skipped、27 subtests，573 节点全部收集，26 个 strict mypy 目标通过且 151 条历史诊断基线未增加；该修订尚未执行提交绑定的 detached 发布验收或重建 wheel。
 
 ## 已完成的 0.2.0 边界
 
@@ -71,6 +71,7 @@
 22. 大型模块职责已拆分：`controllers.py`、`config/_models.py` 和 `systems/alb/assembly.py` 变为小型兼容重导出，实际实现分别进入控制子领域、配置 `*_models` 以及 ALB runtime/builder/factories/linear/surrogate/switch 模块；Rotor 的布局、推进、结果/保存树，coupling 的 runtime/result，以及 harmonic 的 runtime/result/coefficient contract/resource IO 已分别归位。
 23. 当前配置采用带 `0.3.0` 版本的 `ALBConfigEnvelope`；legacy 平铺配置只通过独立、单向、默认不覆盖源文件的迁移函数进入当前 schema。strict mypy 以 26 个零错误目标加四领域完整精确基线覆盖实现，当前锁定 62 个领域文件、151 条历史诊断和 46 个文件/错误码组。
 24. 发布执行层已拆为候选选择、Git blob 导出、构建、安装、测试/类型检查、证据生成和发布阶段；0.2 runner 实际组合这些阶段，分层 mypy 也成为正式发布门禁。
+25. ADR-0001 的 2026-07-24 修订已落地：`build_alb(config)` 与 `build_direct_spool_alb(config)` 不再要求用户创建 envelope，runtime 在构造结束时自动初始化；`build_hybrid_bearing()` 接受 `HydConfig`/`NodimPadConfig` 和可选 `HybridOrificeConfig`，不使用动压/静压模式开关，并在进入 `READY` 前完成节流器装配。
 
 ## 当前验收结论
 
@@ -93,6 +94,7 @@
 | 八轮 wheel 制品身份修正 | 候选提交 `62b53be`：438 passed、13 skipped、0 warnings、27 subtests passed；451 个节点全部收集；4 个制品身份关键节点通过；Git blob 规范摘要、两次构建、detached 安装、最终发布文件、构建报告和验收报告的 wheel SHA 全部一致 | `docs/migrations/0.2.0_eighth_review_acceptance.json` |
 | P2 架构正式验收 | 运行时候选 `cac4a05` 与 canonical 候选 `fd5029e` 均为 487 passed、13 skipped、0 warnings、27 subtests passed；500 个节点、87 个关键 nodeid、20 个 strict 目标通过，58 个领域文件的 221 条历史诊断精确匹配；detached 前后 HEAD 和 launcher tracked 状态不变 | `docs/migrations/0.2.0_p2_architecture_acceptance.json`、`docs/migrations/0.2.0_release_acceptance.json`、`docs/migrations/0.2.0_p2_architecture_closure.md` |
 | 0.3.0 ADR 架构验收 | 候选 `056e319`：551 passed、13 skipped、0 warnings、27 subtests passed；564 节点、134 个 required nodeid、26 个 strict 目标通过，62 个领域文件的 151 条历史诊断精确锁定；F01-F64 manifest 为 63 项实现、F35 延期；两次规范构建、detached 安装和发布 wheel SHA 一致 | `docs/migrations/0.3.0_release_acceptance.json`、`docs/migrations/0.3.0_build_acceptance.json` |
+| ADR-0001 新增构建特性工作树验证 | 560 passed、13 skipped、27 subtests passed；573 节点全部收集；26 个 strict mypy 目标通过，62 个领域文件仍精确匹配 151 条历史诊断；尚未形成提交绑定的 detached 发布证据 | `tests/unit/physics/test_hybrid_bearing_builder.py`、`tests/unit/systems/test_public_builders.py`、`tests/integration/systems/test_build_alb_from_file.py`、`tools/validation/run_layered_mypy.py` |
 | PAPER_WORK 消费者迁移 | 27 个 declared 文件和 2 个动态 helper 均有可恢复快照；25 个 direct 与 2 个 helper 已改写，24 个 guarded import smoke 通过，旧平铺 import 为 0；M0031/M0035 package 校验和可信加载通过 | `docs/migrations/0.2.0_paper_work_post_migration_audit.json` |
 | 分层与循环依赖 | 116 个模块、217 条内部边无 namespace/module-level 循环；数值层不依赖 infrastructure；47 个旧模块均不存在 | `tests/validation/test_import_boundaries.py` |
 | 导入迁移 | 65 个旧模块、479 个定义、9 个公共 alias 和 68 个旧根导出均有机器映射；554 个非删除目标可解析 | `docs/migrations/0.2.0_import_map.json` |
@@ -138,13 +140,15 @@
 - P2-1 至 P2-12 的完成边界见独立收敛报告。最终补充的 RossRotor 生命周期、`rotor_results` 和 `harmonic_coefficients` 已纳入 strict mypy 与 87 个关键 nodeid 预检；P2 专用和默认 canonical 机器报告均已通过。发布 runner 中 0.2 专用关键 nodeid 集合仍是版本策略，fresh 工具只固定直接版本、尚未使用带哈希 constraints/wheelhouse；这属于后续供应链加固，不改变“通用发布阶段已经拆分并实际复用”的 P2-12 结论。
 - 分层 mypy 的历史诊断已从 221 条降至 151 条并精确锁定，不是“全部 strict 零错误”。后续只能按小范围提交减少基线，禁止以宽泛 ignore 或整目录排除伪装清零。
 - F01-F64 的当前机器门禁明确记录为 63 项实现、F35 延期到最早 0.4.0。F35 仍取决于 film/thermal/rotor 内外部 Signal 消费者清零和一个完整 0.3.x 兼容周期，不得为了得到“64/64”数字提前删除兼容面。
+- ADR-0001 新增的 F65-F66 目前只有本地全量测试和分层 mypy 证据，尚未加入正式 feature manifest，也未从 detached 候选重建并验证 0.3 wheel；现有 `dist/re_alb-0.3.0-1-py3-none-any.whl` 不包含本次修订。
 
 ## 当前下一步
 
-1. 以 0.3.x 兼容周期审计 film/thermal/rotor 和外部 Signal 消费者；只有消费者清零后，最早在 0.4.0 物理删除 legacy adapters。
-2. 后续按文件逐步减少 151 条历史 mypy 诊断；每次只降低精确基线，不扩大 relaxations。
-3. 将 `run_release_acceptance_0_2.py`、`validate_wheel_0_2.py` 的历史文件名迁为版本无关 launcher；当前逻辑已经验证 0.3，但文件名仍是兼容债务。
-4. 为 fresh 工具链增加带哈希 constraints 或 wheelhouse；版本专用关键 nodeid 集合可迁入独立 manifest。
+1. 把 F65-F66 纳入正式 feature manifest，针对本次 ADR-0001 修订的提交运行 detached 发布验收并重建 0.3 wheel；不得把本地工作树结果写成发布绑定证据。
+2. 以 0.3.x 兼容周期审计 film/thermal/rotor 和外部 Signal 消费者；只有消费者清零后，最早在 0.4.0 物理删除 legacy adapters。
+3. 后续按文件逐步减少 151 条历史 mypy 诊断；每次只降低精确基线，不扩大 relaxations。
+4. 将 `run_release_acceptance_0_2.py`、`validate_wheel_0_2.py` 的历史文件名迁为版本无关 launcher；当前逻辑已经验证 0.3，但文件名仍是兼容债务。
+5. 为 fresh 工具链增加带哈希 constraints 或 wheelhouse；版本专用关键 nodeid 集合可迁入独立 manifest。
 
 ## 证据入口
 

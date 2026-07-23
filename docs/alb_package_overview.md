@@ -27,7 +27,7 @@
 领域实现不从 package 根导出。调用者必须选择明确 namespace，例如：
 
 ```python
-from ALB.physics.bearing import HydrostaticBearing
+from ALB.physics.bearing import build_hybrid_bearing
 from ALB.control.pid import PID
 from ALB.dynamics.rotor import RossRotor, RotorDofLayout
 from ALB.surrogate.inference import albnn
@@ -46,7 +46,7 @@ from ALB.workflows import build_alb_from_file
 | `ALB.config` | 按领域分类的配置契约 | 各领域 `*_models`、当前 `schema`、独立只读 `legacy` 迁移和配置 CLI |
 | `ALB.physics.film` | Reynolds 油膜求解 | mesh、film solver、压力场和容量辅助 |
 | `ALB.physics.hydraulics` | 液压与节流 | orifice 模型和流量关系 |
-| `ALB.physics.bearing` | 轴承组合 | 静压轴承、四瓦轴承、`BearingScaleSet` 和 `BearingUnitAdapter` |
+| `ALB.physics.bearing` | 轴承组合 | 动静压混合轴承、四瓦轴承、`BearingScaleSet` 和 `BearingUnitAdapter` |
 | `ALB.physics.gas` | 气体轴承 | gas-film solver |
 | `ALB.physics.thermal` | 热耦合 | 热模型、黏温/尺度转换和热惯性状态 |
 | `ALB.control` | 控制和阀 | 独立 `pid`、`fuzzy`、`lqg`、`repetitive`、`reduction_core`、状态空间、伺服阀和严格端口 blocks；`controllers` 只保留内部兼容重导出 |
@@ -88,12 +88,23 @@ infrastructure 仅在需要 IO、通知、持久化或远程执行的边界被�
 提供统一 `NEW/READY/RUNNING/FAILED` 转换和访问门禁；`ALB.core.validation` 统一处理实数、形状、
 有限性、时间和调用方数组副本，不允许各领域依赖隐式 complex-to-float 转换。
 
+公开 bearing runtime 在 `__init__()` 末尾自动完成初始化，用户拿到对象时已经处于 `READY`。
+`init()` 仍保留给拥有子组件的组合模块在整体重置时调用，但不再是用户构建步骤。
+
 `RossRotor` 也复用这套 lifecycle：载荷输入先锁存，`advance()` 是唯一公开推进入口，失败后进入
 `FAILED` 并要求重新 `init()`。结果提取和保存树组装位于 `ALB.dynamics.rotor_results`，不再由
 转子推进类同时承担。谐波系数 DTO、JSON/resource 加载和校验位于
 `ALB.systems.alb.harmonic_coefficients`，运行时只消费已经验证的系数对象。
 
-`build_alb(envelope)` 和 `build_direct_spool_alb(envelope)` 直接返回严格 runtime，普通用户不再手动创建 block。`DirectSpoolBearingInput` 已下沉到 `ALB.contracts`；已经归一化的 `sx/sy` 必须显式放入该 DTO，不能缺省为零。`BearingBlock` 系列仅作为 0.3.x 内部迁移兼容面。
+`build_alb(config)` 和 `build_direct_spool_alb(config)` 直接接收 `ALBConfig` 或
+`NodimALBConfig`，在内部创建并校验 envelope，然后返回已经初始化的严格 runtime。普通用户不再
+手动创建 block、envelope 或调用 `init()`。`DirectSpoolBearingInput` 已下沉到 `ALB.contracts`；
+已经归一化的 `sx/sy` 必须显式放入该 DTO，不能缺省为零。`BearingBlock` 系列仅作为 0.3.x 内部
+迁移兼容面。
+
+`ALB.physics.bearing.build_hybrid_bearing()` 接受 `HydConfig` 或 `NodimPadConfig`。可选的
+`HybridOrificeConfig` 在构造期固定节流孔位置、压力及 `radius`/`cq`；无节流器即按动压油膜
+计算，有节流器则自动进入节流-压力耦合，不再使用静压/动压模式标签。
 
 跨单位轴承接入使用 `ALB.physics.bearing.BearingScaleSet` 和
 `BearingUnitAdapter`。`ALB.systems.alb.bearing_scale_set_from_config()` 只从
@@ -142,12 +153,13 @@ adapter 返回到 rotor 侧后再次校验时间和 rotor 侧单位，旧快照�
 
 配置从 `ALB.config.<domain>` 显式导入。`alb-migrate-config` 只读旧 JSON5，并把 0.3 schema 另存为 UTF-8 文件；不会覆盖源配置。旧文件若无法按 UTF-8 解码，迁移器会显式警告并临时尝试 GBK/CP936，输出仍统一写为 UTF-8。
 
-当前配置由 `ALB.config.schema` 的 `ALBConfigEnvelope` 和固定
+当前配置文件内部由 `ALB.config.schema` 的 `ALBConfigEnvelope` 和固定
 `CURRENT_SCHEMA_VERSION = "0.3.0"` 表达；它要求显式 `unit_system` 和 `control_mode`，并对 envelope 及嵌套配置执行字段白名单。旧平铺格式只进入
 `ALB.config.legacy.migrate_legacy_alb_config()` 的单向迁移路径，迁移报告会记录源格式、目标版本和
 默认值补全，当前模型不再同时承担宽松 legacy 解析职责。
 已验证 envelope 会递归冻结嵌套 mapping、sequence 和 ndarray；materialize 前仍会重新执行
-完整 schema 校验，调用者不能通过验证后修改嵌套对象绕过字段或数值约束。
+完整 schema 校验。envelope 构造和 materialize helper 不从 `ALB.config` 用户 namespace 导出；
+Python 用户向 builder 传递类型化配置，文件 workflow 在内部读取 envelope。
 
 `ALBConfig.to_dict()` 与 `NodimALBConfig.to_dict()` 固定写出
 `"controller": "PID" | "FuzzyPID" | "none"` 类型标签；`from_dict()` 据此恢复具体配置类型和

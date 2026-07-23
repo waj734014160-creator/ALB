@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 
-from ALB.config import ControlMode, NodimALBConfig, current_config_envelope
+from ALB.config import ControlMode, NodimALBConfig
+from ALB.config.schema import _current_config_envelope
 from ALB.contracts import BearingInput, DirectSpoolBearingInput, ValveOutput
 from ALB.systems.alb import (
     BuiltDirectSpoolBearing,
@@ -39,7 +40,7 @@ def _config(mode: ControlMode) -> NodimALBConfig:
 
 
 def test_current_standard_file_build_init_and_step(tmp_path):
-    envelope = current_config_envelope(
+    envelope = _current_config_envelope(
         _config(ControlMode.NONE),
         control_mode=ControlMode.NONE,
     )
@@ -47,7 +48,7 @@ def test_current_standard_file_build_init_and_step(tmp_path):
     path.write_text(json.dumps(envelope.to_dict()), encoding="utf-8")
 
     built = build_alb_from_file(path)
-    built.runtime.init()
+    assert built.runtime.lifecycle_state.value == "ready"
     output = built.runtime.step(
         BearingInput(
             [0.1, -0.2],
@@ -63,7 +64,7 @@ def test_current_standard_file_build_init_and_step(tmp_path):
 
 
 def test_current_direct_spool_file_build_init_and_step(tmp_path):
-    envelope = current_config_envelope(
+    envelope = _current_config_envelope(
         _config(ControlMode.DIRECT_SPOOL),
         control_mode=ControlMode.DIRECT_SPOOL,
     )
@@ -71,7 +72,7 @@ def test_current_direct_spool_file_build_init_and_step(tmp_path):
     path.write_text(json.dumps(envelope.to_dict()), encoding="utf-8")
 
     built = build_alb_from_file(path)
-    built.runtime.init()
+    assert built.runtime.lifecycle_state.value == "ready"
     output = built.runtime.step(
         DirectSpoolBearingInput(
             BearingInput(

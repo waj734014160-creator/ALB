@@ -64,11 +64,10 @@ def test_native_runtime_has_strict_read_only_output(unit: str, kind: str):
     )
 
     assert isinstance(runtime, expected_protocol)
-    assert runtime.lifecycle_state is LifecycleState.NEW
+    assert runtime.lifecycle_state is LifecycleState.READY
     with pytest.raises(RuntimeError, match="unavailable"):
         runtime.output()
 
-    runtime.init()
     runtime.input(_input(unit, kind))
     assert runtime.lifecycle_state is LifecycleState.RUNNING
     with pytest.raises(RuntimeError, match="unavailable"):
@@ -94,8 +93,6 @@ def test_step_is_exactly_the_three_phase_native_lifecycle():
     stepped = _runtime("nondimensional", "ALBSV")
     phased = _runtime("nondimensional", "ALBSV")
     dto = _input("nondimensional", "ALBSV")
-    stepped.init()
-    phased.init()
 
     step_output = stepped.step(dto)
     phased.input(dto)
@@ -113,7 +110,6 @@ def test_evaluation_failure_seals_normal_state_until_reinitialization(
     monkeypatch,
 ):
     runtime = _runtime("nondimensional", "ALBSV")
-    runtime.init()
     runtime.input(_input("nondimensional", "ALBSV"))
     original_output = runtime.pads[1].output
 
@@ -144,7 +140,6 @@ def test_evaluation_failure_seals_normal_state_until_reinitialization(
 
 def test_convergence_queries_do_not_reenter_children(monkeypatch):
     runtime = _runtime("nondimensional", "ALBSV")
-    runtime.init()
     runtime.step(_input("nondimensional", "ALBSV"))
     expected = runtime.convergence_status
 
@@ -158,7 +153,6 @@ def test_convergence_queries_do_not_reenter_children(monkeypatch):
 
 def test_reinitialization_invalidates_a_completed_output():
     runtime = _runtime("nondimensional", "ALB")
-    runtime.init()
     runtime.step(_input("nondimensional", "ALB"))
     runtime.init()
 
@@ -173,7 +167,7 @@ def test_albnn_shell_is_a_native_read_only_bearing_runtime():
         unit_system="nondimensional",
         node_link=5,
     )
-    runtime.init()
+    assert runtime.lifecycle_state is LifecycleState.READY
     runtime.of[0].xv = 0.1
     runtime.of[1].xv = -0.2
     dto = BearingInput(
@@ -205,7 +199,6 @@ def test_albnn_inference_failure_is_sealed_until_init():
         _FailingNet(),
         unit_system="nondimensional",
     )
-    runtime.init()
     runtime.input(
         BearingInput(
             [0.1, -0.2],

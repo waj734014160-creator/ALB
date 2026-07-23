@@ -140,6 +140,7 @@ class LegacyBearingAdapter:
             self.bearing.input,
             input_style,
         )
+        self.init()
 
     @staticmethod
     def _resolve_input_style(

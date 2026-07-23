@@ -43,6 +43,7 @@ class LegacyBearingRuntimeAdapter(Generic[InputT]):
         self._convergence_status = ConvergenceStatus.pending(
             "runtime is not initialized"
         )
+        self.init()
 
     @property
     def lifecycle_state(self) -> LifecycleState:

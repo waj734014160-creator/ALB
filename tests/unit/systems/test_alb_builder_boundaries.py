@@ -44,8 +44,6 @@ def test_alb_init_accepts_explicitly_absent_controller():
     pad = _Pad()
     model = ALB([pad], [], controller=None, alb_config=ALBConfig())
 
-    model.init()
-
     assert pad.init_calls == 1
     assert model.controller is None
 
@@ -90,7 +88,6 @@ def test_nondimensional_factory_accepts_explicitly_absent_controller():
     )
 
     model = nodim_alb(config)
-    model.init()
 
     assert isinstance(model, NodimALB)
     assert model.controller is None

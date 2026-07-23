@@ -16,7 +16,7 @@ from .schema import (
     CURRENT_SCHEMA_VERSION,
     ConfigUnit,
     ControlMode,
-    current_config_envelope,
+    _current_config_envelope,
 )
 from .system import ALBConfig, NodimALBConfig
 
@@ -109,7 +109,7 @@ def migrate_legacy_alb_config(
         raise ValueError(
             "unit_system must be 'dimensional' or 'nondimensional'"
         )
-    envelope = current_config_envelope(model, control_mode=mode)
+    envelope = _current_config_envelope(model, control_mode=mode)
     controller_tag = envelope.config["controller"]
     report = LegacyALBMigrationReport(
         source_schema="legacy-flat",

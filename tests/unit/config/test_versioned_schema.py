@@ -8,17 +8,28 @@ import json
 import numpy as np
 import pytest
 
+import ALB.config as config_api
 from ALB.config import (
     ALBConfig,
     ControlMode,
     FuzzyPIDConfig,
     NodimALBConfig,
     ThermalConfig,
-    current_config_envelope,
     load_current_config,
-    load_current_envelope,
-    migrate_legacy_alb_config,
 )
+from ALB.config.legacy import migrate_legacy_alb_config
+from ALB.config.schema import (
+    _current_config_envelope,
+    load_current_envelope,
+    materialize_current_config,
+)
+
+
+def test_envelope_construction_is_not_part_of_the_user_config_namespace():
+    assert not hasattr(config_api, "ALBConfigEnvelope")
+    assert not hasattr(config_api, "current_config_envelope")
+    assert not hasattr(config_api, "load_current_envelope")
+    assert not hasattr(config_api, "materialize_current_config")
 
 
 @pytest.mark.parametrize(
@@ -47,7 +58,7 @@ from ALB.config import (
     ],
 )
 def test_current_schema_round_trip_preserves_type_mode_and_values(config):
-    envelope = current_config_envelope(config)
+    envelope = _current_config_envelope(config)
     payload = envelope.to_dict()
     json.dumps(payload)
     restored = load_current_config(payload)
@@ -94,12 +105,12 @@ def test_legacy_migration_is_non_mutating_one_way_and_auditable():
 
 
 def test_current_schema_rejects_unknown_envelope_and_nested_fields():
-    payload = current_config_envelope(ALBConfig()).to_dict()
+    payload = _current_config_envelope(ALBConfig()).to_dict()
     payload["legacy_override"] = True
     with pytest.raises(ValueError, match="unknown"):
         load_current_envelope(payload)
 
-    payload = current_config_envelope(ALBConfig()).to_dict()
+    payload = _current_config_envelope(ALBConfig()).to_dict()
     payload["config"]["pad_config"]["unknown_current_field"] = 1
     with pytest.raises(ValueError, match="unknown pad_config"):
         load_current_envelope(payload)
@@ -118,7 +129,7 @@ def test_control_mode_conflicts_fail_instead_of_guessing(mode, alb, controller):
         alb=alb,
         controller_config=None,
     )
-    payload = current_config_envelope(
+    payload = _current_config_envelope(
         ALBConfig(controller_config=None),
         control_mode=ControlMode.NONE,
     ).to_dict()
@@ -141,7 +152,7 @@ def test_gain_matrices_reject_complex_nonfinite_and_wrong_shapes():
 
 
 def test_current_envelope_is_recursively_immutable_and_revalidates_materialization():
-    envelope = current_config_envelope(ALBConfig())
+    envelope = _current_config_envelope(ALBConfig())
 
     with pytest.raises(TypeError):
         envelope.config["pad_config"]["n_pad"] = 99
@@ -153,7 +164,5 @@ def test_current_envelope_is_recursively_immutable_and_revalidates_materializati
     mutable = envelope.to_dict()["config"]
     mutable["pad_config"]["unknown_after_validation"] = True
     object.__setattr__(envelope, "config", mutable)
-    from ALB.config import materialize_current_config
-
     with pytest.raises(ValueError, match="unknown pad_config"):
         materialize_current_config(envelope)

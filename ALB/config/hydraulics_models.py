@@ -2,7 +2,7 @@
 
 from collections import namedtuple
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -78,10 +78,85 @@ class NodimOrificeConfig(ConfigData):
         }
         return cls(**direct_args)
 
+
+@dataclass(frozen=True)
+class HybridOrificeConfig:
+    """Constructor-time orifice topology for a mixed liquid-film bearing.
+
+    Exactly one of ``radius`` and ``cq`` must be supplied. ``positions`` use
+    the normalized local film coordinates consumed by the existing mesh
+    coupling code.
+    """
+
+    positions: Sequence[Sequence[float]]
+    radius: Optional[float] = None
+    cq: Optional[float] = None
+    pressure: Optional[float] = None
+    discharge_coefficient: float = 0.6
+
+    def __post_init__(self) -> None:
+        positions = np.asarray(self.positions, dtype=float)
+        if positions.size == 0:
+            raise ValueError("positions must contain at least one orifice")
+        try:
+            positions = positions.reshape((-1, 2))
+        except ValueError as exc:
+            raise ValueError("positions must contain coordinate pairs") from exc
+        if not np.all(np.isfinite(positions)):
+            raise ValueError("positions must contain only finite values")
+        if np.any(positions < 0.0) or np.any(positions > 1.0):
+            raise ValueError("positions must lie within normalized [0, 1] bounds")
+
+        uses_radius = self.radius is not None
+        uses_cq = self.cq is not None
+        if uses_radius == uses_cq:
+            raise ValueError("provide exactly one of radius or cq")
+        if self.radius is not None:
+            radius = float(self.radius)
+            if not np.isfinite(radius) or radius <= 0.0:
+                raise ValueError("radius must be finite and > 0")
+            object.__setattr__(self, "radius", radius)
+        if self.cq is not None:
+            cq = float(self.cq)
+            if not np.isfinite(cq) or cq <= 0.0:
+                raise ValueError("cq must be finite and > 0")
+            object.__setattr__(self, "cq", cq)
+
+        if self.pressure is not None:
+            pressure = float(self.pressure)
+            if not np.isfinite(pressure) or pressure < 0.0:
+                raise ValueError("pressure must be finite and >= 0")
+            object.__setattr__(self, "pressure", pressure)
+        discharge_coefficient = float(self.discharge_coefficient)
+        if (
+            not np.isfinite(discharge_coefficient)
+            or discharge_coefficient <= 0.0
+        ):
+            raise ValueError(
+                "discharge_coefficient must be finite and > 0"
+            )
+        object.__setattr__(
+            self,
+            "discharge_coefficient",
+            discharge_coefficient,
+        )
+        object.__setattr__(
+            self,
+            "positions",
+            tuple(tuple(float(value) for value in row) for row in positions),
+        )
+
+
 CsoArgs = namedtuple(
     "CsoArgs",
     ["d", "l", "q_leak", "w", "cd", "cq1_nondim"],
     defaults=[0.002, 0.02, 0, 1.83e-5 / 15, 0.6, None],
 )
 
-__all__ = ['TankConfig', 'OrificeConfig', 'NodimOrificeConfig', 'CsoArgs']
+__all__ = [
+    "CsoArgs",
+    "HybridOrificeConfig",
+    "NodimOrificeConfig",
+    "OrificeConfig",
+    "TankConfig",
+]

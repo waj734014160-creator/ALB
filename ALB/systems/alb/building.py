@@ -7,16 +7,19 @@ from typing import Callable, Literal, Protocol, TypeAlias, cast
 
 from ALB.config import (
     ALBConfig,
-    ALBConfigEnvelope,
     ControlMode,
     CurrentConfig,
     NodimALBConfig,
+)
+from ALB.config.schema import (
+    _current_config_envelope,
     materialize_current_config,
 )
 from ALB.contracts import (
     BearingInput,
     BearingRuntimeProtocol,
     DirectSpoolBearingRuntimeProtocol,
+    LifecycleState,
 )
 from ALB.control.adapters import adapt_controller
 
@@ -31,14 +34,14 @@ class ControllerFactoryProtocol(Protocol):
 
 
 class BearingComponentFactoryProtocol(Protocol):
-    """Assemble one legacy ALB implementation from a typed configuration."""
+    """Assemble one ALB implementation from a typed configuration."""
 
     def __call__(
         self,
         config: CurrentConfig,
         controller_factory: ControllerFactoryProtocol | None,
     ) -> object:
-        """Return a fully wired but uninitialized ALB implementation."""
+        """Return a fully wired ALB implementation."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,71 +113,98 @@ def _default_component_factory(
         implementation.controller = adapt_controller(
             controller_factory(config.controller_config)
         )
+        implementation.init()
     return implementation
 
 
+def _validated_config(
+    config: CurrentConfig,
+) -> tuple[CurrentConfig, ControlMode]:
+    """Create the internal envelope and return its validated typed config."""
+
+    if not isinstance(config, (ALBConfig, NodimALBConfig)):
+        raise TypeError("config must be ALBConfig or NodimALBConfig")
+    envelope = _current_config_envelope(config)
+    return materialize_current_config(envelope), envelope.control_mode
+
+
 def _build_implementation(
-    envelope: ALBConfigEnvelope,
+    validated_config: CurrentConfig,
     dependencies: BearingBuildDependencies | None,
 ) -> object:
-    if not isinstance(envelope, ALBConfigEnvelope):
-        raise TypeError("envelope must be ALBConfigEnvelope")
     resolved = dependencies or BearingBuildDependencies()
     factory = resolved.component_factory or _default_component_factory
-    config = materialize_current_config(envelope)
-    return factory(config, resolved.controller_factory)
+    implementation = factory(validated_config, resolved.controller_factory)
+    if getattr(implementation, "lifecycle_state", None) is LifecycleState.NEW:
+        initialize = getattr(implementation, "init", None)
+        if not callable(initialize):
+            raise TypeError(
+                "component_factory returned an uninitialized runtime without init()"
+            )
+        initialize()
+    return implementation
 
 
 def build_alb(
-    envelope: ALBConfigEnvelope,
+    config: CurrentConfig,
     *,
     dependencies: BearingBuildDependencies | None = None,
 ) -> BearingRuntimeProtocol[BearingInput]:
-    """Build a controlled or uncontrolled runtime from a current envelope."""
+    """Build an initialized controlled or uncontrolled runtime.
 
-    if envelope.control_mode is ControlMode.DIRECT_SPOOL:
+    The versioned configuration envelope is created and validated internally.
+    """
+
+    validated_config, control_mode = _validated_config(config)
+    if control_mode is ControlMode.DIRECT_SPOOL:
         raise ValueError(
             "direct_spool configuration requires build_direct_spool_alb()"
         )
-    implementation = _build_implementation(envelope, dependencies)
+    implementation = _build_implementation(validated_config, dependencies)
     if not isinstance(implementation, BearingRuntimeProtocol):
         raise TypeError(
             "component_factory must return a BearingRuntimeProtocol runtime"
         )
+    if implementation.lifecycle_state is not LifecycleState.READY:
+        raise RuntimeError("component_factory must return a READY runtime")
     return cast(BearingRuntimeProtocol[BearingInput], implementation)
 
 
 def build_direct_spool_alb(
-    envelope: ALBConfigEnvelope,
+    config: CurrentConfig,
     *,
     dependencies: BearingBuildDependencies | None = None,
 ) -> DirectSpoolBearingRuntimeProtocol:
-    """Build a runtime whose input explicitly includes normalized spool state."""
+    """Build an initialized runtime with explicit normalized spool input."""
 
-    if envelope.control_mode is not ControlMode.DIRECT_SPOOL:
+    validated_config, control_mode = _validated_config(config)
+    if control_mode is not ControlMode.DIRECT_SPOOL:
         raise ValueError(
             "build_direct_spool_alb() requires direct_spool control_mode"
         )
-    implementation = _build_implementation(envelope, dependencies)
+    implementation = _build_implementation(validated_config, dependencies)
     if not isinstance(implementation, DirectSpoolBearingRuntimeProtocol):
         raise TypeError(
             "component_factory must return a direct-spool bearing runtime"
         )
+    if implementation.lifecycle_state is not LifecycleState.READY:
+        raise RuntimeError("component_factory must return a READY runtime")
     return implementation
 
 
 def build_typed_bearing(
-    envelope: ALBConfigEnvelope,
+    config: CurrentConfig,
     *,
     dependencies: BearingBuildDependencies | None = None,
 ) -> BuiltBearing:
-    """Build one discriminated runtime result for file-oriented workflows."""
+    """Build one initialized discriminated runtime result."""
 
+    envelope = _current_config_envelope(config)
     if envelope.control_mode is ControlMode.DIRECT_SPOOL:
         return BuiltDirectSpoolBearing(
-            build_direct_spool_alb(envelope, dependencies=dependencies)
+            build_direct_spool_alb(config, dependencies=dependencies)
         )
-    runtime = build_alb(envelope, dependencies=dependencies)
+    runtime = build_alb(config, dependencies=dependencies)
     if envelope.control_mode is ControlMode.NONE:
         return BuiltUncontrolledBearing(runtime)
     return BuiltControlledBearing(runtime)

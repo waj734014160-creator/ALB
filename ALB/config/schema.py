@@ -261,12 +261,12 @@ def _infer_control_mode(config: CurrentConfig) -> ControlMode:
     return ControlMode.CONTROLLED
 
 
-def current_config_envelope(
+def _current_config_envelope(
     config: CurrentConfig,
     *,
     control_mode: ControlMode | str | None = None,
 ) -> ALBConfigEnvelope:
-    """Wrap one typed model in the explicit 0.3 configuration envelope."""
+    """Wrap one typed model in the internal 0.3 configuration envelope."""
 
     if isinstance(config, ALBConfig):
         unit_system: ConfigUnit = "dimensional"
@@ -337,13 +337,9 @@ def load_current_config(payload: Mapping[str, object]) -> CurrentConfig:
 
 
 __all__ = [
-    "ALBConfigEnvelope",
     "CURRENT_SCHEMA_VERSION",
     "ConfigUnit",
     "ControlMode",
     "CurrentConfig",
-    "current_config_envelope",
     "load_current_config",
-    "load_current_envelope",
-    "materialize_current_config",
 ]

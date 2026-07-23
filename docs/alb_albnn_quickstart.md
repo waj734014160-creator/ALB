@@ -31,19 +31,18 @@ E:/Anaconda2023/envs/ALB/python.exe -m pip install -e ".[all]"
 
 ## 以严格轴承端口运行默认 ALB
 
-推荐把当前配置包装为带 `unit_system` 和 `control_mode` 的 envelope，再由公开 builder 直接得到运行时；普通用户不需要创建 `BearingBlock`：
+公开 builder 直接接收类型化配置，并在内部创建和校验版本化 envelope。普通用户不需要创建
+`BearingBlock`、构造 envelope 或手动调用 `init()`：
 
 ```python
 import numpy as np
 
 from ALB import UnitSystem
-from ALB.config import NodimALBConfig, current_config_envelope
+from ALB.config import NodimALBConfig
 from ALB.contracts import BearingInput
 from ALB.systems.alb import build_alb
 
-envelope = current_config_envelope(NodimALBConfig(node_link=0))
-bearing = build_alb(envelope)
-bearing.init()
+bearing = build_alb(NodimALBConfig(node_link=0))
 
 request = BearingInput(
     displacement=np.array([0.05, 0.00]),
@@ -63,7 +62,9 @@ bearing.evaluate()
 response = bearing.output()
 ```
 
-`input()` 后、`evaluate()` 前调用 `output()` 会抛出 `RuntimeError`。`output()` 不求解，也不推进状态。`build_alb_from_file()` 位于 `ALB.workflows`，只接受 0.3 envelope；旧 JSON5 必须先用 `alb-migrate-config` 另存迁移。
+`input()` 后、`evaluate()` 前调用 `output()` 会抛出 `RuntimeError`。`output()` 不求解，也不推进状态。
+`build_alb_from_file()` 位于 `ALB.workflows`，在内部读取并校验 0.3 envelope；旧 JSON5 必须先用
+`alb-migrate-config` 另存迁移。
 
 `NodimALBConfig()` 保留冻结的默认物理和数值参数。轻量 smoke 可按需从 `ALB.config.film` 和 `ALB.config.hydraulics` 构建更小网格，但改变网格会改变物理离散，不应替代正式验证配置。
 
@@ -75,7 +76,6 @@ response = bearing.output()
 from ALB.systems.alb import alb_harmonic_linear
 
 bearing = alb_harmonic_linear(node_link=0)
-bearing.init()
 
 K = bearing.K
 C = bearing.C
@@ -83,6 +83,30 @@ G_xv = bearing.G_xv
 ```
 
 构建参数以 `ALB.systems.alb.harmonic.alb_harmonic_linear` 的签名为准。`K`、`C` 和复数 `G_xv` 均返回副本。
+
+## 构建动静压混合轴承
+
+混合轴承不要求声明“动压”或“静压”模式。没有节流器时只计算动压油膜；构造时给出节流器后，
+同一 runtime 自动执行节流流量与油膜压力耦合：
+
+```python
+from ALB.config import HydConfig, HybridOrificeConfig
+from ALB.physics.bearing import build_hybrid_bearing
+
+orifices = HybridOrificeConfig(
+    positions=[[0.5, 0.25], [0.5, 0.50], [0.5, 0.75]],
+    radius=0.5e-3,
+    pressure=7.0e6,
+)
+bearing = build_hybrid_bearing(
+    HydConfig(node_link=0),
+    orifices=orifices,
+)
+```
+
+若省略 `orifices`，builder 返回相同端口类型的纯动压工况。也可用 `cq=` 直接给定无量纲节流系数；
+`radius` 与 `cq` 必须二选一。旧 `add_orifice()`/`add_orifices()` 只用于兼容路径，新代码应在
+构造时固定轴承拓扑。
 
 ## 迁移旧 ALBNN artifacts
 

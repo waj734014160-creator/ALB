@@ -32,14 +32,14 @@ class BearingProtocol(EvaluableBlock[BearingInput, BearingOutput], Protocol):
 
 @runtime_checkable
 class BearingRuntimeProtocol(Protocol, Generic[InputT]):
-    """Strict initialized bearing runtime with immutable diagnostic exits."""
+    """Strict auto-initialized bearing runtime with immutable diagnostics."""
 
     node_link: int | None
     unit_system: UnitSystem
     input_dto_type: type[InputT]
 
     def init(self) -> None:
-        """Start a fresh runtime session after child initialization succeeds."""
+        """Internal owner hook that starts a fresh child runtime session."""
 
     @property
     def lifecycle_state(self) -> LifecycleState:

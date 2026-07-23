@@ -11,8 +11,8 @@
   "implementation_commit": "1776cbfd6ccfcd2c19dd2a3479d7b8a276d800c8",
   "verification": {
     "collection_command": "E:/Anaconda2023/envs/ALB/python.exe -m pytest tests --collect-only -q -p no:cacheprovider",
-    "collected_node_count": 564,
-    "collected_nodeids_sha256": "baf2199cb479424f702ed84ffdca018bea4910d4b73c798eb5b21358ae9fcfd0",
+    "collected_node_count": 573,
+    "collected_nodeids_sha256": "b4c7858fbaf0acbded532cc3ae47d59127131ce8f97094286b034887377608b5",
     "replacement_node_count": 242,
     "replacement_nodeids_sha256": "5bfc9bb3de3795ad68acece977e11c5271eaec1904ee352cd39eea9adbc48eed",
     "all_replacements_collected": true,

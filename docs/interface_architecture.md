@@ -83,13 +83,16 @@ result = block.output()  # 只读取已经完成的结果
 `ALB.core.lifecycle.RuntimeLifecycle`：
 
 ```text
-NEW --init--> READY --input/evaluate--> RUNNING
-  ^              |                         |
-  |              +---- execution error ----+--> FAILED
-  +---------------- successful init --------------+
+__init__ --internal init--> READY --input/evaluate--> RUNNING
+                               |                         |
+                               +---- execution error ----+--> FAILED
+                                                            |
+                           owner init <-----------------------+
 ```
 
-`FAILED` 是终止性状态：不得继续锁存输入、推进、读取结果或保存；只有成功 `init()` 才能恢复。
+公开 bearing runtime 在构造结束时自动初始化；用户不单独调用 `init()`。`FAILED` 是终止性状态：
+不得继续锁存输入、推进、读取结果或保存；普通用户重新构建对象，拥有该子组件的组合模块可在整体
+重置时显式调用保留的内部 `init()` 钩子。
 `output()` 返回调用方拥有的快照，修改返回数组不得改变下一次读取。Harmonic、coupler、PID、
 LQG、重复控制器和伺服阀使用同一状态语义，领域代码不再各自发明布尔标记组合。
 
@@ -140,7 +143,11 @@ adapter。不得根据数值大小、变量名或调用路径推测单位。
 
 ## 轴承与谐波能力
 
-`BearingProtocol` 保持最小计算端口，`BearingRuntimeProtocol[InputT]` 增加初始化、生命周期、收敛和诊断出口。`ALB.systems.alb.build_alb()` 与 `build_direct_spool_alb()` 隐藏 0.3.x 兼容 block；`HarmonicBearingBlock` 额外正式公开：
+`BearingProtocol` 保持最小计算端口，`BearingRuntimeProtocol[InputT]` 增加内部初始化钩子、
+生命周期、收敛和诊断出口。`ALB.systems.alb.build_alb(config)` 与
+`build_direct_spool_alb(config)` 在内部完成 envelope 校验并隐藏 0.3.x 兼容 block。
+`ALB.physics.bearing.build_hybrid_bearing()` 根据构造期是否给出 `HybridOrificeConfig` 自动选择
+纯动压或节流耦合计算，不接受静压/动压模式开关。`HarmonicBearingBlock` 额外正式公开：
 
 - `K`：2 x 2 刚度矩阵。
 - `C`：2 x 2 阻尼矩阵。
@@ -199,9 +206,11 @@ manifest = writer.write(bundle, Path("outputs") / "case_001")
 
 ## 配置和 model package 迁移
 
-- 当前配置文件使用 `ALB.config.schema.ALBConfigEnvelope`，schema 版本固定为 `0.3.0`，并显式保存 `control_mode=controlled|none|direct_spool`。
+- 当前配置文件内部使用 `ALB.config.schema.ALBConfigEnvelope`，schema 版本固定为 `0.3.0`，并显式保存 `control_mode=controlled|none|direct_spool`。
 - 已验证 envelope 对所有嵌套 mapping、sequence 和 ndarray 执行递归不可变快照；
   `materialize_current_config()` 在构造领域配置前重新执行完整 schema 校验。
+- envelope 构造、加载和 materialize helper 不从 `ALB.config` 用户 namespace 导出；
+  `build_alb(config)` 与 `build_direct_spool_alb(config)` 在内部完成这一步。
 - `ALB.config.legacy.migrate_legacy_alb_config()` 是旧平铺配置到当前 envelope 的单向转换；当前
   `load_current_config()` 不接受无版本 legacy payload。
 - legacy JSON5 使用 `alb-migrate-config` 另存；禁止原地覆盖。`ALB.workflows.build_alb_from_file()` 只接受当前 envelope，不执行宽松 legacy 推断。

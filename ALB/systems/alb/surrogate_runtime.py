@@ -79,6 +79,7 @@ class ALBNNAgent(BaseSimpleModel):
         self.xv: np.ndarray | None = None
         self.force = np.zeros(2, dtype=float)
         self._results = self._empty_results()
+        self.init()
 
     @staticmethod
     def _empty_results() -> pd.DataFrame:
@@ -106,7 +107,7 @@ class ALBNNAgent(BaseSimpleModel):
         return self._results
 
     def init(self) -> None:
-        """Reset all current state and enter the ready lifecycle."""
+        """Reset state when invoked by the owning composite module."""
 
         self._lifecycle.fail()
         self._pending_input = None
@@ -264,7 +265,8 @@ class ALBNNAgent(BaseSimpleModel):
     def _require_valid(self, action: str) -> None:
         if self._lifecycle.state is LifecycleState.FAILED:
             raise RuntimeError(
-                f"ALBNNAgent is failed; call init() before {action}"
+                f"ALBNNAgent is failed; rebuild it or let its owner "
+                f"reinitialize it before {action}"
             )
 
     def calc_capacity(self, *args, **kwargs) -> np.ndarray:

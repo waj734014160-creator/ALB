@@ -45,9 +45,15 @@ class RuntimeLifecycle:
         """Require a runtime that can accept a new input."""
 
         if self._state is LifecycleState.FAILED:
-            raise RuntimeError(f"{self._owner} is failed; call init() before reuse")
+            raise RuntimeError(
+                f"{self._owner} is failed; rebuild it or let its owner "
+                "reinitialize it before reuse"
+            )
         if self._state is LifecycleState.NEW:
-            raise RuntimeError(f"{self._owner} must be initialized before input()")
+            raise RuntimeError(
+                f"{self._owner} is not initialized; construct it through its "
+                "public builder"
+            )
         if self._state is LifecycleState.RUNNING:
             raise RuntimeError(
                 f"{self._owner} has a latched input that must be evaluated first"
@@ -65,7 +71,10 @@ class RuntimeLifecycle:
         """Guard one mutating evaluation and publish freshness on success."""
 
         if self._state is LifecycleState.FAILED:
-            raise RuntimeError(f"{self._owner} is failed; call init() before reuse")
+            raise RuntimeError(
+                f"{self._owner} is failed; rebuild it or let its owner "
+                "reinitialize it before reuse"
+            )
         if self._state is not LifecycleState.RUNNING:
             raise RuntimeError(
                 f"a new {self._input_label} is required before evaluate()"
@@ -82,7 +91,10 @@ class RuntimeLifecycle:
         """Require a completed output for the current input generation."""
 
         if self._state is LifecycleState.FAILED:
-            raise RuntimeError(f"{self._owner} is failed; call init() before reuse")
+            raise RuntimeError(
+                f"{self._owner} is failed; rebuild it or let its owner "
+                "reinitialize it before reuse"
+            )
         if self._state is not LifecycleState.READY or not self._output_available:
             raise RuntimeError(
                 f"{self._owner} output is unavailable until evaluate() completes"

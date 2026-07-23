@@ -10,7 +10,6 @@ import pytest
 from ALB.config import (
     ControlMode,
     NodimALBConfig,
-    current_config_envelope,
 )
 from ALB.contracts import (
     BearingInput,
@@ -24,6 +23,7 @@ from ALB.systems.alb import (
     BearingBuildDependencies,
     build_alb,
     build_direct_spool_alb,
+    nodim_alb,
 )
 
 
@@ -55,17 +55,11 @@ def _config(mode: ControlMode) -> NodimALBConfig:
 
 
 def test_standard_builder_hides_block_and_output_is_read_only():
-    runtime = build_alb(
-        current_config_envelope(
-            _config(ControlMode.NONE),
-            control_mode=ControlMode.NONE,
-        )
-    )
+    runtime = build_alb(_config(ControlMode.NONE))
 
     assert isinstance(runtime, BearingRuntimeProtocol)
-    assert runtime.lifecycle_state is LifecycleState.NEW
+    assert runtime.lifecycle_state is LifecycleState.READY
     assert not hasattr(runtime, "implementation")
-    runtime.init()
     dto = BearingInput(
         [0.1, -0.2],
         [0.03, -0.04],
@@ -97,14 +91,10 @@ def test_standard_builder_hides_block_and_output_is_read_only():
 
 
 def test_direct_spool_builder_requires_explicit_spool_dto():
-    envelope = current_config_envelope(
-        _config(ControlMode.DIRECT_SPOOL),
-        control_mode=ControlMode.DIRECT_SPOOL,
-    )
-    runtime = build_direct_spool_alb(envelope)
+    runtime = build_direct_spool_alb(_config(ControlMode.DIRECT_SPOOL))
 
     assert isinstance(runtime, DirectSpoolBearingRuntimeProtocol)
-    runtime.init()
+    assert runtime.lifecycle_state is LifecycleState.READY
     output = runtime.step(
         DirectSpoolBearingInput(
             BearingInput(
@@ -131,14 +121,8 @@ def test_direct_spool_builder_requires_explicit_spool_dto():
 
 
 def test_builders_reject_the_wrong_control_mode():
-    standard = current_config_envelope(
-        _config(ControlMode.NONE),
-        control_mode=ControlMode.NONE,
-    )
-    direct = current_config_envelope(
-        _config(ControlMode.DIRECT_SPOOL),
-        control_mode=ControlMode.DIRECT_SPOOL,
-    )
+    standard = _config(ControlMode.NONE)
+    direct = _config(ControlMode.DIRECT_SPOOL)
 
     with pytest.raises(ValueError, match="direct_spool"):
         build_alb(direct)
@@ -151,3 +135,23 @@ def test_build_dependencies_do_not_accept_runtime_or_output_dependencies():
         "component_factory",
         "controller_factory",
     }
+
+
+def test_builder_rejects_a_custom_factory_runtime_that_is_not_ready():
+    def running_factory(config, controller_factory):
+        del controller_factory
+        runtime = nodim_alb(config)
+        runtime.input(
+            BearingInput(
+                [0.1, -0.2],
+                [0.03, -0.04],
+                0.0,
+                "nondimensional",
+            )
+        )
+        return runtime
+
+    dependencies = BearingBuildDependencies(component_factory=running_factory)
+
+    with pytest.raises(RuntimeError, match="READY"):
+        build_alb(_config(ControlMode.NONE), dependencies=dependencies)

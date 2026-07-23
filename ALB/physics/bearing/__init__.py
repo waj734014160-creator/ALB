@@ -1,4 +1,4 @@
-"""Hydrostatic and tilting-pad bearing assemblies."""
+"""Mixed liquid-film and tilting-pad bearing assemblies."""
 
 from ALB.contracts.optional import import_optional_module
 from .units import AppliedTransform, BearingScaleSet, BearingUnitAdapter
@@ -7,11 +7,14 @@ from .decorators import LegacyBearingAdapter
 
 _NAMES = (
     "BearingDynamicChar",
+    "HybridBearing",
     "HydrostaticBearing",
     "MultiPad",
+    "NodimHybridBearing",
     "NodimHydrostaticBearing",
     "StaticPosition",
     "TiltingPadHydrodynamicPad",
+    "build_hybrid_bearing",
     "four_pads_bearing",
     "four_pads_bearings",
     "get_pad_pressure_fields",

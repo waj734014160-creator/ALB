@@ -30,7 +30,7 @@
 P2 已经完成命名空间、DTO、控制器/阀/转子生命周期和发布门禁收敛。下一阶段不再进行一次新的
 全仓目录重构，而是解决以下剩余使用和集成问题：
 
-1. 用户必须手动执行“创建 implementation、`init()`、再包一层 `BearingBlock`”，入口暴露了内部适配细节。
+1. 历史入口要求用户手动执行“创建 implementation、`init()`、再包一层 `BearingBlock`”，暴露了内部适配细节。
 2. `BearingBlock` 当前把旧实现的计算型 `output()` 包装到 `evaluate()`，外部生命周期严格，但轴承实现内部尚未真正完成职责拆分。
 3. `RsRotorBearingCouple` 仍依赖旧轴承对象的 `signal/init/input/output/save` 组合，没有直接消费正式 `BearingProtocol`。
 4. `Signal` 同时承担组件树传播、完成通知和隐式历史写入，数值推进、记录和副作用边界没有完全分离。
@@ -38,13 +38,11 @@ P2 已经完成命名空间、DTO、控制器/阀/转子生命周期和发布门
 
 ## 总体目标
 
-最终希望普通用户只需要理解“配置、初始化、输入、计算、输出”：
+最终希望普通用户只需要理解“配置、构建、输入、计算、输出”：
 
 ```python
-# Target API sketch; this is not the current 0.2.0 API.
 built = build_alb_from_file("alb.json5")
-built.bearing.init()
-result = built.bearing.step(bearing_input)
+result = built.runtime.step(bearing_input)
 ```
 
 高级用户仍可以显式调用：
@@ -90,6 +88,8 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | 公共版本和兼容周期 | 目标版本为 0.3.0；兼容 adapter 在 0.3.x 保留，满足清零条件后最早 0.4.0 删除。 | ADR-0001 | Accepted |
 | `step()` 是否提交 | 只组合 input/evaluate/output；不提交 ledger，不调用 recorder/observer。 | ADR-0001 | Accepted |
 | builder 静态类型 | 普通/direct-spool builder 分开；bearing build、coupling runtime 和 workflow output 依赖分层注入。 | ADR-0001 | Accepted |
+| 初始化所有权 | bearing 构造完成后自动进入 `READY`；`init()` 只保留给拥有子组件的组合模块。 | ADR-0001 | Accepted |
+| 混合轴承类型 | 不声明动压/静压模式；构造期节流器拓扑决定是否执行节流耦合。 | ADR-0001 | Accepted |
 | mutable 组件事务 | 不承诺回滚；顺序为 ledger 预检、mutable execute、candidate、原子 ledger commit、不可失败 publish。 | ADR-0002 | Accepted |
 | recorder 失败 | 使用 run_id/step_index、步骤/run 分型状态、RecordableValue 和规范摘要；pending 默认阻止下一次 advance，只重试记录。 | ADR-0003 | Accepted |
 | observer 和 failure snapshot | recorder 失败仍发送一次 StepCompleted；数值失败和 post-commit 诊断分开。 | ADR-0004 | Accepted |
@@ -102,7 +102,7 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | ID | 新增特性目标 | 对应修改方案 |
 | --- | --- | --- |
 | F01 | 从当前配置文件直接构建可运行轴承 | 新增 `build_alb_from_file(path, ...)`，内部完成 UTF-8/JSON5 读取、当前 schema 校验、装配和公开端口创建。legacy 文件仍必须先走单向迁移。 |
-| F02 | 从当前 envelope 直接构建 | 新增 `build_alb(envelope, ...)` 和 `build_direct_spool_alb(envelope, ...)`；二者只接受 `ALBConfigEnvelope`，不接受裸领域配置或无版本平铺字典。 |
+| F02 | 从当前类型化配置直接构建 | `build_alb(config, ...)` 和 `build_direct_spool_alb(config, ...)` 接受 `ALBConfig`/`NodimALBConfig`，在内部创建并校验 envelope；无版本平铺字典不进入公共 builder。 |
 | F03 | 自动选择量纲实现 | builder 根据配置中的 `UnitSystem` 选择 dimensional/nondimensional 装配；无法确定时立即报错，不猜测。 |
 | F04 | 文件入口使用可判别返回类型 | `build_alb_from_file()` 返回 `BuiltBearing` 封闭联合并携带 `control_mode`；类型化代码分别调用普通/direct-spool builder，不让一个函数静默返回两种无法提前区分的输入协议。 |
 | F05 | 普通用户不再手动创建 block | factory 返回已经满足公开协议的对象；`BearingBlock` 系列降为内部装配或高级兼容工具。 |
@@ -118,15 +118,15 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | F10 | ALB 原生 `output()` 只读 | `output()` 返回同一份不可变 `BearingOutput` 完成快照；不重复深复制大数组。输入变化后未计算、首次未计算或 runtime 失效时明确报错。 |
 | F11 | direct-spool 使用相同语义 | `ALBSV`/`NodimALBSV` 以 `DirectSpoolBearingInput` 锁存阀芯和轴承状态，`evaluate()` 只执行一次物理计算。 |
 | F12 | 收敛状态只读 | `convergence_status` 或 `latest_result` 只返回最近计算快照，查询不得继续 film/thermal 迭代。 |
-| F13 | `init()` 开启新 runtime session | 初始化清除组件锁存输入、旧输出和失败状态，所有子组件成功后才进入 `READY`；它不清空调用者注入的外部 recorder，新的 `run_id` 由顶层显式开启。 |
-| F14 | 运行失败统一封锁并保留诊断 | 任一局部组件在计算期间失败，顶层轴承 runtime 进入 `FAILED`，正常输入/计算/输出/保存被封锁；独立 `failure_snapshot()` 仍可读取，成功 `init()` 后才能开始新 session。 |
+| F13 | 构造自动开启 runtime session | `__init__()` 在完整装配后自动执行内部 `init()`，清除锁存输入、旧输出和失败状态，所有子组件成功后才返回 `READY`；用户不调用该钩子。 |
+| F14 | 运行失败统一封锁并保留诊断 | 任一局部组件在计算期间失败，顶层轴承 runtime 进入 `FAILED`，正常输入/计算/输出/保存被封锁；独立 `failure_snapshot()` 仍可读取。普通用户重新 build，组合模块可在整体重置时调用内部 `init()`。 |
 
 ### C. 正式协议拆分
 
 | ID | 新增特性目标 | 对应修改方案 |
 | --- | --- | --- |
 | F15 | `BearingProtocol` 继续作为最小计算端口 | 保持 `node_link`、`unit_system` 和 `input/evaluate/output/step` 结构契约，供算法组合和静态类型检查使用。 |
-| F16 | 新增泛型 `BearingRuntimeProtocol[InputT]` | 在最小端口上增加 `init()`、`lifecycle_state`、`convergence_status`、`result_snapshot()` 和 `failure_snapshot()`；普通与 direct-spool runtime 通过输入类型参数分开。 |
+| F16 | 新增泛型 `BearingRuntimeProtocol[InputT]` | 在最小端口上增加内部 owner `init()` 钩子、`lifecycle_state`、`convergence_status`、`result_snapshot()` 和 `failure_snapshot()`；普通与 direct-spool runtime 通过输入类型参数分开。 |
 | F17 | direct-spool 协议显式分型 | 以独立输入 DTO/Protocol 表达外部阀芯命令，不让普通 `BearingInput` 隐式携带 `sx/sy`。 |
 | F18 | 谐波系数保持能力协议 | `BearingCoefficientProtocol` 继续独立提供 `K`、`C` 和复数 `G_xv`，不强迫所有非线性轴承实现。 |
 | F19 | 端口输出与结果 bundle 分离 | `output() -> BearingOutput` 只返回端口力；`result_snapshot() -> ResultBundle` 返回面向诊断/后处理的完整当前结果，两者都不携带历史或磁盘写入方法。 |
@@ -194,9 +194,9 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 
 | ID | 新增特性目标 | 对应修改方案 |
 | --- | --- | --- |
-| F54 | 配置到可运行对象的端到端测试 | 覆盖“读取当前配置 -> build -> init -> step”，验证用户无需手动创建 block。 |
+| F54 | 配置到可运行对象的端到端测试 | 覆盖“读取当前配置 -> build -> READY -> step”，验证用户无需手动创建 block、envelope 或调用 `init()`。 |
 | F55 | 单步与三阶段调用等价 | 对相同输入精确比较 `step()` 和 `input/evaluate/output`，并验证重复 `output()` 不重复求解或记录。 |
-| F56 | 数值与 post-commit 状态测试 | 覆盖 NEW、READY、RUNNING、FAILED、`COMMITTED_RECORDING_PENDING`、重新初始化、pending 恢复以及输入改变使旧输出失效。 |
+| F56 | 数值与 post-commit 状态测试 | 覆盖内部 NEW 转换、公开构造后的 READY、RUNNING、FAILED、`COMMITTED_RECORDING_PENDING`、owner 重新初始化、pending 恢复以及输入改变使旧输出失效。 |
 | F57 | native 与旧参考数值一致 | 对 film、thermal、控制、ALB/ALBSV 和 ALBNN shell 建立修改前新参考；固定 CPU、device、dtype、依赖和随机种子的路径使用精确相等，GPU/并行路径另建有理由的容差参考。 |
 | F58 | direct-spool 全链路测试 | 覆盖合法 `sx/sy`、复杂数/NaN/Inf/越界、时间不一致、失败封锁和重新初始化。 |
 | F59 | 真实 ROSS coupling 回归 | 正式门禁必须覆盖真实 ROSS 4/6-DOF rotor、非零状态相关 bearing force、`previous_force/force` 插值、最终状态和时间长度；等价 mock 只能补充失败注入，不能替代。 |
@@ -205,6 +205,13 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | F62 | Signal 移除边界测试 | import/AST 门禁禁止新数值模块依赖 `ALB.core.events.Signal`，legacy adapter 是唯一暂时允许位置。 |
 | F63 | 数值、时间和内存性能门禁 | 每阶段先过精确参考；使用下文固定的机器身份、批量时间下限、预热、样本数、中位数/MAD 和峰值内存规则比较 film、thermal、ALB、ALBNN、coupling。 |
 | F64 | 文档、类型和制品验收 | 同步 package overview、interface architecture、quickstart、API docstring、import map、strict mypy、wheel/extras smoke 和 detached release 证据。 |
+
+### J. 2026-07-24 新增构建特性
+
+| ID | 新增特性目标 | 对应修改方案 |
+| --- | --- | --- |
+| F65 | bearing 实例构造后即可计算 | ALB、ALBNN、harmonic、混合轴承及兼容 runtime 在构造结束时处于 `READY`；内部组合仍可调用可重复的 `init()` 完成整体 session 重置。 |
+| F66 | 中性动静压混合轴承 | 新增 `build_hybrid_bearing()`、`HybridBearing`、`NodimHybridBearing` 和 `HybridOrificeConfig`。未给节流器时执行动压油膜计算，给出构造期节流器时自动装配节流-压力耦合；不提供动压/静压模式字段。 |
 
 ## 分阶段实施顺序
 
@@ -220,8 +227,10 @@ config -> public builder -> BearingRuntimeProtocol -> rotor-bearing coupler
 | F35 | 延期到 0.4.0 | legacy Signal 仅保留给尚未清零的 film/thermal/rotor 消费者；AST 门禁禁止增加新消费者 |
 | F54-F63 | 已实现 | 64 项 manifest、故障注入、recorder 选择性/内存上界、Signal AST、精确参考和五领域时间/峰值内存报告均已落地 |
 | F64 | 已实现 | 文档、测试映射、26 个 strict 目标、564 节点、detached pytest、wheel/extras smoke 和可复现制品证据均已通过 |
+| F02/F13/F16/F54 修订、F65-F66 | 已实现，待正式发布验收 | 类型化配置 builder、内部 envelope、自动 `READY`、构造期节流器混合轴承和针对性回归已落地 |
 
-64 项中 63 项已经实现；唯一未完成项是 F35。F35 尚未物理删除全部旧 Signal，不是方案未确定，
+66 项中 65 项已经实现；唯一未完成项仍是 F35。F01-F64 的既有正式 manifest 保持历史证据，
+F65-F66 需要在下一次正式发布验收中纳入新 manifest。F35 尚未物理删除全部旧 Signal，不是方案未确定，
 而是 ADR-0001 要求至少保留一个 0.3.x minor
 兼容周期并先取得消费者清零证据。旧 film/thermal/rotor 消费者尚未清零，因此不能在 0.3.0
 提前删除兼容面；新代码不得再增加 Signal 依赖。

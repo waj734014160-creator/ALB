@@ -190,6 +190,9 @@ class _ScalePad:
             }
         )
 
+    def init(self) -> None:
+        """Provide the lifecycle hook required by the auto-initializing runtime."""
+
 
 def _run_scale_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """Capture the historical implicit dimensional/nondimensional conversion."""

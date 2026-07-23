@@ -131,6 +131,7 @@ class ALB(BaseCSystem):
         )
         self._create_static_sv()
         self.force: Any = None
+        self.init()
 
     @property
     def gxy(self):
@@ -174,7 +175,7 @@ class ALB(BaseCSystem):
             self.controller.init()
 
     def init(self) -> None:
-        """Start a fresh runtime session after every child initializes."""
+        """Reset a fresh session when invoked by the owning composite."""
 
         self._lifecycle.fail()
         self._latest_output = None
@@ -449,7 +450,8 @@ class ALB(BaseCSystem):
     def _require_valid(self, action: str) -> None:
         if self._lifecycle.state is LifecycleState.FAILED:
             raise RuntimeError(
-                f"{type(self).__name__} is failed; call init() before {action}"
+                f"{type(self).__name__} is failed; rebuild it or let its "
+                f"owner reinitialize it before {action}"
             )
 
     def _control_process(self, uxy: np.ndarray, uxyt: np.ndarray, t: np.float64):

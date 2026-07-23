@@ -299,7 +299,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         if not self._lifecycle.is_valid:
             raise RuntimeError(
                 f"Cannot {operation}: harmonic bearing runtime is invalid; "
-                "call init() successfully before reuse"
+                "rebuild it or let its owner reinitialize it before reuse"
             )
 
     @property
