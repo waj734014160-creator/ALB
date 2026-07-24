@@ -52,7 +52,10 @@
         "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_strict_observer_failure_keeps_step_one_without_repeating_physics",
         "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_strict_observer_failure_at_step_zero_keeps_initial_commit",
         "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_secondary_recorder_close_failure_does_not_replace_primary_error",
-        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_successful_simulation_closes_recorder_run"
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_successful_simulation_closes_recorder_run",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_simulation_instance_cannot_replay_after_success",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_simulation_instance_cannot_replay_after_failure",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_precommit_failure_preserves_coupling_snapshot"
       ]
     },
     {
@@ -62,9 +65,12 @@
         "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_snapshot_write_failure_retries_without_publishing_early",
         "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_snapshot_replace_failure_retries_without_publishing_early",
         "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_persistent_snapshot_failure_is_wrapped_without_false_retention",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_snapshot_cleanup_failure_does_not_replace_primary_error",
         "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_manifest_write_failure_is_wrapped_and_incomplete_manifest_is_saved",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_manifest_replace_failure_is_wrapped_and_retried_atomically",
         "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_persistent_manifest_failure_is_wrapped_and_cleans_temporary_file",
-        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_disk_stream_force_retains_the_final_committed_step"
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_disk_stream_force_retains_the_final_committed_step",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_disk_stream_includes_final_post_commit_failure"
       ]
     },
     {

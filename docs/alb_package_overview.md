@@ -103,7 +103,9 @@ bearing-local 步长，构建器在物理 runtime 创建前递归检查 `MultiPa
 通过稳定异常携带密封 failure snapshot。仿真遇到提交后 recorder/observer
 异常时不会重算物理步骤；partial result 包含已真实提交的步骤，并分别报告
 物理完成、历史完成和 post-commit 完整性。`disk_stream` 通过同目录临时文件、
-flush/fsync 和原子替换发布快照及 manifest。
+flush/fsync 和原子替换发布快照及 manifest。每个
+`RotorBearingSimulation` 只能调用一次 `run()`；成功或失败后再次运行必须
+重新构建 simulation，避免恢复操作重放物理步骤。
 
 ## ALBNN 制品
 

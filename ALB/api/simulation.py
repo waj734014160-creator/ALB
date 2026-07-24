@@ -222,12 +222,13 @@ class SimulationConfig:
 class RotorBearingSimulation:
     """Ready one-shot simulation with immutable topology."""
 
-    __slots__ = ("_config", "_last_result")
+    __slots__ = ("_config", "_has_run", "_last_result")
 
     def __init__(self, config: SimulationConfig) -> None:
         if not isinstance(config, SimulationConfig):
             raise TypeError("config must be SimulationConfig")
         self._config = config
+        self._has_run = False
         self._last_result: SimulationResult | None = None
 
     @property
@@ -304,6 +305,12 @@ class RotorBearingSimulation:
         completion diagnostics.
         """
 
+        if self._has_run:
+            raise SimulationError(
+                "simulation instances are one-shot; build a new simulation "
+                "for another run"
+            )
+        self._has_run = True
         coupling = self._build_coupling()
         policy = self._config.history
         snapshots: list[Any] = []
@@ -315,6 +322,7 @@ class RotorBearingSimulation:
         last_index = -1
         run_close_receipt: RunReceipt | None = None
         failure_phase = "setup"
+        persistence_secondary_errors: list[dict[str, str]] = []
 
         if policy.mode == "disk_stream":
             assert policy.directory is not None
@@ -350,7 +358,18 @@ class RotorBearingSimulation:
                     os.fsync(stream.fileno())
                 temporary.replace(target)
             except BaseException:
-                temporary.unlink(missing_ok=True)
+                try:
+                    temporary.unlink(missing_ok=True)
+                except Exception as cleanup_error:
+                    persistence_secondary_errors.append(
+                        {
+                            "phase": "history_snapshot_cleanup",
+                            "error_type": type(cleanup_error).__name__,
+                            "message": sanitize_exception_message(
+                                cleanup_error
+                            ),
+                        }
+                    )
                 raise
             return {
                 "step_index": index,
@@ -402,7 +421,18 @@ class RotorBearingSimulation:
                     os.fsync(stream.fileno())
                 temporary.replace(target)
             except BaseException:
-                temporary.unlink(missing_ok=True)
+                try:
+                    temporary.unlink(missing_ok=True)
+                except Exception as cleanup_error:
+                    persistence_secondary_errors.append(
+                        {
+                            "phase": "history_manifest_cleanup",
+                            "error_type": type(cleanup_error).__name__,
+                            "message": sanitize_exception_message(
+                                cleanup_error
+                            ),
+                        }
+                    )
                 raise
 
         def coupling_diagnostics() -> tuple[dict[str, Any], dict[str, Any]]:
@@ -448,6 +478,15 @@ class RotorBearingSimulation:
             """Seal physical, recording, observer, and persistence diagnostics."""
 
             diagnostic_values, diagnostic_metadata = coupling_diagnostics()
+            coupling_failure: ResultBundle | None = None
+            get_coupling_failure = getattr(coupling, "failure_snapshot", None)
+            if callable(get_coupling_failure):
+                try:
+                    candidate = get_coupling_failure()
+                    if isinstance(candidate, ResultBundle):
+                        coupling_failure = candidate
+                except Exception:
+                    coupling_failure = None
             values: dict[str, Any] = {
                 "partial_time": partial.time,
                 "observer_failures": diagnostic_values.get(
@@ -455,6 +494,11 @@ class RotorBearingSimulation:
                     (),
                 ),
             }
+            if coupling_failure is not None:
+                values["coupling_failure"] = {
+                    "values": coupling_failure.values,
+                    "metadata": coupling_failure.metadata,
+                }
             if last_snapshot is not None:
                 values["last_bearing_force"] = np.asarray(
                     last_snapshot.values["bearing_force"]
@@ -535,6 +579,9 @@ class RotorBearingSimulation:
                         else run_close_receipt.last_step_index
                     ),
                     "secondary_errors": tuple(secondary_errors),
+                    "coupling_failure_available": (
+                        coupling_failure is not None
+                    ),
                 },
             )
 
@@ -567,7 +614,7 @@ class RotorBearingSimulation:
             failure_phase = "history_manifest"
             finalize_stream(complete=True)
         except BaseException as exc:
-            secondary_errors: list[dict[str, str]] = []
+            secondary_errors = persistence_secondary_errors
             if isinstance(
                 exc,
                 (PostCommitRecordingError, PostCommitObserverError),

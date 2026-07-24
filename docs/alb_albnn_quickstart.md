@@ -186,7 +186,9 @@ history.write("outputs/rotor_case_001")
 物理步骤；若 recorder/observer 在提交后失败，`SimulationError` 的 partial
 result 会包含该真实提交，但仿真不会重试或继续。转子使用全局 `time_step`；
 mount、嵌套 `MultiPad` 及其控制器、阀和热模型必须使用 unit adapter 转换后的
-bearing-local `time_step`。磁盘流通过原子替换发布快照和 manifest。
+bearing-local `time_step`。磁盘流通过原子替换发布快照和 manifest。同一个
+simulation 对象只能调用一次 `run()`；需要重新计算时使用同一不可变配置重新
+调用 `build_simulation()`。
 
 ## ALBNN package
 

@@ -94,7 +94,14 @@
 - 0.4.2 分层 mypy：23 个 strict target 零错误；实现层仍为 363 条、85 组
   精确旧基线，没有扩大。
 - 第一轮数值/API 审查发现并关闭 2 项 P2、0 项 P1；修复后目标检查
-  `40 passed`、V4P2 required nodeid `48 passed`。第二轮事务/发布审查和
+  `40 passed`、V4P2 required nodeid `48 passed`。
+- 第二轮事务/发布审查发现并关闭 2 项 P1、2 项 P2；事务目标检查
+  `30 passed`，开发 wheel 为 `0.4.2` 且 150 个成员的 legacy/tool/token
+  命中为零。两轮结束时开放 P1/P2 为零。
+- 两轮后完整开发工作树复验：
+  `341 passed, 13 skipped, 10 subtests passed`；V4P2 required nodeid
+  `54 passed`；三项资源门禁通过；wheel 隔离的根 API、PAPER_WORK、
+  SURROGATE_TRAIN、训练 CLI 和 remote CLI 共 6 项 smoke 均通过。固定 SHA
   detached 正式验收尚未完成。
 
 ## 当前风险与边界
@@ -117,9 +124,9 @@
 
 ## 当前下一步
 
-1. 在第一轮修复后的新 diff 上独立完成事务/发布审查，关闭全部 P1/P2，并记录
-   真实发现与复验。
-2. 形成 tracked-clean 实现候选，从固定 SHA detached worktree 完成双 wheel、
+1. 执行完整 pytest、V4P2 required nodeid、分层 mypy、资源、外部消费者 smoke
+   和 tracked-diff 检查，形成 tracked-clean 实现候选。
+2. 从固定 SHA detached worktree 完成双 wheel、
    完整 pytest、required nodeid、mypy、资源和外部消费者正式验收。
 3. 正式报告写入候选后的 evidence-only 提交；验收通过后再创建和推送
    `v0.4.2`，不得移动历史标签。

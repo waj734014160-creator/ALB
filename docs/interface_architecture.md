@@ -118,7 +118,8 @@ preflight → mutable execute → immutable candidate
 改写为无效。高层仿真不重试、不继续，但会从 ledger 和只读 output 取回该真实
 提交。partial result 分别报告物理步骤、历史发布和 post-commit 完整性。
 磁盘流只在临时快照 flush/fsync 并原子替换成功后发布 retained 状态；manifest
-使用同一事务边界。
+使用同一事务边界。simulation 对象是一次性会话，成功或失败后第二次
+`run()` 都会明确拒绝；新会话必须构建新对象。
 
 ## 结果与副作用
 

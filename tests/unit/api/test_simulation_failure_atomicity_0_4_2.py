@@ -46,6 +46,7 @@ class _TrackingRecorder(InMemoryResultRecorder):
         self.fail_step = fail_step
         self.attempts: list[int] = []
         self.close_receipt: RunReceipt | None = None
+        self.close_attempts: list[bool] = []
 
     def record(self, context, bundle):
         self.attempts.append(context.step_index)
@@ -59,6 +60,7 @@ class _TrackingRecorder(InMemoryResultRecorder):
         *,
         allow_incomplete: bool = False,
     ) -> RunReceipt:
+        self.close_attempts.append(allow_incomplete)
         self.close_receipt = super().end_run(
             run_id,
             allow_incomplete=allow_incomplete,
@@ -164,6 +166,7 @@ def test_post_commit_record_failure_keeps_committed_step_in_partial_result(
     assert recorder.attempts == list(range(fail_step + 1))
     assert recorder.close_receipt is not None
     assert recorder.close_receipt.close_status.value == "incomplete"
+    assert recorder.close_attempts == [True]
     assert partial.metadata["complete"] is (fail_step == 2)
 
 
@@ -243,6 +246,73 @@ def test_successful_simulation_closes_recorder_run() -> None:
     assert recorder.close_receipt is not None
     assert recorder.close_receipt.close_status.value == "complete"
     assert recorder.close_receipt.record_count == 2
+    assert recorder.close_attempts == [False]
+
+
+def test_simulation_instance_cannot_replay_after_success() -> None:
+    recorder = _TrackingRecorder()
+    dependencies = CouplingRuntimeDependencies(
+        "one-shot-success",
+        recorder=recorder,
+    )
+    simulation = _simulation(steps=1, dependencies=dependencies)
+
+    first = simulation.run()
+    with pytest.raises(ALB.SimulationError, match="one-shot"):
+        simulation.run()
+
+    assert simulation.latest_result is first
+    assert recorder.attempts == [0, 1]
+    assert recorder.close_attempts == [False]
+
+
+def test_simulation_instance_cannot_replay_after_failure() -> None:
+    recorder = _TrackingRecorder(fail_step=1)
+    dependencies = CouplingRuntimeDependencies(
+        "one-shot-failure",
+        recorder=recorder,
+        record_failure_policy="raise",
+    )
+    simulation = _simulation(steps=2, dependencies=dependencies)
+
+    with pytest.raises(ALB.SimulationError):
+        simulation.run()
+    with pytest.raises(ALB.SimulationError, match="one-shot"):
+        simulation.run()
+
+    assert recorder.attempts == [0, 1]
+    assert recorder.close_attempts == [True]
+
+
+def test_precommit_failure_preserves_coupling_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    def fail_advance(self: RossRotor) -> np.ndarray:
+        del self
+        nonlocal calls
+        calls += 1
+        raise ArithmeticError("rotor propagation failure")
+
+    monkeypatch.setattr(RossRotor, "advance", fail_advance)
+    simulation = _simulation(steps=2)
+
+    with pytest.raises(ALB.SimulationError) as caught:
+        simulation.run()
+
+    assert calls == 1
+    partial = caught.value.partial_result
+    assert isinstance(partial, ALB.SimulationResult)
+    np.testing.assert_array_equal(partial.time, [0.0])
+    snapshot = caught.value.failure_snapshot
+    assert snapshot is not None
+    assert snapshot.metadata["physical_step_committed"] is False
+    assert snapshot.metadata["committed_step_index"] == 0
+    assert snapshot.metadata["coupling_failure_available"] is True
+    coupling_failure = snapshot.values["coupling_failure"]
+    assert coupling_failure["metadata"]["phase"] == "advance"
+    assert coupling_failure["metadata"]["physical_step_committed"] is False
 
 
 def _stream_policy(path: Path) -> ALB.HistoryPolicy:
@@ -357,6 +427,39 @@ def test_persistent_snapshot_failure_is_wrapped_without_false_retention(
     _assert_no_temporary_files(root)
 
 
+def test_snapshot_cleanup_failure_does_not_replace_primary_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    def fail_write(*args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        raise PermissionError("primary snapshot failure")
+
+    original_unlink = Path.unlink
+
+    def fail_cleanup(path: Path, *args: Any, **kwargs: Any) -> None:
+        if ".tmp" in path.name:
+            raise OSError("secondary cleanup failure")
+        original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(simulation_module.np, "savez_compressed", fail_write)
+    monkeypatch.setattr(Path, "unlink", fail_cleanup)
+    root = tmp_path / "stream"
+
+    with pytest.raises(ALB.SimulationError) as caught:
+        _simulation(steps=1, history=_stream_policy(root)).run()
+
+    snapshot = caught.value.failure_snapshot
+    assert snapshot is not None
+    assert snapshot.metadata["error_type"] == "PermissionError"
+    secondary = snapshot.metadata["secondary_errors"]
+    assert any(
+        item["phase"] == "history_snapshot_cleanup"
+        and item["error_type"] == "OSError"
+        for item in secondary
+    )
+
+
 def test_manifest_write_failure_is_wrapped_and_incomplete_manifest_is_saved(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -375,8 +478,17 @@ def test_manifest_write_failure_is_wrapped_and_incomplete_manifest_is_saved(
     monkeypatch.setattr(Path, "open", fail_once)
     root = tmp_path / "stream"
 
+    recorder = _TrackingRecorder()
+    dependencies = CouplingRuntimeDependencies(
+        "manifest-failure",
+        recorder=recorder,
+    )
     with pytest.raises(ALB.SimulationError) as caught:
-        _simulation(steps=1, history=_stream_policy(root)).run()
+        _simulation(
+            steps=1,
+            history=_stream_policy(root),
+            dependencies=dependencies,
+        ).run()
 
     assert isinstance(caught.value.partial_result, ALB.SimulationResult)
     assert caught.value.failure_snapshot is not None
@@ -385,6 +497,38 @@ def test_manifest_write_failure_is_wrapped_and_incomplete_manifest_is_saved(
     )
     manifest = (root / "history.json").read_text(encoding="utf-8")
     assert '"complete": false' in manifest
+    assert recorder.close_attempts == [False]
+    _assert_no_temporary_files(root)
+
+
+def test_manifest_replace_failure_is_wrapped_and_retried_atomically(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    original = Path.replace
+    calls = 0
+
+    def fail_once(source: Path, target: Path) -> Path:
+        nonlocal calls
+        if target.name == "history.json":
+            calls += 1
+            if calls == 1:
+                raise OSError("manifest replace failure")
+        return original(source, target)
+
+    monkeypatch.setattr(Path, "replace", fail_once)
+    root = tmp_path / "stream"
+
+    with pytest.raises(ALB.SimulationError) as caught:
+        _simulation(steps=1, history=_stream_policy(root)).run()
+
+    partial = caught.value.partial_result
+    assert isinstance(partial, ALB.SimulationResult)
+    assert partial.metadata["complete"] is True
+    assert partial.metadata["history_complete"] is True
+    assert '"complete": false' in (root / "history.json").read_text(
+        encoding="utf-8"
+    )
     _assert_no_temporary_files(root)
 
 
@@ -435,3 +579,39 @@ def test_disk_stream_force_retains_the_final_committed_step(
         "step_00000000.npz",
         "step_00000001.npz",
     ]
+
+
+def test_disk_stream_includes_final_post_commit_failure(
+    tmp_path: Path,
+) -> None:
+    recorder = _TrackingRecorder(fail_step=2)
+    dependencies = CouplingRuntimeDependencies(
+        "disk-final-record-failure",
+        recorder=recorder,
+        record_failure_policy="raise",
+    )
+    root = tmp_path / "stream"
+
+    with pytest.raises(ALB.SimulationError) as caught:
+        _simulation(
+            steps=2,
+            dependencies=dependencies,
+            history=_stream_policy(root),
+        ).run()
+
+    partial = caught.value.partial_result
+    assert isinstance(partial, ALB.SimulationResult)
+    np.testing.assert_array_equal(partial.time, [0.0, 1.0e-3, 2.0e-3])
+    assert partial.metadata["complete"] is True
+    assert partial.metadata["history_complete"] is True
+    assert partial.metadata["post_commit_complete"] is False
+    assert recorder.attempts == [0, 1, 2]
+    assert recorder.close_attempts == [True]
+    assert sorted(path.name for path in root.glob("step_*.npz")) == [
+        "step_00000000.npz",
+        "step_00000001.npz",
+        "step_00000002.npz",
+    ]
+    assert '"complete": false' in (root / "history.json").read_text(
+        encoding="utf-8"
+    )
