@@ -62,10 +62,15 @@ def test_transport_helpers():
     assert connection.connect_timeout == 10
 
 
-def test_start_wrapper_dry_run_matches_reference():
+def test_start_module_dry_run_matches_reference():
     ref = load_ref("remote_albnn_start_dry_run_reference_v1.json")
     result = subprocess.run(
-        [sys.executable, str(REMOTE_DIR / "remote_start_albnn_train.py"), "--dry-run"],
+        [
+            sys.executable,
+            "-m",
+            "ALB.surrogate.training.remote.start",
+            "--dry-run",
+        ],
         cwd=ROOT,
         text=True,
         encoding="utf-8",
@@ -356,7 +361,7 @@ def test_status_query_uses_monitor_helpers(monkeypatch):
     assert ("processes", "example_model") in calls
 
 
-def test_queue_config_and_launch_command_match_reference(monkeypatch):
+def test_queue_config_and_launch_command_uses_installed_module(monkeypatch):
     ref = load_ref("remote_albnn_queue_config_reference_v1.json")
     monkeypatch.setattr(
         sys,
@@ -387,25 +392,37 @@ def test_queue_config_and_launch_command_match_reference(monkeypatch):
                 ),
             }
         )
-    assert actual == ref["combos"]
+    for current, frozen in zip(actual, ref["combos"], strict=True):
+        current_command = current.pop("launch_command")
+        frozen_command = dict(frozen)
+        frozen_command.pop("launch_command")
+        assert current == frozen_command
+        assert current_command[:3] == [
+            sys.executable,
+            "-m",
+            "ALB.surrogate.training.remote.start",
+        ]
+        assert current_command[3:] == frozen["launch_command"][2:]
 
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
         albnn_queue.print_queue(args, combos, [])
-    assert out.getvalue() == ref["print_queue_output"]
+    rendered = out.getvalue()
+    assert "ALB.surrogate.training.remote.start" in rendered
+    assert "remote_start_albnn_train.py" not in rendered
 
 
-def test_compat_wrappers_help():
-    wrappers = [
-        "remote_start_albnn_train.py",
-        "remote_query_albnn_status.py",
-        "remote_queue_albnn_activation_sweep.py",
-        "remote_monitor_job.py",
-        "remote_job.py",
+def test_installed_remote_modules_replace_repository_wrappers():
+    modules = [
+        "ALB.surrogate.training.remote.start",
+        "ALB.surrogate.training.remote.status",
+        "ALB.surrogate.training.remote.queue",
+        "ALB.infrastructure.remote.monitor",
+        "ALB.infrastructure.remote.job",
     ]
-    for wrapper in wrappers:
+    for module in modules:
         result = subprocess.run(
-            [sys.executable, str(REMOTE_DIR / wrapper), "--help"],
+            [sys.executable, "-m", module, "--help"],
             cwd=ROOT,
             text=True,
             encoding="utf-8",
@@ -415,3 +432,4 @@ def test_compat_wrappers_help():
         )
         assert result.returncode == 0
         assert "usage:" in result.stdout
+    assert not any(REMOTE_DIR.glob("remote_*.py"))

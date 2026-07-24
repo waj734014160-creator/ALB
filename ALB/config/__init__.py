@@ -1,4 +1,4 @@
-"""Domain-grouped configuration contracts for ALB 0.3."""
+"""Internal typed component configuration contracts."""
 
 from .common import ConfigData, ResolvedTimeGrid, TimeGridConfig
 from .parameters import ParameterHub
@@ -18,24 +18,12 @@ from .hydraulics import (
     OrificeConfig,
     TankConfig,
 )
-from .surrogate import ALBNetConfig
 from .system import ALBConfig, NodimALBConfig
-from .thermal import ThermalConfig, build_thermal_config
-from .schema import (
-    CURRENT_SCHEMA_VERSION,
-    ControlMode,
-    CurrentConfig,
-    load_current_config,
-)
-from .legacy import LegacyALBMigrationReport
+from .thermal import ThermalConfig
 
 __all__ = [
     "ALBConfig",
-    "ALBNetConfig",
     "ConfigData",
-    "ControlMode",
-    "CurrentConfig",
-    "CURRENT_SCHEMA_VERSION",
     "CsoArgs",
     "FPBConfig",
     "FuzzyPIDConfig",
@@ -43,7 +31,6 @@ __all__ = [
     "HydConfig",
     "HybridOrificeConfig",
     "LQGConfig",
-    "LegacyALBMigrationReport",
     "Moog2ndServoConfig",
     "NodimALBConfig",
     "NodimOrificeConfig",
@@ -56,6 +43,4 @@ __all__ = [
     "TankConfig",
     "ThermalConfig",
     "TimeGridConfig",
-    "build_thermal_config",
-    "load_current_config",
 ]

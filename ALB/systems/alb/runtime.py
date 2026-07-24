@@ -1,17 +1,18 @@
 # coding: utf-8
 import copy
-from typing import Any, TYPE_CHECKING, Iterable, Union
+from typing import Any, Iterable, Union
 
 import numpy as np
-import pandas as pd
 from scipy import sparse as sp
 from scipy.sparse import linalg as sl
 
-from ALB.core.component import BaseCSystem, BaseSimpleModel
-from ALB.core.events import Signal
+from ALB.core.component import BaseSimpleModel
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
-from ALB.physics.bearing import four_pads_bearings, nodim_four_pads_bearings
+from ALB.physics.bearing.solver import (
+    four_pads_bearings,
+    nodim_four_pads_bearings,
+)
 from ALB.config import (
     ALBConfig,
     CsoArgs,
@@ -23,18 +24,16 @@ from ALB.config import (
     ServoConfig,
     TankConfig,
     ThermalConfig,
-    build_thermal_config,
 )
 from ALB.control.fuzzy import FuzzyPID
 from ALB.control.pid import PID
-from ALB.control.adapters import adapt_controller
 from ALB.control.blocks import run_controller_step, run_valve_step
-from ALB.physics.hydraulics import CSOrifice, NodimCSOrifice
-from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
+from ALB.physics.hydraulics.orifice import CSOrifice, NodimCSOrifice
 from ALB.contracts import (
     BearingInput,
     BearingOutput,
     BearingRuntimeProtocol,
+    ControllerProtocol,
     ConvergenceStatus,
     DirectSpoolBearingInput,
     LifecycleState,
@@ -43,16 +42,13 @@ from ALB.contracts import (
     result_snapshot,
 )
 from ALB.control.valve import moog_2nd_servovalve, moog_servovalve, static_sv
-from ALB.physics.thermal import (
+from ALB.physics.thermal.solver import (
     NodimThermalHydroBearing,
     wrap_pad_collection_with_thermal,
 )
 
-if TYPE_CHECKING:
-    from ALB.surrogate.inference import ALBNet
-
 _NODIM_ALB_FORBIDDEN_PAD_KWARGS = {"miu", "c", "r", "l", "ps", "rho", "w", "w_rad"}
-_NODIM_ALB_LEGACY_REQUIRED_KEYS = [
+_NODIM_ALB_REQUIRED_KEYS = [
     "lambda_value",
     "lr",
     "lx",
@@ -64,7 +60,7 @@ _NODIM_ALB_LEGACY_REQUIRED_KEYS = [
 ]
 _NODIM_ALB_PAD_MAIN_KEYS = {"lambda_value", "lr", "lx", "lz", "nx", "nz", "bias"}
 
-class ALB(BaseCSystem):
+class ALB:
     """Active lubricated bearing with a strict DTO lifecycle."""
 
     input_dto_type = BearingInput
@@ -81,18 +77,21 @@ class ALB(BaseCSystem):
         This class represents an Active Lubricated Bearing (ALB) system.
         It takes pre-defined servovalves, controllers, orifices, and pads to establish the connections within the ALB.
         """
-        super().__init__()
         if alb_config is None:
             alb_config = ALBConfig()
         self._t: Any = None
-        self.pads = list(pads)
-        self.signal.children = [pad.signal for pad in self.pads]
-        if len(self.pads) == 0:
+        self._pads = tuple(pads)
+        if len(self._pads) == 0:
             raise Exception("pads can't be empty")
-        self.servovalves = servovalves
+        self._servovalves = tuple(servovalves)
         self.static_sv: Any = None
         self.node_link = alb_config.node_link
-        self.controller = adapt_controller(controller) if controller is not None else None
+        if controller is not None and not isinstance(
+            controller,
+            ControllerProtocol,
+        ):
+            raise TypeError("controller must satisfy ControllerProtocol")
+        self._controller = controller
         self._uv: Any = None
         self._uxy: Any = None
         self._uxyt: Any = None
@@ -102,17 +101,19 @@ class ALB(BaseCSystem):
         self._gxyt = alb_config.gxyt
         c_scale = getattr(alb_config, "c", None)
         if c_scale is None:
-            self._c = self.pads[0].main_model.args["c"]
+            self._c = self._pads[0].main_model.args["c"]
         else:
             self._c = c_scale
         w_scale = getattr(alb_config, "w", None)
         if w_scale is None:
-            self._w = self.pads[0].main_model.args["w"]
+            self._w = self._pads[0].main_model.args["w"]
         else:
             self._w = w_scale
         self._w_rad = self._w / 60 * 2 * np.pi
-        self._vf = self.pads[0].main_model.args["vf"]
-        self._control_enabled = bool(alb_config.switch)
+        self._vf = self._pads[0].main_model.args["vf"]
+        self._control_enabled = (
+            alb_config.control_mode in {"pid", "fuzzy_pid"}
+        )
         self._t_on: float | None = None
         self._switch = self._control_enabled
         self._lifecycle = RuntimeLifecycle(
@@ -126,12 +127,9 @@ class ALB(BaseCSystem):
             "runtime is not initialized"
         )
         self._friction: float | None = None
-        self._results = pd.DataFrame(
-            columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
-        )
         self._create_static_sv()
         self.force: Any = None
-        self.init()
+        self._reset_for_owner()
 
     @property
     def gxy(self):
@@ -150,11 +148,6 @@ class ALB(BaseCSystem):
         self._gxyt = value
 
     @property
-    def results(self):
-        self._require_valid("read legacy results")
-        return self._results
-
-    @property
     def lifecycle_state(self) -> LifecycleState:
         """Return the current strict runtime state."""
 
@@ -167,14 +160,19 @@ class ALB(BaseCSystem):
         return self._convergence_status
 
     def _initialize_children(self) -> None:
-        for pad in self.pads:
-            pad.init()
-        for servovalve in self.servovalves:
-            servovalve.init()
-        if self.controller is not None:
-            self.controller.init()
+        for pad in self._pads:
+            reset = getattr(pad, "_reset_for_owner", None)
+            if not callable(reset):
+                raise TypeError(
+                    "active-bearing pads must provide _reset_for_owner()"
+                )
+            reset()
+        for servovalve in self._servovalves:
+            servovalve._reset_for_owner()
+        if self._controller is not None:
+            self._controller._reset_for_owner()
 
-    def init(self) -> None:
+    def _reset_for_owner(self) -> None:
         """Reset a fresh session when invoked by the owning composite."""
 
         self._lifecycle.fail()
@@ -191,12 +189,9 @@ class ALB(BaseCSystem):
         try:
             self._initialize_children()
         except BaseException as exc:
-            self._failure = self._build_failure_snapshot(exc, "init")
+            self._failure = self._build_failure_snapshot(exc, "reset")
             raise
         self._switch = self._control_enabled and self._t_on is None
-        self._results = pd.DataFrame(
-            columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
-        )
         self._convergence_status = ConvergenceStatus.pending(
             "input not evaluated"
         )
@@ -207,7 +202,7 @@ class ALB(BaseCSystem):
         Create static servovalves.
         """
         if servovalves is None:
-            servovalves = self.servovalves
+            servovalves = self._servovalves
         svs = [static_sv(0.5) for _ in servovalves]
         ofs = [sv.simple_models for sv in servovalves]
         for sv, of in zip(svs, ofs):
@@ -218,7 +213,8 @@ class ALB(BaseCSystem):
     def turn_on_at(self, t_on: float):
         """Schedule control activation when the permanent config switch is enabled.
 
-        ``ALBConfig.switch=False`` always wins over this schedule. Positive
+        Uncontrolled and external-spool configurations always disable this
+        schedule. Positive
         infinity is accepted as an explicit never-enable schedule.
         """
         activation_time = float(t_on)
@@ -278,12 +274,12 @@ class ALB(BaseCSystem):
             sv = self.static_sv
             self._initialize_children()
         else:
-            sv = self.servovalves
+            sv = self._servovalves
         for num, servovalve in enumerate(sv):
             run_valve_step(servovalve, self._t, self._uv[num])
         forces = []
         frictions = []
-        for pad in self.pads:
+        for pad in self._pads:
             force, friction = self._evaluate_pad(
                 pad,
                 displacement=self._uxy,
@@ -306,32 +302,27 @@ class ALB(BaseCSystem):
         velocity: np.ndarray,
         nodim: bool,
     ) -> tuple[np.ndarray, float]:
-        """Evaluate one native or legacy pad without changing calculation order."""
+        """Evaluate one native pad without changing calculation order."""
 
-        if isinstance(pad, BearingRuntimeProtocol):
-            pad.input(
-                BearingInput(
-                    displacement,
-                    velocity,
-                    self._t,
-                    self.unit_system,
-                )
+        if not isinstance(pad, BearingRuntimeProtocol):
+            raise TypeError(
+                "active-bearing pads must satisfy BearingRuntimeProtocol"
             )
-            pad.evaluate()
-            output = pad.output()
-            result = pad.result_snapshot()
-            return output.force, float(result.values.get("friction", 0.0))
         pad.input(
-            t=self._t,
-            uxy=displacement,
-            uxyt=velocity,
-            nodim=nodim,
+            BearingInput(
+                displacement,
+                velocity,
+                self._t,
+                self.unit_system,
+            )
         )
-        output = pad.output(nodim=nodim)
-        return output["force"], float(output.get("friction", 0.0))
+        pad.evaluate()
+        output = pad.output()
+        result = pad.result_snapshot()
+        return output.force, float(result.values.get("friction", 0.0))
 
     def _collect_convergence_status(self) -> ConvergenceStatus:
-        components = [*self.pads, *self.servovalves]
+        components = [*self._pads, *self._servovalves]
         completed = all(
             bool(check())
             for component in components
@@ -355,11 +346,30 @@ class ALB(BaseCSystem):
                 output = BearingOutput(force, self._t, self.unit_system)
                 convergence = self._collect_convergence_status()
                 self._friction = friction
+                pad_results = [pad.result_snapshot() for pad in self._pads]
+                pad_forces = np.vstack(
+                    [
+                        np.asarray(result.values["force"], dtype=float)
+                        for result in pad_results
+                    ]
+                )
+                result_values = {
+                    "force": output.force,
+                    "friction": friction,
+                    "pad_force": pad_forces,
+                }
+                thermal_t_eff = [
+                    float(result.values["t_eff"])
+                    for result in pad_results
+                    if "t_eff" in result.values
+                ]
+                if thermal_t_eff:
+                    result_values["thermal_t_eff"] = np.asarray(
+                        thermal_t_eff,
+                        dtype=float,
+                    )
                 bundle = result_snapshot(
-                    {
-                        "force": output.force,
-                        "friction": friction,
-                    },
+                    result_values,
                     {
                         "schema": "alb.bearing-runtime-result.v1",
                         "time": output.time,
@@ -458,8 +468,8 @@ class ALB(BaseCSystem):
         """Return one controller command, or zero when no controller is installed."""
         uv = np.dot(self._gxy, uxy) + np.dot(self._gxyt, uxyt)
         u0 = np.zeros_like(uv)
-        if self.controller is not None:
-            return run_controller_step(self.controller, t, uv - u0)
+        if self._controller is not None:
+            return run_controller_step(self._controller, t, uv - u0)
         return np.zeros_like(uv)
 
     def calc_is_finished(self):
@@ -471,74 +481,15 @@ class ALB(BaseCSystem):
         """
         Set the thickness of the pad, an interface for trajectory calculation.
         """
-        for pad in self.pads:
+        for pad in self._pads:
             pad.set_thickness(*args, **kwargs)
 
     def calc_capacity(self, *args, **kwargs):
         """
         Calculate the bearing capacity, an interface for trajectory calculation.
         """
-        ans = np.array([pad.calc_capacity(*args, **kwargs) for pad in self.pads])
+        ans = np.array([pad.calc_capacity(*args, **kwargs) for pad in self._pads])
         return np.sum(ans, axis=0)
-
-    def solve(self, *args, **kwargs):
-        """Compatibility alias for explicit evaluation."""
-
-        if args or kwargs:
-            raise TypeError("solve() no longer accepts output options")
-        self.evaluate()
-
-    def save(self, tofile, path, name, *args, **kwargs):
-        """
-        Save the calculation results.
-        """
-        self._require_valid("save")
-        if path is None:
-            path = "alb"
-        if name is None:
-            name = "alb"
-        res = {name + "_res": self._results}
-        res = DataFrameResult(res)
-        node = SaveTreeNode(path, res)
-        children = []
-        for num, pad in enumerate(self.pads):
-            children.append(
-                pad.save(path="pad" + str(num), name="pad_res", tofile=False)
-            )
-        for num, servovalve in enumerate(self.servovalves):
-            children.append(
-                servovalve.save(
-                    path="servovalves" + str(num), name="servovalve_res", tofile=False
-                )
-            )
-        if self.controller is not None:
-            children.append(
-                self.controller.save(
-                    path="controller", name="controller_res", tofile=False
-                )
-            )
-        node.add_children(children)
-        if tofile:
-            return node.persist(kwargs.get("writer"), path)
-        return node
-
-    def start_signal(self):
-        return True
-
-    def finish_signal(self):
-        """
-        Add calculation results to the result DataFrame.
-        """
-        self._results.loc[self._results.shape[0]] = [
-            self._t,
-            self._uxy[0],
-            self._uxy[1],
-            self._uxyt[0],
-            self._uxyt[1],
-            self.force[0],
-            self.force[1],
-        ]
-        return True
 
 class ALBSV(ALB):
     """Direct-spool dimensional ALB runtime."""
@@ -579,12 +530,12 @@ class ALBSV(ALB):
         static: bool = False,
     ) -> tuple[np.ndarray, float]:
         del static
-        for n, sv in enumerate(self.servovalves):
+        for n, sv in enumerate(self._servovalves):
             sv.set_spool(self._sv[n])
 
         forces = []
         frictions = []
-        for pad in self.pads:
+        for pad in self._pads:
             force, friction = self._evaluate_pad(
                 pad,
                 displacement=self._uxy,
@@ -650,12 +601,12 @@ class NodimALB(ALB):
             sv = self.static_sv
             self._initialize_children()
         else:
-            sv = self.servovalves
+            sv = self._servovalves
         for num, servovalve in enumerate(sv):
             run_valve_step(servovalve, self._t, self._uv[num])
         forces = []
         frictions = []
-        for pad in self.pads:
+        for pad in self._pads:
             force, friction = self._evaluate_pad(
                 pad,
                 displacement=self._uxy_nodim,
@@ -710,12 +661,12 @@ class NodimALBSV(NodimALB):
         del static
         if not nodim:
             raise ValueError("NodimALBSV only outputs nondimensional force")
-        for num, servovalve in enumerate(self.servovalves):
+        for num, servovalve in enumerate(self._servovalves):
             servovalve.set_spool(self._sv[num])
 
         forces = []
         frictions = []
-        for pad in self.pads:
+        for pad in self._pads:
             force, friction = self._evaluate_pad(
                 pad,
                 displacement=self._uxy_nodim,

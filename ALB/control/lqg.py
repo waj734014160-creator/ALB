@@ -20,11 +20,11 @@ from .valve import moog_servovalve
 
 from .reduction_core import alpha_shift, compute_modal_info, print_modal_table
 
-class BearingContent:
-    __slots__ = ("valve", "K", "C", "dxv", "act_node", "sensor_node")
+class _BearingContent:
+    __slots__ = ("_valve", "K", "C", "dxv", "act_node", "sensor_node")
 
     def __init__(self, valve, K, C, dxv, act_node, sensor_node):
-        self.valve = valve
+        self._valve = valve
         self.K = np.array(K).reshape(2, 2)
         self.C = np.array(C).reshape(2, 2)
         self.dxv = np.array(dxv).reshape(2)
@@ -102,7 +102,7 @@ class ALBLQGController(BaseSimpleModel):
         self.output_max = config.output_max
 
         # User-defined bearing and disturbance configuration.
-        self.bearings: list[BearingContent] = []
+        self._bearings: list[_BearingContent] = []
         self.unbalance_nodes: list[int] = []
 
         # Built plant/controller models.
@@ -121,7 +121,9 @@ class ALBLQGController(BaseSimpleModel):
 
     def add_bearing(self, valve, K, C, dxv, act_node, sensor_node):
         """Register one active bearing channel with valve and local dynamics."""
-        self.bearings.append(BearingContent(valve, K, C, dxv, act_node, sensor_node))
+        self._bearings.append(
+            _BearingContent(valve, K, C, dxv, act_node, sensor_node)
+        )
         return self
 
     def add_unbalance_node(self, node):
@@ -159,7 +161,7 @@ class ALBLQGController(BaseSimpleModel):
         """
         nodes = list(self.unbalance_nodes)
         if self.eso_enable and not nodes:
-            for b in self.bearings:
+            for b in self._bearings:
                 if b.act_node not in nodes:
                     nodes.append(b.act_node)
         return nodes
@@ -174,12 +176,12 @@ class ALBLQGController(BaseSimpleModel):
         n_rotor = rotor_order if rotor_order is not None else lti_r.A.shape[0]
 
         n_valve = 0
-        for b in self.bearings:
-            Av_s = b.valve.main_model.A
+        for b in self._bearings:
+            Av_s = b._valve.main_model.A
             n_valve += Av_s.shape[0] * 2  # One valve model per x/y channel.
 
-        n_inputs = len(self.bearings) * 2  # x/y actuator command channels.
-        n_outputs = len(self.bearings) * 2  # x/y displacement sensor channels.
+        n_inputs = len(self._bearings) * 2  # x/y actuator command channels.
+        n_outputs = len(self._bearings) * 2  # x/y displacement sensor channels.
 
         n_nom_states = n_rotor + n_valve
 
@@ -238,8 +240,8 @@ class ALBLQGController(BaseSimpleModel):
         n_rotor_phys = self._Ar_full.shape[0]
 
         n_valve = 0
-        for b in self.bearings:
-            n_valve += b.valve.main_model.A.shape[0] * 2
+        for b in self._bearings:
+            n_valve += b._valve.main_model.A.shape[0] * 2
 
         n_nom_states_phys = n_rotor_phys + n_valve
         n_aug_states_phys = n_nom_states_phys + n_dist
@@ -278,7 +280,7 @@ class ALBLQGController(BaseSimpleModel):
             print(
                 "  [auto-infer] treat bearing actuation nodes as disturbance input nodes"
             )
-            for b in self.bearings:
+            for b in self._bearings:
                 if b.act_node not in self.unbalance_nodes:
                     self.unbalance_nodes.append(b.act_node)
 
@@ -367,8 +369,8 @@ class ALBLQGController(BaseSimpleModel):
             if hasattr(raw_rotor, "number_dof"):
                 layout = RotorDofLayout.from_ross(raw_rotor)
             else:
-                # Minimal legacy test plants expose only a single four-DOF
-                # planar node and are not complete ROSS rotor objects.
+                # Minimal test plants expose only a single four-DOF planar
+                # node and are not complete ROSS rotor objects.
                 layout = RotorDofLayout.from_dof_per_node(4)
         lti_r = self._rotor_lti()
         self._Ar_full, self._Br_full = lti_r.A, lti_r.B
@@ -377,7 +379,7 @@ class ALBLQGController(BaseSimpleModel):
         B_all_list = []
         C_disp_act_list, C_vel_act_list, C_sen_list = [], [], []
 
-        for b in self.bearings:
+        for b in self._bearings:
             act_loc = [[b.act_node, "x"], [b.act_node, "y"]]
             sen_loc = [[b.sensor_node, "x"], [b.sensor_node, "y"]]
 
@@ -404,7 +406,7 @@ class ALBLQGController(BaseSimpleModel):
         B_all = np.hstack(B_all_list) if B_all_list else np.zeros((Ar.shape[0], 0))
         C_all = (
             np.vstack(C_disp_act_list + C_vel_act_list + C_sen_list)
-            if self.bearings
+            if self._bearings
             else np.zeros((0, Ar.shape[1]))
         )
 
@@ -419,13 +421,13 @@ class ALBLQGController(BaseSimpleModel):
         Brr = np.array(sys_rotor.B)
         Crr = np.array(sys_rotor.C)
 
-        Nb = len(self.bearings)
+        Nb = len(self._bearings)
         Ar_closed = Arr.copy()
 
         A_rv_list, Av_list, Bv_list, Cv_list = [], [], [], []
         H_sensor_list = []
 
-        for i, b in enumerate(self.bearings):
+        for i, b in enumerate(self._bearings):
             # Per-bearing actuator/sensor channel slices.
             B_act_i = Brr[:, 2 * i : 2 * i + 2]
             C_disp_i = Crr[2 * i : 2 * i + 2, :]
@@ -436,9 +438,9 @@ class ALBLQGController(BaseSimpleModel):
             Ar_closed -= B_act_i @ b.K @ C_disp_i + B_act_i @ b.C @ C_vel_i
 
             # Local valve state-space matrices.
-            Av_s = b.valve.main_model.A
-            Bv_s = b.valve.main_model.B
-            Cv_s = b.valve.main_model.C
+            Av_s = b._valve.main_model.A
+            Bv_s = b._valve.main_model.B
+            Cv_s = b._valve.main_model.C
 
             Av_list.append(block_diag(Av_s, Av_s))
             Bv_list.append(block_diag(Bv_s, Bv_s))
@@ -555,8 +557,8 @@ class ALBLQGController(BaseSimpleModel):
         """
         # Total valve states (x/y channels included).
         n_valve = 0
-        for b in self.bearings:
-            n_valve += b.valve.main_model.A.shape[0] * 2
+        for b in self._bearings:
+            n_valve += b._valve.main_model.A.shape[0] * 2
 
         n_dist = (
             self.B_d.shape[1] * 2 if (self.eso_enable and self.B_d.shape[1] > 0) else 0
@@ -696,7 +698,7 @@ class ALBLQGController(BaseSimpleModel):
             )
         return np.clip(output, lower, upper)
 
-    def init(self):
+    def _reset_for_owner(self):
         """Reset runtime state for a new simulation run."""
         self._init_runtime_state()
 
@@ -845,7 +847,7 @@ class ALBLQGController(BaseSimpleModel):
         n_full = self.ctrl_sys_full_c.A.shape[0]
         n_disc = self.active_ctrl_sys_d.A.shape[0]
         print("\n==== ALBLQGController Summary ====")
-        print(f"Bearings              : {len(self.bearings)}")
+        print(f"Bearings              : {len(self._bearings)}")
         print(f"ESO enabled           : {self.eso_enable}")
         print(f"Nominal plant order   : {self.A_nom.shape[0]}")
         print(f"Full controller order : {n_full}")
@@ -911,4 +913,4 @@ class ALBLQGController(BaseSimpleModel):
         plt.tight_layout()
         plt.show()
 
-__all__ = ["ALBLQGController", "BearingContent"]
+__all__ = ["ALBLQGController"]

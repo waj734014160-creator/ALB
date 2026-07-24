@@ -9,7 +9,6 @@ import scipy
 from scipy.linalg import expm
 
 from ALB.core.component import BaseSimpleModel
-from ALB.core.events import Signal
 from ALB.core.lifecycle import LifecycleState, RuntimeLifecycle
 from ALB.core.validation import finite_real_array, finite_real_time, finite_real_vector
 from ALB.core.fem.base import BasePostProcess
@@ -185,7 +184,7 @@ class SingleRotor(BaseSimpleModel):
     Simplified 2D rotor model with discrete state propagation.
     """
 
-    def init(self):
+    def _reset_for_owner(self):
         return True
 
     def __init__(
@@ -374,9 +373,8 @@ class RossRotor:
         self._force0: np.ndarray | None = None  # t=kT
         self._force1: np.ndarray | None = None  # t=(k+1)T
         self._discrete = discrete
-        self.signal = Signal(sys=self)
         self._lifecycle = RuntimeLifecycle(type(self).__name__, input_label="rotor load")
-        self.init()
+        self._reset_for_owner()
 
     def continuesys(self):
         """
@@ -504,7 +502,7 @@ class RossRotor:
             force0=value.previous_force,
         )
 
-    def init(self, x0=None):
+    def _reset_for_owner(self, x0=None):
         self._lifecycle.fail()
         try:
             if x0 is not None:
@@ -593,7 +591,7 @@ class RossRotor:
         with self._lifecycle.evaluation():
             result = self._propagate()
             self._state_ready = True
-            self.signal.lead_loop("finish_signal")
+            self._commit_state()
         return result
 
     def current_state(self, node=None):
@@ -647,7 +645,7 @@ class RossRotor:
             raise ValueError("rotor does not expose a four- or six-DOF layout")
         return self._dof_layout
 
-    def finish_signal(self):
+    def _commit_state(self):
         self._youts.append(copy.deepcopy(self._yout))
         self._xouts.append(copy.deepcopy(self._xout))
 

@@ -77,13 +77,13 @@ class HarmonicForceEvaluator:
 def finite_real_array(
     name: str, value: object, *, shape: tuple[int, ...]
 ) -> FloatArray:
-    """Compatibility wrapper for the shared finite real-array validator."""
+    """Apply the harmonic module's name-first array validation contract."""
 
     return _finite_real_array(value, name, shape=shape)
 
 
 def finite_real_scalar(name: str, value: object) -> float:
-    """Compatibility wrapper for the shared finite real-scalar validator."""
+    """Apply the harmonic module's name-first scalar validation contract."""
 
     return float(_finite_real_scalar(value, name))
 

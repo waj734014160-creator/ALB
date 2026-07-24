@@ -1,4 +1,4 @@
-"""Freeze native controller and servovalve trajectories before lifecycle migration."""
+"""Freeze native controller and servovalve trajectories."""
 
 from __future__ import annotations
 
@@ -19,7 +19,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from ALB.control.controllers import ALBLQGController, RCConfig, RepetitiveController
+from ALB.control.lqg import ALBLQGController
+from ALB.control.repetitive import RCConfig, RepetitiveController
 from ALB.control.valve import moog_2nd_servovalve
 
 
@@ -34,7 +35,7 @@ def _array_sha256(value: np.ndarray) -> str:
 
 
 def _git_head() -> str:
-    """Return the baseline revision used to generate this reference."""
+    """Return the revision used to generate this reference."""
 
     return subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, encoding="utf-8"
@@ -42,7 +43,7 @@ def _git_head() -> str:
 
 
 def _package_version(distribution_name: str) -> str:
-    """Return an installed distribution version without importing internals."""
+    """Return an installed distribution version."""
 
     from importlib.metadata import version
 
@@ -50,7 +51,7 @@ def _package_version(distribution_name: str) -> str:
 
 
 def _lqg_arrays() -> dict[str, np.ndarray]:
-    """Collect the existing LQG calculation once per latched sample."""
+    """Collect one LQG calculation per latched sample."""
 
     controller = ALBLQGController(SimpleNamespace(), dt=0.01, eso_enable=False)
     controller.active_ctrl_sys_d = SimpleNamespace(
@@ -94,7 +95,7 @@ def _lqg_arrays() -> dict[str, np.ndarray]:
 
 
 def _repetitive_arrays() -> dict[str, np.ndarray]:
-    """Collect one deterministic repetitive-controller period plus wraparound."""
+    """Collect one repetitive-controller period plus wraparound."""
 
     controller = RepetitiveController(
         RCConfig(
@@ -148,7 +149,7 @@ def _servovalve_arrays() -> dict[str, np.ndarray]:
 
 
 def collect_reference_arrays() -> dict[str, np.ndarray]:
-    """Return all unchanged numerical trajectories protected by this migration."""
+    """Return all numerical trajectories protected by this migration."""
 
     return {**_lqg_arrays(), **_repetitive_arrays(), **_servovalve_arrays()}
 

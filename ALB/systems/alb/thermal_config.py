@@ -32,7 +32,7 @@ def resolve_alb_thermal_config(
     thermal_args["args_nodim"] = args_nodim
     resolved = ThermalConfig.from_dict(thermal_args)
 
-    static_servo = alb_config.servo == "static"
+    static_servo = alb_config.valve_model == "static"
     if static_servo and resolved.transient_enabled:
         warnings.warn(
             "static servo dynamics are paired with transient thermal dynamics",

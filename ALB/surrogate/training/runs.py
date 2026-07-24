@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-import pickle
 from typing import Any
 
 import numpy as np
@@ -16,6 +15,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
 
 from ALB.surrogate.networks import Net
+from ALB.surrogate.package import create_model_package
 
 from .config import TrainingConfig
 from .config import TrainingConfigError
@@ -32,10 +32,7 @@ from .transforms import ColumnTransformPipeline
 
 
 PACKAGED_ARTIFACT_NAMES = (
-    "best_albnn.pth",
-    "scaler_X.pkl",
-    "scaler_y.pkl",
-    "metadata.json",
+    "model_package",
     "validation_summary.json",
     "validation_predictions.csv",
     "loss_history.csv",
@@ -182,7 +179,7 @@ class AlbnnMlpTrainer(TrainingRun):
         if not fit.wrote_best:
             raise RuntimeError(
                 "Training did not produce a finite validation checkpoint for this run; "
-                "refusing to package stale best_albnn.pth"
+                "refusing to publish a stale deployment package"
             )
 
         checkpoint = _load_checkpoint(self.output_dir / "best_albnn.pth", device)
@@ -216,7 +213,10 @@ class AlbnnMlpTrainer(TrainingRun):
 
     def _isolate_existing_packaged_artifacts(self) -> None:
         """Move existing packaged outputs aside before a new training run."""
-        existing = [self.output_dir / name for name in PACKAGED_ARTIFACT_NAMES]
+        existing = [
+            self.output_dir / "best_albnn.pth",
+            *(self.output_dir / name for name in PACKAGED_ARTIFACT_NAMES),
+        ]
         existing = [path for path in existing if path.exists()]
         if not existing:
             return
@@ -442,11 +442,8 @@ class AlbnnMlpTrainer(TrainingRun):
     ) -> None:
         data_cfg = self.resolved["data"]
         report_cfg = self.resolved["report"]
-        _save_checkpoint(net, self.output_dir / "best_albnn.pth", architecture)
-        with (self.output_dir / "scaler_X.pkl").open("wb") as file:
-            pickle.dump(scaler_x, file)
-        with (self.output_dir / "scaler_y.pkl").open("wb") as file:
-            pickle.dump(scaler_y, file)
+        checkpoint = self.output_dir / "best_albnn.pth"
+        _save_checkpoint(net, checkpoint, architecture)
         write_loss_history(self.output_dir, history)
         if report_cfg.get("write_loss_curve", True):
             write_loss_curve(self.output_dir, history)
@@ -485,27 +482,24 @@ class AlbnnMlpTrainer(TrainingRun):
             "resolved_training_config": "resolved_training_config.json",
             "metrics": metrics,
         }
-        write_json(self.output_dir / "metadata.json", metadata)
+        create_model_package(
+            self.output_dir / "model_package",
+            checkpoint=checkpoint,
+            input_scaler=scaler_x,
+            output_scaler=scaler_y,
+            metadata=metadata,
+        )
+        checkpoint.unlink()
 
 
 class AlbnnExpertTrainer(AlbnnMlpTrainer):
-    """Config-driven trainer placeholder for expert-style ALBNN targets.
-
-    The class uses the same base lifecycle once expert targets are materialized
-    in the configured target columns.  Existing expert-specific legacy CLI
-    behavior remains in ``SURROGATE_TRAIN`` until that target materialization is
-    moved into JSON config.
-    """
+    """Config-driven trainer for materialized expert-style ALBNN targets."""
 
     trainer_kind = "albnn_expert"
 
 
 class AlbnnResidualTrainer(AlbnnMlpTrainer):
-    """Config-driven trainer placeholder for residual ALBNN targets.
-
-    Existing residual sidecar workflows can keep using their legacy CLI path
-    while the shared data, transform, loss, and report mechanics live here.
-    """
+    """Config-driven trainer for materialized residual ALBNN targets."""
 
     trainer_kind = "albnn_residual"
 
@@ -530,7 +524,4 @@ def _pre_run_artifact_path(path: Path, index: int) -> Path:
 
 
 def _load_checkpoint(path: Path, device: torch.device) -> dict[str, Any]:
-    try:
-        return torch.load(path, map_location=device, weights_only=True)
-    except TypeError:
-        return torch.load(path, map_location=device)
+    return torch.load(path, map_location=device, weights_only=True)

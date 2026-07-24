@@ -382,7 +382,7 @@ class NodimFilmModel(BaseMainModel):
 
 
 class FilmModel(NodimFilmModel):
-    """Dimensional compatibility wrapper for :class:`NodimFilmModel`."""
+    """Dimensional projection over the shared nondimensional film kernel."""
 
     def __init__(
         self,
@@ -488,7 +488,7 @@ class FilmModel(NodimFilmModel):
         result = sl.spsolve(self.matrixs["ke"], self.rights["fe"])
         self.add_result(result)
         self.update_to_nodes()
-        self.signal.lead_loop("finish_signal")
+        self._commit_result()
         return result
 
     def add_result(self, result):
@@ -527,7 +527,7 @@ class FilmModel(NodimFilmModel):
             return node.persist(kwargs.get("writer"), path)
         return node
 
-    def finish_signal(self):
+    def _commit_result(self):
         freedom = self.node_manager.freedoms
         if self.save_switch["p"]:
             film_p = self.latest_result
@@ -654,7 +654,7 @@ class NodimNewtonFilm(FilmModel):
         self._dp = []
 
     # Initialize pressure and cache baseline matrices for Newton iterations.
-    def init(self, **kwargs):
+    def _reset_for_owner(self, **kwargs):
         """
         Initialize solver state and cache data for iterative updates.
 
@@ -755,23 +755,6 @@ class NodimNewtonFilm(FilmModel):
             self._dp = sl.spsolve(J_reg, -Phi)
 
         p = p + self._dp * self.current_damp
-        # p = self._reynold_boundary(p)
-
-        # x_lim = self.args['x_lim']
-        # y_lim = self.args['z_lim']
-        # if not self.boundary.args['coe']:
-        #     r_boundary = self.node_manager.search(0, x_lim[0], number=True)
-        #     l_boudary = self.node_manager.search(0, x_lim[1], number=True)
-        #     u_boudary = self.node_manager.search(1, y_lim[0], number=True)
-        #     d_boudary = self.node_manager.search(1, y_lim[1], number=True)
-        # Legacy boundary handling branch kept for reference.
-        #     boundary.check_boundary(r_boundary + l_boudary, u_boudary)
-        #     boundary.check_boundary(r_boundary + l_boudary, d_boudary)
-        #     boundary_nodes = r_boundary + l_boudary + u_boudary + d_boudary
-        #     p[boundary_nodes] = 0.0
-        # else:
-        #     raise ValueError("coe boundary condition is not supported in reynold method, please set coe to False.\n"
-        #                      "if you want to set coe=True, please set reynold=half_reynold")
         self.add_result(p)
 
         self.matrixs["ke_all"] = self.matrixs["ke"].copy()
@@ -790,7 +773,7 @@ class NodimNewtonFilm(FilmModel):
         :return: Computed value(s) for the current operation.
         """
         op = self.iter_solve(*args, **kwargs)
-        self.signal.lead_loop("finish_signal")
+        self._commit_result()
         return op
 
     def calc_is_finished(self):
@@ -829,7 +812,7 @@ class NodimNewtonFilm(FilmModel):
 
 
 class NewtonFilm(NodimNewtonFilm):
-    """Dimensional compatibility wrapper for :class:`NodimNewtonFilm`."""
+    """Dimensional projection over the shared nondimensional Newton kernel."""
 
     def __init__(
         self,
@@ -1094,7 +1077,7 @@ class GaussSeidelFilm(NewtonFilm):
         self.update_to_nodes()
         return result
 
-    def init(self):
+    def _reset_for_owner(self):
         self.pre_solve(csc=False)
         result = self.solve()
         self.matrixs_init_for_iter_solve()
@@ -1190,7 +1173,7 @@ class ThicknessModel(BaseSimpleModel):
         }
         self._useing_methods = {"e_angle": self.set_thickness_with_e_angle}
 
-    def init(self):
+    def _reset_for_owner(self):
         pass
 
     def input(self, method: str = None, **kwargs):
@@ -1758,14 +1741,14 @@ class FilmSystem(BaseSystem):
     def plot_p_mesh(self, **kwargs):
         return self._output.post_process.plot_p_mesh(**kwargs)
 
-    def init(self):
+    def _reset_for_owner(self):
         """Initialize solver state and cache data for iterative updates."""
         self._result = pd.DataFrame()
         self.last_converged = None
-        self.main_model.init()
+        self.main_model._reset_for_owner()
         for simple_model in self.simple_models:
-            if hasattr(simple_model, "init"):
-                simple_model.init()
+            if hasattr(simple_model, "_reset_for_owner"):
+                simple_model._reset_for_owner()
 
     # Couple one main film model with optional auxiliary sub-models.
     def solve(self, init: bool = True, **kwargs):
@@ -1777,10 +1760,10 @@ class FilmSystem(BaseSystem):
         :return: Computed value(s) for the current operation.
         """
         if init:
-            self.main_model.init()
+            self.main_model._reset_for_owner()
             for simple_model in self.simple_models:
-                if hasattr(simple_model, "init"):
-                    simple_model.init()
+                if hasattr(simple_model, "_reset_for_owner"):
+                    simple_model._reset_for_owner()
         if hasattr(self.main_model, "reset_adaptive_damp"):
             self.main_model.reset_adaptive_damp()
         for i in range(self.max_iter):
@@ -1899,7 +1882,6 @@ class FilmSystem(BaseSystem):
         self.solve(**kwargs)
         output = self._output(calc, **kwargs)
         self._temp_res.update(output)
-        self.signal.lead_loop("finish_signal")
         return output
 
     def clear_simple_models(self):
@@ -1937,7 +1919,7 @@ class FilmSystem(BaseSystem):
             return parent_node.persist(kwargs.get("writer"), path)
         return parent_node
 
-    def finish_signal(self):
+    def _commit_result(self):
         if self._result.shape[0] == 0:
             self._result = pd.DataFrame(columns=list(self._temp_res.keys()))
         self._result.loc[self._result.shape[0]] = list(self._temp_res.values())

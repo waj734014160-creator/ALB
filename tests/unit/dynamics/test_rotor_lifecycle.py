@@ -102,7 +102,7 @@ def test_rotor_advance_failure_requires_successful_reinitialization(monkeypatch)
     with pytest.raises(RuntimeError, match="init"):
         rotor.input_force(0.0, np.array([1.0]))
 
-    rotor.init()
+    rotor._reset_for_owner()
     assert rotor.lifecycle_state.value == "ready"
     np.testing.assert_array_equal(rotor.output(), np.zeros(2))
 

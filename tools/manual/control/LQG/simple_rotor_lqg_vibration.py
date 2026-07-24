@@ -174,7 +174,7 @@ def _simulate(
     measured_displacement = np.zeros_like(displacement)
     control = np.zeros((time_s.size, 2))
 
-    controller.init()
+    controller._reset_for_owner()
     for index, time_value in enumerate(time_s):
         true_output = np.asarray(plant_d.C @ state).reshape(-1)
         measured_output = true_output + sensor_noise_m[index]

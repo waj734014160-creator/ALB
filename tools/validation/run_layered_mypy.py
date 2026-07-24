@@ -1,4 +1,4 @@
-"""Run strict boundary typing plus an exact incremental legacy baseline."""
+"""Run strict 0.4 boundary typing plus an exact numerical-core baseline."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from typing import Iterable
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-BASELINE_PATH = REPOSITORY_ROOT / "tools/validation/mypy_layer_baseline.json"
+BASELINE_PATH = REPOSITORY_ROOT / "tools/validation/mypy_layer_baseline_0_4.json"
 DIAGNOSTIC_PATTERN = re.compile(
     r"^(ALB[\\/][^:]+):\d+: error: .*\[([^\]]+)\]$"
 )
@@ -21,38 +21,40 @@ DIAGNOSTIC_PATTERN = re.compile(
 STRICT_TARGETS = (
     "ALB/contracts",
     "ALB/core",
-    "ALB/config/schema.py",
-    "ALB/config/legacy.py",
-    "ALB/config/migration.py",
-    "ALB/config/cli.py",
-    "ALB/control/adapters.py",
+    "ALB/api",
     "ALB/control/blocks.py",
     "ALB/dynamics/rotor_layout.py",
     "ALB/dynamics/rotor_results.py",
     "ALB/dynamics/coupling_runtime.py",
-    "ALB/dynamics/coupling_results.py",
     "ALB/dynamics/bindings.py",
     "ALB/infrastructure/recording.py",
-    "ALB/infrastructure/legacy_signal.py",
-    "ALB/systems/alb/building.py",
     "ALB/systems/alb/scales.py",
-    "ALB/systems/alb/runtime_adapter.py",
     "ALB/systems/alb/_harmonic_runtime.py",
     "ALB/systems/alb/harmonic_coefficients.py",
     "ALB/systems/alb/harmonic_results.py",
-    "ALB/systems/alb/assembly.py",
+    "ALB/surrogate/package.py",
+    "ALB/surrogate/scaler_io.py",
+    "ALB/surrogate/runtime.py",
+    "ALB/physics/gas/runtime.py",
     "tools/validation/release_phases.py",
     "tools/validation/release_source_identity.py",
-    "tools/validation/release_wheel_gate.py",
-    "tools/validation/run_release_acceptance_0_2.py",
+    "tools/validation/run_resource_acceptance_0_4.py",
+    "tools/validation/run_release_acceptance_0_4.py",
 )
 COVERED_NAMESPACES = (
+    "ALB/api",
+    "ALB/contracts",
+    "ALB/core",
     "ALB/config",
     "ALB/control",
     "ALB/dynamics",
+    "ALB/infrastructure",
+    "ALB/physics",
+    "ALB/surrogate",
     "ALB/systems",
+    "ALB/workflows",
 )
-LEGACY_RELAXATIONS = (
+IMPLEMENTATION_RELAXATIONS = (
     "--allow-untyped-defs",
     "--allow-incomplete-defs",
     "--allow-untyped-calls",
@@ -135,8 +137,8 @@ def _baseline_payload(counts: Counter[str]) -> dict[str, object]:
         "strict_targets": list(STRICT_TARGETS),
         "covered_namespaces": list(COVERED_NAMESPACES),
         "covered_source_files": list(discover_covered_sources()),
-        "legacy_relaxations": list(LEGACY_RELAXATIONS),
-        "legacy_diagnostics": dict(sorted(counts.items())),
+        "implementation_relaxations": list(IMPLEMENTATION_RELAXATIONS),
+        "implementation_diagnostics": dict(sorted(counts.items())),
     }
 
 
@@ -163,7 +165,7 @@ def run_layered_mypy(
             COVERED_NAMESPACES,
             mypy_target=mypy_target,
             cache_dir=cache_root / "covered",
-            relaxations=LEGACY_RELAXATIONS,
+            relaxations=IMPLEMENTATION_RELAXATIONS,
         )
     )
     combined = legacy.stdout + legacy.stderr
@@ -191,8 +193,8 @@ def run_layered_mypy(
         "strict_returncode": strict.returncode,
         "strict_targets": len(STRICT_TARGETS),
         "covered_source_files": len(payload["covered_source_files"]),
-        "legacy_diagnostics": sum(counts.values()),
-        "legacy_diagnostic_groups": len(counts),
+        "implementation_diagnostics": sum(counts.values()),
+        "implementation_diagnostic_groups": len(counts),
     }
 
 

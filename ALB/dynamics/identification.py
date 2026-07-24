@@ -32,7 +32,7 @@ class FFT:
         save_path: str | Path | None = None,
         **kwargs: Any,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Calculate the one-sided spectrum without changing legacy scaling."""
+        """Calculate the one-sided spectrum with the established scaling."""
 
         if t is not None:
             self.t = np.squeeze(np.asarray(t))
@@ -156,7 +156,7 @@ def cal_bode_best(
 ) -> tuple[np.ndarray, list[np.ndarray]] | tuple[
     np.ndarray, list[np.ndarray], list[np.ndarray]
 ]:
-    """Extract sorted synchronous Bode amplitudes using the legacy windowing rule."""
+    """Extract sorted synchronous Bode amplitudes using the established window."""
 
     segment_count = int(len(rpm) / step_size)
     amplitudes = []

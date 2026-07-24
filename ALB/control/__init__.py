@@ -5,14 +5,6 @@ from ALB.contracts.optional import import_optional_module
 
 _EXPORTS = {
     "ControllerBlock": ("ALB.control.blocks", "ControllerBlock"),
-    "LegacyControllerAdapter": ("ALB.control.adapters", "LegacyControllerAdapter"),
-    "PID": ("ALB.control.pid", "PID"),
-    "FuzzyPID": ("ALB.control.fuzzy", "FuzzyPID"),
-    "ALBLQGController": ("ALB.control.lqg", "ALBLQGController"),
-    "RepetitiveController": ("ALB.control.repetitive", "RepetitiveController"),
-    "limit_signal": ("ALB.core.validation", "limit_signal"),
-    "moog_servovalve": ("ALB.control.valve", "moog_servovalve"),
-    "moog_2nd_servovalve": ("ALB.control.valve", "moog_2nd_servovalve"),
     "ValveBlock": ("ALB.control.blocks", "ValveBlock"),
     "AdaptiveDampConfig": ("ALB.core.numerics.damping", "AdaptiveDampConfig"),
     "AdaptiveDampController": (
@@ -23,7 +15,7 @@ _EXPORTS = {
 
 
 def __getattr__(name):
-    """Resolve control implementations lazily from compatibility modules."""
+    """Resolve strict control blocks and typed damping policies lazily."""
 
     if name not in _EXPORTS:
         raise AttributeError(f"module 'ALB.control' has no attribute '{name}'")

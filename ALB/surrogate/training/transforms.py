@@ -22,9 +22,9 @@ class MidpointMinMaxScaler:
     """Minmax scaler that maps constant columns to the feature-range midpoint.
 
     sklearn's ``MinMaxScaler`` maps fitted constant columns to the lower bound.
-    Legacy ALBNN scalers mapped those columns to the midpoint, which matters for
+    Earlier ALBNN scalers mapped those columns to the midpoint, which matters for
     derived scaled-space features.  This top-level class is intentionally small
-    and pickle-friendly so it can be stored in packaged training artifacts.
+    and serializable by the restricted NPZ package format.
     """
 
     def __init__(self, feature_range: tuple[float, float] = (0.0, 1.0)):

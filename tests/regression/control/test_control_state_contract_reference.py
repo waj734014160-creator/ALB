@@ -90,7 +90,7 @@ def test_pid_fresh_trajectory_and_reset_match_reference_exactly():
         controller.input(0.0, [0.8, -0.6])
         controller.evaluate()
         controller.output()
-        controller.init()
+        controller._reset_for_owner()
         controller.input(0.0, reference["pid.errors"][0])
         controller.evaluate()
         np.testing.assert_array_equal(controller.output(), reference["pid.outputs"][0])
@@ -113,7 +113,7 @@ def test_fuzzy_fixed_ki_has_no_warning_and_reset_matches_reference_exactly():
     with np.load(REF_NPZ, allow_pickle=False) as reference:
         for name, value in actual.items():
             np.testing.assert_array_equal(value, reference[name], err_msg=name)
-        controller.init()
+        controller._reset_for_owner()
         reset = _run_fuzzy(controller)
         for name, value in reset.items():
             np.testing.assert_array_equal(value, reference[name], err_msg=name)

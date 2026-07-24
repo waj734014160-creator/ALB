@@ -3,22 +3,36 @@
 import numpy as np
 import pytest
 
-from ALB.contracts import ControlInput, UnitSystem, ValveInput
+from ALB.contracts import ControlInput, LifecycleState, UnitSystem, ValveInput
 from ALB.control.blocks import ControllerBlock, ValveBlock
 from ALB.control.valve import moog_2nd_servovalve
 
 
 class _Controller:
+    @property
+    def lifecycle_state(self):
+        return LifecycleState.READY
+
     def input(self, time, error):
         self.command = np.asarray(error) * 2.0 + time
+
+    def evaluate(self):
+        return self.command
 
     def output(self):
         return self.command
 
 
 class _Valve:
+    @property
+    def lifecycle_state(self):
+        return LifecycleState.READY
+
     def input(self, time, command):
         self.spool = np.asarray(command) - time
+
+    def evaluate(self):
+        return self.spool
 
     def output(self):
         return self.spool
@@ -49,5 +63,4 @@ def test_servo_valve_requires_evaluate_and_repeated_reads_do_not_advance():
     history_lengths = (len(valve.ts), len(valve.xout), len(valve.yout))
 
     np.testing.assert_array_equal(valve.output(), expected)
-    np.testing.assert_array_equal(valve.solve(), expected)
     assert (len(valve.ts), len(valve.xout), len(valve.yout)) == history_lengths

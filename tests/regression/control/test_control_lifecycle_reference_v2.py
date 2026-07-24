@@ -1,4 +1,4 @@
-"""Regression tests for read-only legacy control outputs."""
+"""Regression tests for read-only internal control outputs."""
 
 from pathlib import Path
 
@@ -7,7 +7,8 @@ import numpy as np
 import pytest
 
 from ALB.config import FuzzyPIDConfig, PIDConfig
-from ALB.control import FuzzyPID, PID
+from ALB.control.fuzzy import FuzzyPID
+from ALB.control.pid import PID
 from ALB.control.state_space import BaseLti
 
 

@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import os
-import warnings
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-from ALB.config import TimeGridConfig
 from ALB.contracts.optional import missing_optional_dependency
 
 try:
@@ -19,18 +16,10 @@ except ModuleNotFoundError as error:
 
 
 def read_json5(path: str | Path) -> dict[str, Any]:
-    """Read a JSON5 object as UTF-8, with an explicit legacy GBK fallback."""
+    """Read one UTF-8 JSON5 object."""
 
     source = Path(path)
-    try:
-        text = source.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        warnings.warn(
-            f"legacy GBK/CP936 fallback used for {source}; convert it to UTF-8 before editing",
-            UnicodeWarning,
-            stacklevel=2,
-        )
-        text = source.read_text(encoding="gbk")
+    text = source.read_text(encoding="utf-8")
     payload = json5.loads(text)
     if not isinstance(payload, dict):
         raise TypeError(f"JSON5 root must be an object: {source}")
@@ -51,88 +40,6 @@ def write_json5(
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json5.dumps(payload, indent=4) + "\n", encoding="utf-8")
     return destination
-
-
-def read_shared_config(path: str | Path, recover: bool = False) -> dict[str, Any]:
-    """Resolve one shared config and its adjacent canonical time-grid config."""
-
-    source = Path(path)
-    shared = read_json5(source)
-    time_path = source.with_name("time_iter.json5")
-    if time_path.exists():
-        time_payload = read_json5(time_path)
-        share_keys = time_payload.pop("share_name", [])
-        if not isinstance(share_keys, list):
-            share_keys = [share_keys]
-        for key in share_keys:
-            if key not in shared:
-                raise KeyError(
-                    f"Parameter '{key}' requested by 'time_iter.json5' not found in share data."
-                )
-            time_payload[key] = shared[key]
-    else:
-        time_payload = shared
-
-    resolved = TimeGridConfig.from_dict(time_payload).resolve()
-    shared.update(
-        {
-            "mode": resolved.mode,
-            "freq": resolved.freq,
-            "dt": resolved.dt,
-            "steps": resolved.steps,
-            "cycles": resolved.cycles,
-            "points_per_cycle": resolved.points_per_cycle,
-            "pt": resolved.points_per_cycle,
-        }
-    )
-    if resolved.mode == "cycle_points":
-        shared["n"] = int(resolved.cycles)
-    else:
-        shared.pop("n", None)
-    if recover:
-        warnings.warn(
-            "recover=True is deprecated; derived values are returned in memory only",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-    return shared
-
-
-def read_json5_with_shared(
-    path: str | Path,
-    shared: dict[str, Any] | None = None,
-    *,
-    shared_file_name: str = "share.json5",
-    shared_key: str = "share_name",
-) -> dict[str, Any]:
-    """Read one JSON5 object and merge only explicitly requested shared values."""
-
-    source = Path(path)
-    payload = read_json5(source)
-    shared_values = shared
-    if shared_values is None:
-        shared_path = source.with_name(shared_file_name)
-        if shared_path.exists():
-            raw_shared = read_json5(shared_path)
-            has_legacy_time = all(key in raw_shared for key in ("freq", "n", "pt"))
-            time_path = source.with_name("time_iter.json5")
-            shared_values = (
-                read_shared_config(shared_path)
-                if time_path.exists() or has_legacy_time
-                else raw_shared
-            )
-    if shared_values is not None and shared_key in payload:
-        requested = payload[shared_key]
-        if not isinstance(requested, list):
-            requested = [requested]
-        for key in requested:
-            if key not in shared_values:
-                raise KeyError(
-                    f"Parameter '{key}' requested by '{source.name}' not found in share data."
-                )
-            payload[key] = shared_values[key]
-    payload.pop(shared_key, None)
-    return payload
 
 
 def list_directories(path: str | Path, *, full: bool = True) -> list[str]:
@@ -205,7 +112,5 @@ __all__ = [
     "list_directories",
     "read_config_directories",
     "read_json5",
-    "read_json5_with_shared",
-    "read_shared_config",
     "write_json5",
 ]

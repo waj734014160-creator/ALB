@@ -5,16 +5,25 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from ALB.contracts import BearingInput, BearingRuntimeProtocol, UnitSystem
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    BearingRuntimeProtocol,
+    ConvergenceStatus,
+    UnitSystem,
+    result_snapshot,
+)
 from ALB.core import LifecycleState
 from ALB.physics.bearing import MultiPad
 
 
 class _LeafPad:
-    """Small legacy-shaped film solver used only as a MultiPad child."""
+    """Small native runtime used only as a MultiPad child."""
 
     unit_system = UnitSystem.DIMENSIONAL
     node_link = 2
+    input_dto_type = BearingInput
+    lifecycle_state = LifecycleState.READY
 
     def __init__(self, force, friction, *, fail=False, converged=True):
         self.args = {"c": 1.0e-4}
@@ -26,30 +35,49 @@ class _LeafPad:
         self.input_calls = 0
         self.output_calls = 0
 
-    def init(self):
+    def _reset_for_owner(self):
         self.init_calls += 1
+        self._output = None
 
-    def input(self, *, uxy, uxyt, t, nodim):
+    def input(self, dto):
         self.input_calls += 1
-        self.last_input = (
-            np.asarray(uxy, dtype=float),
-            np.asarray(uxyt, dtype=float),
-            float(t),
-            bool(nodim),
-        )
+        self.last_input = dto
 
-    def output(self, *, nodim):
+    def evaluate(self):
         self.output_calls += 1
         if self.fail:
             raise FloatingPointError("injected child failure")
-        return {
-            "force": self.force.copy(),
-            "friction": self.friction,
-            "nodim": nodim,
-        }
+        self._output = BearingOutput(
+            self.force,
+            self.last_input.time,
+            self.unit_system,
+        )
 
-    def calc_is_finished(self):
-        return self.converged
+    def output(self):
+        return self._output
+
+    def step(self, dto):
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    @property
+    def convergence_status(self):
+        if self.converged:
+            return ConvergenceStatus(0.0, True)
+        return ConvergenceStatus.pending()
+
+    def result_snapshot(self):
+        return result_snapshot(
+            {"force": self.force, "friction": self.friction},
+            {},
+        )
+
+    def failure_snapshot(self):
+        raise RuntimeError("no failure")
+
+    def diagnostic_snapshot(self):
+        return self.result_snapshot()
 
     def calc_capacity(self, **kwargs):
         del kwargs
@@ -106,7 +134,8 @@ def test_multipad_auto_ready_three_phase_and_exact_read_only_sum() -> None:
     assert snapshot.values["friction"] == 2.0
     assert snapshot.metadata["pad_count"] == 2
     assert snapshot.metadata["converged"] is True
-    assert runtime.results.shape == (1, 3)
+    assert not hasattr(runtime, "results")
+    assert not hasattr(runtime, "save")
 
 
 def test_multipad_analysis_methods_preserve_exact_aggregation() -> None:

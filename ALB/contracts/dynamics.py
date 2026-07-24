@@ -16,12 +16,15 @@ RotorStateMap: TypeAlias = Mapping[str, FloatArray]
 
 @runtime_checkable
 class RotorProtocol(RuntimeLifecycleProtocol, Protocol):
-    """Explicit rotor runtime consumed by ``RsRotorBearingCouple``."""
+    """Explicit rotor runtime consumed by the simulation step runtime."""
 
     unit_system: UnitSystem | str
 
-    def init(self, initial_state: npt.ArrayLike | None = None) -> None:
-        """Reset rotor state and invalidate any pending force."""
+    def _reset_for_owner(
+        self,
+        initial_state: npt.ArrayLike | None = None,
+    ) -> None:
+        """Reset rotor state for its owning simulation runtime."""
 
     def input_force2node(
         self,
@@ -48,4 +51,4 @@ class RotorProtocol(RuntimeLifecycleProtocol, Protocol):
     def output(
         self, node: int | Sequence[int] | None = None
     ) -> FloatArray | RotorStateMap:
-        """Compatibility read alias for :meth:`current_state`."""
+        """Read the completed rotor state without advancing."""

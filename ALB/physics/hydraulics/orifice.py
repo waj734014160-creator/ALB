@@ -84,14 +84,13 @@ class BaseOrifice(BaseSimpleModel):
     """Base interface for oil-supply orifice models.
 
     ``flow_info`` is the public data contract used by the thermal model.  It
-    returns a dictionary split into structure parameters, explicit flow
-    parameters, and a legacy dimensional tuple list.  Every ``flow_params``
-    item provides ``position_nondim``, ``position_dim``, ``q_nondim``,
-    ``q_vol``, and ``qw``.  Thermal solvers consume the explicit fields only.
+    returns structure parameters and explicit flow parameters. Every
+    ``flow_params`` item provides ``position_nondim``, ``position_dim``,
+    ``q_nondim``, ``q_vol``, and ``qw``.
     """
 
     def flow_info(self, model=None):
-        return {"structure": {}, "flow_params": [], "flow": []}
+        return {"structure": {}, "flow_params": []}
 
 
 class Orifice(BaseOrifice):
@@ -128,7 +127,7 @@ class Orifice(BaseOrifice):
         self._path = kwargs.get("path", "orifice_results")
         self._name = kwargs.get("name", "orifice")
 
-    def init(self):
+    def _reset_for_owner(self):
         self._results = pd.DataFrame()
         self._save_results = pd.DataFrame()
         return True
@@ -309,11 +308,11 @@ class Orifice(BaseOrifice):
             "cq": self._cq,
         }
         if self._add_node is None:
-            return {"structure": structure, "flow_params": [], "flow": []}
+            return {"structure": structure, "flow_params": []}
         if model is None:
             model = self._model
         if model is None:
-            return {"structure": structure, "flow_params": [], "flow": []}
+            return {"structure": structure, "flow_params": []}
         model = get_primary_film_model(model)
         qw, r, l_half = _physical_flow_reference(model)
         pos_nd = self._add_node.coords
@@ -334,11 +333,7 @@ class Orifice(BaseOrifice):
                 "qw": qw,
             }
         ]
-        return {
-            "structure": structure,
-            "flow_params": flow_params,
-            "flow": [(position_dim[0], position_dim[1], q_vol)],
-        }
+        return {"structure": structure, "flow_params": flow_params}
 
 
 class NodimCSOrifice(BaseOrifice):
@@ -399,14 +394,8 @@ class NodimCSOrifice(BaseOrifice):
         self._results = pd.DataFrame(columns=columns, dtype=np.float64)
         self._error_res = np.zeros((2, lenp))
 
-    def init(self, *args, **kwargs):
+    def _reset_for_owner(self, *args, **kwargs):
         return True
-
-    def start_signal(self):
-        return True
-
-    def finish_signal(self):
-        self._add_result(self._results, self.pn, self.qn)
 
     def input(self, xv=None, *args, **kwargs):
         """
@@ -442,7 +431,6 @@ class NodimCSOrifice(BaseOrifice):
         self.pn, self.qn = self._add_q_and_qdp(model)
         self._error_res[0] = self._error_res[1]
         self._error_res[1] = self.pn
-        self.signal.lead_loop("finish_signal")
 
     def _calc_qw(self):
         self.qw = 1.0
@@ -617,14 +605,13 @@ class NodimCSOrifice(BaseOrifice):
             "args": self.args,
         }
         if self.node is None:
-            return {"structure": structure, "flow_params": [], "flow": []}
+            return {"structure": structure, "flow_params": []}
         if model is None:
             model = self.model
         if model is None:
-            return {"structure": structure, "flow_params": [], "flow": []}
+            return {"structure": structure, "flow_params": []}
         model = get_primary_film_model(model)
         qw, r, l_half = _physical_flow_reference(model)
-        flow = []
         flow_params = []
         for idx, node in enumerate(self.node):
             q_nondim = (
@@ -639,7 +626,6 @@ class NodimCSOrifice(BaseOrifice):
                 position_nondim[0] * r,
                 position_nondim[1] * l_half,
             )
-            flow.append((position_dim[0], position_dim[1], q_vol))
             flow_params.append(
                 {
                     "node": node.number,
@@ -650,7 +636,7 @@ class NodimCSOrifice(BaseOrifice):
                     "qw": qw,
                 }
             )
-        return {"structure": structure, "flow_params": flow_params, "flow": flow}
+        return {"structure": structure, "flow_params": flow_params}
 
 
 class CSOrifice(NodimCSOrifice):
@@ -659,7 +645,7 @@ class CSOrifice(NodimCSOrifice):
     The input geometry in ``CsoArgs`` is dimensional, but ``cq0``, ``cq1`` and
     ``cq2`` are stored in the same nondimensional form used by
     ``NodimCSOrifice``.  With ``p = ps * p_bar`` and
-    ``q = qw * q_bar``, where ``qw = ps * c**3 / (12 * miu0 * lr)``, the legacy
+    ``q = qw * q_bar``, where ``qw = ps * c**3 / (12 * miu0 * lr)``, the
     dimensional valve / pipe coefficients are scaled into CQ here before the
     shared nondimensional nonlinear equations are solved.
     """
@@ -929,40 +915,7 @@ def define_equations(cq0, cq1, cq2, pn, xv, ps, q_leak):
     return equations
 
 
-def define_qprime(cq0, cq1_h2, cq2, pn, xv, ps):
-    """Return the legacy full-system Jacobian for diagnostic compatibility.
-
-    The production CSOrifice solver no longer consumes this Jacobian; it is
-    retained because it was migrated as an explicit hydraulics namespace API.
-    New code should use :func:`solve_q` and the implicit scalar derivative.
-    """
-    pn = _as_numeric_vector(pn, "pn")
-    cq0 = _as_scalar_float(cq0, "cq0")
-    cq1_h2 = _match_numeric_length(cq1_h2, len(pn), "cq1_h2")
-    cq2 = _as_scalar_float(cq2, "cq2")
-    xv = _as_scalar_float(xv, "xv")
-    ps = _as_scalar_float(ps, "ps")
-
-    def prime(x):
-        x = _match_numeric_length(x, len(pn) + 2, "x")
-        lpn = len(pn)
-        x0 = np.hstack([1, 0, -np.ones(lpn)])
-        if x[1] != ps:
-            x1 = np.hstack(
-                [1, cq0 * xv / 2 / np.sqrt(np.abs(ps - x[1])), np.zeros(lpn)]
-            )
-        else:
-            x1 = np.hstack([1, 0, np.zeros(lpn)])
-        xs = np.vstack([x0, x1])
-        pt0 = np.zeros((lpn, 1))
-        pt1 = -1 / np.sqrt(cq2**2 + 4 * cq1_h2 * np.abs(x[1] - pn))
-        pt2 = np.eye(lpn)
-        return np.vstack([xs, np.hstack([pt0, pt1.reshape(-1, 1), pt2])])
-
-    return prime
-
-
-def solve_q(cq0, cq1_h2, cq2, pn, xv, ps, q_leak, init=None):
+def solve_q(cq0, cq1_h2, cq2, pn, xv, ps, q_leak):
     """Solve all zero-leakage CSOrifice states through one monotonic root.
 
     The node flows are explicit functions of the common chamber pressure
@@ -971,10 +924,7 @@ def solve_q(cq0, cq1_h2, cq2, pn, xv, ps, q_leak, init=None):
     pressures.  The same bracketed solve handles supply, return, and reversed
     flow without an initial guess or a solver-selection branch.
 
-    ``init`` remains in the call signature for source compatibility but is not
-    used because the bracket follows directly from the pressure inputs.
     """
-    del init
     cq0, cq1_h2, cq2, pn, xv, ps = _validated_flow_parameters(
         cq0, cq1_h2, cq2, pn, xv, ps, q_leak
     )
@@ -1030,9 +980,8 @@ def solve_q(cq0, cq1_h2, cq2, pn, xv, ps, q_leak, init=None):
 csorifice_args = CsoArgs()
 
 
-# Legacy reference only: HybirdOrifice is superseded by the shared CSOrifice
-# formulation above.  Keep this commented implementation for historical audit.
-# class HybirdOrifice(Orifice):
+# Archived equation notes retained for numerical audit.
+# class ArchivedMixedRestrictorEquation(Orifice):
 #
 #     def __init__(self, pressure, position, l, d, w, q_leak=0):
 #         super().__init__(pressure=pressure, cq=0, position=position)
@@ -1147,7 +1096,7 @@ class Orifices(BaseSimpleModels):
     Abstract method to be implemented by subclasses.
     """
 
-    def init(self):
+    def _reset_for_owner(self):
         pass
 
     def __init__(
@@ -1209,7 +1158,6 @@ class Orifices(BaseSimpleModels):
                 simple_model.output(*args, **kwargs)
 
     def flow_info(self, model=None):
-        flow = []
         flow_params = []
         structures = []
         for simple_model in self._simple_models:
@@ -1217,8 +1165,7 @@ class Orifices(BaseSimpleModels):
                 info = simple_model.flow_info(model)
                 structures.append(info.get("structure", {}))
                 flow_params.extend(info.get("flow_params", []))
-                flow.extend(info.get("flow", []))
-        return {"structure": structures, "flow_params": flow_params, "flow": flow}
+        return {"structure": structures, "flow_params": flow_params}
 
     def calc_is_finished(self):
         """

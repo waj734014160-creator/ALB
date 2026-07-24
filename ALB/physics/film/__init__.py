@@ -13,21 +13,6 @@ _EXPORTS = {
     ),
     "plot_mesh_preview": ("ALB.physics.film.mesh_export", "plot_mesh_preview"),
     "write_nastran_bdf": ("ALB.physics.film.mesh_export", "write_nastran_bdf"),
-    "FilmBoundary": ("ALB.physics.film.solver", "FilmBoundary"),
-    "FilmModel": ("ALB.physics.film.solver", "FilmModel"),
-    "FilmOutput": ("ALB.physics.film.solver", "FilmOutput"),
-    "FilmPostProcess": ("ALB.physics.film.solver", "FilmPostProcess"),
-    "FilmSystem": ("ALB.physics.film.solver", "FilmSystem"),
-    "GaussSeidelFilm": ("ALB.physics.film.solver", "GaussSeidelFilm"),
-    "LsqFilm": ("ALB.physics.film.solver", "LsqFilm"),
-    "NewtonFilm": ("ALB.physics.film.solver", "NewtonFilm"),
-    "NodimNewtonFilm": ("ALB.physics.film.solver", "NodimNewtonFilm"),
-    "PSetFilmBoundary": ("ALB.physics.film.solver", "PSetFilmBoundary"),
-    "RectFilmElem": ("ALB.physics.film.solver", "RectFilmElem"),
-    "RectFilmNode": ("ALB.physics.film.solver", "RectFilmNode"),
-    "SkfemNewtonFilm": ("ALB.physics.film.solver", "SkfemNewtonFilm"),
-    "ThicknessModel": ("ALB.physics.film.solver", "ThicknessModel"),
-    "film_args_trans": ("ALB.physics.film.solver", "film_args_trans"),
 }
 
 

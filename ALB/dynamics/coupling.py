@@ -1,17 +1,11 @@
 ﻿# coding: utf-8
 
-from decimal import Decimal
-from typing import Any, cast
+from typing import Any
 from uuid import uuid4
 
 import numpy as np
-import pandas as pd
-from tqdm import tqdm
-
-from ALB.core.component import BaseCSystem, BaseSystem
 from ALB.core.lifecycle import LifecycleState
 from ALB.core.diagnostics import sanitize_exception_message
-from ALB.core.validation import require_unit_system
 from ALB.contracts import (
     BearingInput,
     BearingOutput,
@@ -36,58 +30,23 @@ from ALB.contracts import (
 from ALB.dynamics.rotor import Gravity, StaticLoad
 
 # from ALB.infrastructure.logging import logger
-from .rotor import RossRotor, SingleRotor, UnbalancedExcitation
+from .rotor import RossRotor, UnbalancedExcitation
 from .coupling_runtime import (
     CouplingStepRuntime,
     PostCommitObserverError,
     PostCommitRecordingError,
     coupling_snapshot,
 )
-from .coupling_results import build_coupling_save_tree
 from .bindings import CoupledBearingBinding, CouplingRuntimeDependencies
 from ALB.core.numerics.arrays import vertical_stack_nonempty
 from ALB.core.observers import ObserverDispatcher
 
 
-class RotorBearingCouple(BaseSystem):
-    """
-    Couple a single rotor model with one bearing model for co-simulation.
-    """
+class _RotorBearingStepRuntime:
+    """Internal exactly-once rotor-bearing step runtime.
 
-    def __init__(self, rotor: SingleRotor, bearing, time_iter, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.rotor = rotor
-        self.bearing = bearing
-        self._time_iter = time_iter
-        self._result = {"rotor": [], "bearing": []}
-
-    def solve(self, **kwargs):
-        self.rotor.set_dt(self._time_iter.dt)
-        self.rotor.set_rpm(1000)
-        for ts in self._time_iter():
-            bearing_output = self.bearing.output()
-            force = bearing_output["force"]
-            # logger.info("force:{}".format(force))
-
-            w = bearing_output["w"]
-            self.rotor.set_rpm(w)
-
-            self.rotor.input(force, **kwargs)
-
-            rotoru = self.rotor.output(ts, **kwargs)
-            # logger.info("rotor:{}".format(rotoru))
-
-            self.bearing.input(rotoru, np.zeros_like(rotoru))
-
-            self._result["rotor"].append(rotoru)
-
-
-class RsRotorBearingCouple(BaseCSystem):
-    """Couple a ROSS rotor with bearings using exactly-once step commits.
-
-    A failure after component mutation invalidates the coupler. Call ``init()``
-    before reading or advancing again so a partially applied physical step
-    cannot be retried as if it were untouched.
+    The public owner is :class:`ALB.RotorBearingSimulation`. Topology is fixed
+    at construction and reset is intentionally an owner-only hook.
     """
 
     def __init__(self, rotor: RossRotor, time_iter, *bindings, **kwargs):
@@ -95,21 +54,17 @@ class RsRotorBearingCouple(BaseCSystem):
         options:
             save_path:default="./rotor_bearing_couple"
         """
-        super().__init__()
         self.rotor = rotor
         if any(
             not isinstance(binding, CoupledBearingBinding)
             for binding in bindings
         ):
             raise TypeError(
-                "coupling constructor accepts only CoupledBearingBinding objects; "
-                "use add_bearing(bearing, node_link) for ordinary dimensional bearings"
+                "simulation topology accepts only CoupledBearingBinding objects"
             )
-        self.bindings = list(bindings)
+        self.bindings = tuple(bindings)
         self.forces = []
         self._time_iter = time_iter
-        self._result = {}
-        self._save_path = kwargs.get("save_path", "rotor_bearing_couple")
         self._fnode_links: Any = None
         self._bnode_links: Any = None
         self._forceu0: Any = None
@@ -148,17 +103,12 @@ class RsRotorBearingCouple(BaseCSystem):
 
         return tuple(binding.bearing for binding in self.bindings)
 
-    @property
-    def results(self):
-        self._require_valid("reading results")
-        return self._result
-
     def _require_valid(self, operation: str) -> None:
         """Reject access to state that may contain a partially applied step."""
 
         if not self._runtime.is_valid:
             raise RuntimeError(
-                f"coupling state is invalid; call init() before {operation}"
+                f"simulation runtime is invalid; reset the simulation before {operation}"
             )
 
     @property
@@ -408,38 +358,11 @@ class RsRotorBearingCouple(BaseCSystem):
         return receipt
 
     def _invalidate_topology(self) -> None:
-        """Require a fresh init after the coupled component graph changes."""
+        """Require an owner reset after the force graph changes."""
 
         self._invalidate_runtime()
         self._fnode_links = None
         self._bnode_links = None
-
-    def add_bearing(
-        self,
-        bearing: BearingRuntimeProtocol[BearingInput],
-        node_link: int,
-    ) -> CoupledBearingBinding:
-        """Bind one ordinary dimensional bearing to a rotor node.
-
-        Nondimensional and direct-spool runtimes require callers to construct a
-        full :class:`CoupledBearingBinding` with their adapter or provider and
-        pass it to the coupling constructor.
-        """
-
-        if not isinstance(bearing, BearingRuntimeProtocol):
-            raise TypeError("bearing must satisfy BearingRuntimeProtocol")
-        if bearing.input_dto_type is not BearingInput:
-            raise TypeError("add_bearing accepts only ordinary BearingInput runtimes")
-        require_unit_system(
-            bearing,
-            "dimensional",
-            component_name="add_bearing bearing",
-        )
-        erased_bearing = cast(BearingRuntimeProtocol[object], bearing)
-        binding = CoupledBearingBinding(erased_bearing, node_link=node_link)
-        self.bindings.append(binding)
-        self._invalidate_topology()
-        return binding
 
     @staticmethod
     def _evaluate_bearing(
@@ -549,7 +472,7 @@ class RsRotorBearingCouple(BaseCSystem):
             return rotor_output.force.copy(), metadata
         raise TypeError("binding bearing must satisfy BearingRuntimeProtocol")
 
-    def init(self, **kwargs):
+    def _reset_for_owner(self) -> None:
         self._invalidate_runtime()
         try:
             self._begin_recorder_if_needed()
@@ -559,9 +482,14 @@ class RsRotorBearingCouple(BaseCSystem):
             if not self.bindings:
                 raise ValueError("rotor-bearing coupling requires at least one binding")
             initial_time = time_values[0]
-            self.rotor.init()
+            self.rotor._reset_for_owner()
             for binding in self.bindings:
-                binding.bearing.init()
+                reset = getattr(binding.bearing, "_reset_for_owner", None)
+                if not callable(reset):
+                    raise TypeError(
+                        "binding bearing must provide _reset_for_owner()"
+                    )
+                reset()
             self._fnode_links = get_all_attribute_values(self.forces, "node_link")
             self._bnode_links = [
                 binding.node_link for binding in self.bindings
@@ -579,10 +507,6 @@ class RsRotorBearingCouple(BaseCSystem):
                     [force(t=initial_time) for force in self.forces]
                 )
             self._rp = self.rotor.output(self._bnode_links)
-            for num, _binding in enumerate(self.bindings):
-                self._result["bearing" + str(num)] = pd.DataFrame(
-                    columns=["t", "ux", "uy", "uxt", "uyt", "fx", "fy"]
-                )
             self._forcef0 = []
             adapter_metadata = []
             for num, binding in enumerate(self.bindings):
@@ -630,7 +554,7 @@ class RsRotorBearingCouple(BaseCSystem):
         except (PostCommitRecordingError, PostCommitObserverError):
             raise
         except BaseException as exc:
-            self._seal_failure(None, "init", exc)
+            self._seal_failure(None, "reset", exc)
             raise
 
     def add_unbalance(
@@ -673,53 +597,6 @@ class RsRotorBearingCouple(BaseCSystem):
         self.forces.append(gravity)
         gravity.node_link = she_n
         self._invalidate_topology()
-
-    def solve(self, **kwargs):
-        """
-        :param kwargs:
-        Optional arguments:
-            uxy: bool
-                Save translational displacement output.
-            uxyt: bool
-                Save translational velocity output.
-            save_all: bool
-                Save all intermediate state data.
-            init: bool
-                Reinitialize rotor-bearing states before solving.
-        """
-        if kwargs.get("init", True):
-            self.init(**kwargs)
-
-        positon = kwargs.get("position", 0)
-
-        time_values = [float(value) for value in self._time_iter()]
-        initial_time = time_values[0]
-        dt_decimal = Decimal(str(self._time_iter.dt))
-        initial_decimal = Decimal(str(initial_time))
-        target_times = [
-            float(initial_decimal + dt_decimal * index)
-            for index in range(1, len(time_values))
-        ]
-        progress_bar = tqdm(
-            enumerate(target_times, start=1),
-            total=len(target_times),
-            position=positon,
-            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
-        )
-        for nt, ts in progress_bar:
-            context = StepContext(
-                nt,
-                ts,
-                self._time_iter.dt,
-                UnitSystem.DIMENSIONAL,
-            )
-            self.advance(context, **kwargs)
-
-    def input(self, *args, **kwargs):
-        """
-        Input interface reserved for compatibility with BaseCSystem.
-        """
-        pass
 
     def advance(self, context: StepContext, **kwargs) -> ResultBundle:
         """Advance one coupled physical step and commit it exactly once."""
@@ -819,22 +696,6 @@ class RsRotorBearingCouple(BaseCSystem):
         """Return the current immutable coupled result snapshot."""
 
         return self.output()
-
-    def save(self, tofile=True, path=None, name=None, *args, **kwargs):
-        self._require_valid("saving results")
-        if path is None:
-            path = self._save_path
-        if name is None:
-            name = "RBC"
-        return build_coupling_save_tree(
-            self._result,
-            self.rotor,
-            self.bearings,
-            path,
-            name,
-            tofile=tofile,
-            writer=kwargs.get("writer"),
-        )
 
 def get_all_attribute_values(objects, attribute_name):
     """

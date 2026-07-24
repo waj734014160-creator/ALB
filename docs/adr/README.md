@@ -24,12 +24,13 @@
 
 | ADR | 状态 | 主题 |
 | --- | --- | --- |
-| [ADR-0001](0001-public-api-version-step-and-builders.md) | Accepted | 0.3.0 公共版本、自动初始化、混合轴承、配置封装、builder 返回类型和兼容周期 |
+| [ADR-0001](0001-public-api-version-step-and-builders.md) | Superseded | 0.3.0 公共版本、自动初始化、混合轴承、配置封装、builder 返回类型和兼容周期 |
 | [ADR-0002](0002-failure-sealing-and-step-publication.md) | Accepted | mutable 数值组件的失败封锁、原子 ledger 提交与结果发布顺序 |
 | [ADR-0003](0003-result-recorder-and-idempotency.md) | Accepted | recorder、run/session、分型状态、RecordableValue、规范摘要、pending 和失败恢复 |
 | [ADR-0004](0004-observer-and-failure-snapshot.md) | Accepted | observer 异常隔离、post-commit 诊断和 failure snapshot |
 | [ADR-0005](0005-bearing-unit-adapter.md) | Accepted | 轴承单位换算、local context、primitive descriptor 和转换方向元数据 |
+| [ADR-0006](0006-alb-0-4-no-legacy-friendly-api.md) | Accepted | 0.4 无 legacy、友好 facade、严格配置、不可变 simulation 和发布门禁 |
 
-第四轮审查已批准全部五份 ADR；四项剩余 P2 精确化内容也已写入文档。Accepted 只表示这些目标
-语义可以指导后续实现，不表示当前 0.2.0 源码已经具备这些接口。当前实际接口仍以
-`docs/interface_architecture.md` 和 `docs/alb_albnn_quickstart.md` 为准。
+ADR-0006 替代 ADR-0001。ADR-0002 至 ADR-0005 的失败、提交、记录和单位原则
+继续约束 0.4 内部 runtime；当前用户接口以 `docs/interface_architecture.md` 和
+`docs/alb_albnn_quickstart.md` 为准。Accepted 表示决策已采用，不等于发布验收已通过。

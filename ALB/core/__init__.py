@@ -14,7 +14,6 @@ from .computation import (
     SolvingBlock,
     StateAdvancingBlock,
 )
-from .events import Signal
 from .diagnostics import sanitize_exception_message
 from .lifecycle import LifecycleState, RuntimeLifecycle
 from .time import TimeIter, TimeIterDt
@@ -44,7 +43,6 @@ __all__ = [
     "LifecycleState",
     "RuntimeLifecycle",
     "sanitize_exception_message",
-    "Signal",
     "SolvingBlock",
     "StateAdvancingBlock",
     "TimeIter",

@@ -48,8 +48,6 @@ class ThermalConfig(ConfigData):
     """Three-dimensional lubricant conductivity in W/(m*K)."""
     cp_lub: float = 2000.0
     """Heat-capacity constant used under the incompressible cp approximately cv model."""
-    flow_rate_factor: float = 1.0
-    """Deprecated no-op retained for JSON compatibility; only 1.0 is valid."""
     max_delta_t: float = 80.0
     heat_partition: float = 0.9
     relax: float = 0.5
@@ -68,8 +66,6 @@ class ThermalConfig(ConfigData):
     """Axial-side fixed temperature; defaults to ``t_supply``."""
     supg: bool = True
     """Enable SUPG stabilization for advection-dominated regime."""
-    pressure_backend: str = "skfem"
-    """Retained for backward compatibility; only ``skfem`` is supported."""
     args_nodim: bool = False
     """Treat numeric inputs as already nondimensional when True."""
     delta_t_scale: Optional[float] = None
@@ -110,11 +106,6 @@ class ThermalConfig(ConfigData):
         self.coupling = str(self.coupling).lower()
         if self.coupling not in {"full", "half"}:
             raise ValueError("coupling must be one of: 'full', 'half'")
-        self.flow_rate_factor = float(self.flow_rate_factor)
-        if not np.isclose(self.flow_rate_factor, 1.0, rtol=0.0, atol=0.0):
-            raise ValueError(
-                "flow_rate_factor is deprecated and has no effect; only 1.0 is allowed"
-            )
         self.k_lub = float(self.k_lub)
         if not np.isfinite(self.k_lub) or self.k_lub < 0.0:
             raise ValueError("k_lub must be finite and >= 0")
@@ -171,39 +162,8 @@ class ThermalConfig(ConfigData):
         if config_dict is None:
             return cls()
         config_dict = dict(config_dict)
-        # Legacy alias: thermal_solver -> nodim flag
-        if "thermal_solver" in config_dict and "nodim" not in config_dict:
-            solver_name = str(config_dict["thermal_solver"]).lower()
-            if solver_name == "dimensional":
-                config_dict["nodim"] = False
-            elif solver_name == "nondimensional":
-                config_dict["nodim"] = True
-            else:
-                raise ValueError(
-                    "thermal_solver must be one of: 'dimensional', 'nondimensional'"
-                )
-        if "args_nodim" not in config_dict and "nodim" in config_dict:
-            config_dict["args_nodim"] = bool(config_dict["nodim"])
-        # Legacy: delta_t_mode/delta_t_char described the explicit temperature
-        # scale; new code should pass delta_t_scale.
-        legacy_delta_t_mode = config_dict.get("delta_t_mode")
-        if "delta_t_scale" not in config_dict and "delta_t_char" in config_dict:
-            if legacy_delta_t_mode is None or str(legacy_delta_t_mode).lower() in {
-                "fixed",
-                "explicit",
-                "manual",
-            }:
-                config_dict["delta_t_scale"] = config_dict["delta_t_char"]
         valid_fields = {item.name for item in fields(cls)}
-        allowed_legacy_fields = {
-            "thermal_solver",
-            "nodim",
-            "delta_t_mode",
-            "delta_t_char",
-        }
-        unknown_fields = sorted(
-            set(config_dict).difference(valid_fields, allowed_legacy_fields)
-        )
+        unknown_fields = sorted(set(config_dict).difference(valid_fields))
         if unknown_fields:
             raise ValueError(
                 "Unknown ThermalConfig field(s): " + ", ".join(unknown_fields)
@@ -211,26 +171,4 @@ class ThermalConfig(ConfigData):
         args = {key: config_dict[key] for key in valid_fields if key in config_dict}
         return cls(**args)
 
-def build_thermal_config(
-    thermal_enabled: bool,
-    thermal_data: Optional[dict] = None,
-    *,
-    dt: Optional[float] = None,
-) -> Optional[ThermalConfig]:
-    """Build a :class:`ThermalConfig` from a flat dict, or return ``None``.
-
-    :param thermal_enabled: ``False`` short-circuits to ``None``.
-    :param thermal_data: Optional dict whose keys match :class:`ThermalConfig` fields.
-    :param dt: Optional time step for transient solves; fills in when missing.
-    """
-    if not thermal_enabled:
-        return None
-
-    thermal_args = dict(thermal_data or {})
-    if thermal_args.get("transient_enabled") is None:
-        thermal_args["transient_enabled"] = False
-    if thermal_args.get("dt") is None and dt is not None:
-        thermal_args["dt"] = dt
-    return ThermalConfig.from_dict(thermal_args)
-
-__all__ = ['ThermalConfig', 'build_thermal_config']
+__all__ = ["ThermalConfig"]

@@ -9,10 +9,22 @@ from skfem import Basis, BilinearForm, ElementTriP1, LinearForm, MeshTri, asm, e
 from skfem.helpers import dot, grad
 
 from ALB.physics.bearing.decorators import BearingDecoratorBase
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    LifecycleState,
+    ResultBundle,
+    UnitSystem,
+    result_snapshot,
+)
+from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.fem.base import BasePostProcess
-from ALB.config import ThermalConfig, build_thermal_config  # noqa: F401  re-exported
+from ALB.core.lifecycle import RuntimeLifecycle
+from ALB.core.validation import validate_bearing_output
+from ALB.config import ThermalConfig
 from ALB.core.numerics.damping import AdaptiveDampController
-from ALB.physics.film import (
+from ALB.physics.film.solver import (
     FilmOutput,
     NodimNewtonFilm,
     RectFilmElem,
@@ -65,21 +77,11 @@ _FILM_MODEL_PARAM_KEYS = [
     "vf",
 ]
 
-_PRESSURE_BACKEND_ERROR = (
-    "pressure_backend only supports 'skfem'; the legacy h_eff branch is retained "
-    "in code for reference and is not user-selectable"
-)
-
-
 def _validate_thermal_runtime_config(config: ThermalConfig) -> None:
     """Normalize and validate thermal options required by the solver runtime."""
     config.coupling = str(config.coupling).lower()
     if config.coupling not in {"full", "half"}:
         raise ValueError("coupling must be one of: 'full', 'half'")
-    if not np.isclose(float(config.flow_rate_factor), 1.0, rtol=0.0, atol=0.0):
-        raise ValueError(
-            "flow_rate_factor is deprecated and has no effect; only 1.0 is allowed"
-        )
     if config.transient_enabled and config.iter_method != "direct":
         raise ValueError(
             "Transient thermal solves currently require iter_method='direct'"
@@ -2132,8 +2134,16 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
     """
 
     unit_system = "nondimensional"
+    input_dto_type = BearingInput
 
     def __init__(self, bearing, thermal_config: Optional[ThermalConfig] = None):
+        if not all(
+            callable(getattr(bearing, name, None))
+            for name in ("_reset_for_owner", "_prepare_raw", "_solve_raw")
+        ):
+            raise TypeError(
+                "thermal bearing requires a native mixed-bearing runtime"
+            )
         super().__init__(bearing)
         cfg = (
             thermal_config
@@ -2177,6 +2187,30 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         self._last_thermal: Dict[str, object] = {}
         self.post_process = ThermalPostProcess(self)
         self._temperature_prev: Optional[np.ndarray] = None
+        self._lifecycle = RuntimeLifecycle(
+            type(self).__name__,
+            input_label="bearing input",
+        )
+        self._pending_input: BearingInput | None = None
+        self._latest_output: BearingOutput | None = None
+        self._latest_result: ResultBundle | None = None
+        self._failure: ResultBundle | None = None
+        self._convergence_status = ConvergenceStatus.pending(
+            "runtime is not initialized"
+        )
+        self._reset_for_owner()
+
+    @property
+    def lifecycle_state(self) -> LifecycleState:
+        """Return the native thermal-bearing lifecycle state."""
+
+        return self._lifecycle.state
+
+    @property
+    def convergence_status(self) -> ConvergenceStatus:
+        """Return cached coupled pressure/thermal convergence."""
+
+        return self._convergence_status
 
     # ------------------------------------------------------------------
     # Hooks for dimensional subclass override
@@ -2203,6 +2237,10 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         return SkfemThermalModelNondim(self.config)
 
     def __getattr__(self, name):
+        if name == "init":
+            raise AttributeError(
+                "bearing runtimes are ready after construction"
+            )
         bearing = self.__dict__.get("bearing")
         if bearing is None:
             raise AttributeError(name)
@@ -2210,10 +2248,6 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
 
     def _ensure_pressure_backend(self):
         """Replace the bearing's film model with the nondim viscosity-aware variant."""
-        backend = str(self.config.pressure_backend).lower()
-        if backend != "skfem":
-            raise ValueError(_PRESSURE_BACKEND_ERROR)
-
         old_model = self.bearing.main_model
         if isinstance(old_model, NodimViscositySkfemNewtonFilm):
             return
@@ -2263,8 +2297,6 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         self.bearing.main_model = new_model
         if hasattr(self.bearing, "_output"):
             self.bearing._output = FilmOutput(new_model)
-        if hasattr(self.bearing, "signal") and len(self.bearing.signal.children) > 0:
-            self.bearing.signal.children[0] = new_model.signal
 
     def _current_film_input_args(self, model) -> Dict[str, float]:
         input_args = dict(getattr(model, "_input_args", {}))
@@ -2526,8 +2558,8 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         """Return explicit nondimensional point-source data from bearing orifices.
 
         The nondimensional thermal core consumes ``(x_bar, z_bar, q_bar)``.
-        Legacy ``flow`` tuples are intentionally ignored because their
-        dimensional coordinates and volumetric flow are ambiguous at this
+        Tuple-form flow data is unsupported because its dimensional
+        coordinates and volumetric flow are ambiguous at this
         boundary.
 
         Returns an empty list if no orifices are present.
@@ -2566,16 +2598,42 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
     # Public interface  (delegates to bearing)
     # ------------------------------------------------------------------
 
-    def init(self, *args, **kwargs):
-        self.bearing.init(*args, **kwargs)
+    def _reset_for_owner(self) -> None:
+        """Reset the coupled solver for its owning bearing or simulation."""
+
+        self._lifecycle.fail()
+        self.bearing._reset_for_owner()
         # reset all viscosity ratios to 1.0
         for node in self.bearing.main_model.nodes.values():
             node.miu_ratio = 1.0
         self._last_thermal = {}
         self._temperature_prev = None
+        self._pending_input = None
+        self._latest_output = None
+        self._latest_result = None
+        self._failure = None
+        self._convergence_status = ConvergenceStatus.pending(
+            "input not evaluated"
+        )
+        self._lifecycle.reset()
 
-    def input(self, *args, **kwargs):
-        self.bearing.input(*args, **kwargs)
+    def input(self, dto: BearingInput) -> None:
+        """Latch one typed sample without solving pressure or temperature."""
+
+        self._lifecycle.require_input_slot()
+        if not isinstance(dto, BearingInput):
+            raise TypeError("thermal bearing input must be BearingInput")
+        if dto.unit_system is not UnitSystem.coerce(self.unit_system):
+            raise ValueError(
+                "thermal bearing input unit_system does not match runtime"
+            )
+        self._pending_input = dto
+        self._latest_output = None
+        self._latest_result = None
+        self._convergence_status = ConvergenceStatus.pending(
+            "input not evaluated"
+        )
+        self._lifecycle.latch()
 
     def calc_is_finished(self, *args, **kwargs):
         bearing_finished = bool(self.bearing.calc_is_finished(*args, **kwargs))
@@ -2853,7 +2911,7 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
             self._sync_reference_film_args()
 
             # Solve hydrodynamics
-            self.bearing.output(*args, **kwargs)
+            self.bearing._solve_raw()
 
             # Collect orifice flow data (available after hydro solve)
             orifice_data = self._collect_orifice_info()
@@ -2889,7 +2947,7 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         self._apply_miu_ratio_to_nodes(miu_field)
         miu_mean = float(np.mean(miu_field))
         self._sync_reference_film_args()
-        hydro = self.bearing.output(*args, **kwargs)
+        hydro = self.bearing._solve_raw()
         orifice_data = self._collect_orifice_info()
         self.thermal_model.update_pressure_gradients(model, mesh_data)
         miu_visc = self._get_thermal_viscosity(miu_field, miu_mean, mesh_data)
@@ -2957,7 +3015,7 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
             self._apply_miu_ratio_to_nodes(miu_field)
             miu_mean = float(np.mean(miu_field))
             self._sync_reference_film_args()
-            hydro = self.bearing.output(*args, **kwargs)
+            hydro = self.bearing._solve_raw()
             orifice_data = self._collect_orifice_info()
             self.thermal_model.update_pressure_gradients(model, mesh_data)
             miu_visc = self._get_thermal_viscosity(miu_field, miu_mean, mesh_data)
@@ -3026,7 +3084,7 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         self._apply_miu_ratio_to_nodes(miu_field)
         miu_mean = float(np.mean(miu_field))
         self._sync_reference_film_args()
-        hydro = self.bearing.output(*args, **kwargs)
+        hydro = self.bearing._solve_raw()
         orifice_data = self._collect_orifice_info()
         self.thermal_model.update_pressure_gradients(model, mesh_data)
         miu_visc = self._get_thermal_viscosity(miu_field, miu_mean, mesh_data)
@@ -3080,7 +3138,12 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         self._temperature_prev = np.asarray(result["temperature"], dtype=float).copy()
         return result
 
-    def output(self, *args, nodim: Optional[bool] = None, **kwargs):
+    def _solve_thermal_raw(
+        self,
+        *args,
+        nodim: Optional[bool] = None,
+        **kwargs,
+    ):
         if nodim is None:
             nodim = True
         kwargs["nodim"] = nodim
@@ -3108,6 +3171,98 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
             )
         self._temperature_prev = np.asarray(result["temperature"], dtype=float).copy()
         return result
+
+    def evaluate(self) -> None:
+        """Run exactly one coupled pressure/thermal calculation."""
+
+        dto = self._pending_input
+        try:
+            with self._lifecycle.evaluation():
+                assert dto is not None
+                self.bearing._prepare_raw(dto)
+                raw = self._solve_thermal_raw(
+                    nodim=dto.unit_system is UnitSystem.NONDIMENSIONAL
+                )
+                force = validate_bearing_output(raw)
+                self._latest_output = BearingOutput(
+                    force,
+                    dto.time,
+                    dto.unit_system,
+                )
+                converged = bool(raw.get("thermal_converged", False))
+                self._convergence_status = (
+                    ConvergenceStatus(
+                        residual=0.0,
+                        converged=True,
+                        iterations=int(raw.get("thermal_iterations", 0)),
+                        message="coupled pressure/thermal calculation finished",
+                    )
+                    if converged
+                    else ConvergenceStatus.pending(
+                        "coupled pressure/thermal calculation did not converge"
+                    )
+                )
+                self._latest_result = result_snapshot(
+                    {
+                        "force": self._latest_output.force,
+                        "friction": float(raw.get("friction", 0.0)),
+                        "t_eff": float(raw.get("t_eff", np.nan)),
+                        "temperature": raw.get("temperature"),
+                        "viscosity_field": raw.get("viscosity_field"),
+                    },
+                    {
+                        "schema": "alb.thermal-bearing-result.v1",
+                        "time": dto.time,
+                        "unit_system": dto.unit_system.value,
+                        "converged": converged,
+                        "iterations": int(raw.get("thermal_iterations", 0)),
+                        "transient": bool(raw.get("thermal_transient", False)),
+                    },
+                )
+                self._pending_input = None
+        except BaseException as exc:
+            self._latest_output = None
+            self._latest_result = None
+            self._failure = result_snapshot(
+                {},
+                {
+                    "schema": "alb.thermal-bearing-failure.v1",
+                    "phase": "evaluate",
+                    "error_type": type(exc).__name__,
+                    "message": sanitize_exception_message(exc),
+                    "unit_system": UnitSystem.coerce(self.unit_system).value,
+                    "node_link": self.node_link,
+                },
+            )
+            raise
+
+    def output(self) -> BearingOutput:
+        """Return the completed immutable output without recalculation."""
+
+        self._lifecycle.require_output()
+        assert self._latest_output is not None
+        return self._latest_output
+
+    def step(self, dto: BearingInput) -> BearingOutput:
+        """Compose input, evaluation, and read-only output."""
+
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    def result_snapshot(self) -> ResultBundle:
+        """Return the latest immutable pressure/thermal result."""
+
+        self._lifecycle.require_output()
+        assert self._latest_result is not None
+        return self._latest_result
+
+    def failure_snapshot(self) -> ResultBundle:
+        """Return the latest sealed calculation failure."""
+
+        if self._failure is None:
+            raise RuntimeError("no thermal bearing failure is available")
+        return self._failure
 
     @property
     def thermal_state(self):
@@ -3158,10 +3313,6 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
     # ------------------------------------------------------------------
 
     def _ensure_pressure_backend(self):
-        backend = str(self.config.pressure_backend).lower()
-        if backend != "skfem":
-            raise ValueError(_PRESSURE_BACKEND_ERROR)
-
         old_model = self.bearing.main_model
         if isinstance(old_model, NodimViscositySkfemNewtonFilm):
             return
@@ -3214,8 +3365,6 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
         self.bearing.main_model = new_model
         if hasattr(self.bearing, "_output"):
             self.bearing._output = FilmOutput(new_model)
-        if hasattr(self.bearing, "signal") and len(self.bearing.signal.children) > 0:
-            self.bearing.signal.children[0] = new_model.signal
 
     # ------------------------------------------------------------------
     # Viscosity sync: rebuild dim->nondim film args via film_args_trans
@@ -3253,7 +3402,12 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
     # Default to dimensional output unless caller asks for nondim explicitly
     # ------------------------------------------------------------------
 
-    def output(self, *args, nodim: Optional[bool] = None, **kwargs):
+    def _solve_thermal_raw(
+        self,
+        *args,
+        nodim: Optional[bool] = None,
+        **kwargs,
+    ):
         if nodim is None:
             nodim = False
-        return super().output(*args, nodim=nodim, **kwargs)
+        return super()._solve_thermal_raw(*args, nodim=nodim, **kwargs)

@@ -59,7 +59,7 @@ class RepetitiveController(BaseSimpleModel):
         self._lifecycle = RuntimeLifecycle(type(self).__name__)
         self._lifecycle.reset()
 
-    def init(self):
+    def _reset_for_owner(self):
         self.u_buffer.fill(0)
         self.e_buffer.fill(0)
         self.ptr = 0

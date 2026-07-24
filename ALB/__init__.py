@@ -1,31 +1,57 @@
-"""ALB 0.3 public package boundary.
+"""Friendly public boundary for ALB 0.4."""
 
-Domain implementations are imported from their explicit namespaces.  The
-package root deliberately exposes only version and foundational contracts.
-"""
-
-from .contracts import (
-    AdvancingBlock,
-    CommandBlock,
-    ComputationalBlock,
-    ConvergenceStatus,
-    EvaluableBlock,
-    SolvableBlock,
-    StepContext,
-    UnitSystem,
+from .api import (
+    ALBError,
+    AnalysisResult,
+    Bearing,
+    BearingAnalysis,
+    BearingConfig,
+    BearingMount,
+    BearingResult,
+    BuildError,
+    CalculationError,
+    ConfigurationError,
+    EllipseTrajectory,
+    HistoryPolicy,
+    RotorBearingSimulation,
+    SimulationConfig,
+    SimulationError,
+    SimulationResult,
+    bearing_from_file,
+    build_bearing,
+    build_simulation,
+    load_bearing_config,
+    load_simulation_config,
+    simulation_from_file,
 )
+from .contracts import UnitSystem
 
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
-    "AdvancingBlock",
-    "CommandBlock",
-    "ComputationalBlock",
-    "ConvergenceStatus",
-    "EvaluableBlock",
-    "SolvableBlock",
-    "StepContext",
+    "ALBError",
+    "AnalysisResult",
+    "Bearing",
+    "BearingAnalysis",
+    "BearingConfig",
+    "BearingMount",
+    "BearingResult",
+    "BuildError",
+    "CalculationError",
+    "ConfigurationError",
+    "EllipseTrajectory",
+    "HistoryPolicy",
+    "RotorBearingSimulation",
+    "SimulationConfig",
+    "SimulationError",
+    "SimulationResult",
     "UnitSystem",
     "__version__",
+    "bearing_from_file",
+    "build_bearing",
+    "build_simulation",
+    "load_bearing_config",
+    "load_simulation_config",
+    "simulation_from_file",
 ]

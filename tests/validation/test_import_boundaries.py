@@ -1,4 +1,4 @@
-"""Validate the 0.2 namespace layering and absence of package cycles."""
+"""Validate ALB 0.4 namespace layering and legacy-free imports."""
 
 from __future__ import annotations
 
@@ -44,25 +44,6 @@ ALLOWED_DEPENDENCIES = {
         "systems",
     },
     "workflows": NAMESPACES,
-}
-LEGACY_SIGNAL_IMPORT_PATHS = {
-    "ALB/core/__init__.py",
-    "ALB/core/component.py",
-    "ALB/core/fem/base.py",
-    "ALB/dynamics/rotor.py",
-    "ALB/infrastructure/legacy_signal.py",
-    "ALB/systems/alb/builder.py",
-    "ALB/systems/alb/factories.py",
-    "ALB/systems/alb/linear.py",
-    "ALB/systems/alb/runtime.py",
-    "ALB/systems/alb/switch.py",
-}
-LEGACY_SIGNAL_LEAD_LOOP_COUNTS = {
-    "ALB/dynamics/rotor.py": 1,
-    "ALB/infrastructure/legacy_signal.py": 1,
-    "ALB/physics/film/solver.py": 3,
-    "ALB/physics/hydraulics/orifice.py": 1,
-    "ALB/systems/alb/linear.py": 1,
 }
 
 
@@ -268,8 +249,8 @@ def test_numerical_namespaces_do_not_import_infrastructure() -> None:
     assert violations == []
 
 
-def test_signal_migration_debt_is_frozen_by_ast_boundary() -> None:
-    """Prevent new Signal consumers while the 0.3 compatibility set is retired."""
+def test_signal_and_lead_loop_are_absent() -> None:
+    """Require the installed package to remain free of Signal topology."""
 
     imports: set[str] = set()
     lead_loop_counts: dict[str, int] = {}
@@ -298,5 +279,5 @@ def test_signal_migration_debt_is_frozen_by_ast_boundary() -> None:
         if lead_loop_count:
             lead_loop_counts[relative] = lead_loop_count
 
-    assert imports == LEGACY_SIGNAL_IMPORT_PATHS
-    assert lead_loop_counts == LEGACY_SIGNAL_LEAD_LOOP_COUNTS
+    assert imports == set()
+    assert lead_loop_counts == {}

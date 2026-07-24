@@ -1,6 +1,5 @@
 # -- coding: utf-8 --
 import unittest
-from dataclasses import fields
 
 import numpy as np
 
@@ -43,135 +42,54 @@ class TestALBConfigValidation(unittest.TestCase):
                 np.testing.assert_array_equal(second.gxy, np.eye(2))
                 np.testing.assert_array_equal(second.gxyt, np.zeros((2, 2)))
 
-    def test_alb_config_from_dict_valid(self):
-        cfg = ALBConfig.from_dict({"alb": "ALB", "servo": "moog", "freq": 50})
-        self.assertEqual(cfg.alb, "ALB")
-
-    def test_alb_config_invalid_controller(self):
-        with self.assertRaises(ValueError):
-            ALBConfig.from_dict({}, controller="MPC")
-
-    def test_no_controller_config_is_explicit_and_round_trippable(self):
+    def test_uncontrolled_and_external_spool_require_no_controller(self):
         for config_class in (ALBConfig, NodimALBConfig):
-            with self.subTest(config_class=config_class.__name__):
-                explicit = config_class.from_dict({"controller": "none"})
-                self.assertIsNone(explicit.controller_config)
-
-                serialized = config_class(controller_config=None).to_dict()
-                self.assertEqual(serialized["controller"], "none")
-                restored = config_class.from_dict(serialized)
-                self.assertIsNone(restored.controller_config)
-
-                default = config_class.from_dict({})
-                self.assertIsNotNone(default.controller_config)
-
-    def test_controller_type_and_nondefault_values_round_trip_exactly(self):
-        controller_cases = (
-            (
-                "PID",
-                PIDConfig(
-                    dt=0.002,
-                    kp=0.45,
-                    ki=0.15,
-                    kd=0.08,
-                    uf=0.3,
-                    freq=37.0,
-                    sensor_angles=np.asarray([25.0, 115.0]),
-                ),
-            ),
-            (
-                "FuzzyPID",
-                FuzzyPIDConfig(
-                    dt=0.003,
-                    freq=41.0,
-                    error_range=[-0.8, 0.9, 0.05],
-                    delta_error_range=[-0.4, 0.7, 0.02],
-                    kp_range=[0.1, 0.9, 0.04],
-                    ki_range=[0.0, 0.2, 0.01],
-                    kd_range=[0.05, 0.6, 0.025],
-                    rule_path="rules/custom.csv",
-                    sensor_angles=[30.0, 120.0],
-                ),
-            ),
-        )
-        for config_class in (ALBConfig, NodimALBConfig):
-            for tag, source_controller in controller_cases:
-                with self.subTest(config_class=config_class.__name__, tag=tag):
-                    source = config_class(controller_config=source_controller)
-                    serialized = source.to_dict()
-                    self.assertEqual(serialized["controller"], tag)
-
-                    restored = config_class.from_dict(serialized)
-                    self.assertIsInstance(
-                        restored.controller_config, type(source_controller)
-                    )
-                    for config_field in fields(source_controller):
-                        expected = getattr(source_controller, config_field.name)
-                        actual = getattr(restored.controller_config, config_field.name)
-                        if isinstance(expected, np.ndarray):
-                            np.testing.assert_array_equal(actual, expected)
-                        else:
-                            self.assertEqual(actual, expected)
-
-    def test_controller_tag_and_nested_payload_type_must_agree(self):
-        for config_class in (ALBConfig, NodimALBConfig):
-            conflicts = (
-                {
-                    "controller": "PID",
-                    "controller_config": FuzzyPIDConfig(),
-                },
-                {
-                    "controller": "FuzzyPID",
-                    "controller_config": PIDConfig(),
-                },
-                {
-                    "controller": "none",
-                    "controller_config": PIDConfig(),
-                },
-                {"controller": "PID", "controller_config": None},
-            )
-            for payload in conflicts:
+            for mode in ("uncontrolled", "external_spool"):
                 with self.subTest(
                     config_class=config_class.__name__,
-                    controller=payload["controller"],
+                    mode=mode,
                 ):
-                    with self.assertRaisesRegex(ValueError, "conflicts|requires"):
-                        config_class.from_dict(payload)
+                    config = config_class(
+                        control_mode=mode,
+                        controller_config=None,
+                    )
+                    self.assertIsNone(config.controller_config)
 
-    def test_nested_controller_payload_rejects_unknown_fields(self):
+    def test_controlled_modes_require_typed_controller(self):
         for config_class in (ALBConfig, NodimALBConfig):
             with self.subTest(config_class=config_class.__name__):
-                with self.assertRaisesRegex(ValueError, "Unknown PID"):
-                    config_class.from_dict(
-                        {
-                            "controller": "PID",
-                            "controller_config": {
-                                "kp": 0.5,
-                                "fuzzy_only_field": 12.0,
-                            },
-                        }
+                pid = config_class(
+                    control_mode="pid",
+                    controller_config=PIDConfig(kp=0.75),
+                )
+                fuzzy = config_class(
+                    control_mode="fuzzy_pid",
+                    controller_config=FuzzyPIDConfig(rule_path=None),
+                )
+                self.assertEqual(pid.controller_config.kp, 0.75)
+                self.assertIsInstance(
+                    fuzzy.controller_config,
+                    FuzzyPIDConfig,
+                )
+                with self.assertRaisesRegex(ValueError, "requires"):
+                    config_class(
+                        control_mode="pid",
+                        controller_config=None,
                     )
 
-    def test_legacy_flat_controller_payload_remains_permissive(self):
-        for config_class in (ALBConfig, NodimALBConfig):
-            with self.subTest(config_class=config_class.__name__):
-                restored = config_class.from_dict(
-                    {
-                        "controller": "PID",
-                        "kp": 0.75,
-                        "legacy_unrelated_field": "ignored",
-                    }
-                )
-                self.assertIsInstance(restored.controller_config, PIDConfig)
-                self.assertEqual(restored.controller_config.kp, 0.75)
-
-    def test_alb_config_invalid_alb(self):
+    def test_removed_assembly_fields_are_not_constructor_parameters(self):
         with self.assertRaises(ValueError):
-            ALBConfig.from_dict({"alb": "BAD"})
+            ALBConfig(control_mode="removed")
+        with self.assertRaises(TypeError):
+            ALBConfig(alb="ALB")
+        with self.assertRaises(TypeError):
+            ALBConfig(servo="static")
+        with self.assertRaises(TypeError):
+            ALBConfig(switch=False)
 
-    def test_alb_config_invalid_servo(self):
+    def test_invalid_valve_model_is_rejected(self):
         with self.assertRaises(ValueError):
-            ALBConfig.from_dict({"servo": "BAD"})
+            ALBConfig(valve_model="bad")
 
 
 class TestThermalConfigValidation(unittest.TestCase):
@@ -186,10 +104,11 @@ class TestThermalConfigValidation(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "require iter_method='direct'"):
                     ThermalConfig(transient_enabled=True, iter_method=method)
 
-    def test_deprecated_flow_rate_factor_is_a_strict_no_op(self):
-        self.assertEqual(ThermalConfig().flow_rate_factor, 1.0)
-        with self.assertRaisesRegex(ValueError, "deprecated"):
-            ThermalConfig(flow_rate_factor=1.01)
+    def test_removed_thermal_fields_are_rejected(self):
+        with self.assertRaises(TypeError):
+            ThermalConfig(flow_rate_factor=1.0)
+        with self.assertRaises(TypeError):
+            ThermalConfig(pressure_backend="skfem")
 
     def test_physical_thermal_reference_values_are_positive(self):
         with self.assertRaisesRegex(ValueError, "k_lub"):

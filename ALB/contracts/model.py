@@ -6,54 +6,13 @@ interface whose ``input`` and ``output`` meanings vary by domain.
 """
 
 from dataclasses import dataclass
-from typing import Any, Iterator, Optional, Protocol, TypeAlias, runtime_checkable
+from typing import Iterator, Optional, Protocol, TypeAlias, runtime_checkable
 
 import numpy as np
 import numpy.typing as npt
 
 
 FloatArray: TypeAlias = npt.NDArray[np.float64]
-
-
-@runtime_checkable
-class SignalProtocol(Protocol):
-    """Event propagation port exposed by runtime components."""
-
-    signal: bool
-
-    def add_child(self, child: "SignalProtocol") -> None:
-        """Attach a child event port."""
-
-    def lead_loop(self, attr: str) -> None:
-        """Broadcast one true/false event cycle."""
-
-
-@runtime_checkable
-class LifecycleProtocol(Protocol):
-    """Minimal initialization and completion contract."""
-
-    signal: SignalProtocol
-
-    def init(self, *args: Any, **kwargs: Any) -> Any:
-        """Reset the component to its initial runtime state."""
-
-    def calc_is_finished(self, *args: Any, **kwargs: Any) -> bool:
-        """Return whether the current calculation is complete."""
-
-
-@runtime_checkable
-class PersistableProtocol(Protocol):
-    """Persistence port used by coupled systems."""
-
-    def save(
-        self,
-        tofile: bool = True,
-        path: Optional[str] = None,
-        name: Optional[str] = None,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Any:
-        """Return a save-tree node and optionally persist it."""
 
 
 @runtime_checkable
@@ -76,12 +35,7 @@ class TimeGridProtocol(Protocol):
 
 @dataclass(frozen=True)
 class ConvergenceStatus:
-    """Unambiguous convergence result for new interfaces.
-
-    Legacy ``calc_error`` methods currently return a mixture of booleans and
-    residual scalars.  New code should expose this value without changing the
-    legacy method until each numerical solver is migrated deliberately.
-    """
+    """Unambiguous convergence result for strict runtime interfaces."""
 
     residual: float
     converged: bool

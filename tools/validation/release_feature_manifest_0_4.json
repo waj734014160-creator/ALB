@@ -1,0 +1,30 @@
+{
+  "schema": "alb.release-feature-manifest.v0.4",
+  "release": "0.4.0",
+  "features": [
+    {"id": "V4-01", "title": "Friendly root facade", "required_nodeids": ["tests/unit/api/test_public_api_0_4.py::test_root_namespace_is_friendly_and_has_no_legacy_entry_points"]},
+    {"id": "V4-02", "title": "Strict immutable BearingConfig", "required_nodeids": ["tests/unit/api/test_public_api_0_4.py::test_config_is_immutable_and_override_revalidates"]},
+    {"id": "V4-03", "title": "Ordered strict JSON5 includes", "required_nodeids": ["tests/unit/api/test_public_api_0_4.py::test_strict_json5_include_order_and_null_override", "tests/unit/api/test_public_api_0_4.py::test_strict_json5_rejects_cycles_duplicates_kind_mismatch_and_escape"]},
+    {"id": "V4-04", "title": "Ready construction and explicit reset", "required_nodeids": ["tests/unit/api/test_public_api_0_4.py::test_bearing_is_ready_without_public_init_and_output_is_read_only"]},
+    {"id": "V4-05", "title": "Keyword-only sequential calculation", "required_nodeids": ["tests/unit/api/test_public_api_0_4.py::test_calculate_is_keyword_only_and_enforces_sequential_time"]},
+    {"id": "V4-06", "title": "Explicit external spool contract", "required_nodeids": ["tests/unit/surrogate/test_model_package_0_4.py::test_surrogate_family_uses_friendly_facade_and_explicit_spool"]},
+    {"id": "V4-07", "title": "Immutable writable results", "required_nodeids": ["tests/unit/api/test_public_api_0_4.py::test_bearing_is_ready_without_public_init_and_output_is_read_only"]},
+    {"id": "V4-08", "title": "State-isolated analysis service", "required_nodeids": ["tests/unit/api/test_public_api_0_4.py::test_analysis_uses_fresh_runtime_and_does_not_change_latest_result"]},
+    {"id": "V4-09", "title": "Natural mixed liquid-film restrictors", "required_nodeids": ["tests/unit/physics/test_liquid_film_runtime.py::test_constructor_supplied_orifices_enable_coupled_calculation[flow_definition0]"]},
+    {"id": "V4-10", "title": "Active control modes", "required_nodeids": ["tests/regression/systems/test_alb_runtime_families_reference.py::test_alb_runtime_families_match_reference_exactly"]},
+    {"id": "V4-11", "title": "Gas bearing DTO runtime and facade", "required_nodeids": ["tests/unit/api/test_public_api_0_4.py::test_gas_film_runtime_is_available_through_friendly_facade"]},
+    {"id": "V4-12", "title": "MultiPad composite runtime", "required_nodeids": ["tests/unit/physics/test_multi_pad_runtime.py::test_multipad_auto_ready_three_phase_and_exact_read_only_sum"]},
+    {"id": "V4-13", "title": "Strict thermal configuration", "required_nodeids": ["tests/unit/config/test_config_validate.py::TestThermalConfigValidation::test_removed_thermal_fields_are_rejected"]},
+    {"id": "V4-14", "title": "Harmonic analysis service", "required_nodeids": ["tests/regression/systems/test_alb_runtime_families_reference.py::test_alb_runtime_families_match_reference_exactly"]},
+    {"id": "V4-15", "title": "Immutable simulation topology and explicit history policies", "required_nodeids": ["tests/unit/api/test_public_api_0_4.py::test_simulation_keeps_all_committed_steps_by_default", "tests/unit/api/test_public_api_0_4.py::test_simulation_can_stream_filtered_history_to_disk"]},
+    {"id": "V4-16", "title": "Stable exception hierarchy and sealed failure state", "required_nodeids": ["tests/unit/api/test_public_api_0_4.py::test_root_namespace_is_friendly_and_has_no_legacy_entry_points"]},
+    {"id": "V4-17", "title": "Signal removal", "required_nodeids": ["tests/validation/test_release_0_4_gates.py::test_package_sources_have_zero_signal_and_legacy_adapter_paths"]},
+    {"id": "V4-18", "title": "Removed package modules", "required_nodeids": ["tests/validation/test_release_0_4_gates.py::test_removed_package_modules_are_not_importable[ALB.config.legacy]"]},
+    {"id": "V4-19", "title": "Pickle-free surrogate package", "required_nodeids": ["tests/unit/surrogate/test_model_package_0_4.py::test_package_rejects_v02_and_loads_v04_without_pickle"]},
+    {"id": "V4-20", "title": "Training emits v0.4 packages", "required_nodeids": ["tests/unit/train/test_alb_train_config.py::test_config_trainer_smoke"]},
+    {"id": "V4-21", "title": "SURROGATE_TRAIN migration", "required_nodeids": ["tests/validation/test_release_0_4_gates.py::test_declared_external_consumers_have_zero_removed_api_hits"]},
+    {"id": "V4-22", "title": "PAPER_WORK migration", "required_nodeids": ["tests/validation/test_release_0_4_gates.py::test_declared_external_consumers_have_zero_removed_api_hits", "tests/validation/test_release_0_4_gates.py::test_paper_work_active_configs_use_only_strict_v04_documents"]},
+    {"id": "V4-23", "title": "No mutable facade component escapes", "required_nodeids": ["tests/validation/test_release_0_4_gates.py::test_user_facade_has_no_init_or_mutable_component_escape"]},
+    {"id": "V4-24", "title": "Legacy-zero public namespaces", "required_nodeids": ["tests/validation/test_release_0_4_gates.py::test_root_and_domain_namespaces_do_not_publish_removed_names"]}
+  ]
+}

@@ -3,7 +3,8 @@
 import numpy as np
 
 from ALB.contracts import BearingInput, UnitSystem
-from ALB.physics.bearing import HydrostaticBearing, MultiPad
+from ALB.physics.bearing import MultiPad
+from ALB.physics.bearing.solver import _DimensionalMixedFilmRuntime
 from ALB.config import HydConfig
 
 from .validation_reference_data import BASE_HYD_CONFIG
@@ -19,8 +20,8 @@ def run_validation_case(e, angle):
     hyd_config0 = _build_hyd_config(e=e, angle=angle, x0=-80)
     hyd_config1 = _build_hyd_config(e=e, angle=angle, x0=100)
 
-    bearing1 = HydrostaticBearing(hyd_config0)
-    bearing2 = HydrostaticBearing(hyd_config1)
+    bearing1 = _DimensionalMixedFilmRuntime(hyd_config0)
+    bearing2 = _DimensionalMixedFilmRuntime(hyd_config1)
     mp = MultiPad(bearing1, bearing2)
 
     mp.step(

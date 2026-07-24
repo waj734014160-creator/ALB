@@ -1,4 +1,7 @@
-# coding: utf-8
+"""Compressible gas-film numerical models."""
+
+import copy
+
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from skfem import BilinearForm, LinearForm, asm
@@ -7,7 +10,7 @@ from skfem.helpers import grad
 from ALB.core.component import BaseSimpleModel
 from ALB.core.fem import ElemManager, MatrixProcess, Mesh, NodeManager
 from ALB.config import GasConfig
-from ALB.physics.film import (
+from ALB.physics.film.solver import (
     FilmBoundary,
     FilmSystem,
     RectFilmElem,
@@ -62,7 +65,7 @@ class GasFoilTextureCoupling(BaseSimpleModel):
         self._latest_total_h = None
         self._error = np.inf
 
-    def init(self):
+    def _reset_for_owner(self):
         """
         Reset all internal state to initial values.
 
@@ -372,7 +375,7 @@ class GasSkfemNewtonFilm(SkfemNewtonFilm):
         pressure[pressure < floor] = floor
         return pressure
 
-    def init(self, **kwargs):
+    def _reset_for_owner(self, **kwargs):
         """
         Initialize the pressure field to the boundary pressure and update nodes.
 
@@ -486,17 +489,17 @@ class GasSkfemNewtonFilm(SkfemNewtonFilm):
         return p_new
 
 
-class GasBearing(FilmSystem):
+class _GasFilmSolver(FilmSystem):
     """Gas bearing system with Newton iteration and scikit-fem assembly."""
 
     unit_system = "dimensional"
 
-    def __init__(self, gas_config: GasConfig = GasConfig()):
-        if gas_config.thermal_enabled:
-            raise NotImplementedError(
-                "Thermal coupling interface is reserved but not enabled in this version."
-            )
-
+    def __init__(self, gas_config: GasConfig | None = None):
+        gas_config = (
+            GasConfig()
+            if gas_config is None
+            else copy.deepcopy(gas_config)
+        )
         mesh = Mesh()
         elems = ElemManager()
         nodes = NodeManager()

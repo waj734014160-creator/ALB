@@ -15,14 +15,11 @@ from .block import (
     EvaluableBlock,
     SolvableBlock,
 )
-from .control import ControllerProtocol, LegacyControllerProtocol, ServoValveProtocol
+from .control import ControllerProtocol, ServoValveProtocol
 from .dynamics import RotorProtocol, RotorStateMap
 from .lifecycle import LifecycleState, RuntimeLifecycleProtocol
 from .model import (
     ConvergenceStatus,
-    LifecycleProtocol,
-    PersistableProtocol,
-    SignalProtocol,
     TimeGridProtocol,
 )
 from .notification import NotifierProtocol
@@ -95,14 +92,11 @@ __all__ = [
     "ControllerProtocol",
     "ConvergenceStatus",
     "EvaluableBlock",
-    "LifecycleProtocol",
     "LifecycleState",
-    "LegacyControllerProtocol",
     "NotifierProtocol",
     "ObserverFailure",
     "import_optional_module",
     "missing_optional_dependency",
-    "PersistableProtocol",
     "RotorProtocol",
     "RotorStateMap",
     "RotorLoadInput",
@@ -129,7 +123,6 @@ __all__ = [
     "RossRotorResult",
     "SaveTreeNode",
     "ServoValveProtocol",
-    "SignalProtocol",
     "SolvableBlock",
     "StepContext",
     "StepCompleted",

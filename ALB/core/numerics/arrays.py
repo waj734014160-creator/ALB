@@ -12,7 +12,7 @@ def horizontal_stack_nonempty(
     arrays: Iterable[np.ndarray],
     **kwargs: Any,
 ) -> np.ndarray | list[Any]:
-    """Horizontally stack nonempty arrays, preserving the legacy empty result."""
+    """Horizontally stack nonempty arrays and preserve an empty result."""
 
     values = [array for array in arrays if len(array) != 0]
     if not values:
@@ -24,7 +24,7 @@ def vertical_stack_nonempty(
     arrays: Iterable[np.ndarray],
     **kwargs: Any,
 ) -> np.ndarray | list[Any]:
-    """Vertically stack nonempty arrays, preserving the legacy empty result."""
+    """Vertically stack nonempty arrays and preserve an empty result."""
 
     values = [array for array in arrays if len(array) != 0]
     if not values:

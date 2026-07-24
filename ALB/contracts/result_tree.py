@@ -69,8 +69,8 @@ class RossRotorResult:
 class SaveTreeNode:
     """A filesystem-independent tree of named numerical result payloads.
 
-    The historical class mixed numerical result assembly with direct CSV, NPY,
-    HTML, TOML, and pickle writes. In 0.2 the tree only describes data. A
+    This class separates numerical result assembly from direct artifact writes.
+    The tree only describes data. A
     workflow may call :meth:`persist` with an injected writer and receives an
     inspectable :class:`ArtifactManifest`.
     """

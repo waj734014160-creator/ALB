@@ -14,7 +14,7 @@ contracts:
   so callers can use the full bearing plane without retraining the model.
 * ``ALBNNForceExpert`` and ``ALBNNResidualCorrector`` are metadata-dispatched
   deployment wrappers for specialized model artifacts.
-* The scaler classes are sklearn-like, pickle-friendly contracts that keep
+* The scaler classes are sklearn-like contracts that keep
   training-time transforms and packaged inference aligned.
 
 All comments and docstrings in this source file are kept in English so they
@@ -60,8 +60,7 @@ ALBNN_POLAR_DOT_INPUT_COLS = ["e_dot_v", "e_dot_s", "s_dot_v"]
 # is trained only in the ``ex >= 0, ey >= 0`` canonical quadrant.
 ALBNN_C4_VECTOR_PAIRS = (("ex", "ey"), ("vx", "vy"), ("sx", "sy"))
 
-# Positive scalar columns that can safely receive log companions in legacy
-# augmentation modes.
+# Positive scalar columns that can safely receive logarithmic companions.
 ALBNN_LOG_INPUT_COLS = {"lambda_value", "lr", "cq0", "cq1", "cq2"}
 
 # Feature-set names are serialized in metadata.json. Treat these strings as a
@@ -448,24 +447,6 @@ def albnn_augment_frame(frame: pd.DataFrame, feature_set: str = "default") -> pd
     return augmented
 
 
-class NetMlpOld(nn.Module):
-    """Legacy fixed-depth MLP kept for loading or comparing old experiments."""
-
-    def __init__(self, nbs_neurons):
-        super(NetMlpOld, self).__init__()
-        self.input_layer = nn.Linear(nbs_neurons[0], nbs_neurons[1])
-        self.hidden_layer1 = nn.Linear(nbs_neurons[1], nbs_neurons[2])
-        self.hidden_layer2 = nn.Linear(nbs_neurons[2], nbs_neurons[3])
-        self.output_layer = nn.Linear(nbs_neurons[3], nbs_neurons[4])
-
-    def forward(self, x):
-        x = F.silu(self.input_layer(x))
-        x = F.silu(self.hidden_layer1(x))
-        x = F.silu(self.hidden_layer2(x))
-        x = self.output_layer(x)
-        return x
-
-
 class Net(nn.Module):
     """Configurable MLP used by packaged ALBNN checkpoints.
 
@@ -554,7 +535,7 @@ class NetApl:
     """Small adapter that applies fitted input and output scalers around ``Net``.
 
     This class predates the richer ``ALBNN`` wrapper and is still used by
-    ``ALBNet``/``ThermalALBNet``. It expects feature arrays that already match
+    deployed surrogate models. It expects feature arrays that already match
     ``scaler_X.feature_names_in_``.
     """
 
@@ -1374,10 +1355,9 @@ class SelectiveStandardScaler:
 class StandardThenMinMaxScaler:
     """Apply per-column standardization followed by minmax scaling.
 
-    The transform is fully affine and sklearn-like, so it can be pickled with
-    trained ALBNN artifacts and used by packaged inference.  It is useful when
-    preserving the old force-scaling style while keeping a bounded network
-    target range.
+    The transform is fully affine and sklearn-like, so it can be stored in the
+    restricted NPZ scaler graph used by packaged inference. It is useful when
+    keeping a bounded network target range.
     """
 
     def __init__(self, feature_range: tuple[float, float] = (0.0, 1.0)):
@@ -2180,80 +2160,6 @@ class Cq2SigLogMinMaxScaler:
         return values
 
 
-class ALBNet:
-    """Legacy dimensional ALB neural force wrapper.
-
-    ``ALB.systems.alb.assembly.nn_agent`` uses this wrapper through
-    ``alb_agent_nn`` when a
-    complete ALB shell should keep its servo/controller wiring but replace the
-    pad force core with an older ALBNet-style neural model.
-    """
-
-    def __init__(self, model: Net, scaled_X, scaled_y, albnet_config):
-        """
-        :param model: the neural network model
-        :param albnet_config: the configuration for ALBNet
-        """
-        super().__init__()
-        self.config = albnet_config
-        self._net = NetApl(model, scaled_X, scaled_y)
-        self._uxy = None
-        self._uxyt = None
-        self._sxy = None
-        self._c = albnet_config.c
-        self._vf = albnet_config.vf
-        self._freq = albnet_config.freq
-        self._ps = albnet_config.ps
-        self._l = albnet_config.l
-        self._r = albnet_config.r
-
-    def input(self, uxy, uxyt, sxy, nodim=False):
-        """Cache one dimensional or nondimensional state for ``output``."""
-        if nodim:
-            self._uxy = uxy
-            self._uxyt = uxyt
-        else:
-            self._uxy = uxy / self._c
-            self._uxyt = uxyt / self._c / (self._vf * self._freq * 2 * np.pi)
-
-        self._sxy = sxy
-
-    def output(self, nodim=False):
-        """Return force for the cached state, optionally in nondimensional units."""
-        x = np.concatenate(
-            [[self._freq], self._uxy, self._uxyt, self._sxy], axis=0
-        ).reshape(1, -1)
-        x_add = np.sqrt(np.abs(x))
-        x = np.concatenate([x, x_add.reshape(1, -1)], axis=1)
-        nodim_force = self._net.predict(x)
-        if nodim:
-            force = nodim_force
-        else:
-            force = nodim_force * self._ps * self._l / 2 * self._r
-
-        return force
-
-    def predict(self, x):
-        return self._net.predict(x)
-
-
-def alb_agent_nn(albnet_config):
-    """Load the legacy ALBNet wrapper from paths stored in ``ALBNetConfig``."""
-    scaler_X = albnet_config.scaler_X
-    scaler_y = albnet_config.scaler_y
-    with open(scaler_X, "rb") as f:
-        scaler_X_model = pd.read_pickle(f)
-    with open(scaler_y, "rb") as f:
-        scaler_y_model = pd.read_pickle(f)
-    model = torch.load(
-        albnet_config.model, map_location=torch.device("cpu"), weights_only=True
-    )
-    net = net_from_checkpoint(model)
-    net.load_state_dict(model["model_state_dict"])
-    alb_net = ALBNet(net, scaler_X_model, scaler_y_model, albnet_config=albnet_config)
-    return alb_net
-
-
 def train_loop(dataloader, model, loss_fn, optimizer, batch_size):
     """Minimal educational training loop kept for simple local experiments."""
     size = len(dataloader.dataset)
@@ -2364,7 +2270,11 @@ def mlp_train(
         if patience_counter >= patience:
             print(f"Early stopping at epoch {epoch + 1}")
             break
-    checkpoint = torch.load(best_model_path, map_location=device)
+    checkpoint = torch.load(
+        best_model_path,
+        map_location=device,
+        weights_only=True,
+    )
     net.load_state_dict(checkpoint["model_state_dict"])
     return loss_epoch, loss_test_epoch
 
@@ -2408,17 +2318,9 @@ def get_samples_bound(samples: pd.DataFrame) -> dict:
 class ThermalALBNet:
     """Neural-network surrogate for thermal bearing force prediction.
 
-    Unlike :class:`ALBNet` which uses 7 base features (freq + uxy + uxyt + sxy),
-    this class accepts 10 features including thermal parameters (beta, t_in, ps)
-    and supports optional sqrt(|x|) feature augmentation.
-
-    Typical usage::
-
-        from ALB.surrogate.inference import thermal_albnet
-
-        net = thermal_albnet(config)
-        net.input(uxy, uxyt, sxy, freq=50.0, beta=0.03, t_in=40.0, ps=3e6)
-        result = net.output()  # shape (1, 3): [fx, fy, t_eff]
+    This implementation accepts 10 features including thermal parameters
+    (beta, t_in, ps) and supports optional sqrt(|x|) augmentation. Deployment
+    is available only through a validated v0.4 model package.
     """
 
     # Feature column names (must match training CSV)
@@ -2514,228 +2416,3 @@ class ThermalALBNet:
     def predict(self, x):
         """Direct prediction from raw feature array (bypasses input/output)."""
         return self._net.predict(x)
-
-
-def thermal_albnet(config, use_augment: bool = True):
-    """Load a trained thermal bearing force MLP from config paths.
-
-    :param config: configuration object with scaler_X, scaler_y, model path attributes
-    :param use_augment: whether the model was trained with feature augmentation
-    :return: ThermalALBNet instance
-    """
-    with open(config.scaler_X, "rb") as f:
-        scaler_X_model = pd.read_pickle(f)
-    with open(config.scaler_y, "rb") as f:
-        scaler_y_model = pd.read_pickle(f)
-    model = torch.load(
-        config.model, map_location=torch.device("cpu"), weights_only=True
-    )
-    net = net_from_checkpoint(model)
-    net.load_state_dict(model["model_state_dict"])
-    return ThermalALBNet(
-        net, scaler_X_model, scaler_y_model,
-        config=config, use_augment=use_augment,
-    )
-
-
-def _c4_setting_from_value(value):
-    """Return an explicit C4 setting or ``None`` when value is unspecified."""
-    if value is None:
-        return None
-    if isinstance(value, dict):
-        enabled = value.get("enabled")
-        if enabled is not None and not bool(enabled):
-            return False
-        value = value.get("name") or value.get("type") or value.get("mode")
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        if normalized in {"", "none", "false", "off", "disabled", "disable"}:
-            return False
-        return normalized in {
-            "c4",
-            "c4_canonical",
-            "c4_canonical_quadrant",
-            "canonical_quadrant_c4",
-        }
-    return bool(value)
-
-
-def _use_c4_canonical_inference(metadata: dict, config) -> bool:
-    """Resolve C4 canonical inference from config override, then metadata."""
-    for name in (
-        "inference_symmetry",
-        "albnn_inference_symmetry",
-        "c4_canonical_quadrant",
-        "albnn_c4_canonical_quadrant",
-    ):
-        if hasattr(config, name):
-            explicit = _c4_setting_from_value(getattr(config, name))
-            if explicit is not None:
-                return explicit
-    for name in ("inference_symmetry", "c4_canonical_quadrant"):
-        explicit = _c4_setting_from_value(metadata.get(name))
-        if explicit is not None:
-            return explicit
-    return False
-
-
-def _wrap_c4_if_requested(model, metadata: dict, config):
-    """Wrap a loaded ALBNN-compatible model when metadata/config asks for C4."""
-    if isinstance(model, ALBNNC4Canonical):
-        return model
-    if _use_c4_canonical_inference(metadata, config):
-        return ALBNNC4Canonical(model)
-    return model
-
-
-def albnn(config, use_augment: bool = None):
-    """Load a nondimensional thermal ALBSV force surrogate.
-
-    ``config`` may provide ``model``, ``scaler_X`` and ``scaler_y`` paths plus
-    optional ``metadata``.  The metadata written by ``run/train_albnn.py`` is
-    used to recover input/output column order and augmentation settings.
-    """
-    import json
-    from pathlib import Path
-
-    # Metadata is optional for very old artifacts, but preferred. It records the
-    # input/output columns, augmentation mode, target representation, and model
-    # subtype so this loader can dispatch without hard-coded directory names.
-    metadata = {}
-    metadata_path = getattr(config, "metadata", None)
-    if metadata_path is None:
-        candidate = Path(config.model).with_name("metadata.json")
-        if candidate.exists():
-            metadata_path = candidate
-    if metadata_path is not None and Path(metadata_path).exists():
-        with open(metadata_path, "r", encoding="utf-8") as f:
-            metadata = json.load(f)
-    metadata_dir = (
-        Path(metadata_path).resolve().parent
-        if metadata_path is not None
-        else Path(config.model).resolve().parent
-    )
-
-    def _load_checkpoint(path):
-        """Load checkpoint with compatibility for older torch versions."""
-        try:
-            return torch.load(path, map_location=torch.device("cpu"), weights_only=True)
-        except TypeError:
-            return torch.load(path, map_location=torch.device("cpu"))
-
-    def _resolve_artifact(value, default_name=None):
-        """Resolve metadata-relative artifact paths."""
-        if value is None:
-            if default_name is None:
-                return None
-            path = metadata_dir / default_name
-        else:
-            path = Path(value)
-            if not path.is_absolute():
-                path = metadata_dir / path
-        return path
-
-    if metadata.get("model_type") == "albnn_residual_corrector":
-        # Residual packages carry a frozen main model plus a sidecar residual
-        # network. Reconstruct the main config from the caller config, then
-        # replace only the model/scaler paths that belong to the main model.
-        main_model_dir = Path(metadata["main_model_dir"])
-        if not main_model_dir.is_absolute():
-            main_model_dir = metadata_dir / main_model_dir
-
-        class _ConfigProxy:
-            pass
-
-        main_config = _ConfigProxy()
-        for name in dir(config):
-            if name.startswith("_"):
-                continue
-            try:
-                value = getattr(config, name)
-            except Exception:
-                continue
-            if callable(value):
-                continue
-            setattr(main_config, name, value)
-        main_config.model = str(main_model_dir / "best_albnn.pth")
-        main_config.scaler_X = str(main_model_dir / "scaler_X.pkl")
-        main_config.scaler_y = str(main_model_dir / "scaler_y.pkl")
-        main_metadata_path = main_model_dir / "metadata.json"
-        if main_metadata_path.exists():
-            main_config.metadata = str(main_metadata_path)
-
-        main_model = albnn(main_config, use_augment=None)
-        residual_checkpoint_path = Path(getattr(config, "model", ""))
-        if not residual_checkpoint_path.exists():
-            residual_checkpoint_path = _resolve_artifact(
-                metadata.get("model_file"), "best_residual_expert.pth"
-            )
-        residual_checkpoint = _load_checkpoint(residual_checkpoint_path)
-        residual_net = net_from_checkpoint(residual_checkpoint)
-        residual_net.load_state_dict(residual_checkpoint["model_state_dict"])
-
-        residual_scaler_path = _resolve_artifact(
-            metadata.get("residual_scaler_y"), getattr(config, "scaler_y", None)
-        )
-        residual_scaler_y = pd.read_pickle(residual_scaler_path)
-        residual_model = ALBNNResidualCorrector(
-            main_model,
-            residual_net,
-            residual_scaler_y,
-            alpha=float(metadata.get("selected_alpha", 1.0)),
-            config=config,
-            metadata=metadata,
-        )
-        return _wrap_c4_if_requested(residual_model, metadata, config)
-
-    with open(config.scaler_X, "rb") as f:
-        scaler_X_model = pd.read_pickle(f)
-    with open(config.scaler_y, "rb") as f:
-        scaler_y_model = pd.read_pickle(f)
-
-    checkpoint = _load_checkpoint(config.model)
-    net = net_from_checkpoint(checkpoint)
-    net.load_state_dict(checkpoint["model_state_dict"])
-
-    if use_augment is None:
-        use_augment = bool(metadata.get("use_augment", True))
-
-    if metadata.get("model_type") == "albnn_force_expert":
-        # Expert packages share the ALBNN input path but need a custom output
-        # decoder because each expert emits force channels plus router logits.
-        target_transform = metadata.get("target_transform", {})
-        force_expert = ALBNNForceExpert(
-            net,
-            scaler_X_model,
-            scaler_y_model,
-            config=config,
-            input_cols=metadata.get("input_cols", ALBNN_BASE_INPUT_COLS),
-            output_cols=metadata.get("output_cols", ALBNN_OUTPUT_COLS),
-            use_augment=use_augment,
-            feature_set=metadata.get("feature_set", "default"),
-            expert_bins=metadata.get("expert_bins"),
-            expert_output_contract=metadata.get(
-                "expert_output_contract", "fx_z,fy_z,router_logit"
-            ),
-            expert_inference_mode=metadata.get(
-                "expert_inference_mode", "adjacent_blend"
-            ),
-            expert_blend_confidence_threshold=float(
-                metadata.get("expert_blend_confidence_threshold", 0.8)
-            ),
-            target_transform_scale=float(target_transform.get("scale", 2.0)),
-        )
-        return _wrap_c4_if_requested(force_expert, metadata, config)
-
-    model = ALBNN(
-        net,
-        scaler_X_model,
-        scaler_y_model,
-        config=config,
-        input_cols=metadata.get("input_cols", ALBNN_BASE_INPUT_COLS),
-        output_cols=metadata.get("output_cols", ALBNN_OUTPUT_COLS),
-        use_augment=use_augment,
-        feature_set=metadata.get("feature_set", "default"),
-        target_output=metadata.get("target_output", "cartesian"),
-    )
-    return _wrap_c4_if_requested(model, metadata, config)

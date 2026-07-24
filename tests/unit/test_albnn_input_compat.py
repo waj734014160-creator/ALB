@@ -1,5 +1,4 @@
 from types import SimpleNamespace
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -12,11 +11,9 @@ from ALB.surrogate.inference import (
     ALBNN_BASE_INPUT_COLS,
     Cq2SigLogMinMaxScaler,
     albnn_augment_frame,
-    albnn,
     c4_canonicalize_albnn_frame,
     c4_restore_albnn_force,
 )
-from ALB.surrogate.package import load_albnn_package
 
 
 class IdentityScaler:
@@ -44,11 +41,6 @@ class FirstTwoColumnsNet:
 
     def __call__(self, x):
         return x[:, :2]
-
-
-def _rotate_canonical_pair_to_external(x, y, steps):
-    values = c4_restore_albnn_force(np.column_stack([x, y]), steps)
-    return values[:, 0], values[:, 1]
 
 
 def test_aug_v2_allows_subset_input_columns():
@@ -176,84 +168,6 @@ def test_albnn_c4_wrapper_matches_manual_rotation_for_vector_pairs():
     np.testing.assert_array_equal(
         wrapped.transform_inputs(frame), base.transform_inputs(canonical)
     )
-
-
-def test_m0031_c4_wrapper_matches_manual_rotation_on_ten_validation_samples():
-    project_root = Path(__file__).resolve().parents[3]
-    model_dir = (
-        project_root
-        / "SURROGATE_TRAIN"
-        / "models"
-        / "M0031_s8b_s0011_allvalid_base12_mlp_minmax01_gelu_adamw_p1000_20260609"
-    )
-    validation_csv = (
-        project_root
-        / "SURROGATE_TRAIN"
-        / "data"
-        / "albnn_master_dataset_20260521"
-        / "filtered"
-        / "s8b_s0011_valid171984_train137587_valid34397_20260609"
-        / "validation_s8b_s0011_allvalid_base12_20260609.csv"
-    )
-    required = [
-        model_dir / "package_v0_2" / "manifest.json",
-        validation_csv,
-    ]
-    missing = [path for path in required if not path.exists()]
-    if missing:
-        pytest.skip(f"M0031 C4 integration artifacts are not available: {missing}")
-
-    package_dir = model_dir / "package_v0_2"
-    config = SimpleNamespace(
-        model=str(package_dir / "model.pt"),
-        scaler_X=str(package_dir / "input_scaler.pkl"),
-        scaler_y=str(package_dir / "output_scaler.pkl"),
-        metadata=str(package_dir / "metadata.json"),
-    )
-    base_config = SimpleNamespace(**vars(config), inference_symmetry="none")
-    wrapped_model = load_albnn_package(package_dir, trust_pickle=True)
-    base_model = albnn(base_config)
-
-    validation = pd.read_csv(validation_csv, usecols=ALBNN_BASE_INPUT_COLS)
-    canonical = validation.sample(n=10, random_state=20260609).reset_index(drop=True)
-    external_parts = []
-    step_parts = []
-    for step in range(4):
-        steps = np.full(len(canonical), step, dtype=np.int64)
-        external = canonical.copy()
-        for x_col, y_col in (("ex", "ey"), ("vx", "vy"), ("sx", "sy")):
-            external[x_col], external[y_col] = _rotate_canonical_pair_to_external(
-                canonical[x_col].to_numpy(dtype=float),
-                canonical[y_col].to_numpy(dtype=float),
-                steps,
-            )
-        external_parts.append(external)
-        step_parts.append(steps)
-    external_frame = pd.concat(external_parts, ignore_index=True)
-    steps = np.concatenate(step_parts)
-
-    canonical_repeat = pd.concat([canonical] * 4, ignore_index=True)
-    manual = c4_restore_albnn_force(base_model.predict_nondim(canonical_repeat), steps)
-    actual = wrapped_model.predict_nondim(external_frame)
-
-    np.testing.assert_allclose(actual, manual, rtol=0.0, atol=1e-6)
-
-    reference_root = Path(__file__).resolve().parents[2] / "refs"
-    with np.load(
-        reference_root / "albnn_input_transform_reference_v1.npz",
-        allow_pickle=False,
-    ) as transformed_reference, np.load(
-        project_root
-        / "SURROGATE_TRAIN"
-        / "refs"
-        / "alb_0_2_consumer_migration_v1"
-        / "consumer_migration_reference_v1.npz",
-        allow_pickle=False,
-    ) as consumer_reference:
-        np.testing.assert_array_equal(
-            wrapped_model.transform_inputs(consumer_reference["m31.inputs"]),
-            transformed_reference["m31.transformed_inputs"],
-        )
 
 
 def test_cq2_sig_log_minmax01_maps_inputs_to_unit_range():

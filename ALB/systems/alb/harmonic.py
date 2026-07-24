@@ -1,36 +1,26 @@
-"""Equation-derived harmonic linear ALB bearing for rotor coupling.
-
-The model exposes the standard dimensional bearing interface used by
-``RsRotorBearingCouple``.  Its K, C, and complex spool-force transfer are
-loaded from an equation-linearization result; no trajectory differencing or
-coefficient identification is performed at runtime.
-"""
+"""Internal equation-derived harmonic bearing runtime."""
 
 from __future__ import annotations
 
 import copy
-from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import numpy as np
-import pandas as pd
 
 from ALB.config import Moog2ndServoConfig, PIDConfig
-from ALB.control.adapters import adapt_controller
 from ALB.control.blocks import run_controller_step, run_valve_step
 from ALB.control.pid import PID
-from ALB.core import BearingComponentBase, LifecycleState, RuntimeLifecycle
+from ALB.core import LifecycleState, RuntimeLifecycle
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.contracts import (
-    ArtifactManifest,
     BearingInput,
     BearingOutput,
     ConvergenceStatus,
+    ControllerProtocol,
     ResultBundle,
     UnitSystem,
     result_snapshot,
 )
-from ALB.contracts.result_tree import SaveTreeNode
 from ALB.control.valve import moog_2nd_servovalve
 
 from ._harmonic_runtime import (
@@ -39,7 +29,6 @@ from ._harmonic_runtime import (
     finite_real_array,
     finite_real_scalar,
 )
-from .harmonic_results import build_harmonic_save_tree
 from .harmonic_coefficients import (
     ALBHarmonicCoefficients,
     finite_vector,
@@ -49,7 +38,7 @@ from .harmonic_coefficients import (
 )
 
 
-class ALBHarmonicLinear(BearingComponentBase):
+class _HarmonicBearingRuntime:
     r"""Standard bearing-interface wrapper for harmonic linear ALB coefficients.
 
     The returned force follows
@@ -69,29 +58,6 @@ class ALBHarmonicLinear(BearingComponentBase):
 
     input_dto_type = BearingInput
 
-    _RESULT_COLUMNS = [
-        "t",
-        "ux",
-        "uy",
-        "uxt",
-        "uyt",
-        "controller_u_x",
-        "controller_u_y",
-        "xv_x",
-        "xv_y",
-        "xv_quadrature_x",
-        "xv_quadrature_y",
-        "fk_x",
-        "fk_y",
-        "fc_x",
-        "fc_y",
-        "fxv_x",
-        "fxv_y",
-        "fx",
-        "fy",
-        "controller_saturated",
-        "servovalve_saturated",
-    ]
     unit_system = UnitSystem.DIMENSIONAL
 
     def __init__(
@@ -101,8 +67,6 @@ class ALBHarmonicLinear(BearingComponentBase):
         node_link: int,
         servo_config: Moog2ndServoConfig,
         controller_config: PIDConfig | None = None,
-        controller: Any | None = None,
-        controller_factory: Callable[[], Any] | None = None,
         warmup_steps: int = 64,
         base_tolerance: float = 1.0e-8,
     ) -> None:
@@ -113,18 +77,10 @@ class ALBHarmonicLinear(BearingComponentBase):
         coefficients:
             Equation-derived local force coefficients and strict base state.
         node_link:
-            ROSS rotor node consumed by :class:`RsRotorBearingCouple`.
+            Rotor node consumed by the owning simulation.
         controller_config:
             Project PID configuration. ``ki`` must be zero for the PD base.
-            Supply exactly one of ``controller_config``, ``controller``, or
-            ``controller_factory``.
-        controller:
-            Resettable controller instance. Its ``init()`` method is called on
-            every bearing initialization.
-        controller_factory:
-            Factory used to create a fresh strict or legacy controller on
-            every bearing initialization. This is the compatibility path for
-            legacy controllers that do not expose ``init()``.
+            Required controller configuration.
         servo_config:
             Project second-order Moog configuration.
         warmup_steps:
@@ -139,63 +95,38 @@ class ALBHarmonicLinear(BearingComponentBase):
             raise TypeError("node_link must be an integer")
         if not isinstance(servo_config, Moog2ndServoConfig):
             raise TypeError("servo_config must be Moog2ndServoConfig")
-        controller_source_count = sum(
-            source is not None
-            for source in (controller_config, controller, controller_factory)
-        )
-        if controller_source_count != 1:
-            raise ValueError(
-                "provide exactly one of controller_config, controller, or "
-                "controller_factory"
-            )
-        if controller_config is not None and not isinstance(
-            controller_config, PIDConfig
-        ):
-            raise TypeError("controller_config must be PIDConfig or None")
-        if controller_factory is not None and not callable(controller_factory):
-            raise TypeError("controller_factory must be callable")
-        if controller is not None:
-            self._validate_controller(controller)
-            if not callable(getattr(controller, "init", None)):
-                raise TypeError(
-                    "controller instances must provide init(); use "
-                    "controller_factory for controllers without reset support"
-                )
+        if not isinstance(controller_config, PIDConfig):
+            raise TypeError("controller_config must be PIDConfig")
         if int(warmup_steps) < 2:
             raise ValueError("warmup_steps must be >= 2")
 
         super().__init__()
         self.coefficients = coefficients
         self.node_link = int(node_link)
-        self.controller_config = (
-            copy.deepcopy(controller_config) if controller_config is not None else None
-        )
-        self._controller_instance = controller
-        self._controller_factory = controller_factory
+        self.controller_config = copy.deepcopy(controller_config)
         self.servo_config = copy.deepcopy(servo_config)
         self.warmup_steps = int(warmup_steps)
         self.base_tolerance = positive_float("base_tolerance", base_tolerance)
         self.dt = positive_float("servo_config.dt", servo_config.dt)
         if not np.isclose(self.dt, float(servo_config.dt), rtol=0.0, atol=1.0e-15):
             raise ValueError("controller and servovalve dt values must match")
-        if controller_config is not None:
-            if not np.isclose(
-                float(controller_config.dt), self.dt, rtol=0.0, atol=1.0e-15
-            ):
-                raise ValueError("controller and servovalve dt values must match")
-            if not np.isclose(
-                float(controller_config.freq),
-                coefficients.shaft_frequency_hz,
-                rtol=0.0,
-                atol=1.0e-12,
-            ):
-                raise ValueError(
-                    "controller frequency must match coefficient shaft frequency"
-                )
-            if not np.isclose(
-                float(controller_config.ki), 0.0, rtol=0.0, atol=0.0
-            ):
-                raise ValueError("ALBHarmonicLinear requires a PD controller with ki=0")
+        if not np.isclose(
+            float(controller_config.dt), self.dt, rtol=0.0, atol=1.0e-15
+        ):
+            raise ValueError("controller and servovalve dt values must match")
+        if not np.isclose(
+            float(controller_config.freq),
+            coefficients.shaft_frequency_hz,
+            rtol=0.0,
+            atol=1.0e-12,
+        ):
+            raise ValueError(
+                "controller frequency must match coefficient shaft frequency"
+            )
+        if not np.isclose(
+            float(controller_config.ki), 0.0, rtol=0.0, atol=0.0
+        ):
+            raise ValueError("harmonic runtime requires a PD controller with ki=0")
 
         self.phase_step = coefficients.whirl_omega_rad_s * self.dt
         if not 0.0 < self.phase_step < np.pi:
@@ -212,8 +143,8 @@ class ALBHarmonicLinear(BearingComponentBase):
             coefficients.spool_transfer,
         )
 
-        self.controller: Any | None = None
-        self.servovalves: list = []
+        self._controller: Any | None = None
+        self._servovalves: list = []
         self.static_force = coefficients.static_force.copy()
         self.uxy0 = coefficients.equilibrium_position.copy()
         self.xv0 = coefficients.base_spool.copy()
@@ -233,9 +164,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         self._last_time: float | None = None
         self._last_input: tuple[np.ndarray, np.ndarray] | None = None
         self._pending_input: BearingInput | None = None
-        self._last_recorded_time: float | None = None
         self._has_input = False
-        self._valid = False
         self._lifecycle = RuntimeLifecycle(
             "harmonic bearing", input_label="bearing input"
         )
@@ -246,7 +175,7 @@ class ALBHarmonicLinear(BearingComponentBase):
             "runtime is not initialized"
         )
         self._runtime_guard = RuntimeFailureGuard(self._invalidate_runtime)
-        self.init()
+        self._reset_for_owner()
 
     @property
     def K(self) -> np.ndarray:
@@ -267,12 +196,6 @@ class ALBHarmonicLinear(BearingComponentBase):
         return self.coefficients.spool_transfer.copy()
 
     @property
-    def fdxv(self) -> np.ndarray:
-        """Return the complex spool coefficient under the legacy ALBLinear name."""
-
-        return self.G_xv
-
-    @property
     def xv(self) -> np.ndarray:
         """Return the current normalized spool state."""
 
@@ -285,13 +208,6 @@ class ALBHarmonicLinear(BearingComponentBase):
 
         self._require_valid("read t")
         return self._last_time
-
-    @property
-    def results(self) -> pd.DataFrame:
-        """Return completed results only while the runtime is valid."""
-
-        self._require_valid("read results")
-        return self._results
 
     def _require_valid(self, operation: str) -> None:
         """Reject state access after a failed runtime initialization."""
@@ -327,7 +243,6 @@ class ALBHarmonicLinear(BearingComponentBase):
         self._last_time = None
         self._last_input = None
         self._pending_input = None
-        self._last_recorded_time = None
         self._has_input = False
         self._last_output = None
         self._latest_result = None
@@ -335,17 +250,14 @@ class ALBHarmonicLinear(BearingComponentBase):
     def _invalidate_runtime(self) -> None:
         """Discard a partial controller/valve runtime and block state access."""
 
-        self._valid = False
         self._lifecycle.fail()
-        self.controller = None
-        self.servovalves = []
+        self._controller = None
+        self._servovalves = []
         self._reset_public_state()
 
     def _sensor_matrix(self) -> np.ndarray:
         """Return the project two-channel controller sensor projection."""
 
-        if self.controller_config is None:
-            raise RuntimeError("sensor projection is only defined for PID config")
         angles = np.deg2rad(
             np.asarray(self.controller_config.sensor_angles, dtype=float)
         )
@@ -364,14 +276,10 @@ class ALBHarmonicLinear(BearingComponentBase):
     def _build_runtime(self) -> None:
         """Create or reset controller and valve instances deterministically."""
 
-        if self.controller_config is not None:
-            controller = PID(copy.deepcopy(self.controller_config))
-        elif self._controller_factory is not None:
-            controller = self._controller_factory()
-        else:
-            controller = self._controller_instance
+        controller = PID(copy.deepcopy(self.controller_config))
         self._validate_controller(controller)
-        controller = adapt_controller(controller)
+        if not isinstance(controller, ControllerProtocol):
+            raise TypeError("controller must satisfy ControllerProtocol")
         controller_dt = getattr(controller, "dt", None)
         if controller_dt is not None and not np.isclose(
             float(controller_dt), self.dt, rtol=0.0, atol=1.0e-15
@@ -385,11 +293,9 @@ class ALBHarmonicLinear(BearingComponentBase):
             atol=1.0e-12,
         ):
             raise ValueError("controller frequency must match coefficient shaft frequency")
-        reset = getattr(controller, "init", None)
-        if callable(reset):
-            reset()
-        self.controller = controller
-        self.servovalves = [
+        controller._reset_for_owner()
+        self._controller = controller
+        self._servovalves = [
             moog_2nd_servovalve(
                 self.dt,
                 delay=float(self.servo_config.delay),
@@ -398,8 +304,8 @@ class ALBHarmonicLinear(BearingComponentBase):
             )
             for _ in range(2)
         ]
-        for valve in self.servovalves:
-            valve.init()
+        for valve in self._servovalves:
+            valve._reset_for_owner()
 
     @staticmethod
     def _scalar_output(value: Any) -> float:
@@ -410,7 +316,7 @@ class ALBHarmonicLinear(BearingComponentBase):
     def _advance_control(self, time_s: float, uxy: np.ndarray) -> None:
         """Advance the injected controller and two second-order Moog valves."""
 
-        assert self.controller is not None
+        assert self._controller is not None
         with np.errstate(over="raise", invalid="raise"):
             normalized_position = uxy / self.coefficients.clearance_m
         normalized_position = finite_vector(
@@ -419,14 +325,14 @@ class ALBHarmonicLinear(BearingComponentBase):
         command = finite_real_array(
             "controller command",
             run_controller_step(
-                self.controller,
+                self._controller,
                 time_s,
                 normalized_position,
             ),
             shape=(2,),
         )
         spool = np.zeros(2, dtype=float)
-        for axis, valve in enumerate(self.servovalves):
+        for axis, valve in enumerate(self._servovalves):
             spool[axis] = self._scalar_output(
                 run_valve_step(valve, time_s, command[axis])
             )
@@ -444,20 +350,19 @@ class ALBHarmonicLinear(BearingComponentBase):
 
         base_position = self.coefficients.equilibrium_position
         expected_command = self.coefficients.base_spool.copy()
-        if self.controller_config is not None:
-            expected_command = float(self.controller_config.kp) * (
-                self._sensor_matrix()
-                @ (base_position / self.coefficients.clearance_m)
+        expected_command = float(self.controller_config.kp) * (
+            self._sensor_matrix()
+            @ (base_position / self.coefficients.clearance_m)
+        )
+        if not np.allclose(
+            expected_command,
+            self.coefficients.base_spool,
+            rtol=0.0,
+            atol=1.0e-12,
+        ):
+            raise ValueError(
+                "PD static command does not match the coefficient base spool"
             )
-            if not np.allclose(
-                expected_command,
-                self.coefficients.base_spool,
-                rtol=0.0,
-                atol=1.0e-12,
-            ):
-                raise ValueError(
-                    "PD static command does not match the coefficient base spool"
-                )
         for step in range(self.warmup_steps):
             time_s = -(self.warmup_steps - step) * self.dt
             self._advance_control(time_s, base_position)
@@ -490,11 +395,10 @@ class ALBHarmonicLinear(BearingComponentBase):
             "duration_s": self.warmup_steps * self.dt,
         }
 
-    def init(self, *args, **kwargs) -> bool:
-        """Initialize the runtime, exposing state only after complete success."""
+    def _reset_for_owner(self) -> None:
+        """Reset the runtime when requested by its owning analysis."""
 
         self._invalidate_runtime()
-        self._results = pd.DataFrame(columns=self._RESULT_COLUMNS)
         try:
             self._build_runtime()
             self._warm_strict_base()
@@ -509,19 +413,16 @@ class ALBHarmonicLinear(BearingComponentBase):
             self._last_time = None
             self._last_input = None
             self._pending_input = None
-            self._last_recorded_time = None
             self._has_input = False
         except Exception as exc:
-            self._failure = self._build_failure_snapshot(exc, "init")
+            self._failure = self._build_failure_snapshot(exc, "reset")
             self._invalidate_runtime()
             raise
-        self._valid = True
         self._failure = None
         self._convergence_status = ConvergenceStatus.pending(
             "input not evaluated"
         )
         self._lifecycle.reset()
-        return True
 
     def input(self, dto: BearingInput) -> None:
         """Validate and latch one dimensional sample without advancing control."""
@@ -531,7 +432,7 @@ class ALBHarmonicLinear(BearingComponentBase):
         if not isinstance(dto, BearingInput):
             raise TypeError("harmonic bearing input must be BearingInput")
         if dto.unit_system is not UnitSystem.DIMENSIONAL:
-            raise ValueError("ALBHarmonicLinear requires dimensional input")
+            raise ValueError("harmonic runtime requires dimensional input")
         if self._last_time is not None:
             elapsed = dto.time - self._last_time
             tolerance = max(1.0e-12, 1.0e-9 * self.dt)
@@ -692,107 +593,18 @@ class ALBHarmonicLinear(BearingComponentBase):
             },
         )
 
-    def finish_signal(self) -> None:
-        """Record the latest completed coupling state once per timestamp."""
-
-        self._require_valid("record results")
-        if self._last_time is None or (
-            self._last_recorded_time is not None
-            and np.isclose(
-                self._last_time,
-                self._last_recorded_time,
-                rtol=0.0,
-                atol=max(1.0e-12, 1.0e-9 * self.dt),
-            )
-        ):
-            return
-        row = [
-            self._last_time,
-            self.uxy[0],
-            self.uxy[1],
-            self.uxyt[0],
-            self.uxyt[1],
-            self.spool_command[0],
-            self.spool_command[1],
-            self.spool[0],
-            self.spool[1],
-            self.spool_quadrature[0],
-            self.spool_quadrature[1],
-            self._force_stiffness[0],
-            self._force_stiffness[1],
-            self._force_damping[0],
-            self._force_damping[1],
-            self._force_spool[0],
-            self._force_spool[1],
-            self.force[0],
-            self.force[1],
-            self.controller_saturated,
-            self.servovalve_saturated,
-        ]
-        self._results.loc[len(self._results)] = row
-        self._last_recorded_time = self._last_time
-
-    def calc_error(self, *args, **kwargs) -> bool:
-        """Return true because this explicit local model has no inner iteration."""
-
-        self._require_valid("read convergence status")
-        return True
-
-    def calc_is_finished(self, *args, **kwargs) -> bool:
-        """Return cached completion without advancing harmonic state."""
-
-        self._require_valid("read completion status")
-        return self._convergence_status.converged
-
-    def save(
-        self,
-        tofile: bool = True,
-        path: str | Path | None = None,
-        name: str | None = None,
-        *args,
-        **kwargs,
-    ) -> SaveTreeNode | ArtifactManifest:
-        """Return or persist standard bearing results and coefficient metadata."""
-
-        self._require_valid("save results")
-        if path is None:
-            path = "alb_harmonic_linear"
-        if name is None:
-            name = "bearing"
-        coefficient_metadata = {
-            "name": self.coefficients.name,
-            "source": self.coefficients.source,
-            "node_link": self.node_link,
-            "clearance_m": self.coefficients.clearance_m,
-            "shaft_frequency_hz": self.coefficients.shaft_frequency_hz,
-            "whirl_ratio": self.coefficients.whirl_ratio,
-            "whirl_frequency_hz": self.coefficients.whirl_frequency_hz,
-            "dt_s": self.dt,
-        }
-        return build_harmonic_save_tree(
-            self._results,
-            coefficient_metadata,
-            path,
-            name,
-            tofile=tofile,
-            writer=kwargs.get("writer"),
-        )
-
-
-def alb_harmonic_linear(
+def _build_harmonic_runtime(
     node_link: int,
     *,
     dt: float | None = None,
     warmup_steps: int | None = None,
-    controller: Any | None = None,
-    controller_factory: Callable[[], Any] | None = None,
-) -> ALBHarmonicLinear:
+) -> _HarmonicBearingRuntime:
     """Build the packaged documented harmonic-linear ALB bearing.
 
     The default artifact is the strict-base, thermal-inertia, gamma=1, 50 Hz
     equation result documented in ``docs/formula/alb_harmonic_linearization.md``.
     ``dt`` may be changed for a rotor time grid, subject to the narrowband
-    sampling guard enforced by :class:`ALBHarmonicLinear`.
+    sampling guard enforced by the internal runtime.
     """
 
     payload = load_builtin_payload()
@@ -820,13 +632,10 @@ def alb_harmonic_linear(
     steps = int(
         runtime["warmup_steps"] if warmup_steps is None else warmup_steps
     )
-    injected_controller = controller is not None or controller_factory is not None
-    return ALBHarmonicLinear(
+    return _HarmonicBearingRuntime(
         coefficients,
         node_link=node_link,
         servo_config=servo_config,
-        controller_config=None if injected_controller else controller_config,
-        controller=controller,
-        controller_factory=controller_factory,
+        controller_config=controller_config,
         warmup_steps=steps,
     )

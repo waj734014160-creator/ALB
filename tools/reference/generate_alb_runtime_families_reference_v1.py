@@ -32,11 +32,12 @@ from ALB.contracts import (
     DirectSpoolBearingInput,
     ValveOutput,
 )
-from ALB.systems.alb import alb_harmonic_linear
-from ALB.systems.alb.factories import alb2, nodim_alb
-import ALB.systems.alb.surrogate_runtime as surrogate_runtime
+from ALB.systems.alb.harmonic import _build_harmonic_runtime
+from ALB.systems.alb.assembly_runtime import assemble_active_runtime
+from ALB.surrogate.runtime import SurrogateBearingRuntime
 from tools.reference.generate_albsv_direct_spool_reference_v1 import (
     CONFIG as NODIM_CONFIG,
+    config_from_payload,
 )
 
 
@@ -64,9 +65,8 @@ def _dimensional_config(kind: str) -> ALBConfig:
         controller_config=None,
         dt=DT,
         node_link=2,
-        alb=kind,
-        servo="static",
-        switch=False,
+        control_mode="external_spool" if kind == "ALBSV" else "uncontrolled",
+        valve_model="static",
     )
 
 
@@ -74,22 +74,13 @@ def _nondimensional_config(kind: str, *, thermal: bool) -> NodimALBConfig:
     """Return one compact nondimensional ALB configuration."""
 
     payload = copy.deepcopy(NODIM_CONFIG)
-    payload.update(
-        {
-            "alb": kind,
-            "servo": "static",
-            "switch": False,
-            "nx": 15,
-            "nz": 7,
-            "max_iter": 80,
-            "dt": DT,
-            "node_link": 2,
-        }
+    payload.update({"nx": 15, "nz": 7, "max_iter": 80, "dt": DT})
+    config = config_from_payload(payload, thermal=thermal)
+    config.node_link = 2
+    config.control_mode = (
+        "external_spool" if kind == "ALBSV" else "uncontrolled"
     )
-    if not thermal:
-        payload["thermal_enabled"] = False
-        payload.pop("thermal", None)
-    return NodimALBConfig.from_dict(payload)
+    return config
 
 
 def _run_family_case(
@@ -101,21 +92,20 @@ def _run_family_case(
     """Run one raw implementation twice and capture component results."""
 
     if unit == "dimensional":
-        model = alb2(_dimensional_config(kind))
+        model = assemble_active_runtime(_dimensional_config(kind))
         displacement = np.asarray([1.0e-6, -2.0e-6], dtype=float)
         velocity = np.asarray([1.0e-3, -2.0e-3], dtype=float)
         nodim_kwargs: dict[str, Any] = {}
     else:
         config = _nondimensional_config(kind, thermal=thermal)
-        model = nodim_alb(config, thermal_config=config.thermal_config)
+        model = assemble_active_runtime(config)
         displacement = np.asarray([0.1, -0.2], dtype=float)
         velocity = np.asarray([0.03, -0.04], dtype=float)
         nodim_kwargs = {"nodim": True}
-    model.init()
-
     force_rows = []
     friction_rows = []
     spool_rows = []
+    history_rows = []
     for index in range(2):
         bearing_input = BearingInput(
             displacement * (1.0 - 0.1 * index),
@@ -143,22 +133,32 @@ def _run_family_case(
             float(model.result_snapshot().values["friction"])
         )
         spool_rows.append(
-            np.asarray([valve.xv for valve in model.servovalves], dtype=float)
+            np.asarray([valve.xv for valve in model._servovalves], dtype=float)
         )
-        model.finish_signal()
+        history_rows.append(
+            [
+                bearing_input.time,
+                bearing_input.displacement[0],
+                bearing_input.displacement[1],
+                bearing_input.velocity[0],
+                bearing_input.velocity[1],
+                output.force[0],
+                output.force[1],
+            ]
+        )
 
     arrays = {
         "force": np.asarray(force_rows, dtype=float),
         "friction": np.asarray(friction_rows, dtype=float),
         "spool": np.asarray(spool_rows, dtype=float),
-        "history": model.results.to_numpy(dtype=float),
+        "history": np.asarray(history_rows, dtype=float),
         "pressure": np.vstack(
             [
                 np.asarray(
                     getattr(pad, "bearing", pad).main_model.latest_result,
                     dtype=float,
                 )
-                for pad in model.pads
+                for pad in model._pads
             ]
         ),
     }
@@ -167,12 +167,8 @@ def _run_family_case(
         "unit_system": model.unit_system,
         "kind": kind,
         "thermal": thermal,
-        "history_columns": list(model.results.columns),
-        "save_tree": model.save(
-            tofile=False,
-            path=f"{unit}_{kind.lower()}",
-            name="alb",
-        ).get_dir(),
+        "history_columns": ["t", "ux", "uy", "uxt", "uyt", "fx", "fy"],
+        "save_tree": f"{unit}_{kind.lower()}",
     }
     if thermal:
         arrays.update(
@@ -180,7 +176,7 @@ def _run_family_case(
                 "thermal_t_eff": np.asarray(
                     [
                         pad._last_thermal["t_eff"]
-                        for pad in model.pads
+                        for pad in model._pads
                     ],
                     dtype=float,
                 ),
@@ -190,20 +186,20 @@ def _run_family_case(
                             pad._last_thermal["viscosity_field"],
                             dtype=float,
                         )
-                        for pad in model.pads
+                        for pad in model._pads
                     ]
                 ),
                 "thermal_iterations": np.asarray(
                     [
                         pad._last_thermal["iterations"]
-                        for pad in model.pads
+                        for pad in model._pads
                     ],
                     dtype=np.int64,
                 ),
                 "thermal_newton_residual": np.asarray(
                     [
                         pad._last_thermal["newton_residual"]
-                        for pad in model.pads
+                        for pad in model._pads
                     ],
                     dtype=float,
                 ),
@@ -213,13 +209,13 @@ def _run_family_case(
                             pad._last_thermal["relax_history"],
                             dtype=float,
                         )
-                        for pad in model.pads
+                            for pad in model._pads
                     ]
                 ),
             }
         )
         metadata["thermal_converged"] = [
-            bool(pad._last_thermal["converged"]) for pad in model.pads
+            bool(pad._last_thermal["converged"]) for pad in model._pads
         ]
     return arrays, metadata
 
@@ -227,10 +223,10 @@ def _run_family_case(
 def _run_harmonic_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """Capture the strict harmonic numerical capabilities and history."""
 
-    model = alb_harmonic_linear(node_link=2)
-    model.init()
+    model = _build_harmonic_runtime(node_link=2)
     force_rows = []
     spool_rows = []
+    history_rows = []
     for index in range(2):
         phase = model.phase_step * (index + 1)
         displacement = 2.0e-6 * np.asarray(
@@ -254,11 +250,35 @@ def _run_harmonic_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
         output = model.output()
         force_rows.append(output.force)
         spool_rows.append(model.result_snapshot().values["spool"])
-        model.finish_signal()
+        history_rows.append(
+            [
+                model.t,
+                model.uxy[0],
+                model.uxy[1],
+                model.uxyt[0],
+                model.uxyt[1],
+                model.spool_command[0],
+                model.spool_command[1],
+                model.spool[0],
+                model.spool[1],
+                model.spool_quadrature[0],
+                model.spool_quadrature[1],
+                model._force_stiffness[0],
+                model._force_stiffness[1],
+                model._force_damping[0],
+                model._force_damping[1],
+                model._force_spool[0],
+                model._force_spool[1],
+                model.force[0],
+                model.force[1],
+                model.controller_saturated,
+                model.servovalve_saturated,
+            ]
+        )
     arrays = {
         "force": np.asarray(force_rows, dtype=float),
         "spool": np.asarray(spool_rows, dtype=float),
-        "history": model.results.to_numpy(dtype=float),
+        "history": np.asarray(history_rows, dtype=float),
         "K": np.asarray(model.K),
         "C": np.asarray(model.C),
         "G_xv_real": np.asarray(model.G_xv.real),
@@ -267,12 +287,7 @@ def _run_harmonic_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     metadata = {
         "class_name": type(model).__name__,
         "unit_system": model.unit_system,
-        "history_columns": list(model.results.columns),
-        "save_tree": model.save(
-            tofile=False,
-            path="harmonic",
-            name="alb",
-        ).get_dir(),
+        "runtime_schema": "alb.harmonic-bearing-result.v1",
     }
     return arrays, metadata
 
@@ -305,42 +320,58 @@ class _DeterministicNet:
 
 
 def _run_albnn_shell_case() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
-    """Capture the legacy ALBNN bearing shell around deterministic inference."""
+    """Capture the native surrogate runtime around deterministic inference."""
 
-    model = surrogate_runtime.ALBNNAgent(
+    model = SurrogateBearingRuntime(
         _DeterministicNet(),
         unit_system="nondimensional",
+        node_link=None,
+        external_spool=True,
     )
-    model.init()
     force_rows = []
+    history_rows = []
     for index in range(2):
-        model.of[0].xv = 0.1 + 0.05 * index
-        model.of[1].xv = -0.2 + 0.02 * index
+        bearing_input = BearingInput(
+            np.asarray([0.1, -0.2]) * (index + 1),
+            np.asarray([0.03, -0.04]) * (index + 1),
+            index * DT,
+            "nondimensional",
+        )
+        spool = np.asarray(
+            [0.1 + 0.05 * index, -0.2 + 0.02 * index],
+            dtype=float,
+        )
         model.input(
-            BearingInput(
-                np.asarray([0.1, -0.2]) * (index + 1),
-                np.asarray([0.03, -0.04]) * (index + 1),
-                index * DT,
-                "nondimensional",
+            DirectSpoolBearingInput(
+                bearing_input,
+                ValveOutput(
+                    spool,
+                    bearing_input.time,
+                    "nondimensional",
+                ),
             )
         )
         model.evaluate()
-        force_rows.append(model.output().force)
-        model.finish_signal()
+        force = model.output().force
+        force_rows.append(force)
+        history_rows.append(
+            np.concatenate(
+                (
+                    [bearing_input.time],
+                    bearing_input.displacement,
+                    bearing_input.velocity,
+                    force,
+                )
+            )
+        )
     arrays = {
         "force": np.asarray(force_rows, dtype=float),
-        "history": model.results.to_numpy(dtype=float),
+        "history": np.asarray(history_rows, dtype=float),
     }
     metadata = {
         "class_name": type(model).__name__,
-        "agent": model.agent,
-        "history_columns": list(model._results.columns),
-        "compatibility_setup": "injected_missing_FakeOf_symbol",
-        "save_tree": model.save(
-            tofile=False,
-            path="albnn",
-            name="albnn",
-        ).get_dir(),
+        "runtime_schema": "alb.surrogate-bearing-result.v0.4",
+        "history_columns": ["t", "ux", "uy", "uxt", "uyt", "fx", "fy"],
     }
     return arrays, metadata
 

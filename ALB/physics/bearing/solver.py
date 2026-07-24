@@ -3,7 +3,7 @@ import copy
 import logging
 import math
 import unittest
-from typing import Optional, Sequence, Tuple
+from typing import Any, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -31,7 +31,7 @@ from ALB.contracts import (
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
 from ALB.core.validation import get_unit_system, validate_bearing_output
-from ALB.physics.film import (
+from ALB.physics.film.solver import (
     FilmBoundary,
     FilmModel,
     FilmPostProcess,
@@ -55,7 +55,7 @@ from ALB.core.numerics.dynamic import (
     calc_ke_dy,
 )
 from ALB.core.numerics.static import calc_ke
-from ALB.physics.hydraulics import Orifice, Orifices
+from ALB.physics.hydraulics.orifice import Orifice, Orifices
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.config.parameters import ParameterHub
 
@@ -278,7 +278,7 @@ def _create_gauss_model(
     return film_model
 
 
-class HydrostaticBearing(FilmSystem):
+class _DimensionalFilmRuntime(FilmSystem):
     """Dimensional single-pad hydrostatic bearing."""
 
     unit_system = "dimensional"
@@ -411,7 +411,7 @@ class HydrostaticBearing(FilmSystem):
         self.main_model.args["reynold"] = reynold
 
 
-class NodimHydrostaticBearing(FilmSystem):
+class _NondimensionalFilmRuntime(FilmSystem):
     """Single-pad bearing assembled directly from nondimensional film parameters.
 
     ``x0`` and ``lx`` are public angle inputs in degrees, matching ``HydConfig``.
@@ -550,11 +550,18 @@ def _attach_hybrid_orifices(
     bearing.add_simple_model(group)
 
 
-class _HybridBearingRuntimeMixin:
+class _MixedFilmRuntimeMixin:
     """Provide a strict DTO lifecycle around one mixed film solver."""
 
     input_dto_type = BearingInput
     _hybrid_nodim: bool
+
+    def __getattribute__(self, name: str) -> Any:
+        if name == "init":
+            raise AttributeError(
+                "bearing runtimes are ready after construction; use the owner reset"
+            )
+        return super().__getattribute__(name)
 
     def _configure_hybrid_runtime(
         self,
@@ -578,7 +585,7 @@ class _HybridBearingRuntimeMixin:
         self._convergence_status = ConvergenceStatus.pending(
             "runtime is not initialized"
         )
-        self.init()
+        self._reset_for_owner()
 
     @property
     def lifecycle_state(self) -> LifecycleState:
@@ -592,7 +599,7 @@ class _HybridBearingRuntimeMixin:
 
         return self._convergence_status
 
-    def init(self) -> None:
+    def _reset_for_owner(self) -> None:
         """Reset this runtime when invoked by its owning composite module."""
 
         self._lifecycle.fail()
@@ -601,9 +608,9 @@ class _HybridBearingRuntimeMixin:
         self._latest_result = None
         self._failure = None
         try:
-            super().init()
+            super()._reset_for_owner()
         except BaseException as exc:
-            self._failure = self._build_failure_snapshot(exc, "init")
+            self._failure = self._build_failure_snapshot(exc, "reset")
             raise
         self._convergence_status = ConvergenceStatus.pending(
             "input not evaluated"
@@ -633,6 +640,21 @@ class _HybridBearingRuntimeMixin:
         )
         self._lifecycle.latch()
 
+    def _prepare_raw(self, dto: BearingInput) -> None:
+        """Apply one typed sample to the internal film solver."""
+
+        super().input(
+            dto.displacement,
+            dto.velocity,
+            t=dto.time,
+            nodim=self._hybrid_nodim,
+        )
+
+    def _solve_raw(self) -> dict[str, Any]:
+        """Run the internal film solver without publishing runtime state."""
+
+        return super().output(nodim=self._hybrid_nodim)
+
     def evaluate(self) -> None:
         """Run exactly one mixed film/restrictor calculation."""
 
@@ -640,13 +662,8 @@ class _HybridBearingRuntimeMixin:
         try:
             with self._lifecycle.evaluation():
                 assert dto is not None
-                super().input(
-                    dto.displacement,
-                    dto.velocity,
-                    t=dto.time,
-                    nodim=self._hybrid_nodim,
-                )
-                raw_output = super().output(nodim=self._hybrid_nodim)
+                self._prepare_raw(dto)
+                raw_output = self._solve_raw()
                 force = validate_bearing_output(raw_output)
                 self._latest_output = BearingOutput(
                     force,
@@ -667,7 +684,10 @@ class _HybridBearingRuntimeMixin:
                     )
                 )
                 self._latest_result = result_snapshot(
-                    {"force": self._latest_output.force},
+                    {
+                        "force": self._latest_output.force,
+                        "friction": float(raw_output.get("friction", 0.0)),
+                    },
                     {
                         "schema": "alb.hybrid-bearing-result.v1",
                         "time": dto.time,
@@ -754,7 +774,10 @@ class _HybridBearingRuntimeMixin:
         )
 
 
-class HybridBearing(_HybridBearingRuntimeMixin, HydrostaticBearing):
+class _DimensionalMixedFilmRuntime(
+    _MixedFilmRuntimeMixin,
+    _DimensionalFilmRuntime,
+):
     """Dimensional mixed bearing selected by constructor-time orifice topology."""
 
     unit_system = UnitSystem.DIMENSIONAL
@@ -774,7 +797,10 @@ class HybridBearing(_HybridBearingRuntimeMixin, HydrostaticBearing):
         self._configure_hybrid_runtime(orifices)
 
 
-class NodimHybridBearing(_HybridBearingRuntimeMixin, NodimHydrostaticBearing):
+class _NondimensionalMixedFilmRuntime(
+    _MixedFilmRuntimeMixin,
+    _NondimensionalFilmRuntime,
+):
     """Nondimensional mixed bearing with the same topology-driven semantics."""
 
     unit_system = UnitSystem.NONDIMENSIONAL
@@ -830,12 +856,12 @@ class NodimHybridBearing(_HybridBearingRuntimeMixin, NodimHydrostaticBearing):
         self._configure_hybrid_runtime(orifices)
 
 
-def build_hybrid_bearing(
+def _build_liquid_film_runtime(
     config: HydConfig | NodimPadConfig,
     *,
     orifices: HybridOrificeConfig | None = None,
     x0: float | None = None,
-) -> HybridBearing | NodimHybridBearing:
+) -> _DimensionalMixedFilmRuntime | _NondimensionalMixedFilmRuntime:
     """Build an initialized mixed bearing without a hydrostatic mode flag."""
 
     if isinstance(config, HydConfig):
@@ -844,9 +870,12 @@ def build_hybrid_bearing(
             dimensional_config.x0 = float(x0)
         else:
             dimensional_config = config
-        return HybridBearing(dimensional_config, orifices=orifices)
+        return _DimensionalMixedFilmRuntime(
+            dimensional_config,
+            orifices=orifices,
+        )
     if isinstance(config, NodimPadConfig):
-        return NodimHybridBearing(
+        return _NondimensionalMixedFilmRuntime(
             config,
             x0=0.0 if x0 is None else float(x0),
             orifices=orifices,
@@ -854,7 +883,7 @@ def build_hybrid_bearing(
     raise TypeError("config must be HydConfig or NodimPadConfig")
 
 
-class MultiPad(BaseCSystem):
+class MultiPad:
     """Strict composite runtime that aggregates multiple film-bearing pads."""
 
     input_dto_type = BearingInput
@@ -864,13 +893,22 @@ class MultiPad(BaseCSystem):
 
         if len(bearings) == 0:
             raise ValueError("MultiPad requires at least one bearing")
-        super().__init__()
-        self.bearings = tuple(bearings)
-        unit_systems = {get_unit_system(bearing) for bearing in self.bearings}
+        children = tuple(bearings)
+        if any(
+            not isinstance(bearing, BearingRuntimeProtocol)
+            for bearing in children
+        ):
+            raise TypeError(
+                "MultiPad accepts only native BearingRuntimeProtocol children"
+            )
+        self._children = children
+        unit_systems = {get_unit_system(bearing) for bearing in self._children}
         if len(unit_systems) != 1:
             raise ValueError("All MultiPad bearings must use the same unit_system")
         self.unit_system = UnitSystem.coerce(unit_systems.pop())
-        node_links = {getattr(bearing, "node_link", None) for bearing in self.bearings}
+        node_links = {
+            getattr(bearing, "node_link", None) for bearing in self._children
+        }
         if len(node_links) != 1:
             raise ValueError("All MultiPad bearings must use the same node_link")
         self.node_link = node_links.pop()
@@ -887,7 +925,7 @@ class MultiPad(BaseCSystem):
         self._convergence_status = ConvergenceStatus.pending(
             "runtime is not initialized"
         )
-        self.init()
+        self._reset_for_owner()
 
     @property
     def lifecycle_state(self) -> LifecycleState:
@@ -901,27 +939,6 @@ class MultiPad(BaseCSystem):
 
         return self._convergence_status
 
-    @property
-    def results(self):
-        """Return only the latest aggregate result as a compatibility table."""
-
-        if self._latest_output is None:
-            return pd.DataFrame(columns=["t", "fx", "fy"])
-        return pd.DataFrame(
-            [
-                {
-                    "t": self._latest_output.time,
-                    "fx": self._latest_output.force[0],
-                    "fy": self._latest_output.force[1],
-                }
-            ]
-        )
-
-    def solve(self):
-        """Evaluate the currently latched input."""
-
-        self.evaluate()
-
     def set_thickness(self, method, **kwargs):
         """
         Set the bearing thickness.
@@ -932,18 +949,18 @@ class MultiPad(BaseCSystem):
         if choose 'e_angle', e,angle must be input in kwargs
 
         """
-        for bearing in self.bearings:
+        for bearing in self._children:
             bearing.set_thickness(method, **kwargs)
 
     @property
     def margs(self):
-        bearing = self.bearings[0]
+        bearing = self._children[0]
         main_model = getattr(bearing, "main_model", None)
         if main_model is not None:
             return main_model.args
         return bearing.args
 
-    def init(self):
+    def _reset_for_owner(self):
         """Reset child pads and start a fresh composite runtime session."""
 
         self._lifecycle.fail()
@@ -953,10 +970,15 @@ class MultiPad(BaseCSystem):
         self._failure = None
         self._latest_friction = 0.0
         try:
-            for bearing in self.bearings:
-                bearing.init()
+            for bearing in self._children:
+                reset = getattr(bearing, "_reset_for_owner", None)
+                if not callable(reset):
+                    raise TypeError(
+                        "MultiPad child must provide _reset_for_owner()"
+                    )
+                reset()
         except BaseException as exc:
-            self._failure = self._build_failure_snapshot(exc, "init")
+            self._failure = self._build_failure_snapshot(exc, "reset")
             raise
         self._convergence_status = ConvergenceStatus.pending(
             "input not evaluated"
@@ -989,28 +1011,14 @@ class MultiPad(BaseCSystem):
                 forces = []
                 frictions = []
                 child_convergence = []
-                for bearing in self.bearings:
-                    if isinstance(bearing, BearingRuntimeProtocol):
-                        child_output = bearing.step(dto)
-                        force = child_output.force
-                        friction = 0.0
-                        child_convergence.append(
-                            bearing.convergence_status.converged
-                        )
-                    else:
-                        nodim = self.unit_system is UnitSystem.NONDIMENSIONAL
-                        bearing.input(
-                            uxy=dto.displacement,
-                            uxyt=dto.velocity,
-                            t=dto.time,
-                            nodim=nodim,
-                        )
-                        raw_output = bearing.output(nodim=nodim)
-                        force = validate_bearing_output(raw_output)
-                        friction = float(raw_output.get("friction", 0.0))
-                        child_convergence.append(
-                            bool(bearing.calc_is_finished())
-                        )
+                for bearing in self._children:
+                    child_output = bearing.step(dto)
+                    force = child_output.force
+                    result = bearing.result_snapshot()
+                    friction = float(result.values.get("friction", 0.0))
+                    child_convergence.append(
+                        bearing.convergence_status.converged
+                    )
                     forces.append(force)
                     frictions.append(friction)
 
@@ -1042,7 +1050,7 @@ class MultiPad(BaseCSystem):
                         "schema": "alb.multi-pad-result.v1",
                         "time": dto.time,
                         "unit_system": dto.unit_system.value,
-                        "pad_count": len(self.bearings),
+                        "pad_count": len(self._children),
                         "converged": converged,
                     },
                 )
@@ -1091,7 +1099,7 @@ class MultiPad(BaseCSystem):
                 "lifecycle_state": self.lifecycle_state.value,
                 "unit_system": self.unit_system.value,
                 "node_link": self.node_link,
-                "pad_count": len(self.bearings),
+                "pad_count": len(self._children),
                 "converged": self._convergence_status.converged,
                 "has_result": self._latest_result is not None,
                 "has_failure": self._failure is not None,
@@ -1117,7 +1125,7 @@ class MultiPad(BaseCSystem):
 
     def calc_capacity(self, **kwargs):
         forces = []
-        for bearing in self.bearings:
+        for bearing in self._children:
             force = bearing.calc_capacity(**kwargs)
             forces.append(force)
         force = np.sum(forces, axis=0)
@@ -1128,7 +1136,7 @@ class MultiPad(BaseCSystem):
         :param kwargs: nodim: if True, return nodim friction power, default True
         """
         forces = []
-        for bearing in self.bearings:
+        for bearing in self._children:
             force = bearing.calc_friction(**kwargs)
             forces.append(force)
         force = np.sum(forces)
@@ -1144,8 +1152,8 @@ class MultiPad(BaseCSystem):
         nodim : bool, default True
         """
         k = []
-        for bearing in self.bearings:
-            bdc = BearingDynamicChar(bearing)
+        for bearing in self._children:
+            bdc = _FilmDynamicAnalyzer(bearing)
             self.dyc.append(bdc)
             k.append(bdc.calc_k(**kwargs))
         k = np.sum(k, axis=0)
@@ -1158,34 +1166,14 @@ class MultiPad(BaseCSystem):
         nodim : bool, default True
         """
         c = []
-        for bearing in self.bearings:
-            bdc = BearingDynamicChar(bearing)
+        for bearing in self._children:
+            bdc = _FilmDynamicAnalyzer(bearing)
             self.dyc.append(bdc)
             c.append(bdc.calc_c(**kwargs))
         c = np.sum(c, axis=0)
         return c
 
-    def save(self, tofile=True, path=None, name=None, *args, **kwargs):
-        """
-        Save results to a local file.
-        """
-        if path is None:
-            path = "multipads"
-        result = DataFrameResult({"multipads_result": self.results})
-        parent_node = SaveTreeNode(path, result)
-        child_node = [
-            sm.save(
-                path="pad" + str(num), name=type(sm).__name__ + str(num), tofile=False
-            )
-            for num, sm in enumerate(self.bearings)
-        ]
-        parent_node.add_children(child_node)
-        if tofile:
-            return parent_node.persist(kwargs.get("writer"), path)
-        return parent_node
-
-
-class StaticPosition:
+class _InternalEquilibriumSolver:
     def __init__(
         self,
         bearing,
@@ -1358,12 +1346,12 @@ class StaticPosition:
         stall_count = 0
         use_kxky = False
         if hasattr(self.bearing, "init"):
-            self.bearing.init()
+            self.bearing._reset_for_owner()
         LOGGER.info("Static position iteration started: wx=%s, wy=%s", wx, wy)
         pbar = tqdm(range(self.iter_num), desc="Static Track", ncols=100)
         for i in pbar:
             if hasattr(self.bearing, "init"):
-                self.bearing.init()
+                self.bearing._reset_for_owner()
             # print("Iteration {}".format(i))
             current_eval = self._evaluate_static_force(
                 wx, wy, ex, ey, nodim=nodim, include_dim=True
@@ -1572,8 +1560,8 @@ class StaticPosition:
         return node
 
 
-class BearingDynamicChar:
-    def __init__(self, bearing: HydrostaticBearing, **kwargs):
+class _FilmDynamicAnalyzer:
+    def __init__(self, bearing: _DimensionalFilmRuntime, **kwargs):
         """
         Calculates the dynamic characteristics of a hydrostatic bearing.
         :param bearing: The hydrostatic bearing object.
@@ -1839,14 +1827,12 @@ class DCyelem(RectFilmElem):
 
 
 def four_pads_bearings(pad_config: FPBConfig):
-    """
-    Define a four-pad bearing, returning four pads.
-    """
+    """Build four ready native mixed-bearing pads."""
     pad_configs = [copy.deepcopy(pad_config) for _ in range(4)]
     x0s = pad_config.x0s
     for x0, pc in zip(x0s, pad_configs):
         pc.x0 = x0
-    bearings = [HydrostaticBearing(pc) for pc in pad_configs]
+    bearings = [_DimensionalMixedFilmRuntime(pc) for pc in pad_configs]
     directions = ["up", "down", "right", "left"]
     return dict(zip(directions, bearings))
 
@@ -1872,7 +1858,7 @@ def nodim_four_pads_bearings(
         bias + 90.0 - lx / 2.0,
     ]
     bearings = [
-        NodimHydrostaticBearing(
+        _NondimensionalFilmRuntime(
             lambda_value=lambda_value,
             lr=lr,
             lx=lx,
@@ -1902,7 +1888,7 @@ def nodim_four_pads_bearing(*args, **kwargs):
 
 
 # no validation yet, use with caution！！！！！！！
-class TiltingPadHydrodynamicPad(HydrostaticBearing):
+class TiltingPadHydrodynamicPad(_DimensionalFilmRuntime):
     """Single pad with linear tilt correction and self-contained tilt update."""
 
     def __init__(
@@ -2095,18 +2081,10 @@ def tilting_pads_bearing(
     tilts: Optional[Sequence[Tuple[float, float]]] = None,
     pivots: Optional[Sequence[Tuple[Optional[float], Optional[float]]]] = None,
 ):
-    """Build a tilting-pad bearing as a plain :class:`MultiPad`.
+    """Build a strict tilting-pad composite runtime."""
 
-    The returned ``MultiPad`` is augmented with a ``pads`` attribute that maps
-    canonical pad labels (``up``/``down``/``right``/``left``/...) to the
-    underlying :class:`TiltingPadHydrodynamicPad` instances. Use
-    :func:`get_pad_pressure_fields` and :func:`solve_tilting_pad_equilibrium`
-    for the tilt-pad specific operations.
-    """
-    labels, pads = _build_tilting_pads(pad_config, x0s, tilts, pivots)
-    mp = MultiPad(*pads)
-    mp.pads = dict(zip(labels, pads))
-    return mp
+    _, pads = _build_tilting_pads(pad_config, x0s, tilts, pivots)
+    return MultiPad(*pads)
 
 
 def get_pad_pressure_fields(pads):
@@ -2156,7 +2134,7 @@ def solve_tilting_pad_equilibrium(
     }
 
     for i in range(int(max_iter)):
-        multipad.init()
+        multipad._reset_for_owner()
         displacement = np.asarray(uxy, dtype=float)
         velocity = np.asarray(uxyt, dtype=float)
         if nodim and multipad.unit_system is UnitSystem.DIMENSIONAL:
@@ -2219,7 +2197,7 @@ def solve_tilting_pad_equilibrium(
             converged = True
             break
 
-    multipad.init()
+    multipad._reset_for_owner()
     displacement = np.asarray(uxy, dtype=float)
     velocity = np.asarray(uxyt, dtype=float)
     if nodim and multipad.unit_system is UnitSystem.DIMENSIONAL:

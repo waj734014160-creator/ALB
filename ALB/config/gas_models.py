@@ -19,7 +19,6 @@ class GasConfig(HydConfig):
     p_set: float = 1.0  # Prescribed outer-boundary pressure in nondimensional form.
     gamma: float = 1.0  # Dimensionless frequency ratio in the squeeze term.
     iter_method: str = "skfem_newton"
-    thermal_enabled: bool = False  # Thermal coupling switch (reserved interface).
     foil_enabled: bool = False  # Enable foil-spring fluid-structure coupling.
     texture_enabled: bool = False  # Enable textured top-foil thickness correction.
     texture_type: int = 1  # Paper distribution type: 1, 2, or 3.
@@ -97,7 +96,6 @@ class GasConfig(HydConfig):
         data = super().to_dict()
         data["pa"] = self.pa
         data["gamma"] = self.gamma
-        data["thermal_enabled"] = self.thermal_enabled
         data["foil_enabled"] = self.foil_enabled
         data["texture_enabled"] = self.texture_enabled
         data["texture_type"] = self.texture_type
@@ -203,7 +201,6 @@ class GasConfig(HydConfig):
         direct_keys = [
             "pa",
             "gamma",
-            "thermal_enabled",
             "foil_enabled",
             "texture_enabled",
             "texture_type",

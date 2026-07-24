@@ -17,13 +17,20 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from ALB.config.system import NodimALBConfig
+from ALB.config import (
+    Moog2ndServoConfig,
+    NodimALBConfig,
+    NodimOrificeConfig,
+    NodimPadConfig,
+    TankConfig,
+    ThermalConfig,
+)
 from ALB.contracts import (
     BearingInput,
     DirectSpoolBearingInput,
     ValveOutput,
 )
-from ALB.systems.alb.assembly import nodim_alb
+from ALB.systems.alb.assembly_runtime import assemble_active_runtime
 
 
 DEFAULT_JSON = ROOT / "refs" / "albsv_direct_spool_reference_v1.json"
@@ -83,6 +90,57 @@ CONFIG = {
 }
 
 
+def config_from_payload(
+    payload: dict,
+    *,
+    thermal: bool = True,
+) -> NodimALBConfig:
+    """Materialize the frozen numerical case through strict typed config."""
+
+    thermal_config = None
+    if thermal:
+        thermal_values = {
+            key: value
+            for key, value in payload["thermal"].items()
+            if key not in {"args_nodim", "pressure_backend"}
+        }
+        thermal_config = ThermalConfig(**thermal_values)
+    pad = NodimPadConfig(
+        lambda_value=payload["lambda_value"],
+        lr=payload["lr"],
+        lx=payload["lx"],
+        lz=payload["lz"],
+        nx=payload["nx"],
+        nz=payload["nz"],
+        coe=payload["coe"],
+        max_iter=payload["max_iter"],
+        error_set=payload["error_set"],
+        damp=payload["damp"],
+        thermal_config=thermal_config,
+    )
+    return NodimALBConfig(
+        pad_config=pad,
+        orifice_config=NodimOrificeConfig(
+            position=np.asarray(payload["position"], dtype=float),
+            cq0=payload["cq0"],
+            cq1=payload["cq1"],
+            cq2=payload["cq2"],
+            ps=payload["ps"],
+            p0=payload["p0"],
+        ),
+        servo_config=Moog2ndServoConfig(dt=payload["dt"]),
+        tank_config=TankConfig(
+            xrange=payload["xrange"],
+            zrange=payload["zrange"],
+            h_tank=payload["h_tank"],
+        ),
+        controller_config=None,
+        dt=payload["dt"],
+        control_mode="external_spool",
+        valve_model="static",
+    )
+
+
 def _sha256_array(array: np.ndarray) -> str:
     """Return a stable digest for one contiguous array."""
 
@@ -100,9 +158,8 @@ def _git_head() -> str:
 def _run_case(spool: list[float]) -> tuple[dict[str, np.ndarray], dict]:
     """Execute one legacy direct-spool sequence exactly once."""
 
-    config = NodimALBConfig.from_dict(CONFIG)
-    model = nodim_alb(config, thermal_config=config.thermal_config)
-    model.init()
+    config = config_from_payload(CONFIG)
+    model = assemble_active_runtime(config)
     model.input(
         DirectSpoolBearingInput(
             BearingInput(

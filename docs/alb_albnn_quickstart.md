@@ -1,250 +1,194 @@
-# ALB 与 ALBNN 快速使用手册
+# ALB 0.4 与 ALBNN 快速使用手册
 
 ## 文档角色
 
 - 角色：稳定用户操作手册。
-- 目的：说明如何在 `ALB_MAIN` 中快速构建默认 ALB 模型、加载迁移后的 ALBNN model package，并按需把代理模型接入 ALB shell。
-- 允许更新：稳定 API 用法、最小示例、推荐导入路径、常见输入输出契约和排错提示。
-- 禁止更新：活跃训练进度、单次 run 指标、远程任务 PID、原始日志正文和临时实验结论。
-- 更新时机：ALB / ALBNN 构建 API、配置契约或推荐 quickstart 流程变化时。
-- 事实来源 / 相关文档：
-  `docs/daily_maintenance/daily_doc_update_index.md`、
-  `docs/alb_package_overview.md`、
-  `docs/interface_architecture.md`、
-  `../SURROGATE_TRAIN/docs/albnn_training_brief.md`。
+- 目的：说明 0.4 轴承、分析、仿真和 ALBNN package 的推荐用法。
+- 允许更新：稳定 API、最小示例、输入输出契约和排错提示。
+- 禁止更新：训练实时进度、PID、单次日志和临时实验结论。
+- 更新时机：构建 API、配置或推荐流程变化时。
+- 事实来源：`ALB/__init__.py`、`ALB/api/`、`ALB/surrogate/package.py`。
 
-本文使用 0.3.0 的显式 namespace。旧 `ALB.alb` 和 `ALB.nn` 已删除；不要把旧 import 示例复制到新脚本。
-
-## 环境准备
+## 安装检查
 
 ```powershell
 E:/Anaconda2023/envs/ALB/python.exe -c "import ALB; print(ALB.__version__, ALB.__file__)"
 ```
 
-源码环境可安装全部运行时能力：
+兄弟项目应安装候选 wheel；不要复制 `ALB/`、修改 `sys.path` 或 shadow import
+源码目录。
 
-```powershell
-E:/Anaconda2023/envs/ALB/python.exe -m pip install -e ".[all]"
+## 从文件计算轴承
+
+```python
+import ALB
+
+bearing = ALB.bearing_from_file("paper_alb.json5")
+result = bearing.calculate(
+    displacement=(0.02, -0.01),
+    velocity=(0.0, 0.0),
+    time=0.0,
+)
+
+print(result.fx, result.fy)
+result.write("outputs/case_001")
 ```
 
-如果从兄弟项目运行，应安装 wheel/editable 包，或把 `G:/ALB_PROJECTS/ALB_MAIN` 明确放入 `PYTHONPATH`。不要复制 `ALB/` 目录。
+`calculate()` 只接受 keyword 参数。`velocity` 可省略，`time` 不可省略。
+后续调用的时间必须按配置中的 `time_step` 前进。`latest_result` 只读且不重新
+求解；使用 `bearing.reset()` 清空当前会话并按同一不可变配置重建 runtime。
 
-## 以严格轴承端口运行默认 ALB
+## 程序化配置
 
-公开 builder 直接接收类型化配置，并在内部创建和校验版本化 envelope。普通用户不需要创建
-`BearingBlock`、构造 envelope 或手动调用 `init()`：
+```python
+import ALB
+
+config = ALB.BearingConfig(
+    {
+        "family": "liquid_film",
+        "unit_system": "dimensional",
+        "time_step": 0.001,
+        "node": 0,
+        "film": {
+            "circumferential_elements": 21,
+            "axial_elements": 9,
+            "supply_pressure": 7.0e6,
+        },
+        "restrictors": None,
+        "thermal": None,
+    }
+)
+
+high_pressure = config.with_overrides(
+    {"film.supply_pressure": 8.0e6}
+)
+cases = config.sweep(
+    "film.supply_pressure",
+    [6.0e6, 7.0e6, 8.0e6],
+)
+```
+
+配置不可原地修改。每个 override/sweep 都重新执行完整校验。
+
+## 严格 JSON5 与 include
+
+```json5
+{
+  schema_version: "0.4.0",
+  kind: "bearing",
+  includes: ["profiles/liquid_base.json5"],
+  spec: {
+    film: { supply_pressure: 7000000.0 },
+    thermal: null,
+  },
+}
+```
+
+profile 使用 `kind: "bearing_profile"`。include 按顺序合并，当前 `spec` 最后
+覆盖；mapping 深度合并，数组和标量整体替换，显式 `null` 不表示继承。
+
+## 混合液膜轴承
+
+用户不声明动压、静压或混合模式：
+
+```json5
+spec: {
+  family: "liquid_film",
+  // ...
+  restrictors: [
+    {
+      position: [0.5, 0.25],
+      supply_pressure: 7000000.0,
+      orifice_diameter: 0.0005,
+      discharge_coefficient: 0.7,
+    },
+  ],
+}
+```
+
+`restrictors: null` 表示普通液膜；非空列表在构造时自然启用节流耦合。运行后
+不能追加节流器或修改 topology。
+
+## 主动控制与 external spool
+
+控制模式只接受 `pid`、`fuzzy_pid`、`uncontrolled`、`external_spool`。
+只有 external-spool 轴承允许：
+
+```python
+result = bearing.calculate(
+    displacement=(x, y),
+    velocity=(vx, vy),
+    spool=(sx, sy),
+    time=t,
+)
+```
+
+`spool` 是归一化二轴值。external-spool 缺少 spool，或其他模式传入 spool，
+都会立即报错。
+
+## 分析服务
 
 ```python
 import numpy as np
+import ALB
 
-from ALB import UnitSystem
-from ALB.config import NodimALBConfig
-from ALB.contracts import BearingInput
-from ALB.systems.alb import build_alb
-
-bearing = build_alb(NodimALBConfig(node_link=0))
-
-request = BearingInput(
-    displacement=np.array([0.05, 0.00]),
-    velocity=np.array([0.00, 0.00]),
-    time=0.0,
-    unit_system=UnitSystem.NONDIMENSIONAL,
+trajectory = ALB.EllipseTrajectory(
+    center=np.array([0.0, 0.0]),
+    semi_axes=np.array([1.0e-5, 5.0e-6]),
 )
-response = bearing.step(request)
-force = response.force
+time = np.arange(32) * bearing.config.spec["time_step"]
+
+orbit = bearing.analysis.trace_orbit(
+    trajectory,
+    time,
+    frequency_hz=10.0,
+)
+coefficients = bearing.analysis.dynamic_coefficients(
+    trajectory,
+    time,
+    frequency_hz=10.0,
+)
 ```
 
-`step()` 等价于 `input()`、`evaluate()`、`output()`，但不提交物理时步。需要检查生命周期时可显式拆开：
+还可调用 `find_equilibrium()` 和 `harmonic_linearize()`。每次分析使用独立
+runtime，返回值包含完整采样点，不改变 `bearing.latest_result`。
+
+## 转子轴承仿真
 
 ```python
-bearing.input(request)
-bearing.evaluate()
-response = bearing.output()
+import ALB
+
+simulation = ALB.simulation_from_file("paper_rotor_system.json5")
+history = simulation.run()
+history.write("outputs/rotor_case_001")
 ```
 
-`input()` 后、`evaluate()` 前调用 `output()` 会抛出 `RuntimeError`。`output()` 不求解，也不推进状态。
-`build_alb_from_file()` 位于 `ALB.workflows`，在内部读取并校验 0.3 envelope；旧 JSON5 必须先用
-`alb-migrate-config` 另存迁移。
+挂载通过配置中的不可变 mount 列表一次性给出。默认保存所有已提交时间步；
+需要降采样或 ring buffer 时才显式配置 `HistoryPolicy`。失败不会发布半完成
+步骤，`SimulationError` 附带最后完整提交步之前的 partial result。
 
-`NodimALBConfig()` 保留冻结的默认物理和数值参数。轻量 smoke 可按需从 `ALB.config.film` 和 `ALB.config.hydraulics` 构建更小网格，但改变网格会改变物理离散，不应替代正式验证配置。
+## ALBNN package
 
-## 谐波线性轴承
-
-谐波实现使用同一个端口，并额外提供正式系数能力：
-
-```python
-from ALB.systems.alb import alb_harmonic_linear
-
-bearing = alb_harmonic_linear(node_link=0)
-
-K = bearing.K
-C = bearing.C
-G_xv = bearing.G_xv
-```
-
-构建参数以 `ALB.systems.alb.harmonic.alb_harmonic_linear` 的签名为准。`K`、`C` 和复数 `G_xv` 均返回副本。
-
-## 构建动静压混合轴承
-
-混合轴承不要求声明“动压”或“静压”模式。没有节流器时只计算动压油膜；构造时给出节流器后，
-同一 runtime 自动执行节流流量与油膜压力耦合：
-
-```python
-from ALB.config import HydConfig, HybridOrificeConfig
-from ALB.physics.bearing import build_hybrid_bearing
-
-orifices = HybridOrificeConfig(
-    positions=[[0.5, 0.25], [0.5, 0.50], [0.5, 0.75]],
-    radius=0.5e-3,
-    pressure=7.0e6,
-)
-bearing = build_hybrid_bearing(
-    HydConfig(node_link=0),
-    orifices=orifices,
-)
-```
-
-若省略 `orifices`，builder 返回相同端口类型的纯动压工况。也可用 `cq=` 直接给定无量纲节流系数；
-`radius` 与 `cq` 必须二选一。旧 `add_orifice()`/`add_orifices()` 只用于兼容路径，新代码应在
-构造时固定轴承拓扑。
-
-## 迁移旧 ALBNN artifacts
-
-旧 `best_albnn.pth`、`scaler_X.pkl`、`scaler_y.pkl` 不能直接视为 0.2 package。先复制到新的 versioned package；默认不覆盖任何文件：
-
-```powershell
-alb-migrate-surrogate `
-  G:/path/to/best_albnn.pth `
-  G:/path/to/scaler_X.pkl `
-  G:/path/to/scaler_y.pkl `
-  G:/path/to/model_package_0_2 `
-  --metadata G:/path/to/metadata.json
-```
-
-等价源码入口是：
-
-```powershell
-E:/Anaconda2023/envs/ALB/python.exe tools/migrations/migrate_surrogate_0_2.py --help
-```
-
-生成目录包含 `manifest.json`、`model.pt`、`input_scaler.pkl`、`output_scaler.pkl` 和 `metadata.json`，manifest 记录每个 artifact 的 SHA-256。迁移是结构和完整性转换，不会证明旧模型在新调用处语义正确；仍需核对输入列、feature set、scaler 和 target transform。
-
-## 加载并调用 ALBNN package
-
-scaler 使用 pickle。只有 package 来源可信时才显式允许加载：
-
-```python
-import pandas as pd
-
-from ALB.surrogate.package import load_albnn_package
-
-net = load_albnn_package(
-    r"G:/path/to/model_package_0_2",
-    trust_pickle=True,
-)
-
-x = pd.DataFrame(
-    [{
-        "ex": 0.05,
-        "ey": 0.00,
-        "vx": 0.00,
-        "vy": 0.00,
-        "sx": 0.00,
-        "sy": 0.00,
-        "lambda_value": 0.7384145233,
-        "beta_nondim": 0.1083715596,
-        "lr": 0.75,
-        "cq0": 4.5417787734,
-        "cq1": 0.0411235398,
-        "cq2": 0.0028973273,
-    }]
-)
-force_nondim = net.predict(x, nodim=True)
-```
-
-上例是基础 12 输入契约：
+surrogate bearing 的 `spec.family` 为 `surrogate`，`model_package` 指向
+`alb.surrogate-package.v0.4` 目录。目录必须包含：
 
 ```text
-ex, ey, vx, vy, sx, sy, lambda_value, beta_nondim, lr, cq0, cq1, cq2
+manifest.json
+weights.pt
+input_scaler.npz
+output_scaler.npz
+metadata.json
 ```
 
-输出通常为 `fx, fy`。真正列顺序和派生特征以 package `metadata.json` 为准；调用前检查 `net.input_cols`。不同 feature set 或 expert/residual package 不能只靠列数判断兼容。
+运行时严格校验 schema、artifact role、metadata 和 SHA-256，并以
+`weights_only=True` 加载权重。0.3/v0.2 package 和 pickle scaler 不受支持。
 
-## 接入 ALB shell
+## 常见错误
 
-只有经过 shell-agent smoke 的 model package 才应替换 pad force core：
+- `ConfigurationError`：schema、include、未知字段或跨字段约束错误。
+- `BuildError`：配置合法但 runtime 无法装配。
+- `CalculationError`：单轴承求解失败，可读取密封 `failure_snapshot`。
+- `SimulationError`：仿真失败，可读取截至最后成功提交的 partial result。
 
-```python
-from ALB.config.surrogate import ALBNetConfig
-from ALB.config.system import NodimALBConfig
-from ALB.surrogate.package import open_model_package
-from ALB.systems.alb import nodim_alb
-from ALB.systems.alb.assembly import nn_agent
-
-package = open_model_package(r"G:/path/to/model_package_0_2")
-model_config = ALBNetConfig(
-    model=str(package.model),
-    scaler_X=str(package.input_scaler),
-    scaler_y=str(package.output_scaler),
-    metadata=str(package.metadata),
-)
-
-physical_shell = nodim_alb(alb_config=NodimALBConfig())
-alb_with_nn = nn_agent(physical_shell, model_config)
-```
-
-`nn_agent` 是明确 assembly 子模块中的集成函数，不在 package 根重新导出。组合结果已经原生满足
-`BearingRuntimeProtocol`，不再需要用户额外创建 `BearingBlock`；仍应使用模型训练条件内的固定
-样本比较 `fx, fy`。
-
-## 接入转子耦合与显式历史
-
-新 coupling 以 `CoupledBearingBinding` 作为唯一内部拓扑。普通有量纲
-`BearingInput` runtime 可使用简易入口：
-
-```python
-from ALB.dynamics import RsRotorBearingCouple
-
-coupling = RsRotorBearingCouple(rotor, time_grid)
-coupling.add_bearing(dimensional_bearing, node_link=0)
-coupling.solve()
-result = coupling.output()
-```
-
-`solve()` 在内部开启一致的 coupling session；普通用户不显式调用 `init()`。若 bearing 是
-无量纲或 direct-spool 类型，必须显式构造 `CoupledBearingBinding`；direct-spool binding 注入
-`SpoolCommandProviderProtocol`；缺失时构造立即失败，不会默认为零阀芯。若 rotor 与 bearing
-单位不同，必须注入带完整 `Sx/St/Sv/Sf/Sp` 的 `BearingUnitAdapter`。
-
-轴承自身默认只保存当前不可变结果。需要时间历史时由 coupling 注入 recorder：
-
-```python
-from ALB.dynamics import CouplingRuntimeDependencies
-from ALB.infrastructure import InMemoryResultRecorder
-
-recorder = InMemoryResultRecorder()
-dependencies = CouplingRuntimeDependencies(
-    run_id="case-001",
-    recorder=recorder,
-)
-coupling = RsRotorBearingCouple(
-    rotor,
-    time_grid,
-    binding,
-    dependencies=dependencies,
-)
-```
-
-recorder 在物理步提交后执行。记录失败不会重复推进 rotor/bearing；默认阻止下一步，调用
-`coupling.retry_pending_record()` 只重试记录。GUI、日志或监控使用
-`StepObserverProtocol`，observer 异常默认隔离为诊断信息。
-
-## 常见问题
-
-- `No module named ALB.alb` 或 `ALB.nn`：仍在使用 0.1 import；查看 `docs/migrations/0.2.0_import_map.json`。
-- `ALBNN input is missing columns`：DataFrame 缺少 metadata 声明的基础或派生列。
-- manifest digest mismatch：package 中至少一个 artifact 已改变；不要绕过校验，重新确认来源并迁移。
-- `PermissionError` 提示 pickle trust：只在确认 artifact 来源可信后传入 `trust_pickle=True`。
-- checkpoint 可加载但预测异常：检查 checkpoint、两个 scaler、metadata、feature set 和 target transform 是否来自同一训练 run。
-- 单位制不匹配：`BearingInput.unit_system` 必须与 block 一致；通过显式尺度/adapter 转换，不要修改标签掩盖不一致。
-- `output()` 抛出 `RuntimeError`：当前输入尚未执行对应的 `evaluate()`、`solve()`、`compute_command()` 或 `advance()`。
+不要调用 `init()`、访问 `.signal/.pads/.controller/.valve`，也不要使用旧工厂
+或旧配置字段；这些入口在 0.4 中不存在。

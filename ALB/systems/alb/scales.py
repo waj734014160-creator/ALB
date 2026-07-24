@@ -19,7 +19,7 @@ def bearing_scale_set_from_config(
 ) -> BearingScaleSet:
     """Build a complete scale boundary from explicit nondimensional settings.
 
-    ``scale_l`` and ``scale_w`` are optional in legacy numerical models, but
+    ``scale_l`` and ``scale_w`` are optional in low-level numerical models, but
     they are mandatory here because force and time cannot otherwise be
     converted without guessing.
     """

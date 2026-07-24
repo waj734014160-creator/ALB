@@ -8,14 +8,13 @@ import json
 import pickle
 from pathlib import Path
 import sys
-from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
 import pytest
 import torch
 
-from ALB.surrogate.inference import albnn
+from ALB.surrogate.package import load_albnn_package
 from ALB.surrogate.training import AlbnnMlpTrainer
 from ALB.surrogate.training import ColumnTransformPipeline
 from ALB.surrogate.training import TrainingConfig
@@ -179,7 +178,7 @@ def test_config_cli_epochs_equals_override_writes_resolved_config(
             "train_albnn.py",
             "--config",
             str(config_path),
-            "--dry_run_config",
+            "--dry-run-config",
             "--epochs=10",
         ],
     )
@@ -209,7 +208,7 @@ def test_config_cli_unsupported_legacy_override_fails_fast(
             "train_albnn.py",
             "--config",
             str(config_path),
-            "--dry_run_config",
+            "--dry-run-config",
             "--lr",
             "0.1",
         ],
@@ -220,10 +219,10 @@ def test_config_cli_unsupported_legacy_override_fails_fast(
 
     assert excinfo.value.code == 2
     assert not (output_dir / "resolved_training_config.json").exists()
-    assert "unsupported explicit option(s): --lr" in capsys.readouterr().err
+    assert "unrecognized arguments: --lr 0.1" in capsys.readouterr().err
 
 
-def test_dry_run_config_without_config_fails_before_legacy_training(
+def test_dry_run_config_requires_config(
     tmp_path, monkeypatch, capsys
 ):
     module = _load_train_albnn_module()
@@ -233,7 +232,7 @@ def test_dry_run_config_without_config_fails_before_legacy_training(
         "argv",
         [
             "train_albnn.py",
-            "--dry_run_config",
+            "--dry-run-config",
             "--data",
             str(tmp_path / "train.csv"),
             "--output_dir",
@@ -246,10 +245,10 @@ def test_dry_run_config_without_config_fails_before_legacy_training(
 
     assert excinfo.value.code == 2
     assert not output_dir.exists()
-    assert "--dry_run_config requires --config" in capsys.readouterr().err
+    assert "the following arguments are required: --config" in capsys.readouterr().err
 
 
-def test_legacy_device_without_config_fails_before_training(
+def test_device_override_requires_config(
     tmp_path, monkeypatch, capsys
 ):
     module = _load_train_albnn_module()
@@ -273,7 +272,7 @@ def test_legacy_device_without_config_fails_before_training(
 
     assert excinfo.value.code == 2
     assert not output_dir.exists()
-    assert "--device is only supported with --config" in capsys.readouterr().err
+    assert "the following arguments are required: --config" in capsys.readouterr().err
 
 
 def test_column_transform_pipeline_matches_scaled_evs_reference():
@@ -435,23 +434,21 @@ def test_config_trainer_smoke(tmp_path):
     result = AlbnnMlpTrainer(TrainingConfig.from_dict(config)).run()
 
     assert result.output_dir == output_dir
-    assert (output_dir / "best_albnn.pth").exists()
-    assert (output_dir / "scaler_X.pkl").exists()
+    assert not (output_dir / "best_albnn.pth").exists()
+    assert (output_dir / "model_package" / "manifest.json").exists()
+    assert (output_dir / "model_package" / "weights.pt").exists()
+    assert (output_dir / "model_package" / "input_scaler.npz").exists()
+    assert (output_dir / "model_package" / "output_scaler.npz").exists()
     assert (output_dir / "resolved_training_config.json").exists()
-    metadata = json.loads((output_dir / "metadata.json").read_text(encoding="utf-8"))
+    metadata = json.loads(
+        (output_dir / "model_package" / "metadata.json").read_text(encoding="utf-8")
+    )
     assert metadata["scaler"] == "config_pipeline"
     assert metadata["architecture"][0] == 16
     predictions = pd.read_csv(output_dir / "validation_predictions.csv")
     assert set(BASE_INPUT_COLS).issubset(predictions.columns)
     assert {"error_norm", "true_force_norm"}.issubset(predictions.columns)
-    packaged = albnn(
-        SimpleNamespace(
-            model=str(output_dir / "best_albnn.pth"),
-            scaler_X=str(output_dir / "scaler_X.pkl"),
-            scaler_y=str(output_dir / "scaler_y.pkl"),
-            metadata=str(output_dir / "metadata.json"),
-        )
-    )
+    packaged = load_albnn_package(output_dir / "model_package")
     inference_frame = _sample_frame().iloc[:1][BASE_INPUT_COLS]
     packaged_pred = packaged.predict_nondim(inference_frame)
     assert packaged_pred.shape == (1, 2)

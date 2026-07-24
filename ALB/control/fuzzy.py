@@ -204,7 +204,7 @@ class FuzzyPID(PID):
         pid_sim = ctrl.ControlSystemSimulation(pid_ctrl)
         return pid_sim
 
-    def init(self):
+    def _reset_for_owner(self):
         """Reset fuzzy inference, gains, PID memory, and result history."""
         self._reset_runtime_state()
         self.kp = np.asarray(0.0)

@@ -128,7 +128,7 @@ class BaseLti(BaseSimpleModel):
     def D(self):
         return self.sys.D
 
-    def init(self, *args, **kwargs):
+    def _reset_for_owner(self, *args, **kwargs):
         """
         Initialize internal states and I/O histories.
         """

@@ -324,9 +324,10 @@ $modelRoot = {ps_quote(model_root)}
 if (Test-Path $modelRoot) {{
   @(
     Get-ChildItem $modelRoot -Directory | ForEach-Object {{
-      $metaPath = Join-Path $_.FullName 'metadata.json'
+      $packagePath = Join-Path $_.FullName 'model_package'
+      $metaPath = Join-Path $packagePath 'metadata.json'
       $summaryPath = Join-Path $_.FullName 'validation_summary.json'
-      $checkpointPath = Join-Path $_.FullName 'best_albnn.pth'
+      $manifestPath = Join-Path $packagePath 'manifest.json'
       $meta = $null
       if (Test-Path $metaPath) {{
         try {{ $meta = Get-Content $metaPath -Raw | ConvertFrom-Json }} catch {{ $meta = $null }}
@@ -351,7 +352,7 @@ if (Test-Path $modelRoot) {{
         name = $_.Name
         full_name = $_.FullName
         has_validation = [bool](Test-Path $summaryPath)
-        has_checkpoint = [bool](Test-Path $checkpointPath)
+        has_package = [bool](Test-Path $manifestPath)
         scaler = $scaler
         activation = $activation
         sine_omega0 = $omega
@@ -566,22 +567,7 @@ def wait_for_combo(args: argparse.Namespace, combo: ComboSpec) -> bool:
         time.sleep(args.poll_seconds)
 
 
-def _legacy_start_script_from_argv() -> Path | None:
-    if not sys.argv:
-        return None
-    script = Path(sys.argv[0]).resolve()
-    if script.name != "remote_queue_albnn_activation_sweep.py":
-        return None
-    candidate = script.with_name("remote_start_albnn_train.py")
-    if candidate.exists():
-        return candidate
-    return None
-
-
 def _start_command_prefix() -> list[str]:
-    script = _legacy_start_script_from_argv()
-    if script is not None:
-        return [sys.executable, str(script)]
     return [sys.executable, "-m", "ALB.surrogate.training.remote.start"]
 
 

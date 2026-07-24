@@ -6,26 +6,11 @@ from ALB.contracts.optional import import_optional_module
 _EXPORTS = {
     "RossRotor": ("ALB.dynamics.rotor", "RossRotor"),
     "RotorDofLayout": ("ALB.dynamics.rotor_layout", "RotorDofLayout"),
-    "SingleRotor": ("ALB.dynamics.rotor", "SingleRotor"),
-    "RsRotorBearingCouple": ("ALB.dynamics.coupling", "RsRotorBearingCouple"),
-    "RotorBearingCouple": ("ALB.dynamics.coupling", "RotorBearingCouple"),
-    "EllipseTrack": ("ALB.dynamics.orbit", "EllipseTrack"),
-    "BearingForceTrack": ("ALB.dynamics.orbit", "BearingForceTrack"),
-    "TimeIter": ("ALB.core.time", "TimeIter"),
-    "TimeIterDt": ("ALB.core.time", "TimeIterDt"),
-    "CoupledBearingBinding": (
-        "ALB.dynamics.bindings",
-        "CoupledBearingBinding",
-    ),
-    "CouplingRuntimeDependencies": (
-        "ALB.dynamics.bindings",
-        "CouplingRuntimeDependencies",
-    ),
 }
 
 
 def __getattr__(name):
-    """Resolve dynamics implementations lazily from compatibility modules."""
+    """Resolve advanced rotor implementations lazily."""
 
     if name not in _EXPORTS:
         raise AttributeError(f"module 'ALB.dynamics' has no attribute '{name}'")

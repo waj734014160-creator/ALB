@@ -10,7 +10,7 @@ from ALB.core.numerics.damping import (
     normalize_adaptive_damp_config,
 )
 from .common_models import ConfigData
-from .thermal_models import ThermalConfig, build_thermal_config
+from .thermal_models import ThermalConfig
 
 @dataclass
 class HydConfig(ConfigData):
@@ -164,11 +164,6 @@ class FPBConfig(HydConfig):
         ]
         return x0s
 
-    @property
-    def thermal_enabled(self) -> bool:
-        """Backwards-compatible flag derived from ``thermal_config``."""
-        return self.thermal_config is not None
-
     def to_dict(self):
         """Returns a dictionary containing all fields and computed properties."""
         data = super().to_dict()
@@ -178,13 +173,12 @@ class FPBConfig(HydConfig):
 
     @classmethod
     def from_dict(cls, config_dict):
-        """Creates an instance from a dictionary.
-
-        Accepts either the new ``thermal_config`` payload (a ``ThermalConfig``
-        instance or its dict form) or the legacy ``thermal_enabled`` flag with
-        a flat ``thermal`` dictionary.  In all cases the result is folded into
-        a single :class:`ThermalConfig` attached to the pad.
-        """
+        """Create an instance from strict typed configuration fields."""
+        forbidden = sorted(
+            set(config_dict).intersection({"thermal_enabled", "thermal"})
+        )
+        if forbidden:
+            raise ValueError(f"removed pad configuration fields: {forbidden}")
         config = super().from_dict(config_dict)
         direct_keys = ["bias", "coe"]
         direct_args = {
@@ -194,14 +188,12 @@ class FPBConfig(HydConfig):
         add_args.update(direct_args)
 
         thermal_config = config_dict.get("thermal_config")
-        if thermal_config is None:
-            # Legacy: thermal_enabled + thermal dict are still accepted.
-            thermal_enabled = bool(config_dict.get("thermal_enabled", False))
-            thermal_data = config_dict.get("thermal")
-            thermal_config = build_thermal_config(thermal_enabled, thermal_data)
-        elif isinstance(thermal_config, dict):
+        if isinstance(thermal_config, dict):
             thermal_config = ThermalConfig.from_dict(thermal_config)
-        elif not isinstance(thermal_config, ThermalConfig):
+        elif thermal_config is not None and not isinstance(
+            thermal_config,
+            ThermalConfig,
+        ):
             raise TypeError("thermal_config must be a ThermalConfig, dict, or None")
         add_args["thermal_config"] = thermal_config
         return cls(**add_args)
@@ -276,11 +268,6 @@ class NodimPadConfig(ConfigData):
             bias + 90.0 - lx / 2.0,
         ]
 
-    @property
-    def thermal_enabled(self) -> bool:
-        """Backwards-compatible flag derived from ``thermal_config``."""
-        return self.thermal_config is not None
-
     def to_dict(self):
         data = asdict(self)
         data["x0s"] = self.x0s
@@ -288,11 +275,12 @@ class NodimPadConfig(ConfigData):
 
     @classmethod
     def from_dict(cls, config_dict):
-        """Create a nodimensional pad config from a flat configuration dictionary.
-
-        Accepts ``thermal_config`` directly or the legacy ``thermal_enabled`` +
-        ``thermal`` dict combination, just like :meth:`FPBConfig.from_dict`.
-        """
+        """Create a nondimensional pad from strict typed fields."""
+        forbidden = sorted(
+            set(config_dict).intersection({"thermal_enabled", "thermal"})
+        )
+        if forbidden:
+            raise ValueError(f"removed pad configuration fields: {forbidden}")
         direct_keys = [
             key
             for key in cls().to_dict().keys()
@@ -303,13 +291,12 @@ class NodimPadConfig(ConfigData):
         }
 
         thermal_config = config_dict.get("thermal_config")
-        if thermal_config is None:
-            thermal_enabled = bool(config_dict.get("thermal_enabled", False))
-            thermal_data = config_dict.get("thermal")
-            thermal_config = build_thermal_config(thermal_enabled, thermal_data)
-        elif isinstance(thermal_config, dict):
+        if isinstance(thermal_config, dict):
             thermal_config = ThermalConfig.from_dict(thermal_config)
-        elif not isinstance(thermal_config, ThermalConfig):
+        elif thermal_config is not None and not isinstance(
+            thermal_config,
+            ThermalConfig,
+        ):
             raise TypeError("thermal_config must be a ThermalConfig, dict, or None")
         direct_args["thermal_config"] = thermal_config
         return cls(**direct_args)

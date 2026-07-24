@@ -9,7 +9,6 @@ import scipy.sparse as sp
 from numba import njit
 
 from ALB.core.component import BaseCSystem, BaseSimpleModel, BaseSystem
-from ALB.core.events import Signal
 from ALB.core.time import TimeIter, TimeIterDt
 
 
@@ -869,7 +868,6 @@ class BaseMainModel:
         self.boundary = boundary
         self.args = {}
         self.mesh = mesh
-        self.signal = Signal(sys=self)
 
     @property
     def matrixs(self) -> dict:
@@ -953,18 +951,6 @@ class BaseMainModel:
     def save(self, tofile=True, path=None, name=None, *args, **kwargs):
         """
         Save calculation results.
-        """
-        pass
-
-    def start_signal(self):
-        """
-        Start signal.
-        """
-        pass
-
-    def finish_signal(self):
-        """
-        Finish signal.
         """
         pass
 

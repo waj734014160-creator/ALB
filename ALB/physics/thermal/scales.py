@@ -102,7 +102,7 @@ class FilmNondimScales:
         """Return the nondimensional ``args`` dict consumed by film models.
 
         ``x0`` and ``lx`` are expected in degrees, ``lz`` in nondimensional
-        units; the result mirrors the legacy ``film_args_trans`` output so
+        units; the result mirrors the internal ``film_args_trans`` output so
         existing call sites can drop in this constructor.
         """
         xct, yct = self.vortex_to_nondim(dxt, dyt)
@@ -246,11 +246,6 @@ class ThermalNondimScales:
     def qw(self) -> float:
         """Return the volumetric-flow scale ``Q_w`` in m3/s."""
         return self.qf * self.lr * self.r
-
-    @property
-    def flow_scale(self) -> float:
-        """Compatibility alias for :attr:`qf`; new code must use ``qf``."""
-        return self.qf
 
     def temperature_to_nondim(self, temperature, t_supply: float):
         return (np.asarray(temperature, dtype=float) - float(t_supply)) / self.delta_t

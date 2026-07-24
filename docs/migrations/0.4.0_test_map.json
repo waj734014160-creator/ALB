@@ -1,0 +1,11 @@
+{
+  "schema": "alb.release-test-map.v0.4",
+  "release": "0.4.0",
+  "feature_manifest": "tools/validation/release_feature_manifest_0_4.json",
+  "policy": {
+    "required_nodeids": "Every feature node must collect and pass from the fixed candidate SHA.",
+    "resources": "The fixed candidate must pass explicit facade runtime and tracemalloc peak-memory budgets.",
+    "external_consumers": "SURROGATE_TRAIN and the declared PAPER_WORK active-source manifest are required release inputs.",
+    "historical_evidence": "The 0.3 F01-F66 manifest and refs remain immutable historical evidence."
+  }
+}

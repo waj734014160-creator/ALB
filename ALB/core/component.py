@@ -1,27 +1,25 @@
 """Reusable runtime component templates.
 
-Only lifecycle, results, event composition, and unit metadata are shared here.
+Only lifecycle, results, composition, and unit metadata are shared here.
 Domain-specific ``input`` and ``output`` semantics are defined by protocols in
 ``ALB.contracts`` and by specialized bases such as ``BearingComponentBase``.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, Optional
+from typing import Any, Optional
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from .events import Signal
 from .validation import finite_vector, validate_bearing_output
 
 
 class ComponentBase(ABC):
-    """Small common template for event-aware components with result storage."""
+    """Small common template for components with result storage."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._results = pd.DataFrame()
-        self.signal = Signal(sys=self)
 
     @property
     def results(self) -> Any:
@@ -29,22 +27,11 @@ class ComponentBase(ABC):
 
         return self._results
 
-    def start_signal(self) -> None:
-        """Optional lifecycle callback invoked at calculation start."""
-
-        return None
-
-    def finish_signal(self) -> None:
-        """Optional lifecycle callback invoked at calculation completion."""
-
-        return None
-
-
 class BaseSimpleModel(ComponentBase, ABC):
-    """Backward-compatible abstract template for legacy simple models."""
+    """Abstract template for internal numerical models."""
 
     @abstractmethod
-    def init(self, *args: Any, **kwargs: Any) -> Any:
+    def _reset_for_owner(self, *args: Any, **kwargs: Any) -> Any:
         """Initialize the model."""
 
     @abstractmethod
@@ -57,7 +44,7 @@ class BaseSimpleModel(ComponentBase, ABC):
 
     @abstractmethod
     def calc_error(self, *args: Any, **kwargs: Any) -> Any:
-        """Return the legacy model residual value."""
+        """Return the model residual value."""
 
     @abstractmethod
     def save(
@@ -93,29 +80,13 @@ class BearingComponentBase(BaseSimpleModel, ABC):
         return validate_bearing_output(output)
 
 
-class _CompositeSignalMixin:
-    """Attach child component signals without duplicating registrations."""
-
-    signal: Signal
-
-    def _set_signal_children(self, components: Iterable[Any]) -> None:
-        signals = [component.signal for component in components if component is not None]
-        self.signal.children = signals
-
-    def _add_signal_child(self, component: Any) -> None:
-        if component is not None:
-            self.signal.add_child(component.signal)
-
-
-class BaseSystem(_CompositeSignalMixin):
-    """Backward-compatible main-model plus auxiliary-model composition base."""
+class BaseSystem:
+    """Internal main-model plus auxiliary-model composition base."""
 
     def __init__(self, main_model: Any = None, *simple_models: Any, **args: Any) -> None:
         self.args = args
         self.main_model = main_model
         self.simple_models = list(simple_models)
-        self.signal = Signal(sys=self)
-        self._set_signal_children([main_model] + self.simple_models)
 
     @property
     def margs(self) -> Any:
@@ -125,7 +96,7 @@ class BaseSystem(_CompositeSignalMixin):
             raise AttributeError("BaseSystem has no main_model")
         return self.main_model.args
 
-    def init(self, *args: Any, **kwargs: Any) -> None:
+    def _reset_for_owner(self, *args: Any, **kwargs: Any) -> None:
         return None
 
     def solve(self, *args: Any, **kwargs: Any) -> None:
@@ -146,7 +117,6 @@ class BaseSystem(_CompositeSignalMixin):
             return
         if not any(existing is simple_model for existing in self.simple_models):
             self.simple_models.append(simple_model)
-        self._add_signal_child(simple_model)
 
     def output(self, *args: Any, **kwargs: Any) -> Any:
         return None
@@ -154,22 +124,16 @@ class BaseSystem(_CompositeSignalMixin):
     def save(self, tofile: bool, path: str, name: str, *args: Any, **kwargs: Any) -> None:
         return None
 
-    def start_signal(self) -> None:
-        return None
-
-    def finish_signal(self) -> None:
-        return None
-
-class BaseCSystem(_CompositeSignalMixin, ABC):
-    """Backward-compatible composition base for peer runtime components."""
+class BaseCSystem(ABC):
+    """Internal composition base for peer runtime components."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.signal = Signal(sys=self)
+        super().__init__()
 
     def calc_is_finished(self, *args: Any, **kwargs: Any) -> None:
         return None
 
-    def init(self, *args: Any, **kwargs: Any) -> None:
+    def _reset_for_owner(self, *args: Any, **kwargs: Any) -> None:
         return None
 
     def solve(self, *args: Any, **kwargs: Any) -> None:
@@ -182,10 +146,4 @@ class BaseCSystem(_CompositeSignalMixin, ABC):
         return None
 
     def save(self, tofile: bool, path: str, name: str, *args: Any, **kwargs: Any) -> None:
-        return None
-
-    def start_signal(self) -> None:
-        return None
-
-    def finish_signal(self) -> None:
         return None

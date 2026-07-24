@@ -143,8 +143,7 @@ class TimeGridConfig(ConfigData):
     """Resolve either cycle-based or fixed-step simulation time settings.
 
     ``cycle_points`` accepts ``freq``, ``cycles``, and ``points_per_cycle``.
-    ``fixed_dt`` accepts ``freq``, ``dt``, and ``steps``.  The legacy ``n`` and
-    ``pt`` names are accepted only by :meth:`from_dict` when ``mode`` is absent.
+    ``fixed_dt`` accepts ``freq``, ``dt``, and ``steps``.
     """
 
     mode: Optional[str] = None
@@ -156,7 +155,7 @@ class TimeGridConfig(ConfigData):
 
     def __post_init__(self):
         if self.mode is None:
-            raise ValueError("mode is required except for legacy n/pt input")
+            raise ValueError("mode is required")
         self.mode = str(self.mode).lower()
         if self.mode not in _TIME_GRID_MODES:
             raise ValueError("mode must be 'cycle_points' or 'fixed_dt'")
@@ -197,31 +196,22 @@ class TimeGridConfig(ConfigData):
 
     @classmethod
     def from_dict(cls, config_dict: dict) -> "TimeGridConfig":
-        """Build from canonical keys or the legacy ``n``/``pt`` schema."""
+        """Build from canonical 0.4 time-grid keys."""
 
         data = dict(config_dict)
-        mode = data.get("mode")
-        has_legacy = "n" in data or "pt" in data
-        if mode is None and has_legacy:
-            if "n" not in data or "pt" not in data:
-                raise ValueError("legacy time config requires both 'n' and 'pt'")
-            if any(key in data for key in ("cycles", "points_per_cycle", "steps")):
-                raise ValueError(
-                    "legacy 'n'/'pt' cannot be combined with canonical time fields"
-                )
-            # A stored legacy dt was a derived cache and is intentionally ignored.
-            return cls(
-                mode="cycle_points",
-                freq=data.get("freq"),
-                cycles=data["n"],
-                points_per_cycle=data["pt"],
-            )
-        if mode is not None and has_legacy:
-            raise ValueError(
-                "explicit time-grid mode cannot be combined with legacy 'n'/'pt'"
-            )
+        allowed = {
+            "mode",
+            "freq",
+            "cycles",
+            "points_per_cycle",
+            "dt",
+            "steps",
+        }
+        unknown = sorted(set(data) - allowed)
+        if unknown:
+            raise ValueError(f"unknown time-grid fields: {unknown}")
         return cls(
-            mode=mode,
+            mode=data.get("mode"),
             freq=data.get("freq"),
             cycles=data.get("cycles"),
             points_per_cycle=data.get("points_per_cycle"),

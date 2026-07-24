@@ -4,7 +4,7 @@ from ALB.contracts.optional import import_optional_module
 
 
 _NAMES = (
-    "GasBearing",
+    "GasFilmRuntime",
     "GasFoilTextureCoupling",
     "GasSkfemNewtonFilm",
     "gas_reynolds_jacobian",
@@ -17,7 +17,12 @@ def __getattr__(name: str):
 
     if name not in _NAMES:
         raise AttributeError(f"module 'ALB.physics.gas' has no attribute '{name}'")
-    module = import_optional_module("ALB.physics.gas", "ALB.physics.gas.solver", "film")
+    module_name = (
+        "ALB.physics.gas.runtime"
+        if name == "GasFilmRuntime"
+        else "ALB.physics.gas.solver"
+    )
+    module = import_optional_module("ALB.physics.gas", module_name, "film")
     return getattr(module, name)
 
 

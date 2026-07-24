@@ -8,9 +8,17 @@ from pathlib import Path
 import numpy as np
 
 from ALB.config import HydConfig, PIDConfig
-from ALB.contracts import BearingInput, UnitSystem
-from ALB.control import PID
-from ALB.physics.bearing import HydrostaticBearing, MultiPad
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    LifecycleState,
+    UnitSystem,
+    result_snapshot,
+)
+from ALB.control.pid import PID
+from ALB.physics.bearing import MultiPad
+from ALB.physics.bearing.solver import _DimensionalMixedFilmRuntime
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,6 +28,8 @@ REFERENCE = ROOT / "refs" / "review_fix_unaffected_reference_v1.json"
 class _ReferenceLeafPad:
     unit_system = UnitSystem.DIMENSIONAL
     node_link = 0
+    input_dto_type = BearingInput
+    lifecycle_state = LifecycleState.READY
 
     def __init__(self, force, friction):
         self.args = {"c": 1.0}
@@ -29,23 +39,49 @@ class _ReferenceLeafPad:
         self.input_calls = 0
         self.output_calls = 0
 
-    def init(self):
+    def _reset_for_owner(self):
         self.init_calls += 1
+        self._input = None
+        self._output = None
+        self.lifecycle_state = LifecycleState.READY
 
-    def input(self, *, uxy, uxyt, t, nodim):
-        del uxy, uxyt, t, nodim
+    def input(self, dto):
         self.input_calls += 1
+        self._input = dto
+        self.lifecycle_state = LifecycleState.RUNNING
 
-    def output(self, *, nodim):
-        del nodim
+    def evaluate(self):
         self.output_calls += 1
-        return {
-            "force": self.force.copy(),
-            "friction": self.friction,
-        }
+        self._output = BearingOutput(
+            self.force,
+            self._input.time,
+            self.unit_system,
+        )
+        self.lifecycle_state = LifecycleState.READY
 
-    def calc_is_finished(self):
-        return True
+    def output(self):
+        return self._output
+
+    def step(self, dto):
+        self.input(dto)
+        self.evaluate()
+        return self.output()
+
+    @property
+    def convergence_status(self):
+        return ConvergenceStatus(0.0, True)
+
+    def result_snapshot(self):
+        return result_snapshot(
+            {"force": self.force, "friction": self.friction},
+            {},
+        )
+
+    def failure_snapshot(self):
+        raise RuntimeError("no failure")
+
+    def diagnostic_snapshot(self):
+        return self.result_snapshot()
 
 
 def _load_reference():
@@ -114,7 +150,7 @@ def test_hydrostatic_internal_velocity_matches_reference_exactly() -> None:
     payload = _load_reference()
     inputs = payload["inputs"]["hydrostatic"]
     expected = payload["outputs"]["hydrostatic"]
-    bearing = HydrostaticBearing(HydConfig(**inputs))
+    bearing = _DimensionalMixedFilmRuntime(HydConfig(**inputs))
 
     assert bearing.input_args["dxt"] == expected["dxt"]
     assert bearing.input_args["dyt"] == expected["dyt"]

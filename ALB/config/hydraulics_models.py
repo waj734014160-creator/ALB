@@ -26,6 +26,10 @@ class OrificeConfig(ConfigData):
     ps: float = 7e6
     p0: float = 0  # Tank pressure
     cq1_nondim: Optional[float] = None
+    diameter: float = 0.002
+    length: float = 0.02
+    valve_area: float = 1.83e-5 / 15
+    discharge_coefficient: float = 0.6
 
 @dataclass
 class NodimOrificeConfig(ConfigData):

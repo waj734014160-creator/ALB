@@ -5,7 +5,6 @@ from typing import Union
 # from ALB.infrastructure.logging import logger
 import control as cl
 import numpy as np
-import pandas as pd
 
 from ALB.core.component import BaseSystem
 from ALB.core.lifecycle import LifecycleState, RuntimeLifecycle
@@ -32,8 +31,8 @@ class BaseValve(BaseSystem):
     def ts(self):
         return np.array(self.main_model.ts)
 
-    def init(self, *args, **kwargs):
-        self.main_model.init()
+    def _reset_for_owner(self, *args, **kwargs):
+        self.main_model._reset_for_owner()
 
     def input(self, t, uv, *args, **kwargs):
         """Latch one servovalve input without advancing the main model."""
@@ -48,14 +47,6 @@ class BaseValve(BaseSystem):
 
     def calc_is_finished(self):
         return True
-
-    def solve(self):
-        self.main_model.evaluate()
-        return self.main_model.output()
-
-    def save(self, tofile=True, path=None, name=None, *args, **kwargs):
-        return self.main_model.save(tofile, path, name, *args, **kwargs)
-
 
 class ServoValve2(BaseValve):
     """Second-order servovalve with a strict input/evaluate/output lifecycle."""
@@ -78,22 +69,15 @@ class ServoValve2(BaseValve):
         self._lifecycle.reset()
 
     @property
-    def results(self):
-        t = self.main_model.ts
-        xout = self.main_model.xout
-        yout = self.main_model.yout
-        return pd.DataFrame({"t": t, "xout": xout, "yout": yout})
-
-    @property
     def lifecycle_state(self):
         """Return the current strict runtime state."""
 
         return self._lifecycle.state
 
-    def init(self, *args, **kwargs):
+    def _reset_for_owner(self, *args, **kwargs):
         """Reset valve dynamics and invalidate any previously readable spool."""
 
-        self.main_model.init(*args, **kwargs)
+        self.main_model._reset_for_owner(*args, **kwargs)
         self.uv = 0
         self.xv = 0
         self._last_output = None
@@ -127,13 +111,6 @@ class ServoValve2(BaseValve):
             for orifice in self.simple_models:
                 orifice.input(self.xv.copy())
             self._last_output = self.xv.copy()
-        return self.output()
-
-    def solve(self):
-        """Compatibility alias that evaluates only a pending input."""
-
-        if self._lifecycle.state is LifecycleState.RUNNING:
-            self.evaluate()
         return self.output()
 
     def set_spool(self, value):
@@ -172,7 +149,7 @@ class ServoValve2(BaseValve):
         return self._lifecycle.state is LifecycleState.READY
 
 
-# class ServoOrifice(HybirdOrifice):
+# class ArchivedServoRestrictorEquation:
 #     """
 #     """
 #
@@ -235,7 +212,7 @@ def moog_2nd_servovalve(
     Moog-style servovalve with only the second-order core dynamics.
 
     The transfer function is
-    ``1 / (tw**2 * s**2 + 2 * zeta * tw * s + 1)``.  This omits the legacy
+    ``1 / (tw**2 * s**2 + 2 * zeta * tw * s + 1)``.  This omits the
     ``tp3`` first-order pole used by :func:`moog_servovalve`.
     """
 

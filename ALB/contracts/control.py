@@ -23,17 +23,6 @@ class ControllerProtocol(RuntimeLifecycleProtocol, Protocol):
 
 
 @runtime_checkable
-class LegacyControllerProtocol(Protocol):
-    """Deprecated controller shape whose ``output()`` still calculates."""
-
-    def input(self, time: float, error: npt.ArrayLike) -> None:
-        """Accept one historical controller sample."""
-
-    def output(self) -> object:
-        """Calculate and return one historical command."""
-
-
-@runtime_checkable
 class ServoValveProtocol(RuntimeLifecycleProtocol, Protocol):
     """Native servovalve lifecycle consumed by ALB system assemblers."""
 

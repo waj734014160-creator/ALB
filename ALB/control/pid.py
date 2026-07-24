@@ -98,7 +98,7 @@ class PID(BaseSimpleModel):
         err = error[0] * np.cos(bias) + error[1] * np.sin(bias)
         return err
 
-    def init(self):
+    def _reset_for_owner(self):
         """
         Initializes the controller, clearing any saved data.
         """

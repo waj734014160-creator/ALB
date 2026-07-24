@@ -11,7 +11,7 @@ from .common_models import ConfigData
 class ServoConfig(ConfigData):
     """Configuration for the servovalve.
 
-    The class defaults preserve the legacy ``moog`` servovalve parameters.
+    The class defaults define the standard ``moog`` servovalve parameters.
     ``ALBConfig`` and ``NodimALBConfig`` install the current ``moog_2nd``
     defaults through their own ``servo_config`` default factories.
     """

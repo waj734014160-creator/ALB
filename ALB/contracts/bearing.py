@@ -38,9 +38,6 @@ class BearingRuntimeProtocol(Protocol, Generic[InputT]):
     unit_system: UnitSystem
     input_dto_type: type[InputT]
 
-    def init(self) -> None:
-        """Internal owner hook that starts a fresh child runtime session."""
-
     @property
     def lifecycle_state(self) -> LifecycleState:
         """Return the current runtime state without advancing computation."""
