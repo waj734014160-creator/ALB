@@ -1,0 +1,456 @@
+{
+  "schema": "alb.0.4.1-numerical-contract.v1",
+  "baseline_commit": "93dd63d12817b6952245cf60311139eb52ee5668",
+  "purpose": "Freeze the established equilibrium, two-whirl identification, and equation-derivative linearization algorithms before the 0.4.1 API repair.",
+  "environment": {
+    "python": "3.10.17",
+    "numpy": "1.24.3",
+    "scipy": "1.10.1",
+    "pandas": "2.1.1",
+    "platform": "Windows-10-10.0.26200-SP0"
+  },
+  "arrays": {
+    "active_base_spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "active_damping": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "active_pad_damping": {
+      "shape": [
+        4,
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "active_pad_spool_derivative": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "active_pad_stiffness": {
+      "shape": [
+        4,
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "active_spool_jacobian": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "active_static_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "active_stiffness": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "liquid_damping": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "liquid_static_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "liquid_stiffness": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_frozen_jacobian_convergence_flags": {
+      "shape": [
+        117
+      ],
+      "dtype": "int8"
+    },
+    "static_frozen_jacobian_dim_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_frozen_jacobian_evaluated_points": {
+      "shape": [
+        117,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_frozen_jacobian_final": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_frozen_jacobian_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_initial_convergence_flags": {
+      "shape": [
+        1
+      ],
+      "dtype": "int8"
+    },
+    "static_initial_dim_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_initial_evaluated_points": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_initial_final": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_initial_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_inner_failure_convergence_flags": {
+      "shape": [
+        1
+      ],
+      "dtype": "int8"
+    },
+    "static_inner_failure_dim_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_inner_failure_evaluated_points": {
+      "shape": [
+        1,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_inner_failure_final": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_inner_failure_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_multi_step_convergence_flags": {
+      "shape": [
+        118
+      ],
+      "dtype": "int8"
+    },
+    "static_multi_step_dim_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_multi_step_evaluated_points": {
+      "shape": [
+        118,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_multi_step_final": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "static_multi_step_force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_damping": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_forward_acceleration": {
+      "shape": [
+        64,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_forward_displacement": {
+      "shape": [
+        64,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_forward_force": {
+      "shape": [
+        64,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_forward_velocity": {
+      "shape": [
+        64,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_reverse_acceleration": {
+      "shape": [
+        64,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_reverse_displacement": {
+      "shape": [
+        64,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_reverse_force": {
+      "shape": [
+        64,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_reverse_velocity": {
+      "shape": [
+        64,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_stiffness": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_time": {
+      "shape": [
+        64
+      ],
+      "dtype": "float64"
+    },
+    "whirl_transfer_imag": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "whirl_transfer_real": {
+      "shape": [
+        2,
+        2
+      ],
+      "dtype": "float64"
+    }
+  },
+  "arrays_sha256": "78440877f4816b1286979659c3615f7ff22001299d54932613db1e4c516e02d7",
+  "cases": {
+    "static_equilibrium": {
+      "initial": {
+        "input": {
+          "load": [
+            0.0,
+            -1.0
+          ],
+          "initial_displacement": [
+            0.0,
+            0.0
+          ],
+          "iter_num": 5,
+          "error_set": 1e-12,
+          "damp": 1.0,
+          "delta": 0.0001
+        },
+        "residual": 0.0,
+        "finished": true,
+        "inner_converged": true,
+        "stop_reason": "converged",
+        "iterations": 0
+      },
+      "multi_step": {
+        "input": {
+          "load": [
+            0.0,
+            -1.0
+          ],
+          "initial_displacement": [
+            0.2,
+            -0.1
+          ],
+          "iter_num": 40,
+          "error_set": 1e-12,
+          "damp": 0.5,
+          "delta": 1e-06
+        },
+        "residual": 9.094813792721381e-13,
+        "finished": true,
+        "inner_converged": true,
+        "stop_reason": "converged",
+        "iterations": 39
+      },
+      "inner_failure": {
+        "input": {
+          "load": [
+            0.0,
+            -1.0
+          ],
+          "initial_displacement": [
+            0.2,
+            -0.1
+          ],
+          "iter_num": 5,
+          "error_set": 1e-12,
+          "damp": 1.0,
+          "delta": 0.0001
+        },
+        "residual": 0.5,
+        "finished": false,
+        "inner_converged": false,
+        "stop_reason": "inner_not_converged",
+        "iterations": 0
+      },
+      "frozen_jacobian": {
+        "input": {
+          "load": [
+            0.0,
+            -1.0
+          ],
+          "initial_displacement": [
+            0.2,
+            -0.1
+          ],
+          "iter_num": 40,
+          "error_set": 1e-12,
+          "damp": 0.5,
+          "delta": 1e-06,
+          "newton_stall_patience": 0
+        },
+        "residual": 9.094813792721381e-13,
+        "finished": true,
+        "inner_converged": true,
+        "stop_reason": "converged",
+        "iterations": 39
+      }
+    },
+    "whirl_identification": {
+      "frequency_hz": 5.0,
+      "points": 64,
+      "center": [
+        1e-05,
+        -2e-05
+      ],
+      "semi_axes": [
+        0.0002,
+        7e-05
+      ],
+      "orientation_rad": 0.4,
+      "source_stiffness": [
+        [
+          2000000.0,
+          300000.0
+        ],
+        [
+          -400000.0,
+          1500000.0
+        ]
+      ],
+      "source_damping": [
+        [
+          800.0,
+          -120.0
+        ],
+        [
+          75.0,
+          650.0
+        ]
+      ]
+    },
+    "liquid_linearization": {
+      "displacement": [
+        8e-06,
+        -4e-06
+      ],
+      "config": {
+        "nx": 7,
+        "nz": 5,
+        "max_iter": 80,
+        "error_set": 1e-09,
+        "coe": false,
+        "iter_method": "newton"
+      }
+    },
+    "active_linearization": {
+      "operating_point": [
+        8e-06,
+        -4e-06
+      ],
+      "pad_config": {
+        "nx": 7,
+        "nz": 5,
+        "max_iter": 300,
+        "error_set": 1e-09,
+        "coe": false,
+        "iter_method": "newton"
+      },
+      "control_mode": "external_spool"
+    }
+  }
+}
