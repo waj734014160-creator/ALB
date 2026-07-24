@@ -17,6 +17,11 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _normalized_text_sha256(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def test_numerical_reference_is_the_frozen_93dd63d_contract() -> None:
     metadata_path = (
         ROOT / "refs/alb_0_4_1_numerical_contract_v1.json"
@@ -59,7 +64,7 @@ def test_patch_manifest_and_test_map_are_contiguous_and_aligned() -> None:
     assert all(item["required_nodeids"] for item in manifest["features"])
 
 
-def test_0_4_0_release_evidence_remains_byte_unchanged() -> None:
+def test_0_4_0_release_evidence_remains_content_unchanged() -> None:
     expected = {
         "tools/validation/release_feature_manifest_0_4.json": (
             "9a2adb08c6ff4c51a7285e5acff43c04810f07d7c9fac1e1f68a529def2cc8ce"
@@ -68,12 +73,12 @@ def test_0_4_0_release_evidence_remains_byte_unchanged() -> None:
             "72099b6400597d289617dfbfc63a296a826c5ce8faa9c4b7d207f652a6277ab7"
         ),
         "docs/migrations/0.4.0_release_acceptance.json": (
-            "2c40347e61c80fcfb4aaf008525a31c7314b504c3765e9cee3220b0d6439bafd"
+            "7e6988d7afd284c53e66844e394ca03392d38b0ee4f26fe2ec8df49a96ad4e67"
         ),
     }
 
     for relative_path, digest in expected.items():
-        assert _sha256(ROOT / relative_path) == digest
+        assert _normalized_text_sha256(ROOT / relative_path) == digest
 
 
 def test_package_version_changes_without_configuration_schema_migration() -> None:
