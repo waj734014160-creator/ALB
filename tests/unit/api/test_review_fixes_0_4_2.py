@@ -296,6 +296,53 @@ def test_dynamic_coefficients_reject_invalid_frequency_before_runtime(
     assert bearing.fresh_count == 0
 
 
+def test_dynamic_coefficients_reject_complex_time_before_runtime() -> None:
+    bearing = _CountingWhirlBearing()
+
+    with pytest.raises(TypeError, match="time_grid must be real"):
+        ALB.BearingAnalysis(bearing).dynamic_coefficients(
+            _trajectory(),
+            np.arange(100, dtype=float) * 1.0e-3 + 1.0j,
+            frequency_hz=10.0,
+        )
+
+    assert bearing.fresh_count == 0
+
+
+def test_dynamic_coefficients_wraps_matrix_diagnostic_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    bearing = _CountingWhirlBearing()
+
+    def fail_svd(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise np.linalg.LinAlgError("SVD did not converge")
+
+    monkeypatch.setattr(np.linalg, "matrix_rank", fail_svd)
+    with pytest.raises(
+        ALB.CalculationError,
+        match="matrix diagnostics failed",
+    ) as caught:
+        ALB.BearingAnalysis(bearing).dynamic_coefficients(
+            _trajectory(),
+            np.arange(100) * 1.0e-3,
+            frequency_hz=10.0,
+        )
+
+    snapshot = caught.value.failure_snapshot
+    assert snapshot is not None
+    assert snapshot.metadata["failure_phase"] == "matrix_diagnostics"
+    assert snapshot.metadata["exception_type"] == "LinAlgError"
+    assert set(snapshot.values) >= {
+        "forward_displacement",
+        "forward_force",
+        "reverse_displacement",
+        "reverse_force",
+        "displacement_matrix_real",
+        "displacement_matrix_imag",
+    }
+
+
 def test_zero_load_equilibrium_is_rejected_before_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

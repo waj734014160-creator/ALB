@@ -67,6 +67,8 @@ def _validate_whirl_grid(
 ) -> _WhirlGrid:
     """Reject grids that cannot represent the requested FFT coefficient."""
 
+    if np.iscomplexobj(cast(Any, time_grid)):
+        raise TypeError("time_grid must be real")
     time = np.asarray(time_grid, dtype=float)
     if time.ndim != 1 or not np.all(np.isfinite(time)):
         raise ValueError("time_grid must be a finite one-dimensional grid")
@@ -741,16 +743,46 @@ class BearingAnalysis:
             np.all(np.isfinite(displacement_matrix.real))
             and np.all(np.isfinite(displacement_matrix.imag))
         )
-        rank = (
-            int(np.linalg.matrix_rank(displacement_matrix))
-            if matrix_is_finite
-            else 0
-        )
-        condition = (
-            float(np.linalg.cond(displacement_matrix))
-            if matrix_is_finite
-            else np.inf
-        )
+        try:
+            rank = (
+                int(np.linalg.matrix_rank(displacement_matrix))
+                if matrix_is_finite
+                else 0
+            )
+            condition = (
+                float(np.linalg.cond(displacement_matrix))
+                if matrix_is_finite
+                else np.inf
+            )
+        except np.linalg.LinAlgError as exc:
+            raise CalculationError(
+                "dynamic coefficient displacement matrix diagnostics failed",
+                failure_snapshot=result_snapshot(
+                    {
+                        "time": time,
+                        "forward_displacement": forward_displacement,
+                        "forward_velocity": forward.values["velocity"],
+                        "forward_force": forward_force,
+                        "reverse_displacement": reverse_displacement,
+                        "reverse_velocity": reverse.values["velocity"],
+                        "reverse_force": reverse_force,
+                        "displacement_matrix_real": displacement_matrix.real,
+                        "displacement_matrix_imag": displacement_matrix.imag,
+                    },
+                    {
+                        "schema": (
+                            "alb.dynamic-identification-failure.v0.4.2"
+                        ),
+                        "failure_phase": "matrix_diagnostics",
+                        "requested_frequency_hz": grid.frequency_hz,
+                        "selected_frequency_hz": (
+                            grid.selected_frequency_hz
+                        ),
+                        "nyquist_hz": grid.nyquist_hz,
+                        "exception_type": type(exc).__name__,
+                    },
+                ),
+            ) from exc
         if (
             not matrix_is_finite
             or rank < 2

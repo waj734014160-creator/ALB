@@ -92,7 +92,10 @@
   `333 passed, 13 skipped, 10 subtests passed`，无未处理 warning。
 - 0.4.2 目标修复、失败注入与成功路径合同：`41 passed`。
 - 0.4.2 分层 mypy：23 个 strict target 零错误；实现层仍为 363 条、85 组
-  精确旧基线，没有扩大。正式两轮审查和 detached 发布验收尚未完成。
+  精确旧基线，没有扩大。
+- 第一轮数值/API 审查发现并关闭 2 项 P2、0 项 P1；修复后目标检查
+  `40 passed`、V4P2 required nodeid `48 passed`。第二轮事务/发布审查和
+  detached 正式验收尚未完成。
 
 ## 当前风险与边界
 
@@ -114,8 +117,8 @@
 
 ## 当前下一步
 
-1. 对 0.4.2 相对 0.4.1 的完整 diff 完成数值/API 审查和事务/发布审查，关闭
-   全部 P1/P2，并记录真实发现与复验。
+1. 在第一轮修复后的新 diff 上独立完成事务/发布审查，关闭全部 P1/P2，并记录
+   真实发现与复验。
 2. 形成 tracked-clean 实现候选，从固定 SHA detached worktree 完成双 wheel、
    完整 pytest、required nodeid、mypy、资源和外部消费者正式验收。
 3. 正式报告写入候选后的 evidence-only 提交；验收通过后再创建和推送
@@ -130,6 +133,7 @@
 - 0.4.1 修复：`docs/migrations/0.4.1.md`
 - 0.4.2 修复：`docs/migrations/0.4.2.md`
 - 0.4.2 保留债务：`docs/migrations/0.4.2_deferred_debt.md`
+- 0.4.2 两轮审查：`docs/migrations/0.4.2_review_log.md`
 - 决策：`docs/adr/0006-alb-0-4-no-legacy-friendly-api.md`
 - 数值算法决策：`docs/adr/0007-preserve-validated-numerical-algorithms.md`
 - 功能门禁：`tools/validation/release_feature_manifest_0_4.json`

@@ -18,7 +18,9 @@
         "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_unrepresented_frequency_before_runtime",
         "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_ill_conditioned_displacement_matrix",
         "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_rank_deficient_matrix_before_inversion",
-        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_invalid_frequency_before_runtime"
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_invalid_frequency_before_runtime",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_complex_time_before_runtime",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_wraps_matrix_diagnostic_failure"
       ]
     },
     {
