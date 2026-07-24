@@ -67,6 +67,7 @@
 | `ALB_MAIN/docs/migrations/0.4.2_review_log.md` | 0.4.2 两轮代码审查关闭记录 | 记录两轮独立审查的范围、发现、修复证据和最终 P1/P2 状态。 | 已执行审查、真实发现、复验命令和明确 P3。 | 制造无意义发现、把未执行测试写成通过或替代机器验收报告。 | 每轮审查和修复闭环完成时。 |
 | `ALB_MAIN/docs/migrations/0.4.2_deferred_debt.md` | 0.4.2 范围外债务记录 | 记录 mypy 旧基线和无明确契约 TODO 的影响与关闭条件。 | 已确认债务、影响边界、证据位置和后续版本条件。 | 把猜测写成缺陷或顺带修改核心数值算法。 | 债务影响、证据或关闭条件变化时。 |
 | `ALB_MAIN/docs/migrations/0.4.2_release_acceptance.json` | 0.4.2 正式机器验收证据 | 记录固定实现候选的参考、双 wheel、pytest、mypy、资源、隔离安装和外部 smoke。 | 只能由 0.4.2 正式验收工具生成并写入 evidence-only 提交。 | 手工填写、反向修改候选或覆盖历史报告。 | 0.4.2 固定候选完成正式验收时。 |
+| `ALB_MAIN/docs/migrations/0.4.3.md` | 0.4.3 数值与输入门禁修复说明 | 记录 rotor coupling、静平衡浮点边界、严格 JSON5 和 surrogate spool 修复。 | 0.4.3 已实现边界、冻结参考、真实开发验证和明确延期项。 | 核心算法替换、未执行的正式发布结论和外部实时状态。 | 0.4.3 行为、验证或发布边界变化时。 |
 | `ALB_MAIN/docs/migrations/0.2.0_external_consumer_audit.md` | 版本化只读迁移证据 | declared 外部调用者的路径、哈希、旧 import 和迁移目标汇总。 | 外部只读快照口径、文件清单、迁移门槛和证据指针。 | 修改外部文件、记录外部实时任务状态、复制原始日志。 | declared 快照或 0.2 迁移目标变化时。 |
 | `ALB_MAIN/docs/file_classification.md` | ALB_MAIN 文件归属和清理策略 | 文件组、归属边界、归档/删除策略。 | 文件类别、代表路径、保留/归档规则、清理风险说明。 | 实时运行状态、模型进度、详细 run 历史。 | 主要文件组、归档类别或清理策略变化时。 |
 | `ALB_MAIN/docs/run_index.md` | ALB_PROJECTS 全局 run 规则和路径索引 | 项目前缀 run 编号、run ID、current-status 归属和规范路径指针。 | run 编号规则、项目前缀映射、current-status 指针、规范路径和归档指针规则。 | 原始日志、详细进度尾部、模型指标、实时 tick、清理动作。 | run 编号、项目前缀、current-status 归属、路径族或归档指针规则变化时。 |

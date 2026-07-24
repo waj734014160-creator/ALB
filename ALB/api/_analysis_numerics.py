@@ -14,6 +14,30 @@ from scipy.sparse import linalg as sl  # type: ignore[import-untyped]
 FloatArray = npt.NDArray[np.float64]
 
 
+def _stable_vector_norm(value: FloatArray) -> float:
+    """Return a stable finite Euclidean norm while preserving normal results."""
+
+    array = np.asarray(value, dtype=float).reshape(-1)
+    with np.errstate(over="ignore", under="ignore", invalid="ignore"):
+        ordinary = float(np.linalg.norm(array))
+    if np.isfinite(ordinary) and ordinary > 0.0:
+        return ordinary
+    with np.errstate(over="ignore", under="ignore", invalid="ignore"):
+        stable = float(np.hypot.reduce(np.abs(array)))
+    if not np.isfinite(stable):
+        raise ValueError("vector magnitude must be finite")
+    return stable
+
+
+def _stable_load_norm(value: FloatArray) -> float:
+    """Return a finite nonzero load magnitude for relative residuals."""
+
+    magnitude = _stable_vector_norm(value)
+    if magnitude <= 0.0:
+        raise ValueError("load magnitude must be finite and nonzero")
+    return magnitude
+
+
 @dataclass(frozen=True, slots=True)
 class EquilibriumEvaluation:
     """One force evaluation made by the established equilibrium iteration."""
@@ -112,15 +136,13 @@ class EquilibriumSolver:
         stop_reason = "max_iter"
         converged = False
         iteration = 0
+        load_norm = _stable_load_norm(applied_load)
 
         def evaluate(candidate: FloatArray) -> EquilibriumEvaluation:
             force, inner_converged = evaluate_force(candidate.copy())
             force = np.asarray(force, dtype=float)
-            load_norm = float(np.linalg.norm(applied_load))
-            residual = (
-                float(np.linalg.norm(applied_load + force) / load_norm)
-                if load_norm > 0.0
-                else 0.0
+            residual = float(
+                _stable_vector_norm(applied_load + force) / load_norm
             )
             result = EquilibriumEvaluation(
                 coordinate=np.asarray(candidate, dtype=float).copy(),

@@ -99,6 +99,12 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 bearing-local 步长，构建器在物理 runtime 创建前递归检查 `MultiPad` 及物化
 控制器、阀和热模型。
 
+0.4.3 继续保持上述有效数值路径不变。simulation 只接受 dimensional rotor，
+并在构建配置时验证 node 输出包含有限、形状明确的 `uxy/uxyt`。静平衡相对
+残差使用防下溢/溢出的模长门禁，但普通量级继续使用原二范数结果。JSON5
+拒绝重复键及字符串、布尔或浮点数到整数的静默转换；surrogate fixed spool
+与 external spool 共用 `[-1, 1]` 归一化边界。
+
 所有公开结果都是不可变对象，数组设为只读，并提供 `write(path)`。计算失败
 通过稳定异常携带密封 failure snapshot。仿真遇到提交后 recorder/observer
 异常时不会重算物理步骤；partial result 包含已真实提交的步骤，并分别报告
@@ -127,5 +133,6 @@ E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
 `tools/validation/release_feature_manifest_0_4_1.json` 和
 `docs/migrations/0.4.1_test_map.json` 为历史数值证据；0.4.2 审阅修复以
 `tools/validation/release_feature_manifest_0_4_2.json` 和
-`docs/migrations/0.4.2_test_map.json` 为准。0.3 的 F01-F66 manifest 仅保留
-为历史证据。
+`docs/migrations/0.4.2_test_map.json` 为准。0.4.3 的有效路径参考为
+`refs/alb_0_4_3_guard_reference_v1.json/.npz`；正式发布门禁尚未生成。0.3 的
+F01-F66 manifest 仅保留为历史证据。

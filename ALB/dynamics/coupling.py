@@ -40,6 +40,7 @@ from .coupling_runtime import (
 from .bindings import CoupledBearingBinding, CouplingRuntimeDependencies
 from ALB.core.numerics.arrays import vertical_stack_nonempty
 from ALB.core.observers import ObserverDispatcher
+from ALB.contracts.dynamics import _validate_coupled_rotor_output
 
 
 class _RotorBearingStepRuntime:
@@ -506,7 +507,10 @@ class _RotorBearingStepRuntime:
                 self._forceu0 = np.vstack(
                     [force(t=initial_time) for force in self.forces]
                 )
-            self._rp = self.rotor.output(self._bnode_links)
+            self._rp = _validate_coupled_rotor_output(
+                self.rotor.output(self._bnode_links),
+                len(self._bnode_links),
+            )
             self._forcef0 = []
             adapter_metadata = []
             for num, binding in enumerate(self.bindings):
@@ -659,7 +663,10 @@ class _RotorBearingStepRuntime:
                         force0=rotor_load.previous_force,
                     )
                 self.rotor.advance()
-                self._rp = self.rotor.output(self._bnode_links)
+                self._rp = _validate_coupled_rotor_output(
+                    self.rotor.output(self._bnode_links),
+                    len(self._bnode_links),
+                )
                 self._forcen0 = self._forcen1
                 self._forceu0 = self._forceu1
                 self._forcef0 = self._forcef1

@@ -28,7 +28,7 @@ from .api import (
 from .contracts import UnitSystem
 
 
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 
 __all__ = [
     "ALBError",

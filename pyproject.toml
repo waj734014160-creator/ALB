@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "re-alb"
-version = "0.4.2"
+version = "0.4.3"
 description = "Active lubricated bearing physics, control, dynamics, and surrogate models"
 requires-python = ">=3.10"
 dependencies = [

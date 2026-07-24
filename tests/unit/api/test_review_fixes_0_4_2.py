@@ -89,9 +89,12 @@ class _Rotor:
         del node
         return np.zeros(4)
 
-    def output(self, node=None) -> np.ndarray:
-        del node
-        return np.zeros(4)
+    def output(self, node=None) -> object:
+        count = 1 if node is None else len(np.atleast_1d(node))
+        return {
+            "uxy": np.zeros((count, 2)),
+            "uxyt": np.zeros((count, 2)),
+        }
 
 
 class _RotorWithoutDt:
@@ -360,20 +363,17 @@ def test_zero_load_equilibrium_is_rejected_before_runtime(
         )
 
 
-def test_only_exact_zero_load_uses_the_pre_runtime_rejection(
+def test_normalization_underflow_is_rejected_before_runtime_creation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = ALB.BearingConfig(_liquid_spec(1.0e-3))
     analysis = ALB.build_bearing(config).analysis
 
-    class _ExpectedRuntimeCreation(RuntimeError):
-        """Mark that a nonzero load reached runtime creation."""
+    def unexpected_runtime() -> object:
+        raise AssertionError("invalid normalized load must be rejected first")
 
-    def expected_runtime() -> object:
-        raise _ExpectedRuntimeCreation
-
-    monkeypatch.setattr(analysis, "_new_runtime", expected_runtime)
-    with pytest.raises(_ExpectedRuntimeCreation):
+    monkeypatch.setattr(analysis, "_new_runtime", unexpected_runtime)
+    with pytest.raises(ValueError, match="normalized load magnitude"):
         analysis.find_equilibrium(
             load=(np.nextafter(0.0, 1.0), 0.0),
             initial_displacement=(0.0, 0.0),

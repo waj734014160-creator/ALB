@@ -50,6 +50,8 @@ class SurrogateBearingRuntime:
             "fixed spool",
             shape=(2,),
         )
+        if np.any(np.abs(self._fixed_spool) > 1.0):
+            raise ValueError("fixed spool values must be within [-1, 1]")
         self._lifecycle = RuntimeLifecycle(
             type(self).__name__,
             input_label="bearing input",

@@ -24,6 +24,7 @@ from ALB.contracts import (
     result_snapshot,
 )
 from ALB.core.diagnostics import sanitize_exception_message
+from ALB.contracts.dynamics import _validate_coupled_rotor_output
 from ALB.dynamics.coupling_runtime import (
     PostCommitObserverError,
     PostCommitRecordingError,
@@ -33,8 +34,11 @@ from .config import (
     SCHEMA_VERSION,
     BearingConfig,
     _deep_merge,
+    _finite_float,
+    _positive_float,
     _read_json5,
     _reject_unknown,
+    _require_integer,
     _require_mapping,
     _thaw,
     load_bearing_config,
@@ -142,21 +146,25 @@ class SimulationConfig:
         nodes = [item.node for item in mounts]
         if len(set(nodes)) != len(nodes):
             raise ValueError("bearing mount nodes must be unique")
-        time_step = float(self.time_step)
-        if not np.isfinite(time_step) or time_step <= 0.0:
-            raise ValueError("time_step must be finite and > 0")
+        time_step = _positive_float(self.time_step, "time_step")
         try:
-            normalized_rotor_time_step = float(self.rotor.dt)
-        except (TypeError, ValueError) as exc:
+            normalized_rotor_time_step = _positive_float(
+                self.rotor.dt,
+                "rotor.dt",
+            )
+        except ConfigurationError as exc:
             raise ConfigurationError(
                 "rotor.dt must be a finite positive number"
             ) from exc
-        if (
-            not np.isfinite(normalized_rotor_time_step)
-            or normalized_rotor_time_step <= 0.0
-        ):
+        try:
+            rotor_unit = UnitSystem.coerce(self.rotor.unit_system)
+        except (TypeError, ValueError) as exc:
             raise ConfigurationError(
-                "rotor.dt must be a finite positive number"
+                "rotor.unit_system must be dimensional"
+            ) from exc
+        if rotor_unit is not UnitSystem.DIMENSIONAL:
+            raise ConfigurationError(
+                "rotor.unit_system must be dimensional for simulation"
             )
         if normalized_rotor_time_step != time_step:
             raise ConfigurationError(
@@ -211,6 +219,16 @@ class SimulationConfig:
             raise TypeError("steps must be an integer")
         if self.steps < 0:
             raise ValueError("steps must be nonnegative")
+        try:
+            _validate_coupled_rotor_output(
+                self.rotor.output(nodes),
+                len(nodes),
+                label="rotor.output(nodes)",
+            )
+        except (TypeError, ValueError) as exc:
+            raise ConfigurationError(
+                f"rotor.output(nodes) is invalid: {exc}"
+            ) from exc
         loads = tuple(_require_mapping(item, "loads[]") for item in self.loads)
         if not isinstance(self.history, HistoryPolicy):
             raise TypeError("history must be HistoryPolicy")
@@ -860,14 +878,26 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
         ) from exc
     time_grid = _require_mapping(spec.get("time_grid"), "spec.time_grid")
     _reject_unknown(time_grid, {"time_step", "steps"}, "spec.time_grid")
-    time_step = float(cast(Any, time_grid.get("time_step")))
+    time_step = _positive_float(
+        time_grid.get("time_step"),
+        "spec.time_grid.time_step",
+    )
     from ALB.dynamics.rotor import rotor0
 
     rotor = rotor0(  # type: ignore[no-untyped-call]
         dt=time_step,
-        freq=float(cast(Any, rotor_spec.get("frequency_hz"))),
-        alpha=float(rotor_spec.get("alpha", 0.0)),
-        beta=float(rotor_spec.get("beta", 0.0)),
+        freq=_finite_float(
+            rotor_spec.get("frequency_hz"),
+            "spec.rotor.frequency_hz",
+        ),
+        alpha=_finite_float(
+            rotor_spec.get("alpha", 0.0),
+            "spec.rotor.alpha",
+        ),
+        beta=_finite_float(
+            rotor_spec.get("beta", 0.0),
+            "spec.rotor.beta",
+        ),
         rotor_path=str(rotor_path),
     )
     mounts_raw = spec.get("mounts")
@@ -888,7 +918,11 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
         mounts.append(
             BearingMount(
                 load_bearing_config(source.parent / bearing_path),
-                int(mount["node"]),
+                _require_integer(
+                    mount.get("node"),
+                    f"spec.mounts[{index}].node",
+                    minimum=0,
+                ),
             )
         )
     history_raw = _require_mapping(spec.get("history", {}), "spec.history")
@@ -926,8 +960,20 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
                 ),
             )
         ),
-        downsample=int(history_raw.get("downsample", 1)),
-        capacity=history_raw.get("capacity"),
+        downsample=_require_integer(
+            history_raw.get("downsample", 1),
+            "spec.history.downsample",
+            minimum=1,
+        ),
+        capacity=(
+            None
+            if history_raw.get("capacity") is None
+            else _require_integer(
+                history_raw.get("capacity"),
+                "spec.history.capacity",
+                minimum=1,
+            )
+        ),
         directory=history_directory,
     )
     loads_raw = spec.get("loads", [])
@@ -940,7 +986,11 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
         rotor=rotor,
         mounts=tuple(mounts),
         time_step=time_step,
-        steps=int(cast(Any, time_grid.get("steps"))),
+        steps=_require_integer(
+            time_grid.get("steps"),
+            "spec.time_grid.steps",
+            minimum=0,
+        ),
         loads=tuple(_thaw(load) for load in loads_raw),
         history=history,
     )

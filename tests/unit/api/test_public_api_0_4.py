@@ -66,7 +66,7 @@ class _NodeRotorPlant:
 
 
 def test_root_namespace_is_friendly_and_has_no_legacy_entry_points() -> None:
-    assert ALB.__version__ == "0.4.2"
+    assert ALB.__version__ == "0.4.3"
     assert not {
         "Signal",
         "ALBBuilder",

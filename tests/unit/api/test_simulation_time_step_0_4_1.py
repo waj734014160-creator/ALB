@@ -46,9 +46,12 @@ class _Rotor:
         del node
         return np.zeros(4)
 
-    def output(self, node=None) -> np.ndarray:
-        del node
-        return np.zeros(4)
+    def output(self, node=None) -> object:
+        count = 1 if node is None else len(np.atleast_1d(node))
+        return {
+            "uxy": np.zeros((count, 2)),
+            "uxyt": np.zeros((count, 2)),
+        }
 
 
 def _liquid_spec(time_step: float) -> dict[str, object]:
@@ -68,7 +71,7 @@ def _mount(config: ALB.BearingConfig) -> tuple[ALB.BearingMount, ...]:
 
 
 def test_patch_release_keeps_the_0_4_configuration_schema() -> None:
-    assert ALB.__version__ == "0.4.2"
+    assert ALB.__version__ == "0.4.3"
     assert SCHEMA_VERSION == "0.4.0"
 
 

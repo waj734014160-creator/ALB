@@ -196,15 +196,45 @@ def _reject_unknown(
         raise ConfigurationError(f"unknown {path} fields: {unknown}")
 
 
-def _positive_float(value: Any, path: str) -> float:
-    if isinstance(value, (bool, np.bool_)):
+def _finite_float(value: Any, path: str) -> float:
+    """Return a strict finite JSON-compatible real value."""
+
+    if isinstance(value, (bool, np.bool_)) or not isinstance(
+        value,
+        (int, float, np.integer, np.floating),
+    ):
         raise ConfigurationError(f"{path} must be a real number")
-    try:
-        result = float(value)
-    except (TypeError, ValueError) as exc:
-        raise ConfigurationError(f"{path} must be a real number") from exc
-    if not np.isfinite(result) or result <= 0.0:
+    result = float(value)
+    if not np.isfinite(result):
+        raise ConfigurationError(f"{path} must be finite")
+    return result
+
+
+def _positive_float(value: Any, path: str) -> float:
+    """Return a strict finite positive JSON-compatible real value."""
+
+    result = _finite_float(value, path)
+    if result <= 0.0:
         raise ConfigurationError(f"{path} must be finite and > 0")
+    return result
+
+
+def _require_integer(
+    value: Any,
+    path: str,
+    *,
+    minimum: int | None = None,
+) -> int:
+    """Return a strict integer without boolean or floating-point coercion."""
+
+    if isinstance(value, (bool, np.bool_)) or not isinstance(
+        value,
+        (int, np.integer),
+    ):
+        raise ConfigurationError(f"{path} must be an integer")
+    result = int(value)
+    if minimum is not None and result < minimum:
+        raise ConfigurationError(f"{path} must be >= {minimum}")
     return result
 
 
@@ -407,12 +437,13 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
         raise ConfigurationError("gas_film currently requires dimensional units")
     _positive_float(spec.get("time_step"), "spec.time_step")
     node = spec.get("node")
-    if node is not None and (
-        isinstance(node, (bool, np.bool_))
-        or not isinstance(node, (int, np.integer))
-        or int(node) < 0
-    ):
-        raise ConfigurationError("spec.node must be a nonnegative integer or null")
+    if node is not None:
+        try:
+            _require_integer(node, "spec.node", minimum=0)
+        except ConfigurationError as exc:
+            raise ConfigurationError(
+                "spec.node must be a nonnegative integer or null"
+            ) from exc
 
     common = {"family", "unit_system", "time_step", "node"}
     if family == "active_lubricated":
@@ -510,6 +541,10 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
             if spool_array.shape != (2,) or not np.all(np.isfinite(spool_array)):
                 raise ConfigurationError(
                     "spec.runtime.spool must contain two finite values"
+                )
+            if np.any(np.abs(spool_array) > 1.0):
+                raise ConfigurationError(
+                    "spec.runtime.spool values must be within [-1, 1]"
                 )
     _ensure_finite(spec, "spec")
 
@@ -631,7 +666,7 @@ def _read_json5(path: Path) -> dict[str, Any]:
             "JSON5 loading requires the 'io' extra: pip install re-alb[io]"
         ) from exc
     try:
-        payload = json5.loads(text)
+        payload = json5.loads(text, allow_duplicate_keys=False)
     except Exception as exc:
         raise ConfigurationError(f"invalid JSON5 document: {path}") from exc
     if not isinstance(payload, Mapping):

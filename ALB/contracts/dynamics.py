@@ -5,13 +5,49 @@ from typing import Protocol, TypeAlias, runtime_checkable
 
 import numpy.typing as npt
 
-from .numeric import FloatArray
+from .numeric import FloatArray, finite_real_array
 from .lifecycle import RuntimeLifecycleProtocol
 from .types import UnitSystem
 from .ports import RotorLoadInput
 
 
 RotorStateMap: TypeAlias = Mapping[str, FloatArray]
+
+
+def _validate_coupled_rotor_output(
+    value: object,
+    node_count: int,
+    *,
+    label: str = "rotor output",
+) -> dict[str, FloatArray]:
+    """Return one validated dimensional two-axis rotor state mapping.
+
+    Coupling requests explicit rotor nodes, so both displacement and velocity
+    must have one two-axis row per requested node. The general rotor protocol
+    remains able to return a flat full-system state when no nodes are supplied.
+    """
+
+    if not isinstance(value, Mapping):
+        raise TypeError(f"{label} must be a mapping with uxy and uxyt fields")
+    if isinstance(node_count, bool) or not isinstance(node_count, int):
+        raise TypeError("node_count must be an integer")
+    if node_count < 1:
+        raise ValueError("node_count must be positive")
+    missing = [field for field in ("uxy", "uxyt") if field not in value]
+    if missing:
+        raise ValueError(f"{label} is missing required fields: {missing}")
+    expected_shape = (node_count, 2)
+    displacement = finite_real_array(
+        value["uxy"],
+        f"{label}.uxy",
+        shape=expected_shape,
+    )
+    velocity = finite_real_array(
+        value["uxyt"],
+        f"{label}.uxyt",
+        shape=expected_shape,
+    )
+    return {"uxy": displacement, "uxyt": velocity}
 
 
 @runtime_checkable

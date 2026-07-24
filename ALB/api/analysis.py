@@ -19,6 +19,8 @@ from ALB.contracts import (
 from ._analysis_numerics import (
     EquilibriumOutcome,
     EquilibriumSolver,
+    _stable_load_norm,
+    _stable_vector_norm,
     aggregate_active_linearization,
     linearize_film_runtime,
 )
@@ -459,11 +461,17 @@ class BearingAnalysis:
             "initial_displacement",
         )
         displacement_scale, force_scale = self._equilibrium_scales()
+        normalized_load = target / force_scale
+        try:
+            load_norm = _stable_load_norm(normalized_load)
+        except ValueError as exc:
+            raise ValueError(
+                "normalized load magnitude must be finite and nonzero"
+            ) from exc
         runtime = self._new_runtime()
         trusted_coordinates: list[FloatArray] = []
         trusted_forces: list[FloatArray] = []
         trusted_residuals: list[float] = []
-        normalized_load = target / force_scale
 
         def reset_iteration() -> None:
             reset = getattr(runtime, "_reset_for_owner", None)
@@ -521,14 +529,9 @@ class BearingAnalysis:
                     ),
                 ) from exc
             normalized_force = force / force_scale
-            load_norm = float(np.linalg.norm(normalized_load))
-            residual = (
-                float(
-                    np.linalg.norm(normalized_load + normalized_force)
-                    / load_norm
-                )
-                if load_norm > 0.0
-                else 0.0
+            residual = float(
+                _stable_vector_norm(normalized_load + normalized_force)
+                / load_norm
             )
             trusted_coordinates.append(coordinate.copy())
             trusted_forces.append(normalized_force.copy())

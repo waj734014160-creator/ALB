@@ -15,8 +15,8 @@
 
 ## 当前快照
 
-- 分支：`codex/alb-0.4.2`。
-- 开发版本：`0.4.2`；包名 `re-alb`；导入名 `ALB`；最低 Python 3.10。
+- 分支：`codex/alb-0.4.3`。
+- 开发版本：`0.4.3`；包名 `re-alb`；导入名 `ALB`；最低 Python 3.10。
   JSON5 schema 和 surrogate package 格式继续使用 `0.4.0`。
 - 起点：`codex/full-repo-refactor` 的 `93dd63d`。
 - 迁移前参考提交：`f23975d`，新增
@@ -39,6 +39,10 @@
 - 0.4.2 实现候选为 `ff491e4dc9668f49e41870c37898f3c4d3a4ddc3`；
   `v0.4.2` 固定指向该候选。正式机器报告位于其后的 evidence-only 提交，
   不反向修改候选。
+- 0.4.3 从 0.4.2 evidence 提交 `50c7b4a` 创建。修复前有效路径参考为
+  `refs/alb_0_4_3_guard_reference_v1.json/.npz`，NPZ SHA-256 为
+  `3a8e017ca25466c7612f47ce2325968af368ff60aa433f92fda7c9b592a08ef8`。
+  当前尚未形成固定实现候选或正式发布标签。
 
 ## 已完成的实现边界
 
@@ -60,6 +64,9 @@
 - simulation 已在 post-commit 失败后取回真实提交、封存 recorder 并分别报告
   物理、历史和 post-commit 完整性；disk-stream 使用临时文件、flush/fsync
   和原子替换。
+- 0.4.3 已拒绝非 dimensional 或输出字段/形状非法的自定义 rotor；静平衡在
+  相对残差分母下溢或溢出时不再发布虚假收敛。JSON5 禁止重复键和标量静默
+  转换，surrogate fixed spool 与 external spool 统一限制为 `[-1, 1]`。
 - SURROGATE_TRAIN 迁移已形成独立本地提交 `70934ae`。
 - PAPER_WORK 在修改前保存 150 个声明活跃文件；清单摘要为
   `89663a1c3f093d7478efe3df3d96677a86556fd8f0edb4a3c9f6adbd7f1f98af`，
@@ -111,12 +118,22 @@
   `d796289af82df61c2fd2b021fbdd67bfdad40511304421da7c71f09f49093893`。
   正式验收重新通过完整 pytest、V4P2、分层 mypy、资源门禁、wheel 内容审计、
   隔离安装及 PAPER_WORK、SURROGATE_TRAIN 和 remote CLI smoke。
+- 0.4.3 目标、邻近和精确参考测试为 `57 passed`；修复前后的静平衡、
+  simulation 和区间内 fixed-spool surrogate 数组逐元素相等。
+- 0.4.3 开发工作树完整 pytest 为
+  `365 passed, 13 skipped, 10 subtests passed`，并以 `-W error` 确认零
+  未处理 warning。分层 mypy 仍为 23 个 strict target 零错误，实施层旧基线
+  保持 363 条诊断、85 组，没有扩大。
+- 开发工作树已构建 150 个成员的 `re_alb-0.4.3-py3-none-any.whl`，以
+  `--no-deps --target` 隔离安装后，根 API、版本和液膜最小计算 smoke 通过；
+  该制品不是固定 SHA 正式发布 wheel。
 
 ## 当前风险与边界
 
 - 0.4.0 的分析 facade 曾以新数值方法替换旧算法且验收未覆盖双侧数值比较；
   `0.4.1` 恢复算法，`0.4.2` 进一步关闭输入域、local dt 和仿真失败原子性
-  缺陷并完成正式 detached 验收，现作为推荐发布版本。历史 `v0.4.0`、
+  缺陷并完成正式 detached 验收，仍是当前推荐发布版本。0.4.3 处于开发复验
+  阶段，尚未执行固定 SHA detached 发布验收。历史 `v0.4.0`、
   `v0.4.1` 标签、wheel 和验收证据保持不变。
 - 0.4.1 谐波线性化只声明量纲液膜和三节点 CSOrifice 主动润滑拓扑；无量纲、
   Gas、MultiPad、surrogate、热包装及其他节流拓扑会明确失败。
@@ -133,10 +150,10 @@
 
 ## 当前下一步
 
-1. 提交 0.4.2 正式机器报告和当前状态，保持为 candidate 之后的 evidence-only
-   提交。
-2. 推送 `codex/alb-0.4.2` 和固定候选的 `v0.4.2`；核对远端分支和标签解引用
-   SHA，不移动历史标签。
+1. 复核 0.4.3 完整 diff 和严格配置兼容边界，确认不扩大到本轮明确延期的
+   observer、资源路径、loads 深冻结和 `BaseException` 债务。
+2. 如需发布，形成干净实现候选后再新增 0.4.3 manifest/test map 和固定 SHA
+   detached 验收；不移动 `v0.4.2`。
 3. 后续数值算法变化继续遵守 ADR-0007，已登记债务按独立维护范围处理。
 
 ## 稳定入口
@@ -147,6 +164,7 @@
 - 迁移：`docs/migrations/0.4.0.md`
 - 0.4.1 修复：`docs/migrations/0.4.1.md`
 - 0.4.2 修复：`docs/migrations/0.4.2.md`
+- 0.4.3 修复：`docs/migrations/0.4.3.md`
 - 0.4.2 保留债务：`docs/migrations/0.4.2_deferred_debt.md`
 - 0.4.2 两轮审查：`docs/migrations/0.4.2_review_log.md`
 - 决策：`docs/adr/0006-alb-0-4-no-legacy-friendly-api.md`

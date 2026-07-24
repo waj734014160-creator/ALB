@@ -1,0 +1,161 @@
+{
+  "arrays": {
+    "disk_bearing_force": {
+      "dtype": "float64",
+      "shape": [
+        3,
+        1,
+        2
+      ]
+    },
+    "disk_time": {
+      "dtype": "float64",
+      "shape": [
+        3
+      ]
+    },
+    "equilibrium_coordinate": {
+      "dtype": "float64",
+      "shape": [
+        2
+      ]
+    },
+    "equilibrium_evaluation_converged": {
+      "dtype": "bool",
+      "shape": [
+        91
+      ]
+    },
+    "equilibrium_evaluation_coordinate": {
+      "dtype": "float64",
+      "shape": [
+        91,
+        2
+      ]
+    },
+    "equilibrium_evaluation_force": {
+      "dtype": "float64",
+      "shape": [
+        91,
+        2
+      ]
+    },
+    "equilibrium_evaluation_residual": {
+      "dtype": "float64",
+      "shape": [
+        91
+      ]
+    },
+    "equilibrium_force": {
+      "dtype": "float64",
+      "shape": [
+        2
+      ]
+    },
+    "multi_pad_force": {
+      "dtype": "float64",
+      "shape": [
+        2
+      ]
+    },
+    "simulation_bearing_force": {
+      "dtype": "float64",
+      "shape": [
+        3,
+        1,
+        2
+      ]
+    },
+    "simulation_rotor_displacement": {
+      "dtype": "float64",
+      "shape": [
+        3,
+        1,
+        2
+      ]
+    },
+    "simulation_rotor_velocity": {
+      "dtype": "float64",
+      "shape": [
+        3,
+        1,
+        2
+      ]
+    },
+    "simulation_time": {
+      "dtype": "float64",
+      "shape": [
+        3
+      ]
+    },
+    "surrogate_force": {
+      "dtype": "float64",
+      "shape": [
+        2
+      ]
+    },
+    "surrogate_spool": {
+      "dtype": "float64",
+      "shape": [
+        2
+      ]
+    }
+  },
+  "baseline_commit": "50c7b4a5cd1321e8ebc5c914b7f6362cd2134844",
+  "cases": {
+    "equilibrium": {
+      "converged": false,
+      "inner_converged": true,
+      "input": {
+        "damping": 0.05,
+        "fallback_stiffness": [
+          5.0,
+          5.0
+        ],
+        "initial_displacement": [
+          0.4,
+          -0.4
+        ],
+        "jacobian_step": 0.01,
+        "load": [
+          0.0,
+          -1.0
+        ],
+        "max_iterations": 30,
+        "relative_tolerance": 0.0001,
+        "stall_patience": 5,
+        "stall_relative_tolerance": 0.0
+      },
+      "iterations": 29,
+      "residual": 0.30955642763938956,
+      "stop_reason": "max_iter"
+    },
+    "facades": {
+      "disk_manifest_complete": true,
+      "disk_record_files": [
+        "step_00000000.npz",
+        "step_00000001.npz",
+        "step_00000002.npz"
+      ],
+      "disk_result_complete": true,
+      "multi_pad_count": 2,
+      "simulation_committed_steps": 3,
+      "time_step": 0.001
+    },
+    "surrogate": {
+      "converged": true,
+      "time": 0.0,
+      "unit_system": "nondimensional"
+    }
+  },
+  "environment": {
+    "alb": "0.4.2",
+    "numpy": "1.24.3",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.10.17",
+    "scipy": "1.10.1"
+  },
+  "generated_at_utc": "2026-07-24T14:47:42.455989+00:00",
+  "npz_sha256": "3a8e017ca25466c7612f47ce2325968af368ff60aa433f92fda7c9b592a08ef8",
+  "schema": "alb.0.4.3-guard-reference.v1"
+}
