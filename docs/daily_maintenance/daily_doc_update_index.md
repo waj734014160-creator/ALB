@@ -57,6 +57,7 @@
 | `ALB_MAIN/docs/migrations/0.3.0_release_acceptance.json` | 0.3 ADR 架构机器验收证据 | 记录 0.3 候选的全量 pytest、分层 mypy、冻结参考、detached worktree 和发布制品身份。 | 只能由正式验收工具从干净 0.3 candidate SHA 生成。 | 手工填写通过结论、复用旧 wheel、覆盖 0.2 历史证据。 | 0.3 候选或实现变化后。 |
 | `ALB_MAIN/docs/migrations/0.3.0_build_acceptance.json` | 0.3 wheel 机器证据 | 记录 0.3 候选的 Git blob 源摘要、双构建、METADATA、隔离安装、extras/CLI smoke 与 wheel SHA。 | 只能由同一次 0.3 正式验收生成。 | 手工填写 SHA、复制旧构建报告或使用不同制品。 | 0.3 候选或发布输入变化后。 |
 | `ALB_MAIN/docs/migrations/0.4.0.md` | 0.4 稳定版本迁移手册 | 记录无兼容 Python API、严格 JSON5、v0.4 surrogate package 和外部消费者迁移边界。 | 0.4 公共契约、迁移工具、正式不兼容项和稳定验收入口。 | 实时任务状态、临时日志和未经验证的数值结论。 | 0.4 公共接口或迁移工具变化时。 |
+| `ALB_MAIN/docs/migrations/0.4.0_release_acceptance.json` | 0.4 正式机器验收证据 | 记录固定实现候选的 Git blob 源、可复现 wheel、pytest、mypy、资源、隔离安装和外部消费者 smoke。 | 只能由正式发布验收工具从固定候选 SHA 生成，并在后续 evidence-only 提交中保存。 | 手工填写或修改结论、从 evidence-only 提交重建发布制品、覆盖其他候选证据。 | 0.4 实现候选或正式验收输入变化时。 |
 | `ALB_MAIN/docs/migrations/0.4.0_test_map.json` | 0.4 功能测试映射 | 映射 V4-01 至 V4-24 的源码、测试和文档证据。 | 只能随功能 manifest 和真实测试节点同步更新。 | 手工填写不存在的 nodeid 或把开发工作树结果写成正式验收。 | 0.4 功能或 required nodeid 变化时。 |
 | `ALB_MAIN/docs/migrations/0.2.0_external_consumer_audit.md` | 版本化只读迁移证据 | declared 外部调用者的路径、哈希、旧 import 和迁移目标汇总。 | 外部只读快照口径、文件清单、迁移门槛和证据指针。 | 修改外部文件、记录外部实时任务状态、复制原始日志。 | declared 快照或 0.2 迁移目标变化时。 |
 | `ALB_MAIN/docs/file_classification.md` | ALB_MAIN 文件归属和清理策略 | 文件组、归属边界、归档/删除策略。 | 文件类别、代表路径、保留/归档规则、清理风险说明。 | 实时运行状态、模型进度、详细 run 历史。 | 主要文件组、归档类别或清理策略变化时。 |
@@ -119,6 +120,7 @@
 | `ALB_MAIN/docs/migrations/0.2.0_sixth_review_acceptance.json` | 六轮代码审查修正的 detached candidate、harmonic 半推进失效、环境隔离、fresh mypy 和 shadow 输入门禁。 |
 | `ALB_MAIN/docs/migrations/0.2.0_seventh_review_acceptance.json` | 七轮代码审查修正的复杂数失效、pytest 证据策略、隔离工具链和现场 wheel 源码绑定门禁。 |
 | `ALB_MAIN/docs/migrations/0.2.0_eighth_review_acceptance.json` | 八轮制品身份修正的 Git blob 规范源、双构建一致性、detached 安装和最终发布 wheel 同一 SHA 门禁。 |
+| `ALB_MAIN/docs/migrations/0.4.0_release_acceptance.json` | 0.4 固定实现候选的可复现 wheel、pytest、mypy、资源、隔离安装和外部消费者 smoke 门禁。 |
 | `ALB_MAIN/refs/full_repo_refactor_addendum_v1/` | 从重构前隔离源码生成的 thermal direct/Newton/transient 不可覆盖补充参考。 |
 | `ALB_MAIN/docs/run_index.md` | 人类可读的工作区全局 run 编号和路径策略。 |
 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` | 论文任务文件管理、路径命名和证据保留规则。 |
