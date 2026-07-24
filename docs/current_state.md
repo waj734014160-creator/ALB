@@ -36,6 +36,9 @@
 - 0.4.2 从 0.4.1 evidence 分支创建；新增成功路径合同固定于上述 0.4.1
   实现候选，参考提交为 `e4fb9c6`，NPZ SHA-256 为
   `72eb8e591b27b40be0098ebc55d8c373c00159902b7a362e04b33fe86355e52b`。
+- 0.4.2 实现候选为 `ff491e4dc9668f49e41870c37898f3c4d3a4ddc3`；
+  `v0.4.2` 固定指向该候选。正式机器报告位于其后的 evidence-only 提交，
+  不反向修改候选。
 
 ## 已完成的实现边界
 
@@ -101,14 +104,20 @@
 - 两轮后完整开发工作树复验：
   `341 passed, 13 skipped, 10 subtests passed`；V4P2 required nodeid
   `54 passed`；三项资源门禁通过；wheel 隔离的根 API、PAPER_WORK、
-  SURROGATE_TRAIN、训练 CLI 和 remote CLI 共 6 项 smoke 均通过。固定 SHA
-  detached 正式验收尚未完成。
+  SURROGATE_TRAIN、训练 CLI 和 remote CLI 共 6 项 smoke 均通过。
+- 0.4.2 固定 SHA detached 正式验收状态为 `passed`；完整证据见
+  `docs/migrations/0.4.2_release_acceptance.json`。Git blob 源连续构建的两个
+  wheel 字节一致，`re_alb-0.4.2-py3-none-any.whl` 的 SHA-256 为
+  `d796289af82df61c2fd2b021fbdd67bfdad40511304421da7c71f09f49093893`。
+  正式验收重新通过完整 pytest、V4P2、分层 mypy、资源门禁、wheel 内容审计、
+  隔离安装及 PAPER_WORK、SURROGATE_TRAIN 和 remote CLI smoke。
 
 ## 当前风险与边界
 
 - 0.4.0 的分析 facade 曾以新数值方法替换旧算法且验收未覆盖双侧数值比较；
-  `0.4.1` 已完成数值合同和正式 detached 验收，现作为推荐发布版本取代
-  `0.4.0`。历史 `v0.4.0` 标签、wheel 和验收证据保持不变。
+  `0.4.1` 恢复算法，`0.4.2` 进一步关闭输入域、local dt 和仿真失败原子性
+  缺陷并完成正式 detached 验收，现作为推荐发布版本。历史 `v0.4.0`、
+  `v0.4.1` 标签、wheel 和验收证据保持不变。
 - 0.4.1 谐波线性化只声明量纲液膜和三节点 CSOrifice 主动润滑拓扑；无量纲、
   Gas、MultiPad、surrogate、热包装及其他节流拓扑会明确失败。
 - 0.4.1 不支持可倾瓦轴承；未来重新加入必须作为新功能设计和验证。
@@ -124,12 +133,11 @@
 
 ## 当前下一步
 
-1. 执行完整 pytest、V4P2 required nodeid、分层 mypy、资源、外部消费者 smoke
-   和 tracked-diff 检查，形成 tracked-clean 实现候选。
-2. 从固定 SHA detached worktree 完成双 wheel、
-   完整 pytest、required nodeid、mypy、资源和外部消费者正式验收。
-3. 正式报告写入候选后的 evidence-only 提交；验收通过后再创建和推送
-   `v0.4.2`，不得移动历史标签。
+1. 提交 0.4.2 正式机器报告和当前状态，保持为 candidate 之后的 evidence-only
+   提交。
+2. 推送 `codex/alb-0.4.2` 和固定候选的 `v0.4.2`；核对远端分支和标签解引用
+   SHA，不移动历史标签。
+3. 后续数值算法变化继续遵守 ADR-0007，已登记债务按独立维护范围处理。
 
 ## 稳定入口
 
@@ -149,3 +157,4 @@
 - detached 验收：`tools/validation/run_release_acceptance_0_4_2.py`
 - 0.4.0 正式证据：`docs/migrations/0.4.0_release_acceptance.json`
 - 0.4.1 正式证据：`docs/migrations/0.4.1_release_acceptance.json`
+- 0.4.2 正式证据：`docs/migrations/0.4.2_release_acceptance.json`

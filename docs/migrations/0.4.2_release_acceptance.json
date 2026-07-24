@@ -1,0 +1,378 @@
+{
+  "schema": "alb.release-acceptance.v0.4.2",
+  "release": "0.4.2",
+  "candidate_commit": "ff491e4dc9668f49e41870c37898f3c4d3a4ddc3",
+  "runtime": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c",
+  "status": "passed",
+  "phases": {
+    "wheel": {
+      "builds": [
+        {
+          "command": [
+            "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+            "-m",
+            "pip",
+            "wheel",
+            ".",
+            "--no-deps",
+            "--no-build-isolation",
+            "--wheel-dir",
+            "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\build1"
+          ],
+          "cwd": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\source1",
+          "returncode": 0,
+          "duration_s": 1.6280950000218581,
+          "stdout_tail": [
+            "Looking in indexes: https://pypi.tuna.tsinghua.edu.cn/simple",
+            "Processing .\\.",
+            "  Preparing metadata (pyproject.toml): started",
+            "  Preparing metadata (pyproject.toml): finished with status 'done'",
+            "Building wheels for collected packages: re-alb",
+            "  Building wheel for re-alb (pyproject.toml): started",
+            "  Building wheel for re-alb (pyproject.toml): finished with status 'done'",
+            "  Created wheel for re-alb: filename=re_alb-0.4.2-py3-none-any.whl size=349504 sha256=d796289af82df61c2fd2b021fbdd67bfdad40511304421da7c71f09f49093893",
+            "  Stored in directory: C:\\Users\\73401\\AppData\\Local\\Temp\\pip-ephem-wheel-cache-y17r3hc0\\wheels\\fc\\98\\bb\\339af54d91bc9aaac602b15c453b26e2196ba300b118d3d4ad",
+            "Successfully built re-alb"
+          ],
+          "stderr_tail": [
+            "",
+            "[notice] A new release of pip is available: 26.1.1 -> 26.1.2",
+            "[notice] To update, run: E:\\Anaconda2023\\envs\\ALB\\python.exe -m pip install --upgrade pip"
+          ]
+        },
+        {
+          "command": [
+            "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+            "-m",
+            "pip",
+            "wheel",
+            ".",
+            "--no-deps",
+            "--no-build-isolation",
+            "--wheel-dir",
+            "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\build2"
+          ],
+          "cwd": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\source2",
+          "returncode": 0,
+          "duration_s": 1.8016317999863531,
+          "stdout_tail": [
+            "Looking in indexes: https://pypi.tuna.tsinghua.edu.cn/simple",
+            "Processing .\\.",
+            "  Preparing metadata (pyproject.toml): started",
+            "  Preparing metadata (pyproject.toml): finished with status 'done'",
+            "Building wheels for collected packages: re-alb",
+            "  Building wheel for re-alb (pyproject.toml): started",
+            "  Building wheel for re-alb (pyproject.toml): finished with status 'done'",
+            "  Created wheel for re-alb: filename=re_alb-0.4.2-py3-none-any.whl size=349504 sha256=d796289af82df61c2fd2b021fbdd67bfdad40511304421da7c71f09f49093893",
+            "  Stored in directory: C:\\Users\\73401\\AppData\\Local\\Temp\\pip-ephem-wheel-cache-cl0wcs7e\\wheels\\48\\e9\\e3\\d5558a7e9e3cc6c9601a5d6a8975c7bc2623d020aac3e0375c",
+            "Successfully built re-alb"
+          ],
+          "stderr_tail": [
+            "",
+            "[notice] A new release of pip is available: 26.1.1 -> 26.1.2",
+            "[notice] To update, run: E:\\Anaconda2023\\envs\\ALB\\python.exe -m pip install --upgrade pip"
+          ]
+        }
+      ],
+      "source": {
+        "candidate_commit": "ff491e4dc9668f49e41870c37898f3c4d3a4ddc3",
+        "tree_sha256": "f201ae7965edec5cd2e4afe044b9e209fd890cb8e620022c53ef9c53e905bd16",
+        "file_count": 147,
+        "pyproject_sha256": "ee12c25131fec4a56270fe78c7e1c2398debaf28ac655bfc2efc9bfe5b653d6e",
+        "source_date_epoch": 1784899668,
+        "source_kind": "git_blobs"
+      },
+      "first": {
+        "path": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\build1\\re_alb-0.4.2-py3-none-any.whl",
+        "sha256": "d796289af82df61c2fd2b021fbdd67bfdad40511304421da7c71f09f49093893",
+        "member_count": 150,
+        "forbidden_members": [],
+        "tool_members": [],
+        "forbidden_token_hits": []
+      },
+      "second": {
+        "path": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\build2\\re_alb-0.4.2-py3-none-any.whl",
+        "sha256": "d796289af82df61c2fd2b021fbdd67bfdad40511304421da7c71f09f49093893",
+        "member_count": 150,
+        "forbidden_members": [],
+        "tool_members": [],
+        "forbidden_token_hits": []
+      },
+      "reproducible": true
+    },
+    "pytest": {
+      "command": [
+        "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "cwd": "G:\\ALB_PROJECTS\\_alb_0_4_2_candidate_ff491e4dc966_fa039e",
+      "returncode": 0,
+      "duration_s": 30.48816499998793,
+      "stdout_tail": [
+        "........................................................................ [ 20%]",
+        "...................................................................................................................................... [ 58%]",
+        "........................................................................ [ 78%]",
+        "............................sssssssssssss............................... [ 98%]",
+        "....                                                                     [100%]",
+        "341 passed, 13 skipped, 10 subtests passed in 28.41s"
+      ],
+      "stderr_tail": []
+    },
+    "required_nodeids": {
+      "command": [
+        "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/regression/api/test_review_fixes_0_4_2_reference.py::test_reference_identity_and_shapes",
+        "tests/regression/api/test_review_fixes_0_4_2_reference.py::test_successful_paths_match_v0_4_1_exactly",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_complex_time_before_runtime",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_ill_conditioned_displacement_matrix",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_invalid_frequency_before_runtime",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_invalid_grid_before_runtime",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_rank_deficient_matrix_before_inversion",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_unrepresented_frequency_before_runtime",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_wraps_matrix_diagnostic_failure",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_file_referenced_multi_pad_rejects_child_dt_before_build",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_only_exact_zero_load_uses_the_pre_runtime_rejection",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_rotor_protocol_declares_required_dt",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_standalone_multi_pad_rejects_explicit_child_dt_mismatch",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_standalone_nested_multi_pad_rejects_grandchild_dt_mismatch",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_third_party_rotor_without_dt_fails_during_configuration",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_unit_adapter_rejects_global_dt_used_as_local_dt",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_unit_adapter_uses_bearing_local_time_step",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_zero_load_equilibrium_is_rejected_before_runtime",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_disk_stream_force_retains_the_final_committed_step",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_disk_stream_includes_final_post_commit_failure",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_manifest_replace_failure_is_wrapped_and_retried_atomically",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_manifest_write_failure_is_wrapped_and_incomplete_manifest_is_saved",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_persistent_manifest_failure_is_wrapped_and_cleans_temporary_file",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_persistent_snapshot_failure_is_wrapped_without_false_retention",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_post_commit_record_failure_keeps_committed_step_in_partial_result",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_precommit_failure_preserves_coupling_snapshot",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_secondary_recorder_close_failure_does_not_replace_primary_error",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_simulation_instance_cannot_replay_after_failure",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_simulation_instance_cannot_replay_after_success",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_snapshot_cleanup_failure_does_not_replace_primary_error",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_snapshot_replace_failure_retries_without_publishing_early",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_snapshot_write_failure_retries_without_publishing_early",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_strict_observer_failure_at_step_zero_keeps_initial_commit",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_strict_observer_failure_keeps_step_one_without_repeating_physics",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_successful_simulation_closes_recorder_run",
+        "tests/validation/test_release_0_4_2_gates.py::test_historical_release_evidence_remains_content_unchanged",
+        "tests/validation/test_release_0_4_2_gates.py::test_package_version_changes_without_schema_migration",
+        "tests/validation/test_release_0_4_2_gates.py::test_patch_manifest_and_test_map_are_contiguous_and_aligned",
+        "tests/validation/test_release_0_4_2_gates.py::test_quickstart_uses_a_coherent_ten_hertz_grid",
+        "tests/validation/test_release_0_4_2_gates.py::test_repair_reference_is_the_frozen_v0_4_1_candidate_contract"
+      ],
+      "cwd": "G:\\ALB_PROJECTS\\_alb_0_4_2_candidate_ff491e4dc966_fa039e",
+      "returncode": 0,
+      "duration_s": 5.663257299980614,
+      "stdout_tail": [
+        "......................................................                   [100%]",
+        "54 passed in 4.55s"
+      ],
+      "stderr_tail": []
+    },
+    "mypy": {
+      "command": [
+        "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+        "tools/validation/run_layered_mypy.py",
+        "--mypy-target",
+        "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\.devtools",
+        "--cache-root",
+        "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\mypy_cache"
+      ],
+      "cwd": "G:\\ALB_PROJECTS\\_alb_0_4_2_candidate_ff491e4dc966_fa039e",
+      "returncode": 0,
+      "duration_s": 29.722132499999134,
+      "stdout_tail": [
+        "{",
+        "  \"strict_returncode\": 0,",
+        "  \"strict_targets\": 23,",
+        "  \"covered_source_files\": 144,",
+        "  \"implementation_diagnostics\": 363,",
+        "  \"implementation_diagnostic_groups\": 85",
+        "}"
+      ],
+      "stderr_tail": []
+    },
+    "resources": {
+      "command": [
+        "E:\\Anaconda2023\\envs\\ALB\\python.exe",
+        "-m",
+        "tools.validation.run_resource_acceptance_0_4"
+      ],
+      "cwd": "G:\\ALB_PROJECTS\\_alb_0_4_2_candidate_ff491e4dc966_fa039e",
+      "returncode": 0,
+      "duration_s": 4.492398400005186,
+      "stdout_tail": [
+        "{",
+        "  \"cases\": [",
+        "    {",
+        "      \"case\": \"liquid_film_facade\",",
+        "      \"elapsed_seconds\": 0.007828500005416572,",
+        "      \"max_peak_memory_bytes\": 536870912,",
+        "      \"max_seconds\": 10.0,",
+        "      \"peak_memory_bytes\": 92798,",
+        "      \"result_type\": \"BearingResult\",",
+        "      \"status\": \"passed\"",
+        "    },",
+        "    {",
+        "      \"case\": \"gas_film_facade\",",
+        "      \"elapsed_seconds\": 0.008992199989734218,",
+        "      \"max_peak_memory_bytes\": 536870912,",
+        "      \"max_seconds\": 10.0,",
+        "      \"peak_memory_bytes\": 113958,",
+        "      \"result_type\": \"BearingResult\",",
+        "      \"status\": \"passed\"",
+        "    },",
+        "    {",
+        "      \"case\": \"rotor_bearing_simulation\",",
+        "      \"elapsed_seconds\": 0.015506199997616932,",
+        "      \"max_peak_memory_bytes\": 536870912,",
+        "      \"max_seconds\": 10.0,",
+        "      \"peak_memory_bytes\": 117852,",
+        "      \"result_type\": \"SimulationResult\",",
+        "      \"status\": \"passed\"",
+        "    }",
+        "  ],",
+        "  \"schema\": \"alb.resource-acceptance.v0.4\",",
+        "  \"status\": \"passed\"",
+        "}"
+      ],
+      "stderr_tail": []
+    },
+    "isolated_smoke": [
+      {
+        "command": [
+          "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\venv\\Scripts\\pip.exe",
+          "install",
+          "--no-deps",
+          "--force-reinstall",
+          "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\build1\\re_alb-0.4.2-py3-none-any.whl"
+        ],
+        "cwd": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c",
+        "returncode": 0,
+        "duration_s": 1.9640593999938574,
+        "stdout_tail": [
+          "Looking in indexes: https://pypi.tuna.tsinghua.edu.cn/simple",
+          "Processing g:\\alb_projects\\alb_main\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\build1\\re_alb-0.4.2-py3-none-any.whl",
+          "Installing collected packages: re-alb",
+          "Successfully installed re-alb-0.4.2"
+        ],
+        "stderr_tail": [
+          "",
+          "[notice] A new release of pip is available: 23.0.1 -> 26.1.2",
+          "[notice] To update, run: G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\venv\\Scripts\\python.exe -m pip install --upgrade pip"
+        ]
+      },
+      {
+        "command": [
+          "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\venv\\Scripts\\python.exe",
+          "-c",
+          "\nimport ALB\nassert ALB.__version__ == \"0.4.2\"\nassert not hasattr(ALB, \"Signal\")\ncfg = ALB.BearingConfig({\n    \"family\": \"liquid_film\",\n    \"unit_system\": \"dimensional\",\n    \"time_step\": 0.001,\n    \"node\": 0,\n    \"film\": {\n        \"circumferential_elements\": 5,\n        \"axial_elements\": 3,\n        \"max_iterations\": 3,\n    },\n    \"restrictors\": None,\n    \"thermal\": None,\n})\nbearing = ALB.build_bearing(cfg)\nassert not hasattr(bearing, \"init\")\nassert bearing.calculate(displacement=(0.0, 0.0), time=0.0).force.shape == (2,)\nprint(ALB.__file__)\n"
+        ],
+        "cwd": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c",
+        "returncode": 0,
+        "duration_s": 4.690669199975673,
+        "stdout_tail": [
+          "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\venv\\lib\\site-packages\\ALB\\__init__.py"
+        ],
+        "stderr_tail": []
+      },
+      {
+        "command": [
+          "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\venv\\Scripts\\python.exe",
+          "-c",
+          "\nimport ALB\ncfg = ALB.load_bearing_config(\n    r\"F:\\BaiduSyncdisk\\博士论文\\PAPER_WORK\\task\\PAPER\\config\\alb12.json5\"\n)\nassert cfg.family == \"active_lubricated\"\nassert cfg.control_mode == \"pid\"\nprint(cfg.spec[\"time_step\"])\n"
+        ],
+        "cwd": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c",
+        "returncode": 0,
+        "duration_s": 0.4959372000012081,
+        "stdout_tail": [
+          "0.001"
+        ],
+        "stderr_tail": []
+      },
+      {
+        "command": [
+          "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\venv\\Scripts\\python.exe",
+          "-c",
+          "\nimport json\nfrom pathlib import Path\nimport ALB\nroot = Path(r\"G:\\ALB_PROJECTS\\SURROGATE_TRAIN\")\nref = json.loads((root / \"refs/alb_0_4_consumer_reference_v1.json\").read_text(encoding=\"utf-8\"))\nassert ref[\"schema\"] == \"surrogate-train.alb-0.4-consumer-reference.v1\"\nsite_packages = Path(r\"G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\venv\\Lib\\site-packages\").resolve()\nassert Path(ALB.__file__).resolve().is_relative_to(site_packages)\nprint(ALB.__version__)\n"
+        ],
+        "cwd": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c",
+        "returncode": 0,
+        "duration_s": 0.4803669999819249,
+        "stdout_tail": [
+          "0.4.2"
+        ],
+        "stderr_tail": []
+      },
+      {
+        "command": [
+          "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\venv\\Scripts\\python.exe",
+          "G:\\ALB_PROJECTS\\SURROGATE_TRAIN\\run\\train\\train_albnn.py",
+          "--help"
+        ],
+        "cwd": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c",
+        "returncode": 0,
+        "duration_s": 2.431365700002061,
+        "stdout_tail": [
+          "usage: train_albnn.py [-h] --config CONFIG [--data DATA]",
+          "                      [--validation-data VALIDATION_DATA]",
+          "                      [--output-dir OUTPUT_DIR] [--device DEVICE]",
+          "                      [--epochs EPOCHS] [--dry-run-config]",
+          "",
+          "Run config-driven ALBNN training and emit a v0.4 model package.",
+          "",
+          "options:",
+          "  -h, --help            show this help message and exit",
+          "  --config CONFIG",
+          "  --data DATA",
+          "  --validation-data VALIDATION_DATA",
+          "  --output-dir OUTPUT_DIR",
+          "  --device DEVICE",
+          "  --epochs EPOCHS",
+          "  --dry-run-config      Validate and materialize the resolved config without",
+          "                        training."
+        ],
+        "stderr_tail": []
+      },
+      {
+        "command": [
+          "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c\\venv\\Scripts\\python.exe",
+          "-m",
+          "ALB.surrogate.training.remote.status",
+          "--help"
+        ],
+        "cwd": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\alb_0_4_2_ff491e4dc966_aa6ac89c",
+        "returncode": 0,
+        "duration_s": 0.44880990000092424,
+        "stdout_tail": [
+          "usage: status.py [-h] [--host HOST] [--user USER] [--key KEY] [--root ROOT]",
+          "                 [--task_name TASK_NAME] [--model_name MODEL_NAME]",
+          "                 [--tail TAIL] [--ssh-timeout SSH_TIMEOUT] [--json]",
+          "",
+          "Query remote ALBNN training status",
+          "",
+          "options:",
+          "  -h, --help            show this help message and exit",
+          "  --host HOST",
+          "  --user USER",
+          "  --key KEY",
+          "  --root ROOT",
+          "  --task_name TASK_NAME",
+          "  --model_name MODEL_NAME",
+          "  --tail TAIL",
+          "  --ssh-timeout SSH_TIMEOUT",
+          "  --json                Print raw parsed JSON"
+        ],
+        "stderr_tail": []
+      }
+    ]
+  },
+  "published_wheel": "G:\\ALB_PROJECTS\\ALB_MAIN\\dist\\re_alb-0.4.2-py3-none-any.whl"
+}
