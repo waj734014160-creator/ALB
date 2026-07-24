@@ -27,6 +27,8 @@ from .results import AnalysisResult
 
 
 FloatArray = npt.NDArray[np.float64]
+_FFT_RTOL = 1.0e-12
+_MAX_DISPLACEMENT_CONDITION = 1.0 / np.sqrt(np.finfo(float).eps)
 
 
 def _axis_pair(value: object, name: str) -> FloatArray:
@@ -45,6 +47,102 @@ def _positive_float(value: object, name: str) -> float:
     if not np.isfinite(result) or result <= 0.0:
         raise ValueError(f"{name} must be finite and > 0")
     return result
+
+
+@dataclass(frozen=True, slots=True)
+class _WhirlGrid:
+    """Validated coherent grid used by the established FFT identification."""
+
+    time: FloatArray
+    frequency_hz: float
+    frequencies: FloatArray
+    selected_index: int
+    selected_frequency_hz: float
+    nyquist_hz: float
+
+
+def _validate_whirl_grid(
+    time_grid: Sequence[float],
+    frequency_hz: float,
+) -> _WhirlGrid:
+    """Reject grids that cannot represent the requested FFT coefficient."""
+
+    time = np.asarray(time_grid, dtype=float)
+    if time.ndim != 1 or not np.all(np.isfinite(time)):
+        raise ValueError("time_grid must be a finite one-dimensional grid")
+    if time.size < 2:
+        raise ValueError("time_grid must contain at least two samples")
+    delta = np.diff(time)
+    if np.any(delta <= 0.0):
+        raise ValueError("time_grid must be strictly increasing")
+    dt = float(delta[0])
+    float_info = np.finfo(np.float64)
+    uniform_atol = (
+        float(float_info.eps)
+        * max(abs(dt), float(float_info.tiny))
+        * 16.0
+    )
+    if not np.allclose(delta, dt, rtol=_FFT_RTOL, atol=uniform_atol):
+        raise ValueError("time_grid must be uniform for FFT identification")
+    requested = _positive_float(frequency_hz, "frequency_hz")
+    frequencies = np.fft.rfftfreq(time.size, dt)
+    nyquist = float(frequencies[-1])
+    frequency_atol = abs(requested) * _FFT_RTOL
+    if requested > nyquist and not np.isclose(
+        requested,
+        nyquist,
+        rtol=_FFT_RTOL,
+        atol=frequency_atol,
+    ):
+        raise CalculationError(
+            "frequency_hz exceeds the FFT Nyquist frequency",
+            failure_snapshot=result_snapshot(
+                {
+                    "time": time,
+                    "fft_frequencies": frequencies,
+                },
+                {
+                    "schema": "alb.dynamic-identification-failure.v0.4.2",
+                    "failure_phase": "grid_validation",
+                    "requested_frequency_hz": requested,
+                    "selected_frequency_hz": nyquist,
+                    "nyquist_hz": nyquist,
+                },
+            ),
+        )
+    selected_index = int(np.argmin(np.abs(frequencies - requested)))
+    selected = float(frequencies[selected_index])
+    if selected_index == 0 or not np.isclose(
+        selected,
+        requested,
+        rtol=_FFT_RTOL,
+        atol=frequency_atol,
+    ):
+        raise CalculationError(
+            "frequency_hz must coincide with a non-DC FFT bin",
+            failure_snapshot=result_snapshot(
+                {
+                    "time": time,
+                    "fft_frequencies": frequencies,
+                },
+                {
+                    "schema": "alb.dynamic-identification-failure.v0.4.2",
+                    "failure_phase": "grid_validation",
+                    "requested_frequency_hz": requested,
+                    "selected_frequency_hz": selected,
+                    "selected_frequency_index": selected_index,
+                    "nyquist_hz": nyquist,
+                },
+            ),
+        )
+    return _WhirlGrid(
+        time=time,
+        frequency_hz=requested,
+        frequencies=frequencies,
+        selected_index=selected_index,
+        selected_frequency_hz=selected,
+        nyquist_hz=nyquist,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -349,6 +447,11 @@ class BearingAnalysis:
                 "use a controlled/uncontrolled bearing configuration"
             )
         target = _axis_pair(load, "load")
+        if bool(np.all(target == 0.0)):
+            raise ValueError(
+                "find_equilibrium requires a nonzero load because "
+                "relative_tolerance is normalized by load magnitude"
+            )
         initial = _axis_pair(
             initial_displacement,
             "initial_displacement",
@@ -569,20 +672,27 @@ class BearingAnalysis:
         frequency_hz: float,
         spool: Sequence[Sequence[float]] | None = None,
     ) -> AnalysisResult:
-        """Identify K and C with the established forward/reverse whirl method."""
+        """Identify K and C on one coherent FFT grid.
+
+        The public boundary validates grid coherence and the forward/reverse
+        displacement matrix before invoking the established ``recognize_kc``
+        equations. Valid inputs therefore retain the prior numerical method.
+        """
 
         if not isinstance(trajectory, EllipseTrajectory):
             raise TypeError("trajectory must be EllipseTrajectory")
+        grid = _validate_whirl_grid(time_grid, frequency_hz)
+        validated_time = grid.time.tolist()
         forward = self.trace_orbit(
             trajectory.with_direction("forward"),
-            time_grid,
-            frequency_hz=frequency_hz,
+            validated_time,
+            frequency_hz=grid.frequency_hz,
             spool=spool,
         )
         reverse = self.trace_orbit(
             trajectory.with_direction("reverse"),
-            time_grid,
-            frequency_hz=frequency_hz,
+            validated_time,
+            frequency_hz=grid.frequency_hz,
             spool=spool,
         )
         if not forward.convergence.converged or not reverse.convergence.converged:
@@ -612,16 +722,113 @@ class BearingAnalysis:
         )
         forward_force = np.asarray(forward.values["force"], dtype=float)
         reverse_force = np.asarray(reverse.values["force"], dtype=float)
-        from ALB.dynamics.identification import recognize_kc
+        from ALB.dynamics.identification import recognize_kc, recognize_z
 
-        identified = recognize_kc(
+        forward_amplitude = recognize_z(
             time,
-            float(frequency_hz),
+            grid.frequency_hz,
             forward_displacement.T,
-            -forward_force.T,
-            reverse_displacement.T,
-            -reverse_force.T,
         )
+        reverse_amplitude = recognize_z(
+            time,
+            grid.frequency_hz,
+            reverse_displacement.T,
+        )
+        displacement_matrix = np.asarray(
+            [forward_amplitude[1], reverse_amplitude[1]]
+        ).T
+        matrix_is_finite = bool(
+            np.all(np.isfinite(displacement_matrix.real))
+            and np.all(np.isfinite(displacement_matrix.imag))
+        )
+        rank = (
+            int(np.linalg.matrix_rank(displacement_matrix))
+            if matrix_is_finite
+            else 0
+        )
+        condition = (
+            float(np.linalg.cond(displacement_matrix))
+            if matrix_is_finite
+            else np.inf
+        )
+        if (
+            not matrix_is_finite
+            or rank < 2
+            or not np.isfinite(condition)
+            or condition > _MAX_DISPLACEMENT_CONDITION
+        ):
+            raise CalculationError(
+                "dynamic coefficient displacement matrix is singular or "
+                "ill-conditioned",
+                failure_snapshot=result_snapshot(
+                    {
+                        "time": time,
+                        "forward_displacement": forward_displacement,
+                        "forward_velocity": forward.values["velocity"],
+                        "forward_force": forward_force,
+                        "reverse_displacement": reverse_displacement,
+                        "reverse_velocity": reverse.values["velocity"],
+                        "reverse_force": reverse_force,
+                        "displacement_matrix_real": displacement_matrix.real,
+                        "displacement_matrix_imag": displacement_matrix.imag,
+                    },
+                    {
+                        "schema": (
+                            "alb.dynamic-identification-failure.v0.4.2"
+                        ),
+                        "failure_phase": "matrix_validation",
+                        "requested_frequency_hz": grid.frequency_hz,
+                        "selected_frequency_hz": (
+                            grid.selected_frequency_hz
+                        ),
+                        "nyquist_hz": grid.nyquist_hz,
+                        "displacement_rank": rank,
+                        "displacement_condition_number": condition,
+                        "maximum_condition_number": (
+                            _MAX_DISPLACEMENT_CONDITION
+                        ),
+                    },
+                ),
+            )
+
+        try:
+            identified = recognize_kc(
+                time,
+                grid.frequency_hz,
+                forward_displacement.T,
+                -forward_force.T,
+                reverse_displacement.T,
+                -reverse_force.T,
+            )
+        except (FloatingPointError, np.linalg.LinAlgError, ValueError) as exc:
+            raise CalculationError(
+                "dynamic coefficient matrix inversion failed",
+                failure_snapshot=result_snapshot(
+                    {
+                        "time": time,
+                        "forward_displacement": forward_displacement,
+                        "forward_force": forward_force,
+                        "reverse_displacement": reverse_displacement,
+                        "reverse_force": reverse_force,
+                        "displacement_matrix_real": displacement_matrix.real,
+                        "displacement_matrix_imag": displacement_matrix.imag,
+                    },
+                    {
+                        "schema": (
+                            "alb.dynamic-identification-failure.v0.4.2"
+                        ),
+                        "failure_phase": "matrix_inversion",
+                        "requested_frequency_hz": grid.frequency_hz,
+                        "selected_frequency_hz": (
+                            grid.selected_frequency_hz
+                        ),
+                        "nyquist_hz": grid.nyquist_hz,
+                        "displacement_rank": rank,
+                        "displacement_condition_number": condition,
+                        "exception_type": type(exc).__name__,
+                    },
+                ),
+            ) from exc
         primary = forward if trajectory.direction == "forward" else reverse
         iterations = [
             item

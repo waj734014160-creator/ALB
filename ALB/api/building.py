@@ -35,7 +35,7 @@ from ALB.surrogate.package import load_albnn_package
 from ALB.surrogate.runtime import SurrogateBearingRuntime
 
 from .config import BearingConfig, load_bearing_config
-from .errors import BuildError
+from .errors import BuildError, ConfigurationError
 
 
 _DIMENSIONAL_FILM_MAP = {
@@ -378,11 +378,75 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
     return resolved
 
 
-def build_runtime(config: BearingConfig) -> object:
-    """Build one initialized native runtime from a validated config."""
+def _validate_runtime_time_steps(
+    config: BearingConfig,
+    expected: float,
+    *,
+    path: str,
+    active_paths: frozenset[Path] = frozenset(),
+) -> None:
+    """Validate one bearing-local step across every materialized child."""
 
-    if not isinstance(config, BearingConfig):
-        raise TypeError("config must be BearingConfig")
+    actual = float(config.spec["time_step"])
+    if actual != expected:
+        raise ConfigurationError(
+            f"{path}.time_step must equal bearing-local time_step "
+            f"{expected!r}; got {actual!r}"
+        )
+    try:
+        if config.family == "active_lubricated":
+            _active_config(config)
+        elif (
+            config.family == "liquid_film"
+            and config.spec.get("thermal") is not None
+        ):
+            _thermal_config(config)
+    except (TypeError, ValueError) as exc:
+        raise ConfigurationError(
+            f"{path} has inconsistent materialized time steps: {exc}"
+        ) from exc
+    if config.family != "multi_pad":
+        return
+
+    pads = config.spec["pads"]
+    assert isinstance(pads, tuple)
+    for index, item in enumerate(pads):
+        child_path = f"{path}.pads[{index}]"
+        if isinstance(item, str):
+            if config.resource_root is None:
+                raise ConfigurationError(
+                    f"{child_path} requires a source document resource root"
+                )
+            source = (config.resource_root / item).resolve()
+            if source in active_paths:
+                raise ConfigurationError(
+                    f"{child_path} creates a recursive multi_pad reference"
+                )
+            child = load_bearing_config(source)
+            child_active_paths = active_paths | {source}
+        elif isinstance(item, Mapping):
+            child_spec = _plain(item)
+            child_spec.setdefault("time_step", actual)
+            child_spec.setdefault("node", config.spec.get("node"))
+            child_spec.setdefault("unit_system", config.unit_system)
+            child = BearingConfig(
+                child_spec,
+                resource_root=config.resource_root,
+            )
+            child_active_paths = active_paths
+        else:
+            raise ConfigurationError(f"{child_path} is not a bearing config")
+        _validate_runtime_time_steps(
+            child,
+            expected,
+            path=child_path,
+            active_paths=child_active_paths,
+        )
+
+
+def _build_runtime(config: BearingConfig) -> object:
+    """Build one runtime after the complete config tree has been validated."""
+
     try:
         if config.family == "active_lubricated":
             return assemble_active_runtime(_active_config(config))
@@ -432,7 +496,7 @@ def build_runtime(config: BearingConfig) -> object:
                     )
                 else:
                     raise BuildError("invalid multi-pad child")
-                children.append(build_runtime(child_config))
+                children.append(_build_runtime(child_config))
             return MultiPad(*children)  # type: ignore[no-untyped-call]
         if config.family == "surrogate":
             package = config.spec["model_package"]
@@ -472,6 +536,19 @@ def build_runtime(config: BearingConfig) -> object:
         raise BuildError(
             f"failed to build {config.family} bearing: {exc}"
         ) from exc
+
+
+def build_runtime(config: BearingConfig) -> object:
+    """Validate a complete config tree and build one initialized runtime."""
+
+    if not isinstance(config, BearingConfig):
+        raise TypeError("config must be BearingConfig")
+    _validate_runtime_time_steps(
+        config,
+        float(config.spec["time_step"]),
+        path="config",
+    )
+    return _build_runtime(config)
 
 
 __all__ = ["build_runtime"]

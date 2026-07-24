@@ -71,7 +71,9 @@ hook 或创建新 runtime。失败状态是终止性的；failure snapshot 不�
 `dynamic_coefficients()` 从一个 `EllipseTrajectory` 生成独立正反涡动并调用
 复数识别；`harmonic_linearize()` 直接计算压力方程导数和已验证的节流耦合。
 空间方向使用 `orientation_rad`，时间相位使用 `phase`，两者不可混用。任何
-内层或轨迹样本不收敛时均不发布分析结果。
+内层或轨迹样本不收敛时均不发布分析结果。动态系数的时间网格必须均匀并使目标
+频率命中非 DC FFT bin；正反涡动复位移矩阵必须有限、满秩且条件数受限。精确
+零载荷不属于既有相对残差静平衡算法的输入域。
 
 公开分析 facade 可以改变参数命名和结果组织，但内部算法变化受 ADR-0007
 约束。0.4.1 不包含可倾瓦轴承实现。
@@ -100,8 +102,10 @@ override/sweep 不原地修改，且必须重新完成 schema 与跨字段校验
 
 转子轴承仿真只接收构造期固定的 `BearingMount` 元组。每个 mount 固定
 `BearingConfig`、节点以及可选 unit adapter/spool provider；运行期没有
-`add_bearing()`。转子、所有 mount、嵌套 `MultiPad` 以及物化控制器、阀和热
-组件必须使用同一归一化 `time_step`，不一致在运行前失败。
+`add_bearing()`。`RotorProtocol` 显式声明只读 `dt`。无 adapter 的 mount
+使用全局步长；有 adapter 的 mount 使用转换后的 bearing-local 步长。根配置、
+嵌套 `MultiPad` 以及物化控制器、阀和热组件必须与该 local 步长一致，不一致
+在任何物理 runtime 创建前失败。
 
 底层 coupling 按以下顺序推进：
 
@@ -111,8 +115,10 @@ preflight → mutable execute → immutable candidate
 ```
 
 提交前失败不发布半步；提交后 recorder/observer 异常不得把已提交物理状态
-改写为无效。仿真 facade 默认在内存中保留所有已提交步骤，并在失败异常中附带
-截至最后成功提交的 partial result。
+改写为无效。高层仿真不重试、不继续，但会从 ledger 和只读 output 取回该真实
+提交。partial result 分别报告物理步骤、历史发布和 post-commit 完整性。
+磁盘流只在临时快照 flush/fsync 并原子替换成功后发布 retained 状态；manifest
+使用同一事务边界。
 
 ## 结果与副作用
 
@@ -144,7 +150,7 @@ preflight → mutable execute → immutable candidate
 ```powershell
 E:/Anaconda2023/envs/ALB/python.exe -m pytest -q
 E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
-E:/Anaconda2023/envs/ALB/python.exe -m tools.validation.run_release_acceptance_0_4_1 --candidate HEAD
+E:/Anaconda2023/envs/ALB/python.exe -m tools.validation.run_release_acceptance_0_4_2 --candidate HEAD
 ```
 
 发布验收必须从固定 SHA 建立 detached worktree，连续构建两个相同 wheel，

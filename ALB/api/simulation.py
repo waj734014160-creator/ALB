@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 import json
+import os
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -14,10 +15,18 @@ from ALB.contracts import (
     BearingUnitAdapterProtocol,
     BearingRuntimeProtocol,
     ConvergenceStatus,
+    ResultBundle,
     RotorProtocol,
+    RunReceipt,
     SpoolCommandProviderProtocol,
     StepContext,
     UnitSystem,
+    result_snapshot,
+)
+from ALB.core.diagnostics import sanitize_exception_message
+from ALB.dynamics.coupling_runtime import (
+    PostCommitObserverError,
+    PostCommitRecordingError,
 )
 
 from .config import (
@@ -32,73 +41,6 @@ from .config import (
 )
 from .errors import ConfigurationError, SimulationError
 from .results import SimulationResult
-
-
-def _validate_bearing_time_step(
-    config: BearingConfig,
-    expected: float,
-    *,
-    path: str,
-    active_paths: frozenset[Path] = frozenset(),
-) -> None:
-    """Require one normalized step across a mount and all nested pads."""
-
-    actual = float(config.spec["time_step"])
-    if actual != expected:
-        raise ConfigurationError(
-            f"{path}.time_step must equal simulation time_step "
-            f"{expected!r}; got {actual!r}"
-        )
-    try:
-        if config.family == "active_lubricated":
-            from .building import _active_config
-
-            _active_config(config)
-        elif (
-            config.family == "liquid_film"
-            and config.spec.get("thermal") is not None
-        ):
-            from .building import _thermal_config
-
-            _thermal_config(config)
-    except (TypeError, ValueError) as exc:
-        raise ConfigurationError(
-            f"{path} has inconsistent materialized time steps: {exc}"
-        ) from exc
-    if config.family != "multi_pad":
-        return
-    pads = config.spec["pads"]
-    assert isinstance(pads, tuple)
-    for index, item in enumerate(pads):
-        child_path = f"{path}.pads[{index}]"
-        if isinstance(item, str):
-            if config.resource_root is None:
-                raise ConfigurationError(
-                    f"{child_path} requires a source document resource root"
-                )
-            source = (config.resource_root / item).resolve()
-            if source in active_paths:
-                raise ConfigurationError(
-                    f"{child_path} creates a recursive multi_pad reference"
-                )
-            child = load_bearing_config(source)
-            child_active_paths = active_paths | {source}
-        else:
-            child_spec = _thaw(item)
-            child_spec.setdefault("time_step", actual)
-            child_spec.setdefault("node", config.spec.get("node"))
-            child_spec.setdefault("unit_system", config.unit_system)
-            child = BearingConfig(
-                child_spec,
-                resource_root=config.resource_root,
-            )
-            child_active_paths = active_paths
-        _validate_bearing_time_step(
-            child,
-            expected,
-            path=child_path,
-            active_paths=child_active_paths,
-        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,7 +118,12 @@ class HistoryPolicy:
 
 @dataclass(frozen=True, slots=True)
 class SimulationConfig:
-    """Validated immutable inputs for one rotor-bearing simulation."""
+    """Validated immutable inputs for one rotor-bearing simulation.
+
+    Rotor time uses the global dimensional step. Each mounted bearing uses the
+    step produced by its explicit unit adapter, and its entire materialized
+    configuration tree must agree with that bearing-local value.
+    """
 
     rotor: RotorProtocol
     mounts: tuple[BearingMount, ...]
@@ -198,13 +145,8 @@ class SimulationConfig:
         time_step = float(self.time_step)
         if not np.isfinite(time_step) or time_step <= 0.0:
             raise ValueError("time_step must be finite and > 0")
-        rotor_time_step = getattr(self.rotor, "dt", None)
-        if rotor_time_step is None:
-            raise ConfigurationError(
-                "rotor.dt is required to verify simulation time_step"
-            )
         try:
-            normalized_rotor_time_step = float(rotor_time_step)
+            normalized_rotor_time_step = float(self.rotor.dt)
         except (TypeError, ValueError) as exc:
             raise ConfigurationError(
                 "rotor.dt must be a finite positive number"
@@ -221,10 +163,48 @@ class SimulationConfig:
                 "rotor.dt must equal simulation time_step "
                 f"{time_step!r}; got {normalized_rotor_time_step!r}"
             )
+        from .building import _validate_runtime_time_steps
+
         for index, mount in enumerate(mounts):
-            _validate_bearing_time_step(
+            expected_local_step = time_step
+            if mount.unit_adapter is not None:
+                try:
+                    local_context = (
+                        mount.unit_adapter.rotor_context_to_bearing(
+                            StepContext(
+                                0,
+                                0.0,
+                                time_step,
+                                UnitSystem.DIMENSIONAL,
+                            )
+                        )
+                    )
+                except Exception as exc:
+                    raise ConfigurationError(
+                        f"mounts[{index}].unit_adapter could not convert "
+                        f"simulation time_step: {exc}"
+                    ) from exc
+                if not isinstance(local_context, StepContext):
+                    raise ConfigurationError(
+                        f"mounts[{index}].unit_adapter must return StepContext"
+                    )
+                if local_context.unit_system.value != mount.config.unit_system:
+                    raise ConfigurationError(
+                        f"mounts[{index}].unit_adapter local unit_system must "
+                        "match the bearing config"
+                    )
+                expected_local_step = float(local_context.dt)
+                if (
+                    not np.isfinite(expected_local_step)
+                    or expected_local_step <= 0.0
+                ):
+                    raise ConfigurationError(
+                        f"mounts[{index}].unit_adapter produced an invalid "
+                        "bearing-local time_step"
+                    )
+            _validate_runtime_time_steps(
                 mount.config,
-                time_step,
+                expected_local_step,
                 path=f"mounts[{index}].config",
             )
         if isinstance(self.steps, bool) or not isinstance(self.steps, int):
@@ -316,7 +296,13 @@ class RotorBearingSimulation:
         return coupling
 
     def run(self) -> SimulationResult:
-        """Run all requested steps and retain only committed snapshots."""
+        """Run once and retain every policy-selected committed snapshot.
+
+        A post-commit failure never repeats physics or advances another step.
+        The raised ``SimulationError`` includes the committed output hidden by
+        the exception plus independent physical, history, and post-commit
+        completion diagnostics.
+        """
 
         coupling = self._build_coupling()
         policy = self._config.history
@@ -327,6 +313,8 @@ class RotorBearingSimulation:
         committed_steps = 0
         last_snapshot: Any | None = None
         last_index = -1
+        run_close_receipt: RunReceipt | None = None
+        failure_phase = "setup"
 
         if policy.mode == "disk_stream":
             assert policy.directory is not None
@@ -337,32 +325,51 @@ class RotorBearingSimulation:
                 )
             stream_root.mkdir(parents=True, exist_ok=True)
 
+        def write_snapshot(
+            snapshot: Any,
+            index: int,
+        ) -> dict[str, Any]:
+            """Atomically persist one filtered snapshot in the stream root."""
+
+            assert stream_root is not None
+            file_name = f"step_{index:08d}.npz"
+            target = stream_root / file_name
+            temporary = stream_root / f".{file_name}.tmp.npz"
+            payload: dict[str, Any] = {
+                "time": np.asarray(
+                    [float(snapshot.metadata["time"])],
+                    dtype=float,
+                )
+            }
+            for field in policy.fields:
+                payload[field] = np.asarray(snapshot.values[field])
+            try:
+                with temporary.open("xb") as stream:
+                    np.savez_compressed(stream, **payload)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                temporary.replace(target)
+            except BaseException:
+                temporary.unlink(missing_ok=True)
+                raise
+            return {
+                "step_index": index,
+                "time": float(snapshot.metadata["time"]),
+                "file": file_name,
+            }
+
         def retain(snapshot: Any, index: int, *, force: bool = False) -> None:
             if index in retained_indices:
                 return
             if not force and index % policy.downsample != 0:
                 return
-            retained_indices.add(index)
             if stream_root is not None:
-                file_name = f"step_{index:08d}.npz"
-                payload: dict[str, Any] = {
-                    "time": np.asarray(
-                        [float(snapshot.metadata["time"])],
-                        dtype=float,
-                    )
-                }
-                for field in policy.fields:
-                    payload[field] = np.asarray(snapshot.values[field])
-                np.savez_compressed(stream_root / file_name, **payload)
-                stream_records.append(
-                    {
-                        "step_index": index,
-                        "time": float(snapshot.metadata["time"]),
-                        "file": file_name,
-                    }
-                )
+                record = write_snapshot(snapshot, index)
+                stream_records.append(record)
+                retained_indices.add(index)
                 return
             snapshots.append(snapshot)
+            retained_indices.add(index)
             if policy.mode == "ring_buffer":
                 assert policy.capacity is not None
                 while len(snapshots) > policy.capacity:
@@ -380,16 +387,164 @@ class RotorBearingSimulation:
                 "downsample": policy.downsample,
                 "records": stream_records,
             }
-            (stream_root / "history.json").write_text(
-                json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
+            target = stream_root / "history.json"
+            temporary = stream_root / ".history.json.tmp"
+            try:
+                with temporary.open(
+                    "x",
+                    encoding="utf-8",
+                    newline="\n",
+                ) as stream:
+                    stream.write(
+                        json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+                    )
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                temporary.replace(target)
+            except BaseException:
+                temporary.unlink(missing_ok=True)
+                raise
+
+        def coupling_diagnostics() -> tuple[dict[str, Any], dict[str, Any]]:
+            """Return primitive coupling values and metadata without mutation."""
+
+            try:
+                diagnostic = coupling.diagnostic_snapshot()
+            except Exception:
+                return {}, {}
+            return dict(diagnostic.values), dict(diagnostic.metadata)
+
+        def reconcile_committed_output() -> None:
+            """Publish a post-commit output that an exception hid from the loop."""
+
+            nonlocal committed_steps, last_index, last_snapshot
+            _, metadata = coupling_diagnostics()
+            committed_index = metadata.get("committed_step_index")
+            if (
+                isinstance(committed_index, int)
+                and committed_index > last_index
+            ):
+                current = coupling.output()
+                last_snapshot = current
+                last_index = committed_index
+                committed_steps = committed_index + 1
+
+        def close_run(*, allow_incomplete: bool) -> RunReceipt:
+            """Close the low-level recorder run and return its actual receipt."""
+
+            return cast(
+                RunReceipt,
+                coupling.end_run(allow_incomplete=allow_incomplete),
+            )
+
+        def build_failure_snapshot(
+            error: BaseException,
+            *,
+            phase: str,
+            partial: SimulationResult,
+            secondary_errors: Sequence[Mapping[str, str]],
+            history_complete: bool,
+        ) -> ResultBundle:
+            """Seal physical, recording, observer, and persistence diagnostics."""
+
+            diagnostic_values, diagnostic_metadata = coupling_diagnostics()
+            values: dict[str, Any] = {
+                "partial_time": partial.time,
+                "observer_failures": diagnostic_values.get(
+                    "observer_failures",
+                    (),
+                ),
+            }
+            if last_snapshot is not None:
+                values["last_bearing_force"] = np.asarray(
+                    last_snapshot.values["bearing_force"]
+                )
+                values["last_rotor_displacement"] = np.asarray(
+                    last_snapshot.values["rotor_displacement"]
+                )
+                values["last_rotor_velocity"] = np.asarray(
+                    last_snapshot.values["rotor_velocity"]
+                )
+            observer_failures = diagnostic_values.get("observer_failures", ())
+            close_status = (
+                None
+                if (
+                    run_close_receipt is None
+                    or run_close_receipt.close_status is None
+                )
+                else run_close_receipt.close_status.value
+            )
+            close_pending_keys = (
+                ()
+                if run_close_receipt is None
+                else tuple(
+                    {
+                        "run_id": key.run_id,
+                        "step_index": key.step_index,
+                    }
+                    for key in run_close_receipt.pending_keys
+                )
+            )
+            if phase in {"reset", "advance"}:
+                failed_step_committed = bool(
+                    getattr(error, "physical_step_committed", False)
+                )
+            else:
+                failed_step_committed = last_snapshot is not None
+            return result_snapshot(
+                values,
+                {
+                    "schema": "alb.simulation-failure.v0.4.2",
+                    "failure_phase": phase,
+                    "error_type": type(error).__name__,
+                    "message": sanitize_exception_message(error),
+                    "physical_step_committed": failed_step_committed,
+                    "committed_step_index": diagnostic_metadata.get(
+                        "committed_step_index",
+                        None if committed_steps == 0 else committed_steps - 1,
+                    ),
+                    "committed_steps": committed_steps,
+                    "requested_steps": self._config.steps + 1,
+                    "physical_complete": (
+                        committed_steps == self._config.steps + 1
+                    ),
+                    "history_complete": history_complete,
+                    "post_commit_complete": False,
+                    "recording_status": diagnostic_metadata.get(
+                        "recording_status"
+                    ),
+                    "pending_record_key": diagnostic_metadata.get(
+                        "pending_record_key"
+                    ),
+                    "observer_failure_count": len(observer_failures),
+                    "run_close_status": close_status,
+                    "run_close_record_count": (
+                        None
+                        if run_close_receipt is None
+                        else run_close_receipt.record_count
+                    ),
+                    "run_close_pending_keys": close_pending_keys,
+                    "run_close_first_step_index": (
+                        None
+                        if run_close_receipt is None
+                        else run_close_receipt.first_step_index
+                    ),
+                    "run_close_last_step_index": (
+                        None
+                        if run_close_receipt is None
+                        else run_close_receipt.last_step_index
+                    ),
+                    "secondary_errors": tuple(secondary_errors),
+                },
             )
 
         try:
+            failure_phase = "reset"
             coupling._reset_for_owner()
             last_snapshot = coupling.output()
             last_index = 0
             committed_steps = 1
+            failure_phase = "history_snapshot"
             retain(last_snapshot, last_index)
             for step_index in range(1, self._config.steps + 1):
                 context = StepContext(
@@ -398,40 +553,102 @@ class RotorBearingSimulation:
                     self._config.time_step,
                     UnitSystem.DIMENSIONAL,
                 )
+                failure_phase = "advance"
                 last_snapshot = coupling.advance(context)
                 last_index = step_index
                 committed_steps += 1
+                failure_phase = "history_snapshot"
                 retain(last_snapshot, last_index)
-        except BaseException as exc:
             if last_snapshot is not None:
+                failure_phase = "history_snapshot"
                 retain(last_snapshot, last_index, force=True)
-            finalize_stream(complete=False)
+            failure_phase = "run_close"
+            run_close_receipt = close_run(allow_incomplete=False)
+            failure_phase = "history_manifest"
+            finalize_stream(complete=True)
+        except BaseException as exc:
+            secondary_errors: list[dict[str, str]] = []
+            if isinstance(
+                exc,
+                (PostCommitRecordingError, PostCommitObserverError),
+            ):
+                try:
+                    reconcile_committed_output()
+                except Exception as reconcile_error:
+                    secondary_errors.append(
+                        {
+                            "phase": "post_commit_reconcile",
+                            "error_type": type(reconcile_error).__name__,
+                            "message": sanitize_exception_message(
+                                reconcile_error
+                            ),
+                        }
+                    )
+            history_complete = True
+            if last_snapshot is not None:
+                try:
+                    retain(last_snapshot, last_index, force=True)
+                except Exception as retain_error:
+                    history_complete = False
+                    secondary_errors.append(
+                        {
+                            "phase": "history_snapshot_retry",
+                            "error_type": type(retain_error).__name__,
+                            "message": sanitize_exception_message(retain_error),
+                        }
+                    )
+            if run_close_receipt is None:
+                try:
+                    run_close_receipt = close_run(allow_incomplete=True)
+                except Exception as close_error:
+                    secondary_errors.append(
+                        {
+                            "phase": "run_close",
+                            "error_type": type(close_error).__name__,
+                            "message": sanitize_exception_message(close_error),
+                        }
+                    )
+            try:
+                finalize_stream(complete=False)
+            except Exception as manifest_error:
+                history_complete = False
+                secondary_errors.append(
+                    {
+                        "phase": "history_manifest_retry",
+                        "error_type": type(manifest_error).__name__,
+                        "message": sanitize_exception_message(manifest_error),
+                    }
+                )
+            physical_complete = committed_steps == self._config.steps + 1
             partial = self._to_result(
                 snapshots,
                 committed_steps=committed_steps,
-                complete=False,
+                complete=physical_complete,
+                history_complete=history_complete,
+                post_commit_complete=False,
                 stream_records=stream_records,
                 stream_root=stream_root,
             )
             self._last_result = partial
             error = SimulationError(
-                f"rotor-bearing simulation failed: {exc}",
+                "rotor-bearing simulation failed: "
+                f"{sanitize_exception_message(exc)}",
                 partial_result=partial,
             )
-            get_failure = getattr(coupling, "failure_snapshot", None)
-            if callable(get_failure):
-                try:
-                    error.failure_snapshot = get_failure()
-                except Exception:
-                    pass
+            error.failure_snapshot = build_failure_snapshot(
+                exc,
+                phase=failure_phase,
+                partial=partial,
+                secondary_errors=secondary_errors,
+                history_complete=history_complete,
+            )
             raise error from exc
-        if last_snapshot is not None:
-            retain(last_snapshot, last_index, force=True)
-        finalize_stream(complete=True)
         result = self._to_result(
             snapshots,
             committed_steps=committed_steps,
             complete=True,
+            history_complete=True,
+            post_commit_complete=True,
             stream_records=stream_records,
             stream_root=stream_root,
         )
@@ -444,6 +661,8 @@ class RotorBearingSimulation:
         *,
         committed_steps: int,
         complete: bool,
+        history_complete: bool,
+        post_commit_complete: bool,
         stream_records: Sequence[Mapping[str, Any]],
         stream_root: Path | None,
     ) -> SimulationResult:
@@ -471,6 +690,8 @@ class RotorBearingSimulation:
             bearing_force=collect("bearing_force"),
             metadata={
                 "complete": complete,
+                "history_complete": history_complete,
+                "post_commit_complete": post_commit_complete,
                 "committed_steps": committed_steps,
                 "requested_steps": self._config.steps + 1,
                 "history_mode": policy.mode,

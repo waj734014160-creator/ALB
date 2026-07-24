@@ -135,7 +135,7 @@ trajectory = ALB.EllipseTrajectory(
     semi_axes=np.array([1.0e-5, 5.0e-6]),
     orientation_rad=0.25,
 )
-time = np.arange(32) * bearing.config.spec["time_step"]
+time = np.arange(100) * 1.0e-3
 
 orbit = bearing.analysis.trace_orbit(
     trajectory,
@@ -163,7 +163,9 @@ equilibrium = bearing.analysis.find_equilibrium(
 ```
 
 `dynamic_coefficients()` 会从同一椭圆自动生成正反涡动。`phase` 是时间相位，
-`orientation_rad` 是空间旋转。`harmonic_linearize(operating_point,
+`orientation_rad` 是空间旋转。时间网格必须有限、严格递增且均匀，目标频率
+必须命中非 DC FFT bin；上面的 100 个 `dt=0.001` 样本恰好覆盖一个 10 Hz
+周期。`harmonic_linearize(operating_point,
 excitation_frequency, spool=...)` 使用方程导数，只支持量纲液膜和已验证的
 三节点 CSOrifice 主动润滑拓扑。每次分析使用独立 runtime，返回值包含完整
 采样点，不改变 `bearing.latest_result`；任一子求解不收敛时抛出带 snapshot
@@ -181,8 +183,10 @@ history.write("outputs/rotor_case_001")
 
 挂载通过配置中的不可变 mount 列表一次性给出。默认保存所有已提交时间步；
 需要降采样或 ring buffer 时才显式配置 `HistoryPolicy`。失败不会发布半完成
-步骤，`SimulationError` 附带最后完整提交步之前的 partial result。转子、
-mount、嵌套 `MultiPad` 及其控制器、阀和热模型必须使用同一个 `time_step`。
+物理步骤；若 recorder/observer 在提交后失败，`SimulationError` 的 partial
+result 会包含该真实提交，但仿真不会重试或继续。转子使用全局 `time_step`；
+mount、嵌套 `MultiPad` 及其控制器、阀和热模型必须使用 unit adapter 转换后的
+bearing-local `time_step`。磁盘流通过原子替换发布快照和 manifest。
 
 ## ALBNN package
 

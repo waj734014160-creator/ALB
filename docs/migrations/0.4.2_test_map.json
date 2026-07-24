@@ -1,0 +1,70 @@
+{
+  "schema": "alb.release-test-map.v0.4.2",
+  "release": "0.4.2",
+  "feature_manifest": "tools/validation/release_feature_manifest_0_4_2.json",
+  "reference_contract": {
+    "metadata": "refs/alb_0_4_2_repair_contract_v1.json",
+    "arrays": "refs/alb_0_4_2_repair_contract_v1.npz",
+    "baseline_commit": "a26435e2eb7652d6d64af2194865dd3cf05db61d",
+    "npz_sha256": "72eb8e591b27b40be0098ebc55d8c373c00159902b7a362e04b33fe86355e52b"
+  },
+  "features": [
+    {
+      "id": "V4P2-01",
+      "source": ["ALB/api/analysis.py", "ALB/api/simulation.py"],
+      "tests": ["tests/regression/api/test_review_fixes_0_4_2_reference.py"]
+    },
+    {
+      "id": "V4P2-02",
+      "source": ["ALB/api/analysis.py"],
+      "tests": ["tests/unit/api/test_review_fixes_0_4_2.py"]
+    },
+    {
+      "id": "V4P2-03",
+      "source": ["ALB/api/analysis.py"],
+      "tests": ["tests/unit/api/test_review_fixes_0_4_2.py"]
+    },
+    {
+      "id": "V4P2-04",
+      "source": [
+        "ALB/contracts/dynamics.py",
+        "ALB/api/building.py",
+        "ALB/api/simulation.py"
+      ],
+      "tests": [
+        "tests/unit/api/test_review_fixes_0_4_2.py",
+        "tests/unit/api/test_simulation_time_step_0_4_1.py"
+      ]
+    },
+    {
+      "id": "V4P2-05",
+      "source": ["ALB/api/simulation.py"],
+      "tests": [
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py"
+      ]
+    },
+    {
+      "id": "V4P2-06",
+      "source": ["ALB/api/simulation.py"],
+      "tests": [
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py"
+      ]
+    },
+    {
+      "id": "V4P2-07",
+      "source": [
+        "ALB/__init__.py",
+        "ALB/api/config.py",
+        "pyproject.toml",
+        "tools/validation/run_release_acceptance_0_4_2.py"
+      ],
+      "tests": ["tests/validation/test_release_0_4_2_gates.py"]
+    }
+  ],
+  "policy": {
+    "numerical_equality": "All valid deterministic repair paths require assert_array_equal against the immutable a26435e contract.",
+    "algorithm_change": "The established equilibrium, recognize_kc, FFT, and film methods are not replaced by this patch.",
+    "historical_release": "The 0.4.0 and 0.4.1 manifests, references, reports, wheels, and tags remain unchanged.",
+    "candidate": "Formal acceptance runs only from a fixed clean detached implementation candidate SHA."
+  }
+}

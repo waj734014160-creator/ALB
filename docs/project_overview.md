@@ -81,13 +81,13 @@ E:/Anaconda2023/envs/ALB/python.exe
 ```powershell
 E:/Anaconda2023/envs/ALB/python.exe -m pytest --collect-only
 E:/Anaconda2023/envs/ALB/python.exe -m pytest
-E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/regression/api/test_numerical_analysis_0_4_1_reference.py -q
+E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/regression/api/test_review_fixes_0_4_2_reference.py -q
 E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
-E:/Anaconda2023/envs/ALB/python.exe -m tools.validation.run_release_acceptance_0_4_1 --candidate HEAD
+E:/Anaconda2023/envs/ALB/python.exe -m tools.validation.run_release_acceptance_0_4_2 --candidate HEAD
 ```
 
 分层类型检查对稳定边界执行 strict mypy，并要求其余安装源码不扩大已记录诊断
-基线。0.4.1 正式发布验收从固定 SHA 的 detached worktree 执行数值合同、完整
+基线。0.4.2 正式发布验收从固定 SHA 的 detached worktree 执行数值合同、完整
 测试、双 wheel、资源门禁、隔离安装和外部消费者 smoke；实时结论与候选指针见
 `docs/current_state.md`。
 

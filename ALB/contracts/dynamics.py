@@ -20,6 +20,10 @@ class RotorProtocol(RuntimeLifecycleProtocol, Protocol):
 
     unit_system: UnitSystem | str
 
+    @property
+    def dt(self) -> float:
+        """Return the immutable rotor integration time step."""
+
     def _reset_for_owner(
         self,
         initial_state: npt.ArrayLike | None = None,

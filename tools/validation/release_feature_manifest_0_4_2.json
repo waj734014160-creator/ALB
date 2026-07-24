@@ -1,0 +1,80 @@
+{
+  "schema": "alb.release-feature-manifest.v0.4.2",
+  "release": "0.4.2",
+  "features": [
+    {
+      "id": "V4P2-01",
+      "title": "Exact v0.4.1 successful-path numerical preservation",
+      "required_nodeids": [
+        "tests/regression/api/test_review_fixes_0_4_2_reference.py::test_reference_identity_and_shapes",
+        "tests/regression/api/test_review_fixes_0_4_2_reference.py::test_successful_paths_match_v0_4_1_exactly"
+      ]
+    },
+    {
+      "id": "V4P2-02",
+      "title": "Pre-solve coherent FFT and whirl-matrix validation",
+      "required_nodeids": [
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_invalid_grid_before_runtime",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_unrepresented_frequency_before_runtime",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_ill_conditioned_displacement_matrix",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_rank_deficient_matrix_before_inversion",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_dynamic_coefficients_reject_invalid_frequency_before_runtime"
+      ]
+    },
+    {
+      "id": "V4P2-03",
+      "title": "Exact-zero equilibrium domain rejection before runtime creation",
+      "required_nodeids": [
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_zero_load_equilibrium_is_rejected_before_runtime",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_only_exact_zero_load_uses_the_pre_runtime_rejection"
+      ]
+    },
+    {
+      "id": "V4P2-04",
+      "title": "Protocol-backed rotor and bearing-local recursive time-step validation",
+      "required_nodeids": [
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_unit_adapter_uses_bearing_local_time_step",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_unit_adapter_rejects_global_dt_used_as_local_dt",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_standalone_multi_pad_rejects_explicit_child_dt_mismatch",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_standalone_nested_multi_pad_rejects_grandchild_dt_mismatch",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_file_referenced_multi_pad_rejects_child_dt_before_build",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_rotor_protocol_declares_required_dt",
+        "tests/unit/api/test_review_fixes_0_4_2.py::test_third_party_rotor_without_dt_fails_during_configuration"
+      ]
+    },
+    {
+      "id": "V4P2-05",
+      "title": "One-shot post-commit simulation failure reconciliation and close receipts",
+      "required_nodeids": [
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_post_commit_record_failure_keeps_committed_step_in_partial_result",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_strict_observer_failure_keeps_step_one_without_repeating_physics",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_strict_observer_failure_at_step_zero_keeps_initial_commit",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_secondary_recorder_close_failure_does_not_replace_primary_error",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_successful_simulation_closes_recorder_run"
+      ]
+    },
+    {
+      "id": "V4P2-06",
+      "title": "Atomic disk-stream snapshots and manifest publication",
+      "required_nodeids": [
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_snapshot_write_failure_retries_without_publishing_early",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_snapshot_replace_failure_retries_without_publishing_early",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_persistent_snapshot_failure_is_wrapped_without_false_retention",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_manifest_write_failure_is_wrapped_and_incomplete_manifest_is_saved",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_persistent_manifest_failure_is_wrapped_and_cleans_temporary_file",
+        "tests/unit/api/test_simulation_failure_atomicity_0_4_2.py::test_disk_stream_force_retains_the_final_committed_step"
+      ]
+    },
+    {
+      "id": "V4P2-07",
+      "title": "Patch package version and immutable historical release evidence",
+      "required_nodeids": [
+        "tests/validation/test_release_0_4_2_gates.py::test_repair_reference_is_the_frozen_v0_4_1_candidate_contract",
+        "tests/validation/test_release_0_4_2_gates.py::test_patch_manifest_and_test_map_are_contiguous_and_aligned",
+        "tests/validation/test_release_0_4_2_gates.py::test_historical_release_evidence_remains_content_unchanged",
+        "tests/validation/test_release_0_4_2_gates.py::test_package_version_changes_without_schema_migration",
+        "tests/validation/test_release_0_4_2_gates.py::test_quickstart_uses_a_coherent_ten_hertz_grid"
+      ]
+    }
+  ]
+}

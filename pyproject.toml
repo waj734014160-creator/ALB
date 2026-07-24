@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "re-alb"
-version = "0.4.1"
+version = "0.4.2"
 description = "Active lubricated bearing physics, control, dynamics, and surrogate models"
 requires-python = ">=3.10"
 dependencies = [
@@ -87,5 +87,6 @@ files = [
     "tools/validation/run_resource_acceptance_0_4.py",
     "tools/validation/run_release_acceptance_0_4.py",
     "tools/validation/run_release_acceptance_0_4_1.py",
+    "tools/validation/run_release_acceptance_0_4_2.py",
 ]
 exclude = ["ALB/core/fem", "ALB/core/numerics"]

@@ -28,7 +28,7 @@ class Blocker(importlib.abc.MetaPathFinder):
 
 sys.meta_path.insert(0, Blocker())
 import ALB
-assert ALB.__version__ == "0.4.1"
+assert ALB.__version__ == "0.4.2"
 assert callable(ALB.build_bearing)
 """
     environment = os.environ.copy()

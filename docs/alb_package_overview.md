@@ -93,9 +93,17 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 数值参考的量纲液膜和三节点 CSOrifice 主动润滑轴承。可倾瓦轴承不属于
 0.4.1 安装包能力。
 
+0.4.2 不改变上述算法。动态系数入口只接受可表示目标频率的均匀 FFT 网格和
+可逆的正反涡动位移矩阵；静平衡拒绝无法使用相对残差定义的精确零载荷。
+`RotorProtocol.dt` 是显式能力，每个 mount 按 unit adapter 转换得到自己的
+bearing-local 步长，构建器在物理 runtime 创建前递归检查 `MultiPad` 及物化
+控制器、阀和热模型。
+
 所有公开结果都是不可变对象，数组设为只读，并提供 `write(path)`。计算失败
-通过稳定异常携带密封 failure snapshot；仿真失败只发布最后一个完整提交步及
-此前的 partial result。
+通过稳定异常携带密封 failure snapshot。仿真遇到提交后 recorder/observer
+异常时不会重算物理步骤；partial result 包含已真实提交的步骤，并分别报告
+物理完成、历史完成和 post-commit 完整性。`disk_stream` 通过同目录临时文件、
+flush/fsync 和原子替换发布快照及 manifest。
 
 ## ALBNN 制品
 
@@ -115,5 +123,7 @@ E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
 0.4.0 发布功能以 `tools/validation/release_feature_manifest_0_4.json` 和
 `docs/migrations/0.4.0_test_map.json` 为历史证据；0.4.1 数值一致性补丁以
 `tools/validation/release_feature_manifest_0_4_1.json` 和
-`docs/migrations/0.4.1_test_map.json` 为准。0.3 的 F01-F66 manifest 仅保留为
-历史证据。
+`docs/migrations/0.4.1_test_map.json` 为历史数值证据；0.4.2 审阅修复以
+`tools/validation/release_feature_manifest_0_4_2.json` 和
+`docs/migrations/0.4.2_test_map.json` 为准。0.3 的 F01-F66 manifest 仅保留
+为历史证据。

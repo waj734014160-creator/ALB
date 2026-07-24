@@ -19,7 +19,7 @@ from ALB.contracts import (
 
 from .analysis import BearingAnalysis
 from .config import BearingConfig, load_bearing_config
-from .errors import BuildError, CalculationError
+from .errors import BuildError, CalculationError, ConfigurationError
 from .results import BearingResult
 
 
@@ -177,7 +177,7 @@ def build_bearing(config: BearingConfig) -> Bearing:
 
     try:
         return Bearing(config)
-    except BuildError:
+    except (BuildError, ConfigurationError):
         raise
     except Exception as exc:
         raise BuildError(f"failed to build bearing: {exc}") from exc
