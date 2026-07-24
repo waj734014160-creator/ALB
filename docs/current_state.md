@@ -30,6 +30,9 @@
 - 0.4.1 使用独立 V4P manifest。迁移前数值合同固定于 `93dd63d`，参考提交为
   `c93624c`，NPZ SHA-256 为
   `78440877f4816b1286979659c3615f7ff22001299d54932613db1e4c516e02d7`。
+- 0.4.1 实现候选为 `a26435e2eb7652d6d64af2194865dd3cf05db61d`；
+  `v0.4.1` 固定指向该候选。正式机器报告保存在其后的 evidence-only 提交中，
+  不反向修改候选。
 
 ## 已完成的实现边界
 
@@ -58,8 +61,13 @@
   死代码后实现层基线降为 363 条诊断、85 个文件/错误码组。
 - 0.4.1 目标数值合同与 V4P required nodeid 为 `20 passed`；三项资源门禁
   已通过开发工作树检查。
-- 0.4.1 固定 SHA detached 双 wheel、隔离安装和外部消费者 smoke 尚待实现候选
-  提交形成后执行；当前不得写成正式发布通过。
+- 0.4.1 固定 SHA detached 正式验收状态为 `passed`；完整证据见
+  `docs/migrations/0.4.1_release_acceptance.json`。两个连续构建的 wheel
+  字节一致，`re_alb-0.4.1-py3-none-any.whl` 的 SHA-256 为
+  `1d908096727705f1f4442499291b1c0501ac9a09be17254e5acbbeb41abff38e`。
+- 0.4.1 detached 验收重新通过完整 pytest、V4P required nodeid、分层 mypy、
+  资源门禁、wheel 内容审计、隔离安装，以及 PAPER_WORK、SURROGATE_TRAIN 和
+  remote CLI smoke。
 - 两次独立 Git blob 源构建得到字节一致的
   `re_alb-0.4.0-py3-none-any.whl`；SHA256 为
   `18bffa0977d48d48438f57244a4f8bd98f2f77015b369d598dbf0605401f4495`。
@@ -73,7 +81,8 @@
 ## 当前风险与边界
 
 - 0.4.0 的分析 facade 曾以新数值方法替换旧算法且验收未覆盖双侧数值比较；
-  推荐发布版本将在 0.4.1 正式验收后切换。
+  `0.4.1` 已完成数值合同和正式 detached 验收，现作为推荐发布版本取代
+  `0.4.0`。历史 `v0.4.0` 标签、wheel 和验收证据保持不变。
 - 0.4.1 谐波线性化只声明量纲液膜和三节点 CSOrifice 主动润滑拓扑；无量纲、
   Gas、MultiPad、surrogate、热包装及其他节流拓扑会明确失败。
 - 0.4.1 不支持可倾瓦轴承；未来重新加入必须作为新功能设计和验证。
@@ -86,11 +95,11 @@
 
 ## 当前下一步
 
-1. 形成 tracked-clean 的 0.4.1 实现候选提交。
-2. 从固定 SHA 的 detached worktree 连续构建两个字节一致 wheel，执行完整测试、
-   mypy、数值合同、wheel 内容、资源和外部消费者 smoke。
-3. 只在全部验收通过后把 `v0.4.1` 绑定到实现候选；机器报告保存于后续
-   evidence-only 提交。
+1. 使用固定候选 SHA 和已发布 wheel 作为后续安装、复现和消费者迁移基线。
+2. 新的数值算法变更必须遵守 ADR-0007：单独立项、冻结双侧参考，并在合并前
+   证明差异合理。
+3. 可倾瓦轴承如需恢复，必须作为新功能重新设计、验证和发布，不得从历史实现
+   直接恢复为受支持接口。
 
 ## 稳定入口
 
@@ -104,4 +113,5 @@
 - 功能门禁：`tools/validation/release_feature_manifest_0_4.json`
 - 0.4.1 功能门禁：`tools/validation/release_feature_manifest_0_4_1.json`
 - detached 验收：`tools/validation/run_release_acceptance_0_4_1.py`
-- 正式证据：`docs/migrations/0.4.0_release_acceptance.json`
+- 0.4.0 正式证据：`docs/migrations/0.4.0_release_acceptance.json`
+- 0.4.1 正式证据：`docs/migrations/0.4.1_release_acceptance.json`
