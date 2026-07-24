@@ -1,0 +1,83 @@
+{
+  "schema": "alb.release-feature-manifest.v0.4.1",
+  "release": "0.4.1",
+  "features": [
+    {
+      "id": "V4P-01",
+      "title": "Public immutable equilibrium options",
+      "required_nodeids": [
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_equilibrium_options_are_public_immutable_and_stable"
+      ]
+    },
+    {
+      "id": "V4P-02",
+      "title": "Established equilibrium iteration and final-point recomputation",
+      "required_nodeids": [
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_equilibrium_algorithm_matches_frozen_reference_exactly",
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_equilibrium_uses_an_isolated_runtime_and_preserves_latest_result"
+      ]
+    },
+    {
+      "id": "V4P-03",
+      "title": "Rotated forward and reverse ellipse generation",
+      "required_nodeids": [
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_rotated_two_whirl_identification_matches_reference_exactly"
+      ]
+    },
+    {
+      "id": "V4P-04",
+      "title": "Two-whirl complex dynamic-coefficient identification",
+      "required_nodeids": [
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_dynamic_coefficients_have_no_single_trajectory_least_squares",
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_dynamic_coefficients_do_not_publish_after_sample_failure"
+      ]
+    },
+    {
+      "id": "V4P-05",
+      "title": "Dimensional liquid-film equation-derivative linearization",
+      "required_nodeids": [
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_liquid_equation_derivative_linearization_matches_reference_exactly"
+      ]
+    },
+    {
+      "id": "V4P-06",
+      "title": "Active-bearing equation-derivative and spool linearization",
+      "required_nodeids": [
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_active_equation_derivative_linearization_matches_reference_exactly",
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_active_harmonic_rejects_unverified_restrictor_topology"
+      ]
+    },
+    {
+      "id": "V4P-07",
+      "title": "Sealed equilibrium failure snapshots",
+      "required_nodeids": [
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_equilibrium_inner_failure_raises_with_complete_snapshot",
+        "tests/regression/api/test_numerical_analysis_0_4_1_reference.py::test_equilibrium_inner_exception_keeps_last_trusted_snapshot"
+      ]
+    },
+    {
+      "id": "V4P-08",
+      "title": "Simulation-wide normalized time-step consistency",
+      "required_nodeids": [
+        "tests/unit/api/test_simulation_time_step_0_4_1.py::test_simulation_rejects_rotor_time_step_mismatch_with_path",
+        "tests/unit/api/test_simulation_time_step_0_4_1.py::test_simulation_rejects_mount_time_step_mismatch_with_path",
+        "tests/unit/api/test_simulation_time_step_0_4_1.py::test_simulation_rejects_nested_multi_pad_time_step_mismatch",
+        "tests/unit/api/test_simulation_time_step_0_4_1.py::test_materialized_controller_valve_and_thermal_share_bearing_step"
+      ]
+    },
+    {
+      "id": "V4P-09",
+      "title": "Tilting-pad implementation removal",
+      "required_nodeids": [
+        "tests/unit/api/test_simulation_time_step_0_4_1.py::test_tilting_pad_implementation_is_absent_from_active_package_source"
+      ]
+    },
+    {
+      "id": "V4P-10",
+      "title": "Patch package version with stable 0.4 configuration schema",
+      "required_nodeids": [
+        "tests/unit/api/test_simulation_time_step_0_4_1.py::test_patch_release_keeps_the_0_4_configuration_schema"
+      ]
+    }
+  ]
+}

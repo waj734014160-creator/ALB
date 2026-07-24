@@ -21,7 +21,8 @@
     "tools/validation/release_phases.py",
     "tools/validation/release_source_identity.py",
     "tools/validation/run_resource_acceptance_0_4.py",
-    "tools/validation/run_release_acceptance_0_4.py"
+    "tools/validation/run_release_acceptance_0_4.py",
+    "tools/validation/run_release_acceptance_0_4_1.py"
   ],
   "covered_namespaces": [
     "ALB/api",
@@ -38,6 +39,7 @@
   ],
   "covered_source_files": [
     "ALB/api/__init__.py",
+    "ALB/api/_analysis_numerics.py",
     "ALB/api/analysis.py",
     "ALB/api/bearing.py",
     "ALB/api/building.py",
@@ -225,12 +227,11 @@
     "ALB/dynamics/rotor.py|misc": 1,
     "ALB/infrastructure/remote/job.py|assignment": 1,
     "ALB/infrastructure/remote/transport.py|operator": 1,
-    "ALB/physics/bearing/solver.py|arg-type": 10,
+    "ALB/physics/bearing/solver.py|arg-type": 2,
     "ALB/physics/bearing/solver.py|assignment": 3,
     "ALB/physics/bearing/solver.py|attr-defined": 1,
-    "ALB/physics/bearing/solver.py|index": 2,
-    "ALB/physics/bearing/solver.py|misc": 9,
-    "ALB/physics/bearing/solver.py|operator": 2,
+    "ALB/physics/bearing/solver.py|index": 1,
+    "ALB/physics/bearing/solver.py|misc": 7,
     "ALB/physics/bearing/units.py|call-overload": 1,
     "ALB/physics/film/mesh_export.py|attr-defined": 1,
     "ALB/physics/film/solver.py|assignment": 6,

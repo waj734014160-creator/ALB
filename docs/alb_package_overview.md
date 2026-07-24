@@ -32,7 +32,8 @@ result = bearing.calculate(displacement=(0.0, 0.0), time=0.0)
   `build_bearing()`、`bearing_from_file()`、`build_simulation()` 和
   `simulation_from_file()`。
 - 用户对象：`Bearing`、`BearingAnalysis`、`RotorBearingSimulation`、
-  `BearingMount`、`HistoryPolicy` 和 `EllipseTrajectory`。
+  `BearingMount`、`HistoryPolicy`、`EllipseTrajectory` 和
+  `EquilibriumOptions`。
 - 不可变结果：`BearingResult`、`AnalysisResult` 和 `SimulationResult`。
 - 稳定错误：`ALBError`、`ConfigurationError`、`BuildError`、
   `CalculationError` 和 `SimulationError`。
@@ -86,6 +87,12 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 独立 runtime，不污染当前轴承状态。转子轴承仿真默认保留全部已提交步骤；
 只有显式 `HistoryPolicy` 才能降采样或使用 ring buffer。
 
+0.4.1 的静平衡保留专用阻尼 Newton、冻结 Jacobian 和固定刚度回退算法；
+动态系数由同一旋转椭圆自动生成正反涡动并使用复数识别；谐波线性化使用压力
+方程导数与节流耦合，不再以轨迹最小二乘拟合代替。谐波接口当前只支持已有
+数值参考的量纲液膜和三节点 CSOrifice 主动润滑轴承。可倾瓦轴承不属于
+0.4.1 安装包能力。
+
 所有公开结果都是不可变对象，数组设为只读，并提供 `write(path)`。计算失败
 通过稳定异常携带密封 failure snapshot；仿真失败只发布最后一个完整提交步及
 此前的 partial result。
@@ -105,6 +112,8 @@ E:/Anaconda2023/envs/ALB/python.exe -m pytest -q
 E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
 ```
 
-0.4 发布功能以 `tools/validation/release_feature_manifest_0_4.json` 和
-`docs/migrations/0.4.0_test_map.json` 为准；0.3 的 F01-F66 manifest 仅保留为
+0.4.0 发布功能以 `tools/validation/release_feature_manifest_0_4.json` 和
+`docs/migrations/0.4.0_test_map.json` 为历史证据；0.4.1 数值一致性补丁以
+`tools/validation/release_feature_manifest_0_4_1.json` 和
+`docs/migrations/0.4.1_test_map.json` 为准。0.3 的 F01-F66 manifest 仅保留为
 历史证据。

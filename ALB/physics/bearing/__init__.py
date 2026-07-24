@@ -1,4 +1,4 @@
-"""Mixed liquid-film and tilting-pad bearing assemblies."""
+"""Mixed liquid-film bearing assemblies."""
 
 from ALB.contracts.optional import import_optional_module
 from .units import AppliedTransform, BearingScaleSet, BearingUnitAdapter
@@ -7,7 +7,6 @@ from .units import AppliedTransform, BearingScaleSet, BearingUnitAdapter
 _NAMES = (
     "MultiPad",
     "get_pad_pressure_fields",
-    "solve_tilting_pad_equilibrium",
 )
 
 

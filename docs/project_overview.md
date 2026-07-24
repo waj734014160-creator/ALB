@@ -81,11 +81,15 @@ E:/Anaconda2023/envs/ALB/python.exe
 ```powershell
 E:/Anaconda2023/envs/ALB/python.exe -m pytest --collect-only
 E:/Anaconda2023/envs/ALB/python.exe -m pytest
-E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/regression/test_full_repo_refactor_references.py tests/regression/test_full_repo_refactor_thermal_addendum.py -q
-E:/Anaconda2023/envs/ALB/python.exe tools/validation/validate_wheel_0_2.py --help
+E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/regression/api/test_numerical_analysis_0_4_1_reference.py -q
+E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
+E:/Anaconda2023/envs/ALB/python.exe -m tools.validation.run_release_acceptance_0_4_1 --candidate HEAD
 ```
 
-严格类型检查只覆盖 `contracts/core` 的稳定边界，命令和临时工具依赖位置见 `docs/current_state.md`。性能门禁由 `tools/benchmarks/benchmark_full_repo_refactor.py` 执行，并先检查精确参考再计时。
+分层类型检查对稳定边界执行 strict mypy，并要求其余安装源码不扩大已记录诊断
+基线。0.4.1 正式发布验收从固定 SHA 的 detached worktree 执行数值合同、完整
+测试、双 wheel、资源门禁、隔离安装和外部消费者 smoke；实时结论与候选指针见
+`docs/current_state.md`。
 
 ## 跨项目与文件边界
 

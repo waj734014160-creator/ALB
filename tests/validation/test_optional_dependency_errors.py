@@ -11,7 +11,7 @@ import pytest
 
 @pytest.mark.parametrize(
     "missing",
-    ["skfem", "skfuzzy", "ross", "torch", "json5"],
+    ["matplotlib", "skfem", "skfuzzy", "ross", "torch", "json5"],
 )
 def test_public_root_import_does_not_require_optional_dependency(
     missing: str,
@@ -28,7 +28,7 @@ class Blocker(importlib.abc.MetaPathFinder):
 
 sys.meta_path.insert(0, Blocker())
 import ALB
-assert ALB.__version__ == "0.4.0"
+assert ALB.__version__ == "0.4.1"
 assert callable(ALB.build_bearing)
 """
     environment = os.environ.copy()

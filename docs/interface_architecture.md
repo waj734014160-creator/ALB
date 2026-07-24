@@ -14,7 +14,8 @@
 
 1. 包根是面向用户的窄 facade；领域 namespace 是严格 DTO 和研究扩展边界。
 2. 配置、构建、计算、分析、提交历史和写盘是独立职责。
-3. 数值公式和有效结果由冻结参考保护；0.4 只改变接口和所有权。
+3. 数值公式和有效结果由冻结参考保护；接口重构不得替换已验证核心算法。算法
+   变化必须单独立项并冻结变更前后两侧参考。
 4. `Signal`、隐式 `lead_loop`、旧工厂和兼容 adapter 不进入任何运行时路径。
 5. 单位制、控制模式、阀类型、spool 和挂载拓扑必须显式，禁止运行时猜测。
 6. 所有公开结果不可变；读取属性不得触发计算或提交。
@@ -64,6 +65,17 @@ hook 或创建新 runtime。失败状态是终止性的；failure snapshot 不�
 使用同一生命周期。`MultiPad.evaluate()` 每步只推进每个子瓦一次并发布汇总力，
 不默认积累历史。
 
+## 数值分析边界
+
+`find_equilibrium()` 使用独立静态 runtime 会话和专用阻尼 Newton 算法；
+`dynamic_coefficients()` 从一个 `EllipseTrajectory` 生成独立正反涡动并调用
+复数识别；`harmonic_linearize()` 直接计算压力方程导数和已验证的节流耦合。
+空间方向使用 `orientation_rad`，时间相位使用 `phase`，两者不可混用。任何
+内层或轨迹样本不收敛时均不发布分析结果。
+
+公开分析 facade 可以改变参数命名和结果组织，但内部算法变化受 ADR-0007
+约束。0.4.1 不包含可倾瓦轴承实现。
+
 ## 配置边界
 
 所有可运行配置文档采用：
@@ -88,7 +100,8 @@ override/sweep 不原地修改，且必须重新完成 schema 与跨字段校验
 
 转子轴承仿真只接收构造期固定的 `BearingMount` 元组。每个 mount 固定
 `BearingConfig`、节点以及可选 unit adapter/spool provider；运行期没有
-`add_bearing()`。
+`add_bearing()`。转子、所有 mount、嵌套 `MultiPad` 以及物化控制器、阀和热
+组件必须使用同一归一化 `time_step`，不一致在运行前失败。
 
 底层 coupling 按以下顺序推进：
 
@@ -131,7 +144,7 @@ preflight → mutable execute → immutable candidate
 ```powershell
 E:/Anaconda2023/envs/ALB/python.exe -m pytest -q
 E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
-E:/Anaconda2023/envs/ALB/python.exe -m tools.validation.run_release_acceptance_0_4 --candidate HEAD
+E:/Anaconda2023/envs/ALB/python.exe -m tools.validation.run_release_acceptance_0_4_1 --candidate HEAD
 ```
 
 发布验收必须从固定 SHA 建立 detached worktree，连续构建两个相同 wheel，

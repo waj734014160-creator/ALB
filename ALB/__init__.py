@@ -12,6 +12,7 @@ from .api import (
     CalculationError,
     ConfigurationError,
     EllipseTrajectory,
+    EquilibriumOptions,
     HistoryPolicy,
     RotorBearingSimulation,
     SimulationConfig,
@@ -27,7 +28,7 @@ from .api import (
 from .contracts import UnitSystem
 
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 __all__ = [
     "ALBError",
@@ -41,6 +42,7 @@ __all__ = [
     "CalculationError",
     "ConfigurationError",
     "EllipseTrajectory",
+    "EquilibriumOptions",
     "HistoryPolicy",
     "RotorBearingSimulation",
     "SimulationConfig",

@@ -160,7 +160,15 @@ def _thermal_config(
     values = _plain(thermal)
     values["args_nodim"] = config.unit_system == "nondimensional"
     values["dt"] = float(config.spec["time_step"])
-    return ThermalConfig(**values)
+    resolved = ThermalConfig(**values)
+    if (
+        resolved.dt is None
+        or float(resolved.dt) != float(config.spec["time_step"])
+    ):
+        raise ValueError(
+            "thermal.dt must equal bearing time_step after materialization"
+        )
+    return resolved
 
 
 def _dimensional_pad(config: BearingConfig, *, active: bool) -> HydConfig:
@@ -349,7 +357,25 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
         "control_mode": mode,
         "valve_model": valve_model,
     }
-    return NodimALBConfig(**common) if nodim else ALBConfig(**common)
+    resolved = NodimALBConfig(**common) if nodim else ALBConfig(**common)
+    expected_dt = float(config.spec["time_step"])
+    materialized_steps: dict[str, float | None] = {
+        "active.dt": resolved.dt,
+        "active.valve.dt": resolved.servo_config.dt,
+    }
+    if resolved.controller_config is not None:
+        materialized_steps["active.controller.dt"] = (
+            resolved.controller_config.dt
+        )
+    if resolved.thermal_config is not None:
+        materialized_steps["active.thermal.dt"] = resolved.thermal_config.dt
+    for path, value in materialized_steps.items():
+        if value is None or float(value) != expected_dt:
+            raise ValueError(
+                f"{path} must equal bearing time_step {expected_dt!r}; "
+                f"got {value!r}"
+            )
+    return resolved
 
 
 def build_runtime(config: BearingConfig) -> object:

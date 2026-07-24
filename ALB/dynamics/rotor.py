@@ -376,6 +376,12 @@ class RossRotor:
         self._lifecycle = RuntimeLifecycle(type(self).__name__, input_label="rotor load")
         self._reset_for_owner()
 
+    @property
+    def dt(self) -> float:
+        """Return the immutable integration time step in seconds."""
+
+        return float(self._dt)
+
     def continuesys(self):
         """
         Discretize continuous model and obtain Ad, Bd0, Bd1.

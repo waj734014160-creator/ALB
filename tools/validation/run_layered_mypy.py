@@ -40,6 +40,7 @@ STRICT_TARGETS = (
     "tools/validation/release_source_identity.py",
     "tools/validation/run_resource_acceptance_0_4.py",
     "tools/validation/run_release_acceptance_0_4.py",
+    "tools/validation/run_release_acceptance_0_4_1.py",
 )
 COVERED_NAMESPACES = (
     "ALB/api",

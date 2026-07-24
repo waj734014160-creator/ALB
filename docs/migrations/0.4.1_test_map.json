@@ -1,0 +1,29 @@
+{
+  "schema": "alb.release-test-map.v0.4.1",
+  "release": "0.4.1",
+  "feature_manifest": "tools/validation/release_feature_manifest_0_4_1.json",
+  "reference_contract": {
+    "metadata": "refs/alb_0_4_1_numerical_contract_v1.json",
+    "arrays": "refs/alb_0_4_1_numerical_contract_v1.npz",
+    "baseline_commit": "93dd63d12817b6952245cf60311139eb52ee5668",
+    "npz_sha256": "78440877f4816b1286979659c3615f7ff22001299d54932613db1e4c516e02d7"
+  },
+  "features": [
+    {"id": "V4P-01", "source": ["ALB/api/analysis.py"], "tests": ["tests/regression/api/test_numerical_analysis_0_4_1_reference.py"]},
+    {"id": "V4P-02", "source": ["ALB/api/_analysis_numerics.py", "ALB/api/analysis.py"], "tests": ["tests/regression/api/test_numerical_analysis_0_4_1_reference.py"]},
+    {"id": "V4P-03", "source": ["ALB/api/analysis.py"], "tests": ["tests/regression/api/test_numerical_analysis_0_4_1_reference.py"]},
+    {"id": "V4P-04", "source": ["ALB/api/analysis.py", "ALB/dynamics/identification.py"], "tests": ["tests/regression/api/test_numerical_analysis_0_4_1_reference.py"]},
+    {"id": "V4P-05", "source": ["ALB/api/_analysis_numerics.py", "ALB/physics/bearing/solver.py"], "tests": ["tests/regression/api/test_numerical_analysis_0_4_1_reference.py"]},
+    {"id": "V4P-06", "source": ["ALB/api/_analysis_numerics.py", "ALB/api/analysis.py"], "tests": ["tests/regression/api/test_numerical_analysis_0_4_1_reference.py"]},
+    {"id": "V4P-07", "source": ["ALB/api/analysis.py", "ALB/api/errors.py"], "tests": ["tests/regression/api/test_numerical_analysis_0_4_1_reference.py"]},
+    {"id": "V4P-08", "source": ["ALB/api/simulation.py", "ALB/api/building.py"], "tests": ["tests/unit/api/test_simulation_time_step_0_4_1.py"]},
+    {"id": "V4P-09", "source": ["ALB/physics/bearing/solver.py", "ALB/physics/bearing/__init__.py"], "tests": ["tests/unit/api/test_simulation_time_step_0_4_1.py"]},
+    {"id": "V4P-10", "source": ["ALB/__init__.py", "ALB/api/config.py", "pyproject.toml"], "tests": ["tests/unit/api/test_simulation_time_step_0_4_1.py"]}
+  ],
+  "policy": {
+    "numerical_equality": "Deterministic restored paths require assert_array_equal against the immutable 93dd63d contract.",
+    "algorithm_change": "A core numerical-method change requires a separate proposal and frozen before/after evidence.",
+    "historical_release": "The 0.4.0 manifest, acceptance report, wheel, and v0.4.0 tag remain unchanged.",
+    "candidate": "Formal acceptance runs only from a fixed clean detached candidate SHA."
+  }
+}

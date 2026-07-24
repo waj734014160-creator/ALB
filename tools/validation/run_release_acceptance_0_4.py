@@ -24,6 +24,9 @@ ROOT = Path(__file__).resolve().parents[2]
 PYTHON = Path("E:/Anaconda2023/envs/ALB/python.exe")
 VERSION = "0.4.0"
 FEATURE_MANIFEST = ROOT / "tools/validation/release_feature_manifest_0_4.json"
+FEATURE_ID_PREFIX = "V4-"
+REPORT_SCHEMA = "alb.release-acceptance.v0.4"
+RUN_SLUG = "alb_0_4"
 PAPER_ROOT = Path("F:/BaiduSyncdisk/博士论文/PAPER_WORK")
 SURROGATE_ROOT = ROOT.parent / "SURROGATE_TRAIN"
 FORBIDDEN_MEMBERS = {
@@ -36,7 +39,7 @@ FORBIDDEN_MEMBERS = {
     "ALB/systems/alb/factories.py",
     "ALB/systems/alb/runtime_adapter.py",
 }
-FORBIDDEN_SOURCE_TOKENS = (
+FORBIDDEN_SOURCE_TOKENS: tuple[str, ...] = (
     "class Signal",
     "lead_loop",
     "LegacyBearingAdapter",
@@ -106,7 +109,10 @@ def _feature_nodeids() -> list[str]:
     features = payload.get("features")
     if not isinstance(features, list) or not features:
         raise ValueError("0.4 feature manifest is empty")
-    expected = [f"V4-{index:02d}" for index in range(1, len(features) + 1)]
+    expected = [
+        f"{FEATURE_ID_PREFIX}{index:02d}"
+        for index in range(1, len(features) + 1)
+    ]
     actual = [item.get("id") for item in features]
     if actual != expected:
         raise ValueError("0.4 feature IDs must be contiguous and ordered")
@@ -198,7 +204,7 @@ def _isolated_smoke(
     )
     smoke_code = """
 import ALB
-assert ALB.__version__ == "0.4.0"
+assert ALB.__version__ == "__ALB_VERSION__"
 assert not hasattr(ALB, "Signal")
 cfg = ALB.BearingConfig({
     "family": "liquid_film",
@@ -217,7 +223,7 @@ bearing = ALB.build_bearing(cfg)
 assert not hasattr(bearing, "init")
 assert bearing.calculate(displacement=(0.0, 0.0), time=0.0).force.shape == (2,)
 print(ALB.__file__)
-"""
+""".replace("__ALB_VERSION__", VERSION)
     core = _run([python, "-c", smoke_code], cwd=runtime)
     paper_code = f"""
 import ALB
@@ -274,12 +280,15 @@ def run_acceptance(
     runtime = (
         ROOT
         / "outputs/release_acceptance"
-        / f"alb_0_4_{short_sha}_{uuid.uuid4().hex[:8]}"
+        / f"{RUN_SLUG}_{short_sha}_{uuid.uuid4().hex[:8]}"
     )
-    worktree = ROOT.parent / f"_alb_0_4_candidate_{short_sha}_{uuid.uuid4().hex[:6]}"
+    worktree = (
+        ROOT.parent
+        / f"_{RUN_SLUG}_candidate_{short_sha}_{uuid.uuid4().hex[:6]}"
+    )
     runtime.mkdir(parents=True)
     report: dict[str, Any] = {
-        "schema": "alb.release-acceptance.v0.4",
+        "schema": REPORT_SCHEMA,
         "release": VERSION,
         "candidate_commit": candidate_sha,
         "runtime": str(runtime),
@@ -386,7 +395,12 @@ def run_acceptance(
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=(
+            f"Run detached, reproducible ALB {VERSION} source and wheel "
+            "acceptance."
+        )
+    )
     parser.add_argument("--candidate", default="HEAD")
     parser.add_argument("--publish", action="store_true")
     return parser

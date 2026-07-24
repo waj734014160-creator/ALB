@@ -34,6 +34,73 @@ from .errors import ConfigurationError, SimulationError
 from .results import SimulationResult
 
 
+def _validate_bearing_time_step(
+    config: BearingConfig,
+    expected: float,
+    *,
+    path: str,
+    active_paths: frozenset[Path] = frozenset(),
+) -> None:
+    """Require one normalized step across a mount and all nested pads."""
+
+    actual = float(config.spec["time_step"])
+    if actual != expected:
+        raise ConfigurationError(
+            f"{path}.time_step must equal simulation time_step "
+            f"{expected!r}; got {actual!r}"
+        )
+    try:
+        if config.family == "active_lubricated":
+            from .building import _active_config
+
+            _active_config(config)
+        elif (
+            config.family == "liquid_film"
+            and config.spec.get("thermal") is not None
+        ):
+            from .building import _thermal_config
+
+            _thermal_config(config)
+    except (TypeError, ValueError) as exc:
+        raise ConfigurationError(
+            f"{path} has inconsistent materialized time steps: {exc}"
+        ) from exc
+    if config.family != "multi_pad":
+        return
+    pads = config.spec["pads"]
+    assert isinstance(pads, tuple)
+    for index, item in enumerate(pads):
+        child_path = f"{path}.pads[{index}]"
+        if isinstance(item, str):
+            if config.resource_root is None:
+                raise ConfigurationError(
+                    f"{child_path} requires a source document resource root"
+                )
+            source = (config.resource_root / item).resolve()
+            if source in active_paths:
+                raise ConfigurationError(
+                    f"{child_path} creates a recursive multi_pad reference"
+                )
+            child = load_bearing_config(source)
+            child_active_paths = active_paths | {source}
+        else:
+            child_spec = _thaw(item)
+            child_spec.setdefault("time_step", actual)
+            child_spec.setdefault("node", config.spec.get("node"))
+            child_spec.setdefault("unit_system", config.unit_system)
+            child = BearingConfig(
+                child_spec,
+                resource_root=config.resource_root,
+            )
+            child_active_paths = active_paths
+        _validate_bearing_time_step(
+            child,
+            expected,
+            path=child_path,
+            active_paths=child_active_paths,
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class BearingMount:
     """Bind one immutable bearing config to a rotor node."""
@@ -131,6 +198,35 @@ class SimulationConfig:
         time_step = float(self.time_step)
         if not np.isfinite(time_step) or time_step <= 0.0:
             raise ValueError("time_step must be finite and > 0")
+        rotor_time_step = getattr(self.rotor, "dt", None)
+        if rotor_time_step is None:
+            raise ConfigurationError(
+                "rotor.dt is required to verify simulation time_step"
+            )
+        try:
+            normalized_rotor_time_step = float(rotor_time_step)
+        except (TypeError, ValueError) as exc:
+            raise ConfigurationError(
+                "rotor.dt must be a finite positive number"
+            ) from exc
+        if (
+            not np.isfinite(normalized_rotor_time_step)
+            or normalized_rotor_time_step <= 0.0
+        ):
+            raise ConfigurationError(
+                "rotor.dt must be a finite positive number"
+            )
+        if normalized_rotor_time_step != time_step:
+            raise ConfigurationError(
+                "rotor.dt must equal simulation time_step "
+                f"{time_step!r}; got {normalized_rotor_time_step!r}"
+            )
+        for index, mount in enumerate(mounts):
+            _validate_bearing_time_step(
+                mount.config,
+                time_step,
+                path=f"mounts[{index}].config",
+            )
         if isinstance(self.steps, bool) or not isinstance(self.steps, int):
             raise TypeError("steps must be an integer")
         if self.steps < 0:

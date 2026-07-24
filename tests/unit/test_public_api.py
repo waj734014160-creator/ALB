@@ -4,7 +4,7 @@ import ALB
 
 
 def test_package_root_exports_only_friendly_api():
-    assert ALB.__version__ == "0.4.0"
+    assert ALB.__version__ == "0.4.1"
     assert set(ALB.__all__) == {
         "ALBError",
         "AnalysisResult",
@@ -17,6 +17,7 @@ def test_package_root_exports_only_friendly_api():
         "CalculationError",
         "ConfigurationError",
         "EllipseTrajectory",
+        "EquilibriumOptions",
         "HistoryPolicy",
         "RotorBearingSimulation",
         "SimulationConfig",

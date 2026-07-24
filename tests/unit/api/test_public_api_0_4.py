@@ -66,7 +66,7 @@ class _NodeRotorPlant:
 
 
 def test_root_namespace_is_friendly_and_has_no_legacy_entry_points() -> None:
-    assert ALB.__version__ == "0.4.0"
+    assert ALB.__version__ == "0.4.1"
     assert not {
         "Signal",
         "ALBBuilder",
@@ -271,7 +271,7 @@ def test_analysis_uses_fresh_runtime_and_does_not_change_latest_result() -> None
 
     assert result.values["force"].shape == (8, 2)
     assert result.convergence.converged
-    assert result.diagnostics["schema"] == "alb.orbit-result.v0.4"
+    assert result.diagnostics["schema"] == "alb.orbit-result.v0.4.1"
     assert bearing.latest_result is latest
 
 
