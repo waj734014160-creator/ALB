@@ -1,0 +1,255 @@
+{
+  "arrays": {
+    "adapter_local_context": {
+      "dtype": "float64",
+      "shape": [
+        3
+      ]
+    },
+    "disk_bearing_force": {
+      "dtype": "float64",
+      "shape": [
+        3,
+        1,
+        2
+      ]
+    },
+    "disk_time": {
+      "dtype": "float64",
+      "shape": [
+        3
+      ]
+    },
+    "equilibrium_coordinate": {
+      "dtype": "float64",
+      "shape": [
+        2
+      ]
+    },
+    "equilibrium_evaluation_converged": {
+      "dtype": "bool",
+      "shape": [
+        91
+      ]
+    },
+    "equilibrium_evaluation_coordinate": {
+      "dtype": "float64",
+      "shape": [
+        91,
+        2
+      ]
+    },
+    "equilibrium_evaluation_force": {
+      "dtype": "float64",
+      "shape": [
+        91,
+        2
+      ]
+    },
+    "equilibrium_evaluation_residual": {
+      "dtype": "float64",
+      "shape": [
+        91
+      ]
+    },
+    "equilibrium_force": {
+      "dtype": "float64",
+      "shape": [
+        2
+      ]
+    },
+    "multi_pad_force": {
+      "dtype": "float64",
+      "shape": [
+        2
+      ]
+    },
+    "simulation_bearing_force": {
+      "dtype": "float64",
+      "shape": [
+        3,
+        1,
+        2
+      ]
+    },
+    "simulation_rotor_displacement": {
+      "dtype": "float64",
+      "shape": [
+        3,
+        1,
+        2
+      ]
+    },
+    "simulation_rotor_velocity": {
+      "dtype": "float64",
+      "shape": [
+        3,
+        1,
+        2
+      ]
+    },
+    "simulation_time": {
+      "dtype": "float64",
+      "shape": [
+        3
+      ]
+    },
+    "whirl_damping": {
+      "dtype": "float64",
+      "shape": [
+        2,
+        2
+      ]
+    },
+    "whirl_forward_displacement": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        2
+      ]
+    },
+    "whirl_forward_force": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        2
+      ]
+    },
+    "whirl_forward_time": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "whirl_forward_velocity": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        2
+      ]
+    },
+    "whirl_reverse_displacement": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        2
+      ]
+    },
+    "whirl_reverse_force": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        2
+      ]
+    },
+    "whirl_reverse_time": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "whirl_reverse_velocity": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        2
+      ]
+    },
+    "whirl_stiffness": {
+      "dtype": "float64",
+      "shape": [
+        2,
+        2
+      ]
+    },
+    "whirl_transfer_imag": {
+      "dtype": "float64",
+      "shape": [
+        2,
+        2
+      ]
+    },
+    "whirl_transfer_real": {
+      "dtype": "float64",
+      "shape": [
+        2,
+        2
+      ]
+    }
+  },
+  "baseline_commit": "a26435e2eb7652d6d64af2194865dd3cf05db61d",
+  "cases": {
+    "equilibrium": {
+      "converged": false,
+      "inner_converged": true,
+      "input": {
+        "damping": 0.05,
+        "fallback_stiffness": [
+          5.0,
+          5.0
+        ],
+        "initial_displacement": [
+          0.4,
+          -0.4
+        ],
+        "jacobian_step": 0.01,
+        "load": [
+          0.0,
+          -1.0
+        ],
+        "max_iterations": 30,
+        "relative_tolerance": 0.0001,
+        "stall_patience": 5,
+        "stall_relative_tolerance": 0.0
+      },
+      "iterations": 29,
+      "residual": 0.30955642763938956,
+      "stop_reason": "max_iter"
+    },
+    "facades": {
+      "disk_manifest_complete": true,
+      "disk_record_files": [
+        "step_00000000.npz",
+        "step_00000001.npz",
+        "step_00000002.npz"
+      ],
+      "disk_result_complete": true,
+      "multi_pad_count": 2,
+      "simulation_committed_steps": 3,
+      "time_step": 0.001
+    },
+    "unit_adapter": {
+      "St": 0.0002,
+      "global": {
+        "dt": 0.001,
+        "step_index": 4,
+        "time": 0.004,
+        "unit_system": "dimensional"
+      },
+      "local_unit_system": "nondimensional"
+    },
+    "whirl": {
+      "center": [
+        1e-05,
+        -2e-05
+      ],
+      "frequency_hz": 5.0,
+      "method": "forward_reverse_whirl_fft",
+      "orientation_rad": 0.4,
+      "semi_axes": [
+        0.0002,
+        7e-05
+      ]
+    }
+  },
+  "environment": {
+    "alb": "0.4.1",
+    "numpy": "1.24.3",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.10.17",
+    "scipy": "1.10.1"
+  },
+  "generated_at_utc": "2026-07-24T12:50:56.691446+00:00",
+  "npz_sha256": "72eb8e591b27b40be0098ebc55d8c373c00159902b7a362e04b33fe86355e52b",
+  "schema": "alb.0.4.2-repair-contract.v1"
+}
