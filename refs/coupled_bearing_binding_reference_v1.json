@@ -1,0 +1,47 @@
+{
+  "schema": "alb.coupled-bearing-binding-reference.v1",
+  "cases": [
+    {
+      "name": "dimensional_ordinary",
+      "status": "accepted",
+      "node_link": 2,
+      "input_dto_type": "BearingInput",
+      "bearing_unit": "dimensional",
+      "has_unit_adapter": false,
+      "has_spool_provider": false
+    },
+    {
+      "name": "negative_node",
+      "status": "error",
+      "exception_type": "ValueError",
+      "message": "node_link must be nonnegative"
+    },
+    {
+      "name": "direct_without_provider",
+      "status": "error",
+      "exception_type": "ValueError",
+      "message": "direct-spool bearing requires spool_provider"
+    },
+    {
+      "name": "nondimensional_without_adapter",
+      "status": "error",
+      "exception_type": "ValueError",
+      "message": "nondimensional bearing requires an explicit unit_adapter"
+    },
+    {
+      "name": "nondimensional_with_adapter",
+      "status": "accepted",
+      "node_link": 1,
+      "input_dto_type": "BearingInput",
+      "bearing_unit": "nondimensional",
+      "has_unit_adapter": true,
+      "has_spool_provider": false
+    },
+    {
+      "name": "ordinary_with_provider",
+      "status": "error",
+      "exception_type": "ValueError",
+      "message": "ordinary bearing cannot carry spool_provider"
+    }
+  ]
+}

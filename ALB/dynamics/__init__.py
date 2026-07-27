@@ -4,6 +4,10 @@ from ALB.contracts.optional import import_optional_module
 
 
 _EXPORTS = {
+    "CouplingRuntimeDependencies": (
+        "ALB.dynamics.bindings",
+        "CouplingRuntimeDependencies",
+    ),
     "RossRotor": ("ALB.dynamics.rotor", "RossRotor"),
     "RotorDofLayout": ("ALB.dynamics.rotor_layout", "RotorDofLayout"),
 }

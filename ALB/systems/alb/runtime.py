@@ -169,6 +169,8 @@ class ALB:
             reset()
         for servovalve in self._servovalves:
             servovalve._reset_for_owner()
+        for servovalve in self.static_sv:
+            servovalve._reset_for_owner()
         if self._controller is not None:
             self._controller._reset_for_owner()
 
@@ -358,6 +360,26 @@ class ALB:
                     "friction": friction,
                     "pad_force": pad_forces,
                 }
+                if all("pressure" in result.values for result in pad_results):
+                    result_values["pad_pressure"] = np.stack(
+                        [
+                            np.asarray(result.values["pressure"], dtype=float)
+                            for result in pad_results
+                        ]
+                    )
+                if all(
+                    "film_thickness" in result.values
+                    for result in pad_results
+                ):
+                    result_values["pad_film_thickness"] = np.stack(
+                        [
+                            np.asarray(
+                                result.values["film_thickness"],
+                                dtype=float,
+                            )
+                            for result in pad_results
+                        ]
+                    )
                 thermal_t_eff = [
                     float(result.values["t_eff"])
                     for result in pad_results

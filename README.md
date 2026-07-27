@@ -1,46 +1,65 @@
-# ALB_MAIN 0.2.0
+# ALB_MAIN 0.4
 
-`ALB_MAIN` 是 `G:/ALB_PROJECTS` split workspace 中的稳定 ALB Python 包。0.2.0 采用破坏式、命名空间优先的 API，将 Reynolds 油膜、热耦合、控制、转子动力学和 ALBNN 实现按领域拆分，同时保持冻结参考中的数值行为不变。
+`ALB_MAIN` 是 `G:/ALB_PROJECTS` split workspace 中的稳定 ALB Python 包。
+包名为 `re-alb`，导入名为 `ALB`，最低 Python 版本为 3.10。当前工作树版本以
+`pyproject.toml` 和 `ALB.__version__` 为准；发布状态、验证结论和风险见
+`docs/current_state.md`。
+
+## 用户入口
+
+0.4 普通用户只从包根使用配置、构建、轴承、分析、仿真、不可变结果和稳定异常：
+
+```python
+import ALB
+
+config = ALB.load_bearing_config("bearing.json5")
+bearing = ALB.build_bearing(config)
+result = bearing.calculate(
+    displacement=(0.0, 0.0),
+    velocity=(0.0, 0.0),
+    time=0.0,
+)
+print(result.fx, result.fy)
+```
+
+- `docs/api/README.md`：自动 API 文档的范围、生成方式和一致性门禁。
+- `docs/api/public_api_reference.md`：全部根公开类、函数、输入、输出、异常和示例。
+- `docs/alb_albnn_quickstart.md`：轴承、分析、仿真和 ALBNN package 快速用法。
+- `docs/alb_package_overview.md`：模块图、公共接口组和安装制品边界。
 
 ## 目录
 
-- `ALB/`：0.2.0 包代码；领域实现必须从明确 namespace 导入。
-- `tests/`：正式 pytest，分为 `unit`、`integration`、`regression` 和 `validation`。
-- `tools/`：基准、诊断、迁移、参考生成、验证和手动工具。
-- `refs/full_repo_refactor_v1/`：不可覆盖的 0.2.0 重构前精确行为参考。
-- `refs/full_repo_refactor_addendum_v1/`：不覆盖主 v1 的 thermal 收敛、Newton 和时序补充参考。
-- `docs/`：项目状态、接口架构、迁移指南、文件分类和远程操作手册。
+- `ALB/`：0.4 包代码；普通流程使用根 facade，高级实现按明确 namespace 分层。
+- `tests/`：正式 pytest，分为 unit、integration、regression 和 validation。
+- `tools/`：benchmark、诊断、文档、迁移、参考生成和发布验证工具。
+- `refs/`：不可覆盖的行为参考、固定输入和历史回归资产。
+- `docs/`：API、架构、当前状态、迁移、文件分类和远程操作说明。
 - `test/`：迁移后保留的历史图件和轻量配置，不属于 pytest 收集目录。
 
 ## 安装与验证
 
-最低 Python 版本为 3.10。核心安装只包含通用数值依赖；领域依赖通过 extras 安装：
-
 ```powershell
 E:/Anaconda2023/envs/ALB/python.exe -m pip install -e ".[all,test]"
 E:/Anaconda2023/envs/ALB/python.exe -m pytest
+E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
+E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py --check
 ```
 
-`ALB.__init__` 只导出版本、`UnitSystem`、`StepContext`、`ConvergenceStatus` 和基础计算块协议。示例：
+API 参考由 `ALB.__all__`、真实运行时签名和中文语义元数据生成。公开接口变化后运行：
 
-```python
-from ALB import ComputationalBlock, StepContext, UnitSystem, __version__
-from ALB.physics.film import SkfemNewtonFilm
-from ALB.systems.alb import BearingBlock, nodim_alb
+```powershell
+E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py
 ```
-
-旧 `ALB.alb`、`ALB.film`、`ALB.nn`、`ALB.remote` 等平铺模块已经删除。完整导入映射和不兼容说明见 `docs/migrations/0.2.0.md`。
 
 ## 首读文档
 
-- `docs/current_state.md`：当前发布状态、验证结论、风险和下一步。
+- `docs/current_state.md`：当前开发阶段、验证结论、风险和下一步。
 - `docs/project_overview.md`：项目边界、目录职责和稳定工作流入口。
-- `docs/alb_package_overview.md`：0.2.0 模块图和公共接口组。
-- `docs/interface_architecture.md`：计算块、DTO、单位、时步提交和持久化契约。
-- `docs/next_interface_development_plan.md`：下一阶段用户构建、轴承原生生命周期、coupling、Signal 替换和 recorder 目标；其中目标 API 尚未实现。
-- `docs/adr/README.md`：0.3.0 目标的版本、`step()`、失败封锁、recorder、observer、builder 类型和单位适配 ADR；当前五份均已 Accepted。
-- `docs/alb_albnn_quickstart.md`：ALB 与迁移后 ALBNN model package 的最小用法。
+- `docs/interface_architecture.md`：依赖方向、生命周期、DTO、单位和持久化契约。
+- `docs/adr/README.md`：公共接口和数值算法决策。
 - `docs/file_classification.md`：文件归属、生成物和清理约束。
 - `docs/remote_workstation_connection.md`：远程工作站稳定机制。
+- `docs/migrations/0.2.0.md`、`0.4.0.md` 至 `0.4.3.md`：历史和当前迁移说明。
 
-`SURROGATE_TRAIN` 与 `PAPER_WORK` 是独立项目。0.2.0 只生成它们的只读迁移审计，不在本仓库重写外部文件或记录外部实时任务状态。
+`SURROGATE_TRAIN` 与 `PAPER_WORK` 是独立项目。本仓库不保存它们的实时训练或
+论文任务状态，也不应复制它们的任务脚本和运行产物。

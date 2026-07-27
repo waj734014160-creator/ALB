@@ -18,6 +18,7 @@ def test_package_root_exports_only_friendly_api():
         "ConfigurationError",
         "EllipseTrajectory",
         "EquilibriumOptions",
+        "EquilibriumSolver",
         "HistoryPolicy",
         "RotorBearingSimulation",
         "SimulationConfig",

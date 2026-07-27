@@ -41,7 +41,13 @@ def _readonly_array(value: object, *, shape: tuple[int, ...] | None = None) -> F
 
 @dataclass(frozen=True, slots=True)
 class BearingResult:
-    """One completed two-axis bearing calculation."""
+    """One completed two-axis bearing calculation.
+
+    ``force`` is always a two-component array in the selected unit system.
+    Detailed scalar and field outputs are available through the named
+    properties below. ``details`` remains available for family-specific data
+    such as per-pad or thermal outputs.
+    """
 
     force: FloatArray
     time: float
@@ -76,6 +82,38 @@ class BearingResult:
 
         return self.details.metadata
 
+    @property
+    def friction(self) -> float | None:
+        """Return total friction force, or ``None`` when unavailable."""
+
+        value = self.details.values.get("friction")
+        return None if value is None else float(value)
+
+    @property
+    def pressure(self) -> FloatArray | None:
+        """Return the immutable pressure field for a single film.
+
+        Dimensional results use Pa. Nondimensional results contain ``p / ps``.
+        Multi-pad results expose per-pad arrays through
+        ``details.values["pad_pressure"]`` because one aggregate pressure field
+        would not have a physical meaning.
+        """
+
+        value = self.details.values.get("pressure")
+        return None if value is None else cast(FloatArray, value)
+
+    @property
+    def film_thickness(self) -> FloatArray | None:
+        """Return the immutable film-thickness field for a single film.
+
+        Dimensional results use m. Nondimensional results contain ``h / c``.
+        Multi-pad results expose per-pad arrays through
+        ``details.values["pad_film_thickness"]``.
+        """
+
+        value = self.details.values.get("film_thickness")
+        return None if value is None else cast(FloatArray, value)
+
     def as_bundle(self) -> ResultBundle:
         """Return the complete persistable result bundle."""
 
@@ -104,7 +142,16 @@ class BearingResult:
 
 @dataclass(frozen=True, slots=True)
 class AnalysisResult:
-    """Generic immutable result returned by a bound analysis service."""
+    """Immutable values and diagnostics from one bound analysis operation.
+
+    ``values`` is operation-specific: orbit tracing exposes ``time``,
+    ``displacement``, ``velocity``, and ``force``; dynamic identification adds
+    stiffness/damping coefficient arrays and forward/reverse responses;
+    equilibrium exposes the solved displacement and force balance; harmonic
+    linearization exposes stiffness, damping, and operating-point diagnostics.
+    Treat additional family-specific keys as diagnostic rather than a root-API
+    compatibility promise. Arrays and nested mappings are read-only.
+    """
 
     values: Mapping[str, Any]
     metadata: Mapping[str, Any]
@@ -148,7 +195,16 @@ class AnalysisResult:
 
 @dataclass(frozen=True, slots=True)
 class SimulationResult:
-    """Complete committed history from one rotor-bearing simulation."""
+    """Immutable committed history from one rotor-bearing simulation.
+
+    The first axis of every retained array matches ``time``. Displacement and
+    velocity normally have shape ``(samples, rotor_dofs)`` and bearing force
+    has shape ``(samples, mount_count, 2)``. A field excluded by
+    ``HistoryPolicy.fields`` is represented by an empty trailing dimension;
+    ring-buffer and downsampling policies may reduce ``samples``. Disk-streamed
+    fields are empty in memory and ``metadata['history_path']`` identifies the
+    persisted history.
+    """
 
     time: FloatArray
     rotor_displacement: FloatArray

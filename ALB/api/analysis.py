@@ -1,4 +1,4 @@
-"""Bound analysis services that preserve the established numerical methods."""
+"""Direct and bound services preserving established analysis methods."""
 
 from __future__ import annotations
 
@@ -12,15 +12,12 @@ from ALB.contracts import (
     BearingInput,
     ConvergenceStatus,
     DirectSpoolBearingInput,
+    ResultBundle,
     UnitSystem,
     ValveOutput,
     result_snapshot,
 )
 from ._analysis_numerics import (
-    EquilibriumOutcome,
-    EquilibriumSolver,
-    _stable_load_norm,
-    _stable_vector_norm,
     aggregate_active_linearization,
     linearize_film_runtime,
 )
@@ -31,6 +28,54 @@ from .results import AnalysisResult
 FloatArray = npt.NDArray[np.float64]
 _FFT_RTOL = 1.0e-12
 _MAX_DISPLACEMENT_CONDITION = 1.0 / np.sqrt(np.finfo(float).eps)
+
+
+def _stable_vector_norm(value: FloatArray) -> float:
+    """Return a stable finite Euclidean norm."""
+
+    array = np.asarray(value, dtype=float).reshape(-1)
+    with np.errstate(over="ignore", under="ignore", invalid="ignore"):
+        ordinary = float(np.linalg.norm(array))
+    if np.isfinite(ordinary) and ordinary > 0.0:
+        return ordinary
+    with np.errstate(over="ignore", under="ignore", invalid="ignore"):
+        stable = float(np.hypot.reduce(np.abs(array)))
+    if not np.isfinite(stable):
+        raise ValueError("vector magnitude must be finite")
+    return stable
+
+
+def _stable_load_norm(value: FloatArray) -> float:
+    """Return a finite nonzero load magnitude for relative residuals."""
+
+    magnitude = _stable_vector_norm(value)
+    if magnitude <= 0.0:
+        raise ValueError("load magnitude must be finite and nonzero")
+    return magnitude
+
+
+@dataclass(frozen=True, slots=True)
+class _EquilibriumEvaluation:
+    """One force evaluation made by the equilibrium iteration."""
+
+    coordinate: FloatArray
+    force: FloatArray
+    residual: float
+    inner_converged: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _EquilibriumOutcome:
+    """Complete state returned by the equilibrium iteration."""
+
+    coordinate: FloatArray
+    force: FloatArray
+    residual: float
+    converged: bool
+    inner_converged: bool
+    iterations: int
+    stop_reason: str
+    evaluations: tuple[_EquilibriumEvaluation, ...]
 
 
 def _axis_pair(value: object, name: str) -> FloatArray:
@@ -151,7 +196,17 @@ def _validate_whirl_grid(
 
 @dataclass(frozen=True, slots=True)
 class EquilibriumOptions:
-    """Friendly immutable parameters for the established equilibrium solver."""
+    """Configure the established static-equilibrium iteration.
+
+    ``relative_tolerance`` measures force imbalance relative to the nonzero
+    applied-load magnitude. ``damping`` scales each Newton update;
+    ``jacobian_step`` is expressed in the solver's normalized displacement
+    coordinate. ``fallback_stiffness`` supplies positive normalized x/y
+    stiffnesses after ``stall_patience`` non-improving iterations.
+    ``stall_relative_tolerance`` is the minimum fractional improvement counted
+    as progress, and ``time`` is passed to each static bearing evaluation in
+    the bearing's configured time unit.
+    """
 
     max_iterations: int = 30
     relative_tolerance: float = 1.0e-4
@@ -306,67 +361,450 @@ class EllipseTrajectory:
         return cast(FloatArray, displacement), cast(FloatArray, velocity)
 
 
-class BearingAnalysis:
-    """Run state-isolated analyses derived from one immutable bearing config."""
+def _is_analysis_bearing(value: Any) -> bool:
+    """Return whether a facade exposes the stable analysis configuration."""
 
-    def __init__(self, bearing: Any) -> None:
+    config = getattr(value, "config", None)
+    if config is None or not hasattr(config, "unit_system"):
+        return False
+    return callable(getattr(value, "_fresh", None)) or all(
+        hasattr(config, name) for name in ("control_mode", "family")
+    )
+
+
+def _new_bearing_runtime(bearing: Any) -> Any:
+    """Build one isolated runtime from a bearing facade."""
+
+    from .building import build_runtime
+
+    return build_runtime(bearing.config)
+
+
+def _run_bearing_runtime(
+    bearing: Any,
+    runtime: Any,
+    *,
+    displacement: FloatArray,
+    time: float,
+    spool: FloatArray | None = None,
+    static: bool = False,
+) -> tuple[FloatArray, ConvergenceStatus]:
+    """Evaluate one typed bearing input on an isolated runtime."""
+
+    unit_system = UnitSystem.coerce(bearing.config.unit_system)
+    bearing_input = BearingInput(
+        displacement,
+        np.zeros(2),
+        time,
+        unit_system,
+    )
+    mode = bearing.config.control_mode
+    if mode == "external_spool":
+        if spool is None:
+            raise CalculationError(
+                "external_spool analysis requires a normalized base spool"
+            )
+        dto: Any = DirectSpoolBearingInput(
+            bearing_input,
+            ValveOutput(
+                spool,
+                time,
+                UnitSystem.NONDIMENSIONAL,
+            ),
+        )
+        output = runtime.step(dto)
+    else:
+        if spool is not None:
+            raise CalculationError(
+                "spool is accepted only for external_spool analysis"
+            )
+        if static and callable(
+            evaluate_static := getattr(runtime, "evaluate_static", None)
+        ):
+            runtime.input(bearing_input)
+            evaluate_static()
+            output = runtime.output()
+        else:
+            output = runtime.step(bearing_input)
+    return (
+        np.asarray(output.force, dtype=float),
+        runtime.convergence_status,
+    )
+
+
+class EquilibriumSolver:
+    """Solve static load balance directly for one constructed bearing.
+
+    The model supports film-bearing families with explicit displacement and
+    force scales. The requested load must be a finite, nonzero two-axis value;
+    external-spool configurations must instead provide a controlled operating
+    point. Numerical failure raises ``CalculationError`` with the evaluated
+    coordinates and forces in ``failure_snapshot``.
+    """
+
+    def __init__(
+        self,
+        bearing: Any,
+        options: EquilibriumOptions = EquilibriumOptions(),
+    ) -> None:
+        if not _is_analysis_bearing(bearing):
+            raise TypeError("bearing must be Bearing or a compatible analysis facade")
+        if not isinstance(options, EquilibriumOptions):
+            raise TypeError("options must be EquilibriumOptions")
         self._bearing = bearing
+        self._options = options
+        self._runtime: Any = None
+        self._normalized_load = np.zeros(2, dtype=float)
+        self._load_norm = 1.0
+        self._displacement_scale = 1.0
+        self._force_scale = 1.0
+        self._evaluations: list[_EquilibriumEvaluation] = []
 
     def _new_runtime(self) -> Any:
-        from .building import build_runtime
+        return _new_bearing_runtime(self._bearing)
 
-        return build_runtime(self._bearing.config)
-
-    def _run_runtime(
+    def solve(
         self,
-        runtime: Any,
-        *,
-        displacement: FloatArray,
-        time: float,
-        spool: FloatArray | None = None,
-        static: bool = False,
-    ) -> tuple[FloatArray, ConvergenceStatus]:
-        unit_system = UnitSystem.coerce(self._bearing.config.unit_system)
-        bearing_input = BearingInput(
-            displacement,
-            np.zeros(2),
-            time,
-            unit_system,
+        load: object,
+        initial_displacement: object = (0.0, 0.0),
+    ) -> AnalysisResult:
+        """Find the displacement where bearing force balances ``load``.
+
+        ``load`` and ``initial_displacement`` are finite ``(x, y)`` values in
+        the bearing's configured force and displacement units. Load must be
+        nonzero because convergence uses relative imbalance. External-spool
+        configurations are unsupported. Nonconvergence raises
+        ``CalculationError`` whose ``failure_snapshot`` preserves evaluated
+        coordinates, forces, residuals, and the best iterate.
+        """
+
+        target, initial_coordinate = self._prepare(
+            load,
+            initial_displacement,
         )
-        mode = self._bearing.config.control_mode
-        if mode == "external_spool":
-            if spool is None:
-                raise CalculationError(
-                    "external_spool analysis requires a normalized base spool"
-                )
-            dto: Any = DirectSpoolBearingInput(
-                bearing_input,
-                ValveOutput(
-                    spool,
-                    time,
-                    UnitSystem.NONDIMENSIONAL,
-                ),
+        self._runtime = self._new_runtime()
+        self._evaluations.clear()
+        outcome = self._iterate(initial_coordinate)
+        return self._result(outcome, target)
+
+    def _prepare(
+        self,
+        load: object,
+        initial_displacement: object,
+    ) -> tuple[FloatArray, FloatArray]:
+        """Validate public inputs and establish dimensional scales."""
+
+        if self._bearing.config.control_mode == "external_spool":
+            raise CalculationError(
+                "equilibrium solve does not infer an external spool; "
+                "use a controlled/uncontrolled bearing configuration"
             )
-            output = runtime.step(dto)
-        else:
-            if spool is not None:
-                raise CalculationError(
-                    "spool is accepted only for external_spool analysis"
-                )
-            if static and callable(
-                evaluate_static := getattr(runtime, "evaluate_static", None)
-            ):
-                runtime.input(bearing_input)
-                evaluate_static()
-                output = runtime.output()
-            else:
-                output = runtime.step(bearing_input)
+        target = _axis_pair(load, "load")
+        if bool(np.all(target == 0.0)):
+            raise ValueError(
+                "equilibrium solve requires a nonzero load because "
+                "relative_tolerance is normalized by load magnitude"
+            )
+        initial = _axis_pair(
+            initial_displacement,
+            "initial_displacement",
+        )
+        self._displacement_scale, self._force_scale = self._scales()
+        self._normalized_load = target / self._force_scale
+        try:
+            self._load_norm = _stable_load_norm(self._normalized_load)
+        except ValueError as exc:
+            raise ValueError(
+                "normalized load magnitude must be finite and nonzero"
+            ) from exc
         return (
-            np.asarray(output.force, dtype=float),
-            runtime.convergence_status,
+            target,
+            initial / self._displacement_scale,
         )
 
-    def _equilibrium_scales(self) -> tuple[float, float]:
+    def _iterate(
+        self,
+        initial_coordinate: FloatArray,
+    ) -> _EquilibriumOutcome:
+        """Run the established damped Newton/fixed-stiffness iteration."""
+
+        coordinate = np.asarray(initial_coordinate, dtype=float).copy()
+        current: _EquilibriumEvaluation | None = None
+        state_matches_current = False
+        last_jacobian: FloatArray | None = None
+        best_error = np.inf
+        stall_count = 0
+        use_fixed_stiffness = False
+        stop_reason = "max_iter"
+        converged = False
+        iteration = 0
+
+        for iteration in range(self._options.max_iterations):
+            self._reset()
+            current = self._evaluate(coordinate)
+            state_matches_current = True
+            if not current.inner_converged:
+                stop_reason = "inner_not_converged"
+                break
+            if current.residual < self._options.relative_tolerance:
+                converged = True
+                stop_reason = "converged"
+                break
+
+            if current.residual < best_error * (
+                1.0 - self._options.stall_relative_tolerance
+            ):
+                best_error = current.residual
+                stall_count = 0
+            else:
+                stall_count += 1
+            if (
+                not use_fixed_stiffness
+                and self._options.stall_patience > 0
+                and stall_count >= self._options.stall_patience
+            ):
+                use_fixed_stiffness = True
+
+            if use_fixed_stiffness:
+                step = self._fixed_stiffness_step(coordinate, current)
+            else:
+                newton_step, last_jacobian, failure_reason = self._newton_step(
+                    coordinate,
+                    current,
+                    last_jacobian,
+                )
+                state_matches_current = False
+                if failure_reason is not None:
+                    stop_reason = failure_reason
+                    break
+                assert newton_step is not None
+                step = newton_step
+            coordinate = self._limit_step(coordinate, step)
+            state_matches_current = False
+            if np.linalg.norm(coordinate) >= 1.0:
+                coordinate = coordinate / 2.0
+
+        if (
+            current is None
+            or not np.allclose(current.coordinate, coordinate)
+            or not state_matches_current
+        ):
+            current = self._evaluate(coordinate)
+            if (
+                current.inner_converged
+                and current.residual < self._options.relative_tolerance
+            ):
+                converged = True
+                stop_reason = "converged"
+            elif (
+                not current.inner_converged
+                and stop_reason == "max_iter"
+            ):
+                stop_reason = "inner_not_converged_final"
+
+        return _EquilibriumOutcome(
+            coordinate=coordinate.copy(),
+            force=current.force.copy(),
+            residual=current.residual,
+            converged=converged,
+            inner_converged=current.inner_converged,
+            iterations=iteration,
+            stop_reason=stop_reason,
+            evaluations=tuple(self._evaluations),
+        )
+
+    def _evaluate(
+        self,
+        coordinate: FloatArray,
+    ) -> _EquilibriumEvaluation:
+        """Evaluate and record one normalized bearing force."""
+
+        try:
+            force, convergence = _run_bearing_runtime(
+                self._bearing,
+                self._runtime,
+                displacement=coordinate * self._displacement_scale,
+                time=self._options.time,
+                static=True,
+            )
+        except Exception as exc:
+            raise CalculationError(
+                "equilibrium inner calculation raised an exception",
+                failure_snapshot=self._failure_snapshot(coordinate, exc),
+            ) from exc
+        normalized_force = force / self._force_scale
+        evaluation = _EquilibriumEvaluation(
+            coordinate=coordinate.copy(),
+            force=normalized_force.copy(),
+            residual=float(
+                _stable_vector_norm(
+                    self._normalized_load + normalized_force
+                )
+                / self._load_norm
+            ),
+            inner_converged=convergence.converged,
+        )
+        self._evaluations.append(evaluation)
+        return evaluation
+
+    def _newton_step(
+        self,
+        coordinate: FloatArray,
+        current: _EquilibriumEvaluation,
+        last_jacobian: FloatArray | None,
+    ) -> tuple[FloatArray | None, FloatArray | None, str | None]:
+        """Return one Newton step or the precise probe failure reason."""
+
+        delta = self._options.jacobian_step
+        evaluated_x = self._evaluate(
+            coordinate + np.array([delta, 0.0], dtype=float)
+        )
+        evaluated_y: _EquilibriumEvaluation | None = None
+        if evaluated_x.inner_converged:
+            evaluated_y = self._evaluate(
+                coordinate + np.array([0.0, delta], dtype=float)
+            )
+
+        if (
+            evaluated_x.inner_converged
+            and evaluated_y is not None
+            and evaluated_y.inner_converged
+        ):
+            jacobian = np.array(
+                [
+                    [
+                        (evaluated_x.force[0] - current.force[0]) / delta,
+                        (evaluated_y.force[0] - current.force[0]) / delta,
+                    ],
+                    [
+                        (evaluated_x.force[1] - current.force[1]) / delta,
+                        (evaluated_y.force[1] - current.force[1]) / delta,
+                    ],
+                ],
+                dtype=float,
+            )
+            last_jacobian = jacobian
+        elif last_jacobian is not None:
+            jacobian = last_jacobian
+        else:
+            reason = (
+                "inner_not_converged_dx"
+                if not evaluated_x.inner_converged
+                else "inner_not_converged_dy"
+            )
+            return None, None, reason
+
+        residual_force = self._normalized_load + current.force
+        stiffness = np.asarray(
+            self._options.fallback_stiffness,
+            dtype=float,
+        )
+        try:
+            step = np.linalg.solve(jacobian, -residual_force)
+        except np.linalg.LinAlgError:
+            step = -residual_force / stiffness
+        return step * self._options.damping, last_jacobian, None
+
+    def _fixed_stiffness_step(
+        self,
+        coordinate: FloatArray,
+        current: _EquilibriumEvaluation,
+    ) -> FloatArray:
+        """Return the retained fixed-stiffness fallback update."""
+
+        residual_force = self._normalized_load + current.force
+        stiffness = np.asarray(
+            self._options.fallback_stiffness,
+            dtype=float,
+        )
+        return np.array(
+            [
+                residual_force[0]
+                / (stiffness[0] * (1.0 + abs(coordinate[0]))),
+                residual_force[1]
+                / (stiffness[1] * (1.0 + abs(coordinate[1]))),
+            ],
+            dtype=float,
+        )
+
+    @staticmethod
+    def _limit_step(
+        coordinate: FloatArray,
+        step: FloatArray,
+        *,
+        limit: float = 1.0,
+        margin: float = 1.0e-6,
+        min_scale: float = 1.0e-6,
+    ) -> FloatArray:
+        """Keep one update inside the valid eccentricity disk."""
+
+        current = np.asarray(coordinate, dtype=np.float64)
+        delta = np.asarray(step, dtype=np.float64)
+        safe_limit = float(limit) - float(margin)
+        if not np.all(np.isfinite(delta)):
+            return current.copy()
+        candidate = current + delta
+        if np.linalg.norm(candidate) < safe_limit:
+            return cast(FloatArray, candidate)
+        scale = 0.5
+        while scale >= min_scale:
+            candidate = current + scale * delta
+            if np.linalg.norm(candidate) < safe_limit:
+                return cast(FloatArray, candidate)
+            scale *= 0.5
+        current_norm = np.linalg.norm(current)
+        if current_norm >= safe_limit and current_norm > 0.0:
+            return cast(FloatArray, current / current_norm * safe_limit)
+        return current.copy()
+
+    def _result(
+        self,
+        outcome: _EquilibriumOutcome,
+        load: FloatArray,
+    ) -> AnalysisResult:
+        """Convert the solver state to the stable public result contract."""
+
+        values = self._values(
+            outcome,
+            displacement_scale=self._displacement_scale,
+            force_scale=self._force_scale,
+            load=load,
+        )
+        metadata = {
+            "schema": "alb.equilibrium-result.v0.4.1",
+            "success": outcome.converged,
+            "evaluations": len(outcome.evaluations),
+            "stop_reason": outcome.stop_reason,
+            "inner_converged": outcome.inner_converged,
+            "unit_system": self._bearing.config.unit_system,
+        }
+        if not outcome.converged:
+            raise CalculationError(
+                f"equilibrium solve failed: {outcome.stop_reason}",
+                failure_snapshot=result_snapshot(values, metadata),
+            )
+        return AnalysisResult(
+            values,
+            metadata,
+            convergence=ConvergenceStatus(
+                residual=outcome.residual,
+                converged=True,
+                iterations=outcome.iterations,
+                message=outcome.stop_reason,
+            ),
+        )
+
+    def _reset(self) -> None:
+        """Reset the isolated runtime before one equilibrium iteration."""
+
+        reset = getattr(self._runtime, "_reset_for_owner", None)
+        if not callable(reset):
+            raise CalculationError(
+                "bearing runtime does not support isolated equilibrium reset"
+            )
+        reset()
+
+    def _scales(self) -> tuple[float, float]:
         config = self._bearing.config
         if config.unit_system == "nondimensional":
             return 1.0, 1.0
@@ -376,7 +814,7 @@ class BearingAnalysis:
             "gas_film",
         }:
             raise CalculationError(
-                "find_equilibrium requires a film bearing with explicit scales"
+                "equilibrium solve requires a film bearing with explicit scales"
             )
         if config.family == "gas_film":
             from ALB.config.gas_models import GasConfig
@@ -402,8 +840,8 @@ class BearingAnalysis:
         return clearance, pressure * length * radius / 2.0
 
     @staticmethod
-    def _equilibrium_values(
-        outcome: EquilibriumOutcome,
+    def _values(
+        outcome: _EquilibriumOutcome,
         *,
         displacement_scale: float,
         force_scale: float,
@@ -435,152 +873,101 @@ class BearingAnalysis:
             ),
         }
 
+    def _failure_snapshot(
+        self,
+        coordinate: FloatArray,
+        error: BaseException,
+    ) -> ResultBundle:
+        """Return the established failure snapshot for an inner exception."""
+
+        return result_snapshot(
+            {
+                "last_trusted_displacement": np.asarray(
+                    [
+                        item.coordinate
+                        for item in self._evaluations[-1:]
+                    ]
+                )
+                * self._displacement_scale,
+                "last_trusted_force": np.asarray(
+                    [item.force for item in self._evaluations[-1:]]
+                )
+                * self._force_scale,
+                "last_trusted_relative_residual": np.asarray(
+                    [
+                        item.residual
+                        for item in self._evaluations[-1:]
+                    ]
+                ),
+                "failed_displacement": (
+                    coordinate * self._displacement_scale
+                ),
+                "evaluation_displacement": np.asarray(
+                    [item.coordinate for item in self._evaluations]
+                )
+                * self._displacement_scale,
+                "evaluation_force": np.asarray(
+                    [item.force for item in self._evaluations]
+                )
+                * self._force_scale,
+                "evaluation_relative_residual": np.asarray(
+                    [item.residual for item in self._evaluations]
+                ),
+            },
+            {
+                "schema": "alb.equilibrium-failure.v0.4.1",
+                "stop_reason": "inner_exception",
+                "inner_converged": False,
+                "exception_type": type(error).__name__,
+            },
+        )
+
+
+class BearingAnalysis:
+    """Run state-isolated analyses derived from one immutable bearing config.
+
+    Construct this service from a ready :class:`ALB.Bearing`; normal user code
+    can use ``bearing.analysis``. Each analysis builds an isolated runtime and
+    therefore does not replace ``bearing.latest_result``.
+    """
+
+    def __init__(self, bearing: Any) -> None:
+        if not _is_analysis_bearing(bearing):
+            raise TypeError("bearing must be Bearing or a compatible analysis facade")
+        self._bearing = bearing
+
+    def _new_runtime(self) -> Any:
+        return _new_bearing_runtime(self._bearing)
+
+    def _run_runtime(
+        self,
+        runtime: Any,
+        *,
+        displacement: FloatArray,
+        time: float,
+        spool: FloatArray | None = None,
+        static: bool = False,
+    ) -> tuple[FloatArray, ConvergenceStatus]:
+        return _run_bearing_runtime(
+            self._bearing,
+            runtime,
+            displacement=displacement,
+            time=time,
+            spool=spool,
+            static=static,
+        )
+
     def find_equilibrium(
         self,
         load: object,
         initial_displacement: object = (0.0, 0.0),
         options: EquilibriumOptions = EquilibriumOptions(),
     ) -> AnalysisResult:
-        """Find load balance with the established damped Newton algorithm."""
+        """Find load balance through the directly usable solver model."""
 
-        if not isinstance(options, EquilibriumOptions):
-            raise TypeError("options must be EquilibriumOptions")
-        if self._bearing.config.control_mode == "external_spool":
-            raise CalculationError(
-                "find_equilibrium does not infer an external spool; "
-                "use a controlled/uncontrolled bearing configuration"
-            )
-        target = _axis_pair(load, "load")
-        if bool(np.all(target == 0.0)):
-            raise ValueError(
-                "find_equilibrium requires a nonzero load because "
-                "relative_tolerance is normalized by load magnitude"
-            )
-        initial = _axis_pair(
+        return EquilibriumSolver(self._bearing, options).solve(
+            load,
             initial_displacement,
-            "initial_displacement",
-        )
-        displacement_scale, force_scale = self._equilibrium_scales()
-        normalized_load = target / force_scale
-        try:
-            load_norm = _stable_load_norm(normalized_load)
-        except ValueError as exc:
-            raise ValueError(
-                "normalized load magnitude must be finite and nonzero"
-            ) from exc
-        runtime = self._new_runtime()
-        trusted_coordinates: list[FloatArray] = []
-        trusted_forces: list[FloatArray] = []
-        trusted_residuals: list[float] = []
-
-        def reset_iteration() -> None:
-            reset = getattr(runtime, "_reset_for_owner", None)
-            if not callable(reset):
-                raise CalculationError(
-                    "bearing runtime does not support isolated equilibrium reset"
-                )
-            reset()
-
-        def evaluate_force(
-            coordinate: FloatArray,
-        ) -> tuple[FloatArray, bool]:
-            try:
-                force, convergence = self._run_runtime(
-                    runtime,
-                    displacement=coordinate * displacement_scale,
-                    time=options.time,
-                    static=True,
-                )
-            except BaseException as exc:
-                raise CalculationError(
-                    "equilibrium inner calculation raised an exception",
-                    failure_snapshot=result_snapshot(
-                        {
-                            "last_trusted_displacement": np.asarray(
-                                trusted_coordinates[-1:]
-                            )
-                            * displacement_scale,
-                            "last_trusted_force": np.asarray(
-                                trusted_forces[-1:]
-                            )
-                            * force_scale,
-                            "last_trusted_relative_residual": np.asarray(
-                                trusted_residuals[-1:]
-                            ),
-                            "failed_displacement": (
-                                coordinate * displacement_scale
-                            ),
-                            "evaluation_displacement": np.asarray(
-                                trusted_coordinates
-                            )
-                            * displacement_scale,
-                            "evaluation_force": np.asarray(trusted_forces)
-                            * force_scale,
-                            "evaluation_relative_residual": np.asarray(
-                                trusted_residuals
-                            ),
-                        },
-                        {
-                            "schema": "alb.equilibrium-failure.v0.4.1",
-                            "stop_reason": "inner_exception",
-                            "inner_converged": False,
-                            "exception_type": type(exc).__name__,
-                        },
-                    ),
-                ) from exc
-            normalized_force = force / force_scale
-            residual = float(
-                _stable_vector_norm(normalized_load + normalized_force)
-                / load_norm
-            )
-            trusted_coordinates.append(coordinate.copy())
-            trusted_forces.append(normalized_force.copy())
-            trusted_residuals.append(residual)
-            return normalized_force, convergence.converged
-
-        solver = EquilibriumSolver(
-            stiffness=np.asarray(options.fallback_stiffness, dtype=float),
-            max_iterations=options.max_iterations,
-            tolerance=options.relative_tolerance,
-            damping=options.damping,
-            jacobian_step=options.jacobian_step,
-            stall_patience=options.stall_patience,
-            stall_relative_tolerance=options.stall_relative_tolerance,
-        )
-        outcome = solver.run(
-            load=normalized_load,
-            initial_coordinate=initial / displacement_scale,
-            evaluate_force=evaluate_force,
-            reset_iteration=reset_iteration,
-        )
-        values = self._equilibrium_values(
-            outcome,
-            displacement_scale=displacement_scale,
-            force_scale=force_scale,
-            load=target,
-        )
-        metadata = {
-            "schema": "alb.equilibrium-result.v0.4.1",
-            "success": outcome.converged,
-            "evaluations": len(outcome.evaluations),
-            "stop_reason": outcome.stop_reason,
-            "inner_converged": outcome.inner_converged,
-            "unit_system": self._bearing.config.unit_system,
-        }
-        if not outcome.converged:
-            raise CalculationError(
-                f"equilibrium solve failed: {outcome.stop_reason}",
-                failure_snapshot=result_snapshot(values, metadata),
-            )
-        return AnalysisResult(
-            values,
-            metadata,
-            convergence=ConvergenceStatus(
-                residual=outcome.residual,
-                converged=True,
-                iterations=outcome.iterations,
-                message=outcome.stop_reason,
-            ),
         )
 
     def trace_orbit(
@@ -591,7 +978,15 @@ class BearingAnalysis:
         frequency_hz: float,
         spool: Sequence[Sequence[float]] | None = None,
     ) -> AnalysisResult:
-        """Evaluate every sample of one explicit trajectory exactly once."""
+        """Evaluate every sample of one explicit trajectory exactly once.
+
+        ``time_grid`` must be finite, nonempty, and strictly increasing;
+        ``frequency_hz`` is positive in Hz. For ``external_spool`` bearings,
+        provide one two-axis spool command per time sample. The returned
+        ``AnalysisResult.values`` contains ``time``, ``displacement``,
+        ``velocity``, ``force``, and per-sample convergence arrays. A fresh
+        runtime isolates the analysis from ``bearing.latest_result``.
+        """
 
         if not isinstance(trajectory, EllipseTrajectory):
             raise TypeError("trajectory must be EllipseTrajectory")
@@ -677,11 +1072,16 @@ class BearingAnalysis:
         frequency_hz: float,
         spool: Sequence[Sequence[float]] | None = None,
     ) -> AnalysisResult:
-        """Identify K and C on one coherent FFT grid.
+        """Identify stiffness ``K`` and damping ``C`` on a coherent FFT grid.
 
-        The public boundary validates grid coherence and the forward/reverse
-        displacement matrix before invoking the established ``recognize_kc``
-        equations. Valid inputs therefore retain the prior numerical method.
+        ``time_grid`` must be uniform and ``frequency_hz`` must identify a
+        non-DC FFT bin below Nyquist; invalid grids raise ``ValueError``. The
+        method traces forward and reverse versions of ``trajectory`` on fresh
+        runtimes. Failed samples or a singular, ill-conditioned, or
+        non-invertible displacement matrix raise ``CalculationError`` with a
+        ``failure_snapshot`` containing both responses and frequency/matrix
+        diagnostics. Valid inputs retain the established ``recognize_kc``
+        numerical method.
         """
 
         if not isinstance(trajectory, EllipseTrajectory):
@@ -918,7 +1318,17 @@ class BearingAnalysis:
         *,
         spool: object | None = None,
     ) -> AnalysisResult:
-        """Linearize with the established pressure-equation derivative method."""
+        """Linearize the pressure equations at one dimensional operating point.
+
+        This capability is verified only for dimensional ``liquid_film`` and
+        ``active_lubricated`` bearings without a thermal wrapper. The active
+        path requires the established three-node ``CSOrifice`` topology;
+        external-spool control requires an explicit two-axis ``spool`` value.
+        ``excitation_frequency`` is positive in Hz. Unsupported topology,
+        static nonconvergence, or derivative failure raises ``CalculationError``
+        and preserves available operating-point evidence in
+        ``failure_snapshot``.
+        """
 
         config = self._bearing.config
         if config.unit_system != "dimensional" or config.family not in {
@@ -1035,4 +1445,5 @@ __all__ = [
     "BearingAnalysis",
     "EllipseTrajectory",
     "EquilibriumOptions",
+    "EquilibriumSolver",
 ]

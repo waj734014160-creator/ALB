@@ -1,0 +1,722 @@
+{
+  "schema_version": 1,
+  "examples": {
+    "package_version": {
+      "title": "检查安装位置和版本",
+      "description": "先确认当前解释器导入的是预期的 ALB 安装，而不是同名目录或旧 wheel。",
+      "code": "import ALB\n\nprint(ALB.__version__)\nprint(ALB.__file__)"
+    },
+    "bearing_from_file": {
+      "title": "从 JSON5 构建并计算轴承",
+      "description": "文件入口适合正式算例；配置先严格校验，再构建为可直接计算的轴承对象。",
+      "code": "from pathlib import Path\n\nimport ALB\n\ncase_path = Path(\"configs/paper_alb.json5\")\nconfig = ALB.load_bearing_config(case_path)\nbearing = ALB.build_bearing(config)\n\n# Equivalent one-step helper:\n# bearing = ALB.bearing_from_file(case_path)\nresult = bearing.calculate(\n    displacement=(0.02, -0.01),\n    velocity=(0.0, 0.0),\n    time=0.0,\n)\nprint(result.fx, result.fy, result.convergence.converged)\nresult.write(\"outputs/case_001\")"
+    },
+    "bearing_programmatic": {
+      "title": "程序化配置、参数覆盖与扫描",
+      "description": "配置对象不可变；覆盖和扫描都会重新执行完整校验。",
+      "code": "import ALB\n\nconfig = ALB.BearingConfig(\n    {\n        \"family\": \"liquid_film\",\n        \"unit_system\": \"dimensional\",\n        \"time_step\": 1.0e-3,\n        \"node\": 0,\n        \"film\": {\n            \"circumferential_elements\": 5,\n            \"axial_elements\": 3,\n            \"max_iterations\": 5,\n            \"solver_tolerance\": 1.0e-6,\n            \"eccentricity\": 0.0,\n        },\n        \"restrictors\": None,\n        \"thermal\": None,\n    }\n)\nhigh_pressure = config.with_overrides(\n    {\"film.supply_pressure\": 8.0e6}\n)\ncases = high_pressure.sweep(\n    \"film.supply_pressure\",\n    (6.0e6, 7.0e6, 8.0e6),\n)\nbearing = ALB.build_bearing(cases[1])\nresult = bearing.calculate(displacement=(0.0, 0.0), time=0.0)\nprint(result.force)"
+    },
+    "bearing_analysis": {
+      "title": "轨迹、静平衡和动态系数分析",
+      "description": "分析使用独立 runtime，不改变轴承对象上的 latest_result。",
+      "code": "import numpy as np\n\nimport ALB\n\nbearing = ALB.bearing_from_file(\"configs/paper_alb.json5\")\ntrajectory = ALB.EllipseTrajectory(\n    center=np.array([0.0, 0.0]),\n    semi_axes=np.array([1.0e-5, 5.0e-6]),\n    orientation_rad=0.25,\n)\ntime_grid = np.arange(100, dtype=float) * 1.0e-3\n\ndisplacement, velocity = trajectory.samples(\n    time_grid,\n    frequency_hz=10.0,\n)\norbit = bearing.analysis.trace_orbit(\n    trajectory,\n    time_grid,\n    frequency_hz=10.0,\n)\ncoefficients = bearing.analysis.dynamic_coefficients(\n    trajectory,\n    time_grid,\n    frequency_hz=10.0,\n)\nequilibrium = ALB.EquilibriumSolver(bearing).solve(\n    load=(0.0, -5000.0),\n)\nprint(displacement.shape, velocity.shape)\nprint(orbit.values.keys(), coefficients.values.keys())\nprint(equilibrium.convergence.converged)"
+    },
+    "harmonic_linearization": {
+      "title": "方程导数谐波线性化",
+      "description": "该入口只支持包概览中声明的量纲液膜和已验证主动润滑拓扑。",
+      "code": "import ALB\n\nbearing = ALB.bearing_from_file(\"configs/harmonic_supported_alb.json5\")\nlinearized = bearing.analysis.harmonic_linearize(\n    operating_point=(0.0, 0.0),\n    excitation_frequency=50.0,\n)\nK = linearized.values[\"stiffness\"]\nC = linearized.values[\"damping\"]\nprint(K.shape, C.shape)"
+    },
+    "simulation_from_file": {
+      "title": "从 JSON5 运行转子-轴承仿真",
+      "description": "仿真对象是一次性的；重新计算时应从同一不可变配置重新构建。",
+      "code": "import ALB\n\nconfig = ALB.load_simulation_config(\"configs/rotor_system.json5\")\nsimulation = ALB.build_simulation(config)\n\n# Equivalent one-step helper:\n# simulation = ALB.simulation_from_file(\"configs/rotor_system.json5\")\nhistory = simulation.run()\nprint(history.time.shape, history.bearing_force.shape)\nhistory.write(\"outputs/rotor_case_001\")"
+    },
+    "simulation_programmatic": {
+      "title": "程序化装配仿真拓扑",
+      "description": "rotor 必须实现 ALB.contracts.RotorProtocol；记录器和 observer 等高级依赖从 ALB.dynamics 导入。普通算例更推荐使用 JSON5 文件入口。",
+      "code": "import ALB\nfrom ALB.contracts import RotorProtocol\nfrom ALB.dynamics import CouplingRuntimeDependencies\n\nrotor = make_rotor()  # Project object implementing RotorProtocol.\nassert isinstance(rotor, RotorProtocol)\nbearing_config = ALB.load_bearing_config(\"configs/paper_alb.json5\")\nmount = ALB.BearingMount(config=bearing_config, node=0)\nhistory_policy = ALB.HistoryPolicy(\n    mode=\"ring_buffer\",\n    fields=(\"bearing_force\",),\n    capacity=200,\n)\ndependencies = CouplingRuntimeDependencies(run_id=\"case-001\")\nconfig = ALB.SimulationConfig(\n    rotor=rotor,\n    mounts=(mount,),\n    time_step=1.0e-3,\n    steps=1000,\n    history=history_policy,\n    dependencies=dependencies,\n)\nsimulation = ALB.build_simulation(config)"
+    },
+    "history_policy": {
+      "title": "选择仿真历史保留策略",
+      "description": "默认 memory 保存全部提交步；长任务可以显式降采样、环形缓存或流式写盘。",
+      "code": "from pathlib import Path\n\nimport ALB\n\nall_steps = ALB.HistoryPolicy()\nrecent_only = ALB.HistoryPolicy(\n    mode=\"ring_buffer\",\n    fields=(\"bearing_force\",),\n    downsample=2,\n    capacity=500,\n)\nstreamed = ALB.HistoryPolicy(\n    mode=\"disk_stream\",\n    fields=(\"bearing_force\",),\n    downsample=10,\n    directory=Path(\"outputs/history_stream\"),\n)"
+    },
+    "error_handling": {
+      "title": "按稳定异常边界处理失败",
+      "description": "优先捕获具体异常；只有需要统一上报时才捕获 ALBError。",
+      "code": "import ALB\n\ntry:\n    bearing = ALB.bearing_from_file(\"configs/paper_alb.json5\")\n    result = bearing.calculate(displacement=(0.0, 0.0), time=0.0)\nexcept ALB.ConfigurationError as exc:\n    print(\"configuration rejected:\", exc)\nexcept ALB.BuildError as exc:\n    print(\"runtime assembly failed:\", exc)\nexcept ALB.CalculationError as exc:\n    print(\"calculation failed:\", exc)\n    snapshot = exc.failure_snapshot\nexcept ALB.SimulationError as exc:\n    print(\"simulation failed:\", exc)\n    committed_history = exc.partial_result\nexcept ALB.ALBError as exc:\n    print(\"other ALB failure:\", exc)"
+    },
+    "unit_system": {
+      "title": "读取单位制边界",
+      "description": "计算输入和输出的单位制由配置固定，调用方不应自行猜测。",
+      "code": "import ALB\n\nbearing = ALB.bearing_from_file(\"configs/paper_alb.json5\")\nif bearing.unit_system is ALB.UnitSystem.DIMENSIONAL:\n    print(\"calculate() expects dimensional displacement and velocity\")\nprint(ALB.UnitSystem(\"nondimensional\"))"
+    },
+    "result_persistence": {
+      "title": "读取不可变结果并持久化",
+      "description": "结果数组只读；write() 把值和诊断元数据写入一个新目录。",
+      "code": "import ALB\n\nbearing = ALB.bearing_from_file(\"configs/paper_alb.json5\")\nresult = bearing.calculate(displacement=(0.0, 0.0), time=0.0)\nprint(result.force, result.fx, result.fy, result.friction)\nif result.pressure is not None:\n    print(result.pressure.shape, result.diagnostics[\"pressure_unit\"])\nif result.film_thickness is not None:\n    print(result.film_thickness.shape)\nbundle = result.as_bundle()\nmanifest = result.write(\"outputs/bearing_result\")\nprint(bundle.metadata[\"schema\"], manifest)"
+    }
+  },
+  "symbols": {
+    "ALBError": {
+      "summary": "所有用户侧 ALB 稳定异常的基类，适合统一记录或跨层上报。",
+      "returns": "构造一个可抛出的 ALB 基础异常实例。",
+      "parameters": {
+        "args": "传给 Python Exception 的可变消息或上下文参数。"
+      },
+      "examples": [
+        "error_handling"
+      ],
+      "members": {}
+    },
+    "AnalysisResult": {
+      "summary": "分析服务返回的不可变通用结果，保存数值结果、诊断元数据和收敛状态。",
+      "returns": "构造一个不可变分析结果；普通用户通常从 BearingAnalysis 的方法获得它。",
+      "parameters": {
+        "values": "分析值映射；数组会转换为只读快照。",
+        "metadata": "分析诊断、schema 和方法信息。",
+        "convergence": "本次分析的收敛状态，默认表示成功。"
+      },
+      "examples": [
+        "bearing_analysis",
+        "harmonic_linearization"
+      ],
+      "members": {
+        "diagnostics": {
+          "summary": "读取不可变分析诊断元数据。",
+          "returns": "返回只读键值映射。",
+          "parameters": {}
+        },
+        "as_bundle": {
+          "summary": "把分析结果转换为统一的可持久化 ResultBundle。",
+          "returns": "返回包含 values 与 metadata 的不可变结果包。",
+          "parameters": {}
+        },
+        "write": {
+          "summary": "把分析结果写入一个新的制品目录。",
+          "returns": "返回已写入文件及摘要信息的 ArtifactManifest。",
+          "parameters": {
+            "path": "目标目录；目录必须满足写入器的新制品约束。"
+          }
+        }
+      }
+    },
+    "Bearing": {
+      "summary": "单个已构建轴承的用户 facade，负责顺序计算、最新结果读取、诊断和独立分析入口。",
+      "returns": "构造一个可直接计算的 Bearing；通常应通过 build_bearing() 获得。",
+      "parameters": {
+        "config": "经过完整验证的不可变 BearingConfig。"
+      },
+      "examples": [
+        "bearing_from_file",
+        "bearing_programmatic",
+        "result_persistence"
+      ],
+      "members": {
+        "config": {
+          "summary": "读取构建该轴承时使用的不可变配置。",
+          "returns": "返回原始 BearingConfig。",
+          "parameters": {}
+        },
+        "unit_system": {
+          "summary": "读取 calculate() 所要求的输入和输出单位制。",
+          "returns": "返回 DIMENSIONAL 或 NONDIMENSIONAL。",
+          "parameters": {}
+        },
+        "latest_result": {
+          "summary": "读取最近一次成功计算的结果，不触发新计算。",
+          "returns": "返回最近的 BearingResult。",
+          "parameters": {},
+          "raises": [
+            {
+              "type": "RuntimeError",
+              "when": "尚未成功计算，或调用 reset() 后没有新结果。"
+            }
+          ]
+        },
+        "analysis": {
+          "summary": "创建绑定于当前不可变配置的独立分析服务。",
+          "returns": "返回 BearingAnalysis；其计算不污染 latest_result。",
+          "parameters": {}
+        },
+        "reset": {
+          "summary": "以同一配置重建内部 runtime，并清空当前会话结果。",
+          "returns": "无返回值。",
+          "parameters": {}
+        },
+        "calculate": {
+          "summary": "计算一个严格顺序时间点上的二维轴承力。",
+          "returns": "返回不可变 BearingResult，force 的形状为 (2,)。",
+          "parameters": {
+            "displacement": "二维轴心位移 (x, y)，单位由 unit_system 决定。",
+            "velocity": "二维轴心速度 (vx, vy)，默认均为 0。",
+            "time": "当前样本时间；后续调用必须按配置 time_step 严格前进。",
+            "spool": "仅 external_spool 模式使用的归一化二维阀芯命令，范围为 [-1, 1]。"
+          },
+          "raises": [
+            {
+              "type": "ValueError",
+              "when": "时间不连续，或 spool 与控制模式不匹配。"
+            },
+            {
+              "type": "CalculationError",
+              "when": "底层物理求解失败；failure_snapshot 可能包含密封诊断。"
+            }
+          ]
+        },
+        "diagnostic_snapshot": {
+          "summary": "读取 facade 和底层 runtime 的不可变诊断快照。",
+          "returns": "返回 ResultBundle；不会推进物理状态。",
+          "parameters": {}
+        }
+      }
+    },
+    "BearingAnalysis": {
+      "summary": "基于一个 Bearing 配置执行状态隔离的静平衡、轨迹、动态系数和谐波线性化。",
+      "returns": "构造分析服务；普通用户应从 bearing.analysis 取得。",
+      "parameters": {
+        "bearing": "作为配置来源的 Bearing 实例。"
+      },
+      "examples": [
+        "bearing_analysis",
+        "harmonic_linearization"
+      ],
+      "members": {
+        "find_equilibrium": {
+          "summary": "使用既有阻尼 Newton、冻结 Jacobian 和固定刚度回退算法求载荷平衡。",
+          "returns": "返回 AnalysisResult，包含平衡位移、力、残差和迭代信息。",
+          "parameters": {
+            "load": "目标二维外载荷。",
+            "initial_displacement": "Newton 迭代初始二维位移。",
+            "options": "迭代次数、容差、阻尼、差分步长和回退参数。"
+          },
+          "raises": [
+            {
+              "type": "CalculationError",
+              "when": "子求解失败或最终不能形成有效分析结果。"
+            }
+          ]
+        },
+        "trace_orbit": {
+          "summary": "在显式时间网格上逐点计算给定椭圆轨迹。",
+          "returns": "返回 AnalysisResult，values 中包含时间、位移、速度和轴承力序列。",
+          "parameters": {
+            "trajectory": "椭圆几何、方向、相位和空间转角。",
+            "time_grid": "有限、严格递增的一维时间网格。",
+            "frequency_hz": "轨迹频率，单位 Hz。",
+            "spool": "external_spool 模式下与时间网格逐点对应的二维命令序列。"
+          }
+        },
+        "dynamic_coefficients": {
+          "summary": "在相干 FFT 网格上用正反涡动响应识别刚度 K 和阻尼 C。",
+          "returns": "返回 AnalysisResult，包含已识别系数、轨迹响应和频率诊断。",
+          "parameters": {
+            "trajectory": "用于生成正反涡动的椭圆轨迹。",
+            "time_grid": "均匀且覆盖目标非 DC FFT bin 的时间网格。",
+            "frequency_hz": "需要识别的目标频率，单位 Hz。",
+            "spool": "external_spool 模式下与时间网格逐点对应的二维命令序列。"
+          },
+          "raises": [
+            {
+              "type": "ValueError",
+              "when": "时间网格不均匀、目标频率不是非 DC FFT bin，或频率不满足 Nyquist 条件。"
+            },
+            {
+              "type": "CalculationError",
+              "when": "轨迹样本未全部收敛，或正反涡动位移矩阵的诊断、条件数检查或反演失败；异常包含 failure_snapshot。"
+            }
+          ]
+        },
+        "harmonic_linearize": {
+          "summary": "在指定工作点通过压力方程导数计算谐波刚度与阻尼。",
+          "returns": "返回 AnalysisResult，包含 stiffness、damping 和工作点诊断。",
+          "parameters": {
+            "operating_point": "二维量纲位移工作点。",
+            "excitation_frequency": "线性化激励频率，单位 Hz。",
+            "spool": "受支持主动润滑拓扑的可选二维阀芯工作点。"
+          },
+          "raises": [
+            {
+              "type": "CalculationError",
+              "when": "轴承家族、单位制或节流拓扑不在已验证支持域内。"
+            }
+          ]
+        }
+      }
+    },
+    "BearingConfig": {
+      "summary": "严格校验、深度冻结的 0.4 轴承配置，支持安全覆盖、扫描和序列化。",
+      "returns": "构造经过完整跨字段校验的不可变 BearingConfig。",
+      "parameters": {
+        "spec": "0.4 bearing 文档中的 spec 映射。",
+        "source_path": "可选源文件绝对或相对路径，用于资源溯源。",
+        "resource_root": "可选资源根；未给出时可由 source_path 的父目录推导。"
+      },
+      "examples": [
+        "bearing_programmatic",
+        "bearing_from_file"
+      ],
+      "members": {
+        "family": {
+          "summary": "读取轴承族判别值。",
+          "returns": "返回 liquid_film、active_lubricated、gas_film、multi_pad 或 surrogate。",
+          "parameters": {}
+        },
+        "unit_system": {
+          "summary": "读取配置声明的单位制字符串。",
+          "returns": "返回 dimensional 或 nondimensional。",
+          "parameters": {}
+        },
+        "control_mode": {
+          "summary": "读取主动轴承控制模式；非主动或 fixed surrogate 返回 None。",
+          "returns": "返回 pid、fuzzy_pid、uncontrolled、external_spool 或 None。",
+          "parameters": {}
+        },
+        "to_dict": {
+          "summary": "创建调用方可修改的严格 0.4 bearing 文档副本。",
+          "returns": "返回含 schema_version、kind 和 spec 的普通 dict。",
+          "parameters": {}
+        },
+        "with_overrides": {
+          "summary": "按点分路径替换字段并重新执行完整校验。",
+          "returns": "返回新的 BearingConfig，原对象不变。",
+          "parameters": {
+            "overrides": "点分字段路径到新值的映射，例如 film.supply_pressure。"
+          },
+          "raises": [
+            {
+              "type": "ConfigurationError",
+              "when": "路径不存在于映射结构，或替换后的配置不合法。"
+            }
+          ]
+        },
+        "sweep": {
+          "summary": "对一个点分路径逐值生成已验证配置。",
+          "returns": "返回与 values 顺序一致的 BearingConfig 元组。",
+          "parameters": {
+            "path": "需要扫描的点分字段路径。",
+            "values": "依次写入该字段的值序列或其他可迭代对象。"
+          }
+        }
+      }
+    },
+    "BearingMount": {
+      "summary": "把一个不可变轴承配置固定挂载到转子节点，并可附加单位和阀芯命令适配器。",
+      "returns": "构造一个不可变 BearingMount。",
+      "parameters": {
+        "config": "挂载点使用的 BearingConfig。",
+        "node": "非负转子节点编号。",
+        "unit_adapter": "可选转子量纲到轴承本地单位制适配器。",
+        "spool_provider": "external_spool 轴承的可选阀芯命令提供器。"
+      },
+      "examples": [
+        "simulation_programmatic"
+      ],
+      "members": {}
+    },
+    "BearingResult": {
+      "summary": "一次成功二维轴承计算的不可变结果，包含力、时间、单位、收敛状态和完整诊断。",
+      "returns": "构造 BearingResult；普通用户通常从 Bearing.calculate() 获得。",
+      "parameters": {
+        "force": "形状为 (2,) 的有限二维力数组。",
+        "time": "该结果对应的时间。",
+        "unit_system": "力和输入所使用的单位制。",
+        "convergence": "底层求解的收敛状态。",
+        "details": "底层 runtime 的完整不可变结果快照。"
+      },
+      "examples": [
+        "bearing_from_file",
+        "result_persistence"
+      ],
+      "members": {
+        "fx": {
+          "summary": "读取 x 方向轴承力。",
+          "returns": "返回 Python float。",
+          "parameters": {}
+        },
+        "fy": {
+          "summary": "读取 y 方向轴承力。",
+          "returns": "返回 Python float。",
+          "parameters": {}
+        },
+        "friction": {
+          "summary": "读取本次计算的总摩擦力。",
+          "returns": "底层轴承提供摩擦力时返回 float，否则返回 None。",
+          "parameters": {}
+        },
+        "pressure": {
+          "summary": "读取单液膜压力场；量纲结果为 Pa，无量纲结果为 p/ps。",
+          "returns": "返回只读压力数组；多瓦或不提供压力的模型返回 None。",
+          "parameters": {}
+        },
+        "film_thickness": {
+          "summary": "读取单液膜厚度场；量纲结果为 m，无量纲结果为 h/c。",
+          "returns": "返回只读液膜厚度数组；多瓦或不提供厚度的模型返回 None。",
+          "parameters": {}
+        },
+        "diagnostics": {
+          "summary": "读取底层结果的不可变诊断元数据。",
+          "returns": "返回只读键值映射。",
+          "parameters": {}
+        },
+        "as_bundle": {
+          "summary": "转换为统一的可持久化 ResultBundle。",
+          "returns": "返回包含 force、details 和结果元数据的不可变结果包。",
+          "parameters": {}
+        },
+        "write": {
+          "summary": "把结果值和诊断写入一个新的制品目录。",
+          "returns": "返回 ArtifactManifest。",
+          "parameters": {
+            "path": "目标输出目录。"
+          }
+        }
+      }
+    },
+    "BuildError": {
+      "summary": "配置已经通过校验，但对应 runtime 无法完成装配时抛出的稳定异常。",
+      "returns": "构造一个可抛出的 BuildError。",
+      "parameters": {
+        "args": "传给 Python Exception 的可变消息或上下文参数。"
+      },
+      "examples": [
+        "error_handling"
+      ],
+      "members": {}
+    },
+    "CalculationError": {
+      "summary": "轴承输入已接受但物理求解失败时抛出的稳定异常，可携带密封失败快照。",
+      "returns": "构造一个 CalculationError。",
+      "parameters": {
+        "message": "面向用户的失败说明。",
+        "failure_snapshot": "可选不可变 ResultBundle，保存失败位置诊断。"
+      },
+      "examples": [
+        "error_handling"
+      ],
+      "members": {}
+    },
+    "ConfigurationError": {
+      "summary": "JSON5 文档、程序化配置或跨字段约束不合法时抛出的稳定异常。",
+      "returns": "构造一个可抛出的 ConfigurationError。",
+      "parameters": {
+        "args": "传给 Python Exception 的可变消息或上下文参数。"
+      },
+      "examples": [
+        "error_handling"
+      ],
+      "members": {}
+    },
+    "EllipseTrajectory": {
+      "summary": "二维椭圆轨迹值对象，分别表达中心、半轴、遍历方向、时间相位和空间转角。",
+      "returns": "构造经过有限值和形状校验的不可变椭圆轨迹。",
+      "parameters": {
+        "center": "形状为 (2,) 的椭圆中心。",
+        "semi_axes": "形状为 (2,) 且均大于 0 的半轴。",
+        "direction": "forward 或 reverse。",
+        "phase": "时间相位，单位 rad。",
+        "orientation_rad": "椭圆相对坐标轴的空间旋转角，单位 rad。"
+      },
+      "examples": [
+        "bearing_analysis"
+      ],
+      "members": {
+        "with_direction": {
+          "summary": "保留几何、相位和转角，只替换遍历方向。",
+          "returns": "返回新的 EllipseTrajectory。",
+          "parameters": {
+            "direction": "forward 或 reverse。"
+          }
+        },
+        "samples": {
+          "summary": "在给定时间点采样旋转椭圆的位移和解析速度。",
+          "returns": "返回 (displacement, velocity)，两个数组形状均为 (n, 2)。",
+          "parameters": {
+            "time": "非空、有限的一维时间点序列。",
+            "frequency_hz": "正的轨迹频率，单位 Hz。"
+          }
+        }
+      }
+    },
+    "EquilibriumOptions": {
+      "summary": "静平衡求解器的不可变参数集合，控制迭代、容差、阻尼、Jacobian 和停滞回退。",
+      "returns": "构造经过范围校验的 EquilibriumOptions。",
+      "parameters": {
+        "max_iterations": "最大迭代次数，必须至少为 1。",
+        "relative_tolerance": "正的相对残差收敛阈值。",
+        "damping": "正的 Newton 位移阻尼系数。",
+        "jacobian_step": "正的数值 Jacobian 位移步长。",
+        "fallback_stiffness": "停滞回退使用的正二维固定刚度。",
+        "stall_patience": "触发停滞回退前允许的迭代数；0 表示关闭等待。",
+        "stall_relative_tolerance": "区间 [0, 1) 内的停滞相对改善阈值。",
+        "time": "静平衡评估使用的有限时间。"
+      },
+      "examples": [
+        "bearing_analysis"
+      ],
+      "members": {}
+    },
+    "EquilibriumSolver": {
+      "summary": "直接接收一个已构造 Bearing，并使用既有静平衡算法求载荷平衡。",
+      "returns": "构造可由用户或内部模块直接调用的静平衡模型。",
+      "parameters": {
+        "bearing": "通过 build_bearing() 或 bearing_from_file() 构造的 Bearing。",
+        "options": "静平衡迭代、容差、阻尼和回退参数。"
+      },
+      "examples": [
+        "bearing_analysis"
+      ],
+      "members": {
+        "solve": {
+          "summary": "求使轴承力与二维外载荷平衡的位移。",
+          "returns": "返回 AnalysisResult，包含平衡位移、力、残差和迭代历史。",
+          "parameters": {
+            "load": "目标二维外载荷。",
+            "initial_displacement": "静平衡迭代的初始二维位移。"
+          },
+          "raises": [
+            {
+              "type": "CalculationError",
+              "when": "轴承内层计算失败或静平衡最终不收敛。"
+            }
+          ]
+        }
+      }
+    },
+    "HistoryPolicy": {
+      "summary": "控制仿真已提交历史的字段筛选、降采样、环形缓存或磁盘流式写入。",
+      "returns": "构造经过模式与参数一致性校验的 HistoryPolicy。",
+      "parameters": {
+        "mode": "memory、ring_buffer 或 disk_stream。",
+        "fields": "需要保存的结果字段元组。",
+        "downsample": "正整数采样间隔，1 表示每个提交步都保留。",
+        "capacity": "ring_buffer 的正整数容量；其他模式通常为 None。",
+        "directory": "disk_stream 输出目录；其他模式通常为 None。"
+      },
+      "examples": [
+        "history_policy",
+        "simulation_programmatic"
+      ],
+      "members": {}
+    },
+    "RotorBearingSimulation": {
+      "summary": "拓扑不可变的一次性转子-轴承耦合仿真 facade。",
+      "returns": "构造可运行一次的 RotorBearingSimulation；通常通过 build_simulation() 获得。",
+      "parameters": {
+        "config": "经过完整验证的 SimulationConfig。"
+      },
+      "examples": [
+        "simulation_from_file",
+        "simulation_programmatic"
+      ],
+      "members": {
+        "config": {
+          "summary": "读取本次仿真的不可变输入和拓扑。",
+          "returns": "返回 SimulationConfig。",
+          "parameters": {}
+        },
+        "latest_result": {
+          "summary": "读取最近一次完整或失败前已提交的历史，不触发运行。",
+          "returns": "返回 SimulationResult。",
+          "parameters": {},
+          "raises": [
+            {
+              "type": "RuntimeError",
+              "when": "run() 尚未产生任何完整或部分已提交结果。"
+            }
+          ]
+        },
+        "run": {
+          "summary": "执行一次耦合仿真，并按 HistoryPolicy 保留真实提交快照。",
+          "returns": "成功时返回完整 SimulationResult。",
+          "parameters": {},
+          "raises": [
+            {
+              "type": "RuntimeError",
+              "when": "对同一 simulation 对象重复调用 run()。"
+            },
+            {
+              "type": "SimulationError",
+              "when": "物理、history、recorder 或 observer 阶段失败；partial_result 可能包含已提交历史。"
+            }
+          ]
+        }
+      }
+    },
+    "SimulationConfig": {
+      "summary": "一次转子-轴承耦合计算的不可变拓扑、时步、载荷、历史策略和可选依赖。",
+      "returns": "构造经过 rotor 能力、节点输出和本地时步一致性校验的 SimulationConfig。",
+      "parameters": {
+        "rotor": "实现 RotorProtocol 且使用 dimensional 单位制的转子对象。",
+        "mounts": "非空或按模型允许的 BearingMount 元组，节点不得重复。",
+        "time_step": "正的全局量纲时间步，必须与 rotor.dt 一致。",
+        "steps": "非负整数推进步数；结果通常包含初始提交点。",
+        "loads": "可选外载荷描述映射元组。",
+        "history": "已提交历史的保留策略。",
+        "dependencies": "面向高级装配的可选依赖对象。"
+      },
+      "examples": [
+        "simulation_programmatic",
+        "simulation_from_file"
+      ],
+      "members": {}
+    },
+    "SimulationError": {
+      "summary": "耦合仿真失败时抛出的稳定异常，可携带截至最后真实提交点的部分结果。",
+      "returns": "构造一个 SimulationError。",
+      "parameters": {
+        "message": "面向用户的失败说明。",
+        "partial_result": "可选 SimulationResult 或其他密封的部分提交结果。"
+      },
+      "examples": [
+        "error_handling"
+      ],
+      "members": {}
+    },
+    "SimulationResult": {
+      "summary": "转子-轴承仿真中按策略保留的不可变已提交历史。",
+      "returns": "构造 SimulationResult；普通用户通常从 RotorBearingSimulation.run() 获得。",
+      "parameters": {
+        "time": "形状为 (n,) 的已提交时间数组。",
+        "rotor_displacement": "形状为 (n, ndof) 或策略过滤后的转子位移历史。",
+        "rotor_velocity": "与 rotor_displacement 同形状的速度历史。",
+        "bearing_force": "首维为 n 的挂载轴承二维力历史。",
+        "metadata": "完成状态、提交步数、history 模式等诊断。",
+        "convergence": "整次仿真的收敛或完成状态。"
+      },
+      "examples": [
+        "simulation_from_file"
+      ],
+      "members": {
+        "diagnostics": {
+          "summary": "读取不可变仿真诊断元数据。",
+          "returns": "返回只读键值映射。",
+          "parameters": {}
+        },
+        "as_bundle": {
+          "summary": "转换为统一的可持久化 ResultBundle。",
+          "returns": "返回包含四组历史数组和完成元数据的不可变结果包。",
+          "parameters": {}
+        },
+        "write": {
+          "summary": "把仿真历史和诊断写入一个新的制品目录。",
+          "returns": "返回 ArtifactManifest。",
+          "parameters": {
+            "path": "目标输出目录。"
+          }
+        }
+      }
+    },
+    "UnitSystem": {
+      "summary": "所有数值积分边界使用的单位制枚举，避免量纲和无量纲值被隐式混用。",
+      "returns": "返回 DIMENSIONAL 或 NONDIMENSIONAL 枚举成员。",
+      "examples": [
+        "unit_system"
+      ],
+      "members": {}
+    },
+    "__version__": {
+      "summary": "当前导入的 re-alb 包版本字符串。",
+      "returns": "返回遵循项目版本号的字符串。",
+      "examples": [
+        "package_version"
+      ]
+    },
+    "bearing_from_file": {
+      "summary": "读取严格 0.4 JSON5 轴承文档并一步构建可计算轴承。",
+      "returns": "返回已完成 runtime 装配的 Bearing。",
+      "parameters": {
+        "path": "顶层 kind=bearing 的 UTF-8 JSON5 文件路径。"
+      },
+      "examples": [
+        "bearing_from_file"
+      ],
+      "raises": [
+        {
+          "type": "ConfigurationError",
+          "when": "schema、include、字段或跨字段约束不合法。"
+        },
+        {
+          "type": "BuildError",
+          "when": "合法配置无法装配为 runtime。"
+        }
+      ]
+    },
+    "build_bearing": {
+      "summary": "从已验证的不可变配置构建一个可直接计算的轴承 facade。",
+      "returns": "返回 Bearing。",
+      "parameters": {
+        "config": "BearingConfig；不接受普通 dict。"
+      },
+      "examples": [
+        "bearing_programmatic",
+        "bearing_from_file"
+      ],
+      "raises": [
+        {
+          "type": "BuildError",
+          "when": "底层物理、控制、阀、热或 surrogate runtime 装配失败。"
+        }
+      ]
+    },
+    "build_simulation": {
+      "summary": "从已验证的仿真配置构建一次性转子-轴承仿真对象。",
+      "returns": "返回 RotorBearingSimulation。",
+      "parameters": {
+        "config": "SimulationConfig。"
+      },
+      "examples": [
+        "simulation_programmatic",
+        "simulation_from_file"
+      ]
+    },
+    "load_bearing_config": {
+      "summary": "读取严格 UTF-8 0.4 bearing 文档，安全合并受限 include 并完成校验。",
+      "returns": "返回不可变 BearingConfig。",
+      "parameters": {
+        "path": "顶层 bearing JSON5 文件路径；include 必须保持在该目录树内。"
+      },
+      "examples": [
+        "bearing_from_file"
+      ],
+      "raises": [
+        {
+          "type": "ConfigurationError",
+          "when": "文件不存在、编码错误、JSON5 无效、include 越界/循环/重复或配置不合法。"
+        }
+      ]
+    },
+    "load_simulation_config": {
+      "summary": "读取严格 0.4 simulation 文档，并解析转子、挂载轴承、时间网格、载荷和历史策略。",
+      "returns": "返回已物化并完成一致性校验的 SimulationConfig。",
+      "parameters": {
+        "path": "顶层 kind=simulation 的 JSON5 文件路径。"
+      },
+      "examples": [
+        "simulation_from_file"
+      ],
+      "raises": [
+        {
+          "type": "ConfigurationError",
+          "when": "文档、资源路径、rotor、mount、时步或 history 策略不合法。"
+        }
+      ]
+    },
+    "simulation_from_file": {
+      "summary": "读取严格 JSON5 仿真文档并一步构建一次性仿真对象。",
+      "returns": "返回 RotorBearingSimulation；尚未执行 run()。",
+      "parameters": {
+        "path": "顶层 simulation JSON5 文件路径。"
+      },
+      "examples": [
+        "simulation_from_file"
+      ],
+      "raises": [
+        {
+          "type": "ConfigurationError",
+          "when": "仿真文档或其引用资源不满足 0.4 合同。"
+        }
+      ]
+    }
+  }
+}

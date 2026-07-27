@@ -1,0 +1,20 @@
+// Minimal dimensional liquid-film bearing; geometry and pressure use SI units.
+{
+  schema_version: "0.4.0",
+  kind: "bearing",
+  spec: {
+    family: "liquid_film",
+    unit_system: "dimensional",
+    time_step: 0.001,
+    node: 0,
+    film: {
+      circumferential_elements: 5,
+      axial_elements: 3,
+      max_iterations: 20,
+      solver_tolerance: 1e-6,
+      eccentricity: 0.0,
+    },
+    restrictors: null,
+    thermal: null,
+  },
+}

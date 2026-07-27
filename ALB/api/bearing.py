@@ -133,7 +133,7 @@ class Bearing:
             output = self._runtime.step(dto)
             details = self._runtime.result_snapshot()
             convergence = self._runtime.convergence_status
-        except BaseException as exc:
+        except Exception as exc:
             snapshot: ResultBundle | None = None
             failure = getattr(self._runtime, "failure_snapshot", None)
             if callable(failure):

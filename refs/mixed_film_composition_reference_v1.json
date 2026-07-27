@@ -1,0 +1,176 @@
+{
+  "cases": {
+    "dimensional": {
+      "config": {
+        "error_set": 1e-05,
+        "max_iter": 8,
+        "nx": 5,
+        "nz": 3,
+        "save_h": false,
+        "save_p": false
+      },
+      "dto": {
+        "displacement": [
+          1e-06,
+          -2e-06
+        ],
+        "time": 0.125,
+        "unit_system": "dimensional",
+        "velocity": [
+          0.0003,
+          -0.0004
+        ]
+      },
+      "orifices": null,
+      "outputs": {
+        "converged": true,
+        "diagnostic_metadata": {
+          "converged": true,
+          "has_failure": false,
+          "has_result": true,
+          "lifecycle_state": "ready",
+          "node_link": null,
+          "orifice_count": 0,
+          "schema": "alb.hybrid-bearing-diagnostic.v1",
+          "unit_system": "dimensional"
+        },
+        "final_iter": 0,
+        "force_array": "dimensional.force",
+        "friction": 45.364377924707796,
+        "iterations": 1,
+        "lifecycle_state": "ready",
+        "pressure_array": "dimensional.pressure",
+        "result_metadata": {
+          "converged": true,
+          "orifice_count": 0,
+          "schema": "alb.hybrid-bearing-result.v1",
+          "time": 0.125,
+          "unit_system": "dimensional"
+        }
+      }
+    },
+    "dimensional_hybrid": {
+      "config": {
+        "error_set": 1e-05,
+        "max_iter": 8,
+        "nx": 5,
+        "nz": 3,
+        "save_h": false,
+        "save_p": false
+      },
+      "dto": {
+        "displacement": [
+          1e-06,
+          -2e-06
+        ],
+        "time": 0.125,
+        "unit_system": "dimensional",
+        "velocity": [
+          0.0003,
+          -0.0004
+        ]
+      },
+      "orifices": {
+        "cq": 0.1,
+        "positions": [
+          [
+            0.5,
+            0.5
+          ]
+        ],
+        "pressure": 7000000.0
+      },
+      "outputs": {
+        "converged": true,
+        "diagnostic_metadata": {
+          "converged": true,
+          "has_failure": false,
+          "has_result": true,
+          "lifecycle_state": "ready",
+          "node_link": null,
+          "orifice_count": 1,
+          "schema": "alb.hybrid-bearing-diagnostic.v1",
+          "unit_system": "dimensional"
+        },
+        "final_iter": 2,
+        "force_array": "dimensional_hybrid.force",
+        "friction": 45.370994242845335,
+        "iterations": 3,
+        "lifecycle_state": "ready",
+        "pressure_array": "dimensional_hybrid.pressure",
+        "result_metadata": {
+          "converged": true,
+          "orifice_count": 1,
+          "schema": "alb.hybrid-bearing-result.v1",
+          "time": 0.125,
+          "unit_system": "dimensional"
+        }
+      }
+    },
+    "nondimensional": {
+      "config": {
+        "error_set": 1e-05,
+        "lambda_value": 1.2,
+        "lr": 1.0,
+        "lx": 360.0,
+        "lz": 2.0,
+        "max_iter": 8,
+        "nx": 5,
+        "nz": 3,
+        "scale_w": 3000.0
+      },
+      "dto": {
+        "displacement": [
+          0.1,
+          -0.05
+        ],
+        "time": 0.25,
+        "unit_system": "nondimensional",
+        "velocity": [
+          0.01,
+          -0.02
+        ]
+      },
+      "orifices": null,
+      "outputs": {
+        "converged": true,
+        "diagnostic_metadata": {
+          "converged": true,
+          "has_failure": false,
+          "has_result": true,
+          "lifecycle_state": "ready",
+          "node_link": null,
+          "orifice_count": 0,
+          "schema": "alb.hybrid-bearing-diagnostic.v1",
+          "unit_system": "nondimensional"
+        },
+        "final_iter": 3,
+        "force_array": "nondimensional.force",
+        "friction": 0.9416776812744525,
+        "iterations": 4,
+        "lifecycle_state": "ready",
+        "pressure_array": "nondimensional.pressure",
+        "result_metadata": {
+          "converged": true,
+          "orifice_count": 0,
+          "schema": "alb.hybrid-bearing-result.v1",
+          "time": 0.25,
+          "unit_system": "nondimensional"
+        }
+      },
+      "x0": 10.0
+    }
+  },
+  "environment": {
+    "numpy": "1.24.3",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.10.17",
+    "scipy": "1.10.1"
+  },
+  "generated_at_utc": "2026-07-25T18:17:57.330190+00:00",
+  "npz_sha256": "6bd74808da7acd8dec4654c2db43d722a538394295f98471f13fbd19f8f50a44",
+  "schema": "alb.mixed-film-composition-reference.v1",
+  "source_commit": "14c84f1cebf4ffab75759a853c7247f722307b17",
+  "source_file": "ALB/physics/bearing/solver.py",
+  "source_file_sha256": "5cab944a9fe492ec2672896a2fce433069bb88b27c014e419deecafa7de35a9e"
+}

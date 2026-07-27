@@ -29,7 +29,7 @@
 | --- | --- | --- |
 | 包源码 | `ALB/contracts/`、`core/`、`config/`、`physics/`、`control/`、`dynamics/`、`surrogate/`、`systems/`、`infrastructure/`、`workflows/` | 保留；按 `docs/interface_architecture.md` 的依赖方向维护。 |
 | 正式测试 | `tests/unit/`、`tests/integration/`、`tests/regression/`、`tests/validation/` | 保留；所有测试输出使用 pytest `tmp_path`。 |
-| 工具 | `tools/benchmarks/`、`diagnostics/`、`manual/`、`migrations/`、`reference/`、`validation/` | 保留；诊断/manual 不纳入默认 pytest 收集。 |
+| 工具 | `tools/benchmarks/`、`diagnostics/`、`docs/`、`manual/`、`migrations/`、`reference/`、`validation/` | 保留；诊断/manual 不纳入默认 pytest 收集；docs 生成器只更新指定生成文档。 |
 | 行为参考 | `refs/full_repo_refactor_v1/`、`refs/full_repo_refactor_addendum_v1/` 及其他版本化 refs | 永久保留并按版本新增；不得覆盖现有 v1 或 addendum v1。 |
 | 人类文档 | `README.md`、`AGENTS.md`、`docs/` | 保留；按文档角色索引更新，维护类文档使用中文。 |
 | 包和测试配置 | `pyproject.toml`、`.editorconfig`、`.gitignore` | 保留；`testpaths` 只能指向 `tests`。 |
@@ -46,6 +46,7 @@
 | 冻结行为等价 | `tests/regression/` | 对 v1 数组使用精确相等；不以放宽容差掩盖漂移。 |
 | 架构、物理和发布验收 | `tests/validation/` | 包含 import、optional dependency、wheel、迁移、时序和工程门禁。 |
 | 自动诊断 | `tools/diagnostics/` | 人工触发；输出必须去 ignored/临时目录。 |
+| API 文档生成 | `tools/docs/` | 从公开接口和语义元数据生成 `docs/api/public_api_reference.md`；`--check` 不写文件并纳入 pytest。 |
 | 手动 GUI/绘图 | `tools/manual/` | 不由 pytest 自动运行。 |
 | 基准 | `tools/benchmarks/` | 先过精确参考，再执行计时。 |
 | 参考生成 | `tools/reference/` | 只创建新版本 reference；禁止覆盖 v1。 |

@@ -15,9 +15,7 @@ from .ports import (
     ValveOutput,
 )
 from .results import ResultBundle
-from .types import UnitSystem
-from .types import StepContext
-
+from .types import StepContext, UnitSystem
 
 InputT = TypeVar("InputT")
 

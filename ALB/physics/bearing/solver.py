@@ -3,12 +3,10 @@ import copy
 import logging
 import math
 import unittest
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
-import pandas as pd
 import scipy.sparse as sp
-from tqdm import tqdm
 
 from ALB.core.component import BaseCSystem
 from ALB.core.fem import ElemManager, MatrixProcess, Mesh, NodeManager
@@ -56,7 +54,6 @@ from ALB.core.numerics.dynamic import (
 )
 from ALB.core.numerics.static import calc_ke
 from ALB.physics.hydraulics.orifice import Orifice, Orifices
-from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
 from ALB.config.parameters import ParameterHub
 
 LOGGER = logging.getLogger("ALB.physics.bearing")
@@ -551,7 +548,13 @@ def _attach_hybrid_orifices(
 
 
 class _MixedFilmRuntimeMixin:
-    """Provide a strict DTO lifecycle around one mixed film solver."""
+    """Add the public DTO lifecycle to a concrete film solver.
+
+    The mixin owns only lifecycle state, immutable result snapshots, and error
+    diagnostics. Numerical state and film operations remain on the concrete
+    ``FilmSystem`` base class, avoiding a proxy that repeats every solver
+    property and method.
+    """
 
     input_dto_type = BearingInput
     _hybrid_nodim: bool
@@ -608,7 +611,7 @@ class _MixedFilmRuntimeMixin:
         self._latest_result = None
         self._failure = None
         try:
-            super()._reset_for_owner()
+            FilmSystem._reset_for_owner(cast(FilmSystem, self))
         except BaseException as exc:
             self._failure = self._build_failure_snapshot(exc, "reset")
             raise
@@ -643,7 +646,8 @@ class _MixedFilmRuntimeMixin:
     def _prepare_raw(self, dto: BearingInput) -> None:
         """Apply one typed sample to the internal film solver."""
 
-        super().input(
+        FilmSystem.input(
+            cast(FilmSystem, self),
             dto.displacement,
             dto.velocity,
             t=dto.time,
@@ -653,7 +657,56 @@ class _MixedFilmRuntimeMixin:
     def _solve_raw(self) -> dict[str, Any]:
         """Run the internal film solver without publishing runtime state."""
 
-        return super().output(nodim=self._hybrid_nodim)
+        return FilmSystem.output(
+            cast(FilmSystem, self),
+            nodim=self._hybrid_nodim,
+        )
+
+    def _film_field_snapshot(
+        self,
+    ) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+        """Return pressure and film thickness in the public runtime units.
+
+        The native Reynolds solver stores pressure as ``p / ps`` and film
+        thickness as ``h / c``. Dimensional runtimes convert those arrays to Pa
+        and m; nondimensional runtimes preserve the ratios. Both arrays follow
+        the mesh layout ``(circumferential_nodes, axial_nodes)`` when the native
+        node count matches the configured structured mesh.
+        """
+
+        args = self.main_model.args
+        pressure = np.asarray(
+            self.main_model.latest_result,
+            dtype=float,
+        ).copy()
+        thickness = np.asarray(
+            [node.h for node in self.main_model.nodes.values()],
+            dtype=float,
+        )
+        shape = (int(args["nx"]) + 1, int(args["nz"]) + 1)
+        if pressure.size == shape[0] * shape[1]:
+            pressure = pressure.reshape(shape)
+        if thickness.size == shape[0] * shape[1]:
+            thickness = thickness.reshape(shape)
+        if self.unit_system is UnitSystem.DIMENSIONAL:
+            pressure *= float(args["ps"])
+            thickness *= float(args["c"])
+            pressure_unit = "Pa"
+            thickness_unit = "m"
+        else:
+            pressure_unit = "nondimensional"
+            thickness_unit = "nondimensional"
+        return (
+            {
+                "pressure": pressure,
+                "film_thickness": thickness,
+            },
+            {
+                "field_shape": tuple(int(value) for value in pressure.shape),
+                "pressure_unit": pressure_unit,
+                "film_thickness_unit": thickness_unit,
+            },
+        )
 
     def evaluate(self) -> None:
         """Run exactly one mixed film/restrictor calculation."""
@@ -683,10 +736,12 @@ class _MixedFilmRuntimeMixin:
                         "hybrid bearing calculation did not converge"
                     )
                 )
+                field_values, field_metadata = self._film_field_snapshot()
                 self._latest_result = result_snapshot(
                     {
                         "force": self._latest_output.force,
                         "friction": float(raw_output.get("friction", 0.0)),
+                        **field_values,
                     },
                     {
                         "schema": "alb.hybrid-bearing-result.v1",
@@ -698,6 +753,7 @@ class _MixedFilmRuntimeMixin:
                             else len(self.orifice_config.positions)
                         ),
                         "converged": converged,
+                        **field_metadata,
                     },
                 )
                 self._pending_input = None
@@ -773,8 +829,7 @@ class _MixedFilmRuntimeMixin:
             },
         )
 
-
-class _DimensionalMixedFilmRuntime(
+class _DimensionalMixedFilmRuntime(  # type: ignore[misc]
     _MixedFilmRuntimeMixin,
     _DimensionalFilmRuntime,
 ):
@@ -797,7 +852,7 @@ class _DimensionalMixedFilmRuntime(
         self._configure_hybrid_runtime(orifices)
 
 
-class _NondimensionalMixedFilmRuntime(
+class _NondimensionalMixedFilmRuntime(  # type: ignore[misc]
     _MixedFilmRuntimeMixin,
     _NondimensionalFilmRuntime,
 ):
@@ -1011,10 +1066,12 @@ class MultiPad:
                 forces = []
                 frictions = []
                 child_convergence = []
+                child_results = []
                 for bearing in self._children:
                     child_output = bearing.step(dto)
                     force = child_output.force
                     result = bearing.result_snapshot()
+                    child_results.append(result)
                     friction = float(result.values.get("friction", 0.0))
                     child_convergence.append(
                         bearing.convergence_status.converged
@@ -1041,11 +1098,33 @@ class MultiPad:
                         "one or more MultiPad children are incomplete"
                     )
                 )
+                result_values: dict[str, Any] = {
+                    "force": self._latest_output.force,
+                    "friction": self._latest_friction,
+                    "pad_force": np.vstack(forces),
+                }
+                if all("pressure" in result.values for result in child_results):
+                    result_values["pad_pressure"] = np.stack(
+                        [
+                            np.asarray(result.values["pressure"], dtype=float)
+                            for result in child_results
+                        ]
+                    )
+                if all(
+                    "film_thickness" in result.values
+                    for result in child_results
+                ):
+                    result_values["pad_film_thickness"] = np.stack(
+                        [
+                            np.asarray(
+                                result.values["film_thickness"],
+                                dtype=float,
+                            )
+                            for result in child_results
+                        ]
+                    )
                 self._latest_result = result_snapshot(
-                    {
-                        "force": self._latest_output.force,
-                        "friction": self._latest_friction,
-                    },
+                    result_values,
                     {
                         "schema": "alb.multi-pad-result.v1",
                         "time": dto.time,
@@ -1172,393 +1251,6 @@ class MultiPad:
             c.append(bdc.calc_c(**kwargs))
         c = np.sum(c, axis=0)
         return c
-
-class _InternalEquilibriumSolver:
-    def __init__(
-        self,
-        bearing,
-        kx=5,
-        ky=5,
-        iter_num=30,
-        error_set=1e-4,
-        damp=0.05,
-        delta=1e-2,
-        newton_stall_patience=5,
-        stall_rel_tol=0.0,
-    ):
-        """
-        Calculates the static equilibrium position of a bearing.
-        :param bearing: The bearing object.
-        :param kx: Stiffness in the x-direction for iteration.
-        :param ky: Stiffness in the y-direction for iteration.
-        :param iter_num: Maximum number of iterations.
-        :param error_set: Convergence error tolerance.
-        :param damp: Damping factor for iteration.
-        :param newton_stall_patience: Number of consecutive Newton iterations
-            that fail to improve the best residual before the solver switches
-            permanently to the fixed-stiffness kx/ky fixed-point update. Set to
-            0 (or negative) to disable the switch and always use Newton.
-        :param stall_rel_tol: Minimum relative reduction of the residual that
-            counts as an improvement when detecting Newton stall. 0.0 means any
-            strictly new minimum residual resets the stall counter.
-        """
-        self.bearing = bearing
-        self.data = pd.DataFrame(
-            columns=[
-                "ex",
-                "ey",
-                "Fx",
-                "Fy",
-                "F",
-                "error",
-                "finished",
-                "iter_num",
-                "inner_converged",
-                "stop_reason",
-                "dim_Fx",
-                "dim_Fy",
-                "dim_F",
-            ]
-        )
-        self.kx = kx
-        self.ky = ky
-        self.iter_num = iter_num
-        self.error_set = error_set
-        self.child_nodes = []
-        self.damp = damp
-        self.delta = delta
-        self.newton_stall_patience = newton_stall_patience
-        self.stall_rel_tol = stall_rel_tol
-
-    def _limit_eccentricity_step(
-        self,
-        ex,
-        ey,
-        dex,
-        dey,
-        limit=1.0,
-        margin=1.0e-6,
-        min_scale=1.0e-6,
-    ):
-        """
-        Keep a Newton update inside the valid nondimensional eccentricity disk.
-
-        The film model accepts eccentricity only when sqrt(ex**2 + ey**2) < 1.
-        This helper preserves the Newton direction and backs off the step size
-        until the candidate point is inside that disk.
-        """
-        current = np.array([ex, ey], dtype=float)
-        step = np.array([dex, dey], dtype=float)
-        safe_limit = float(limit) - float(margin)
-
-        if not np.all(np.isfinite(step)):
-            return float(current[0]), float(current[1]), 0.0
-
-        candidate = current + step
-        if np.linalg.norm(candidate) < safe_limit:
-            return float(candidate[0]), float(candidate[1]), 1.0
-
-        scale = 0.5
-        while scale >= min_scale:
-            candidate = current + scale * step
-            if np.linalg.norm(candidate) < safe_limit:
-                return float(candidate[0]), float(candidate[1]), scale
-            scale *= 0.5
-
-        current_norm = np.linalg.norm(current)
-        if current_norm >= safe_limit and current_norm > 0.0:
-            current = current / current_norm * safe_limit
-        return float(current[0]), float(current[1]), 0.0
-
-    def _calc_static_error(self, wx, wy, force):
-        """Return the load-balance residual normalized by the applied load."""
-        w_norm = np.sqrt(wx**2 + wy**2)
-        return (
-            np.sqrt((wx + force[0]) ** 2 + (wy + force[1]) ** 2) / w_norm
-            if w_norm > 0
-            else 0.0
-        )
-
-    def _inner_is_finished(self):
-        """Return whether the latest nested bearing solve reported convergence."""
-        if not hasattr(self.bearing, "calc_is_finished"):
-            return True
-        status = self.bearing.calc_is_finished()
-        if status is None:
-            return True
-        return bool(status)
-
-    def _evaluate_static_force(self, wx, wy, ex, ey, nodim=True, include_dim=False):
-        """Evaluate force and convergence diagnostics at one static position."""
-        if isinstance(self.bearing, BearingRuntimeProtocol):
-            bearing_unit = UnitSystem.coerce(self.bearing.unit_system)
-            displacement = np.asarray([ex, ey], dtype=float)
-            if nodim and bearing_unit is UnitSystem.DIMENSIONAL:
-                displacement = displacement * float(self.bearing.margs["c"])
-            self.bearing.step(
-                BearingInput(
-                    displacement,
-                    [0.0, 0.0],
-                    0.0,
-                    bearing_unit,
-                )
-            )
-        else:
-            self.bearing.input(uxy=[ex, ey], uxyt=[0, 0], t=0, nodim=nodim)
-            self.bearing.output(nodim=nodim)
-        force = np.asarray(self.bearing.calc_capacity(calc=True, nodim=nodim))
-        dim_force = (
-            np.asarray(self.bearing.calc_capacity(calc=True, nodim=False))
-            if include_dim
-            else np.full(2, np.nan)
-        )
-        return {
-            "ex": float(ex),
-            "ey": float(ey),
-            "force": force,
-            "dim_force": dim_force,
-            "total_force": float(np.sqrt(force[0] ** 2 + force[1] ** 2)),
-            "error": float(self._calc_static_error(wx, wy, force)),
-            "inner_converged": self._inner_is_finished(),
-        }
-
-    def run(self, wx, wy, ex=0, ey=0, nodim=True):
-        """
-        :param wx: Load in the x-direction.
-        :param wy: Load in the y-direction.
-        :param ex: Initial eccentricity ratio in the x-direction.
-        :param ey: Initial eccentricity ratio in the y-direction.
-        :param nodim: Whether to use non-dimensional units.
-        """
-        force = np.zeros(2)
-        dim_force = np.zeros(2)
-        total_force = 0
-        error = 1
-        delta = self.delta
-        finished = False
-        inner_converged = True
-        stop_reason = "max_iter"
-        i = 0
-        current_eval = None
-        state_matches_current_eval = False
-        last_jacobian = None
-        best_error = np.inf
-        stall_count = 0
-        use_kxky = False
-        if hasattr(self.bearing, "init"):
-            self.bearing._reset_for_owner()
-        LOGGER.info("Static position iteration started: wx=%s, wy=%s", wx, wy)
-        pbar = tqdm(range(self.iter_num), desc="Static Track", ncols=100)
-        for i in pbar:
-            if hasattr(self.bearing, "init"):
-                self.bearing._reset_for_owner()
-            # print("Iteration {}".format(i))
-            current_eval = self._evaluate_static_force(
-                wx, wy, ex, ey, nodim=nodim, include_dim=True
-            )
-            force = current_eval["force"]
-            dim_force = current_eval["dim_force"]
-            total_force = current_eval["total_force"]
-            error = current_eval["error"]
-            inner_converged = current_eval["inner_converged"]
-            state_matches_current_eval = True
-            if i % 5 == 0:
-                pbar.set_description(
-                    f"Iter:{i + 1} Error:{error:.2e} Force:({force[0]:.2e},{force[1]:.2e}) "
-                    f"Exy:({ex:.2e},{ey:.2e})"
-                )
-            if not inner_converged:
-                stop_reason = "inner_not_converged"
-                LOGGER.warning(
-                    "Static position stopped because the inner solve did not converge"
-                )
-                break
-            if error < self.error_set:
-                finished = True
-                stop_reason = "converged"
-                break
-            # Stall detection: track the best residual seen so far. When the
-            # Newton (Jacobian) update fails to improve it for
-            # ``newton_stall_patience`` consecutive iterations, switch
-            # permanently to the simpler fixed-stiffness kx/ky fixed-point
-            # update. The finite-difference Jacobian can become ill-conditioned
-            # or oscillate on hard cases; the kx/ky update is slower but more
-            # robust and needs no probe solves.
-            if error < best_error * (1.0 - self.stall_rel_tol):
-                best_error = error
-                stall_count = 0
-            else:
-                stall_count += 1
-            if (
-                not use_kxky
-                and self.newton_stall_patience > 0
-                and stall_count >= self.newton_stall_patience
-            ):
-                use_kxky = True
-                LOGGER.warning(
-                    "Static position switching to kx/ky fixed-point update after "
-                    "%d non-improving Newton iterations (best error=%.3e)",
-                    stall_count,
-                    best_error,
-                )
-            res = np.array([wx + force[0], wy + force[1]])
-            if use_kxky:
-                # Fixed-stiffness kx/ky fixed-point update (previously the
-                # commented-out method): the displacement increment is the load
-                # residual scaled by the configured stiffness and (1 + |e|). No
-                # Jacobian probe solves are needed, so the inner film model is
-                # evaluated only once per iteration at the current point.
-                dex = res[0] / (self.kx * (1.0 + abs(ex)))
-                dey = res[1] / (self.ky * (1.0 + abs(ey)))
-            else:
-                # Build the force Jacobian with forward finite differences. If a
-                # perturbed probe's inner (coupled film) solve fails to converge,
-                # reuse the most recent successfully built Jacobian ("frozen
-                # Jacobian") and continue the Newton step instead of aborting the
-                # whole static iteration. Only when no Jacobian has been built yet
-                # does a non-converged probe stop the iteration.
-                jacobian_built = True
-                eval_dx = self._evaluate_static_force(
-                    wx, wy, ex + delta, ey, nodim=nodim
-                )
-                state_matches_current_eval = False
-                if not eval_dx["inner_converged"]:
-                    jacobian_built = False
-                eval_dy = None
-                if jacobian_built:
-                    eval_dy = self._evaluate_static_force(
-                        wx, wy, ex, ey + delta, nodim=nodim
-                    )
-                    state_matches_current_eval = False
-                    if not eval_dy["inner_converged"]:
-                        jacobian_built = False
-                if jacobian_built:
-                    force_dx = eval_dx["force"]
-                    force_dy = eval_dy["force"]
-                    dfx_dex = (force_dx[0] - force[0]) / delta
-                    dfy_dex = (force_dx[1] - force[1]) / delta
-                    dfx_dey = (force_dy[0] - force[0]) / delta
-                    dfy_dey = (force_dy[1] - force[1]) / delta
-                    J = np.array([[dfx_dex, dfx_dey], [dfy_dex, dfy_dey]])
-                    last_jacobian = J
-                elif last_jacobian is not None:
-                    # Frozen Jacobian: a probe inner solve did not converge, so
-                    # keep the previous Jacobian and continue the Newton step.
-                    J = last_jacobian
-                    LOGGER.warning(
-                        "Static position reusing frozen Jacobian because a perturbed "
-                        "probe inner solve did not converge"
-                    )
-                else:
-                    stop_reason = (
-                        "inner_not_converged_dx"
-                        if not eval_dx["inner_converged"]
-                        else "inner_not_converged_dy"
-                    )
-                    LOGGER.warning(
-                        "Static position stopped because a probe inner solve did not "
-                        "converge and no previous Jacobian is available"
-                    )
-                    break
-                try:
-                    delta_e = np.linalg.solve(J, -res)
-                except np.linalg.LinAlgError:
-                    LOGGER.warning(
-                        "Jacobian is singular, fallback to default stiffness"
-                    )
-                    delta_e = -res / np.array([self.kx, self.ky])
-                dex, dey = delta_e * self.damp
-            ex, ey, _ = self._limit_eccentricity_step(ex, ey, dex, dey)
-            state_matches_current_eval = False
-            # print("Current iteration residual is: {}".format(error))
-            e_norm = np.sqrt(ex**2 + ey**2)
-            if e_norm >= 1:
-                ex = ex / 2
-                ey = ey / 2
-        if current_eval is None or not np.allclose(
-            [current_eval["ex"], current_eval["ey"]], [ex, ey]
-        ) or not state_matches_current_eval:
-            current_eval = self._evaluate_static_force(
-                wx, wy, ex, ey, nodim=nodim, include_dim=True
-            )
-            force = current_eval["force"]
-            dim_force = current_eval["dim_force"]
-            total_force = current_eval["total_force"]
-            error = current_eval["error"]
-            inner_converged = current_eval["inner_converged"]
-            if inner_converged and error < self.error_set:
-                finished = True
-                stop_reason = "converged"
-            elif not inner_converged and stop_reason == "max_iter":
-                stop_reason = "inner_not_converged_final"
-        LOGGER.info(
-            "Static position finished: iter=%s, converged=%s, residual=%s",
-            i,
-            finished,
-            error,
-        )
-        if finished is False:
-            LOGGER.warning("Static position did not converge")
-        self.data.loc[len(self.data)] = [
-            ex,
-            ey,
-            force[0],
-            force[1],
-            total_force,
-            error,
-            finished,
-            i,
-            inner_converged,
-            stop_reason,
-            dim_force[0],
-            dim_force[1],
-            np.sqrt(dim_force[0] ** 2 + dim_force[1] ** 2),
-        ]
-        child_node = copy.deepcopy(
-            self.bearing.save(
-                path="wx{}_wy{}".format(wx, wy), name="bearing", tofile=False
-            )
-        )
-        self.child_nodes.append(child_node)
-        return ex, ey
-
-    def run_track(self, wxs, wys, ex=0, ey=0, nodim=True):
-        """
-        :param wxs: Loads in the x-direction.
-        :param wys: Loads in the y-direction.
-        :param ex: Initial eccentricity ratio in the x-direction.
-        :param ey: Initial eccentricity ratio in the y-direction.
-        """
-        if len(wxs) != len(wys):
-            raise ValueError("wxs and wys must be same length")
-        exs = []
-        eys = []
-        for i in range(len(wxs)):
-            ex, ey = self.run(wxs[i], wys[i], ex, ey, nodim=nodim)
-            exs.append(ex)
-            eys.append(ey)
-        return np.array(exs), np.array(eys)
-
-    def save(self, tofile=True, path=None, name=None, *, writer=None):
-        """
-        Save the results.
-        :param tofile: Whether to save to a file.
-        :param path: The path to save to.
-        :param name: The name of the result file.
-        :return: A SaveTreeNode object.
-        """
-        if path is None:
-            path = "track_result"
-        if name is None:
-            name = "track_output"
-        res = {name: self.data}
-        res = DataFrameResult(res)
-        node = SaveTreeNode(path, res)
-        node.add_children(self.child_nodes)
-        if tofile:
-            return node.persist(writer, path)
-        return node
-
 
 class _FilmDynamicAnalyzer:
     def __init__(self, bearing: _DimensionalFilmRuntime, **kwargs):

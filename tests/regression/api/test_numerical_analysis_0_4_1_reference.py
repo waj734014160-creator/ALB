@@ -13,8 +13,12 @@ import pytest
 
 import ALB
 from ALB.api import analysis as analysis_module
-from ALB.api._analysis_numerics import EquilibriumSolver
-from ALB.contracts import BearingOutput, ConvergenceStatus, UnitSystem
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    UnitSystem,
+)
 
 
 _ROOT = Path(__file__).resolve().parents[3]
@@ -31,6 +35,51 @@ def reference_metadata() -> dict[str, object]:
 def reference_arrays() -> dict[str, np.ndarray]:
     with np.load(_REFERENCE_NPZ) as archive:
         return {name: archive[name].copy() for name in archive.files}
+
+
+class _SyntheticEquilibriumRuntime:
+    def __init__(self, failure_evaluation: int | None) -> None:
+        self._failure_evaluation = failure_evaluation
+        self._evaluation_count = 0
+        self._input: BearingInput | None = None
+        self._output: BearingOutput | None = None
+        self.convergence_status = ConvergenceStatus(0.0, True)
+
+    @staticmethod
+    def _reset_for_owner() -> None:
+        return None
+
+    def input(self, value: BearingInput) -> None:
+        self._input = value
+
+    def evaluate_static(self) -> None:
+        assert self._input is not None
+        self._evaluation_count += 1
+        coordinate = np.asarray(self._input.displacement, dtype=float)
+        converged = self._evaluation_count != self._failure_evaluation
+        self.convergence_status = ConvergenceStatus(0.0, converged)
+        self._output = BearingOutput(
+            force=np.array(
+                [
+                    2.0 * coordinate[0],
+                    1.0 + 3.0 * coordinate[1],
+                ]
+            ),
+            time=float(self._input.time),
+            unit_system=UnitSystem.NONDIMENSIONAL,
+        )
+
+    def output(self) -> BearingOutput:
+        assert self._output is not None
+        return self._output
+
+
+class _SyntheticEquilibriumBearing:
+    config = SimpleNamespace(
+        unit_system="nondimensional",
+        control_mode="uncontrolled",
+        family="liquid_film",
+    )
 
 
 def _liquid_linearization_config() -> ALB.BearingConfig:
@@ -112,6 +161,7 @@ def test_equilibrium_algorithm_matches_frozen_reference_exactly(
     failure_evaluation: int | None,
     reference_metadata: dict[str, object],
     reference_arrays: dict[str, np.ndarray],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     cases = reference_metadata["cases"]
     assert isinstance(cases, dict)
@@ -121,70 +171,58 @@ def test_equilibrium_algorithm_matches_frozen_reference_exactly(
     assert isinstance(case, dict)
     inputs = case["input"]
     assert isinstance(inputs, dict)
-    evaluation_count = 0
-
-    def evaluate_force(
-        coordinate: np.ndarray,
-    ) -> tuple[np.ndarray, bool]:
-        nonlocal evaluation_count
-        evaluation_count += 1
-        return (
-            np.array(
-                [
-                    2.0 * coordinate[0],
-                    1.0 + 3.0 * coordinate[1],
-                ]
-            ),
-            evaluation_count != failure_evaluation,
-        )
-
-    solver = EquilibriumSolver(
-        stiffness=np.array([5.0, 5.0]),
-        max_iterations=int(inputs["iter_num"]),
-        tolerance=float(inputs["error_set"]),
-        damping=float(inputs["damp"]),
-        jacobian_step=float(inputs["delta"]),
-        stall_patience=int(inputs.get("newton_stall_patience", 5)),
-        stall_relative_tolerance=0.0,
-    )
-    outcome = solver.run(
-        load=np.asarray(inputs["load"], dtype=float),
-        initial_coordinate=np.asarray(
-            inputs["initial_displacement"],
-            dtype=float,
+    solver = ALB.EquilibriumSolver(
+        _SyntheticEquilibriumBearing(),
+        ALB.EquilibriumOptions(
+            max_iterations=int(inputs["iter_num"]),
+            relative_tolerance=float(inputs["error_set"]),
+            damping=float(inputs["damp"]),
+            jacobian_step=float(inputs["delta"]),
+            stall_patience=int(inputs.get("newton_stall_patience", 5)),
+            stall_relative_tolerance=0.0,
         ),
-        evaluate_force=evaluate_force,
-        reset_iteration=lambda: None,
     )
+    runtime = _SyntheticEquilibriumRuntime(failure_evaluation)
+    monkeypatch.setattr(solver, "_new_runtime", lambda: runtime)
 
-    points = np.asarray(
-        [evaluation.coordinate for evaluation in outcome.evaluations]
-    )
-    flags = np.asarray(
-        [evaluation.inner_converged for evaluation in outcome.evaluations],
-        dtype=np.int8,
-    )
+    try:
+        result = solver.solve(
+            inputs["load"],
+            initial_displacement=inputs["initial_displacement"],
+        )
+    except ALB.CalculationError as exc:
+        assert exc.failure_snapshot is not None
+        values = exc.failure_snapshot.values
+        metadata = exc.failure_snapshot.metadata
+        residual = float(values["evaluation_relative_residual"][-1])
+        iterations = 0
+    else:
+        values = result.values
+        metadata = result.metadata
+        residual = result.convergence.residual
+        iterations = result.convergence.iterations
+
     np.testing.assert_array_equal(
-        outcome.coordinate,
+        values["displacement"],
         reference_arrays[f"static_{case_name}_final"],
     )
     np.testing.assert_array_equal(
-        outcome.force,
+        values["bearing_force"],
         reference_arrays[f"static_{case_name}_force"],
     )
     np.testing.assert_array_equal(
-        points,
+        values["evaluation_displacement"],
         reference_arrays[f"static_{case_name}_evaluated_points"],
     )
     np.testing.assert_array_equal(
-        flags,
+        np.asarray(values["evaluation_inner_converged"], dtype=np.int8),
         reference_arrays[f"static_{case_name}_convergence_flags"],
     )
-    assert outcome.residual == case["residual"]
-    assert outcome.converged is case["finished"]
-    assert outcome.inner_converged is case["inner_converged"]
-    assert outcome.stop_reason == case["stop_reason"]
-    assert outcome.iterations == case["iterations"]
+    assert residual == case["residual"]
+    assert metadata["success"] is case["finished"]
+    assert metadata["inner_converged"] is case["inner_converged"]
+    assert metadata["stop_reason"] == case["stop_reason"]
+    assert iterations == case["iterations"]
 
 
 class _SyntheticWhirlRuntime:
@@ -450,15 +488,15 @@ class _RaisingRuntime(_NeverConvergedRuntime):
 def test_equilibrium_inner_failure_raises_with_complete_snapshot(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    analysis = ALB.BearingAnalysis(_NeverConvergedBearing())
+    solver = ALB.EquilibriumSolver(_NeverConvergedBearing())
     monkeypatch.setattr(
-        analysis,
+        solver,
         "_new_runtime",
         lambda: _NeverConvergedRuntime(),
     )
 
     with pytest.raises(ALB.CalculationError) as caught:
-        analysis.find_equilibrium(
+        solver.solve(
             (0.0, -1.0),
             initial_displacement=(0.2, -0.1),
         )
@@ -476,11 +514,11 @@ def test_equilibrium_inner_failure_raises_with_complete_snapshot(
 def test_equilibrium_inner_exception_keeps_last_trusted_snapshot(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    analysis = ALB.BearingAnalysis(_NeverConvergedBearing())
-    monkeypatch.setattr(analysis, "_new_runtime", _RaisingRuntime)
+    solver = ALB.EquilibriumSolver(_NeverConvergedBearing())
+    monkeypatch.setattr(solver, "_new_runtime", _RaisingRuntime)
 
     with pytest.raises(ALB.CalculationError) as caught:
-        analysis.find_equilibrium(
+        solver.solve(
             (0.0, -1.0),
             initial_displacement=(0.2, -0.1),
         )

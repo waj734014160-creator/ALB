@@ -4,14 +4,20 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
 import pytest
 
 import ALB
-from ALB.api._analysis_numerics import EquilibriumSolver
-from ALB.contracts import BearingInput, LifecycleState, UnitSystem
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    LifecycleState,
+    UnitSystem,
+)
 from ALB.surrogate.runtime import SurrogateBearingRuntime
 
 
@@ -150,31 +156,61 @@ def test_simulation_rejects_invalid_rotor_output_before_reset(
     assert rotor.reset_count == 0
 
 
-def test_equilibrium_subnormal_load_is_not_perfectly_converged() -> None:
+class _SubnormalEquilibriumRuntime:
+    convergence_status = ConvergenceStatus(1.0, False)
+
+    def __init__(self) -> None:
+        self._input: BearingInput | None = None
+
+    @staticmethod
+    def _reset_for_owner() -> None:
+        return None
+
+    def input(self, value: BearingInput) -> None:
+        self._input = value
+
+    @staticmethod
+    def evaluate_static() -> None:
+        return None
+
+    def output(self) -> BearingOutput:
+        assert self._input is not None
+        return BearingOutput(
+            force=np.zeros(2),
+            time=self._input.time,
+            unit_system=UnitSystem.NONDIMENSIONAL,
+        )
+
+
+class _SubnormalEquilibriumBearing:
+    config = SimpleNamespace(
+        unit_system="nondimensional",
+        control_mode="uncontrolled",
+        family="liquid_film",
+    )
+
+
+def test_equilibrium_subnormal_load_is_not_perfectly_converged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     subnormal = np.nextafter(0.0, 1.0)
-    solver = EquilibriumSolver(
-        stiffness=np.ones(2),
-        max_iterations=1,
-        tolerance=1.0e-4,
-        damping=0.05,
-        jacobian_step=1.0e-2,
-        stall_patience=0,
-        stall_relative_tolerance=0.0,
+    solver = ALB.EquilibriumSolver(
+        _SubnormalEquilibriumBearing(),
+        ALB.EquilibriumOptions(max_iterations=1, stall_patience=0),
     )
+    monkeypatch.setattr(solver, "_new_runtime", _SubnormalEquilibriumRuntime)
 
-    outcome = solver.run(
-        load=np.array([subnormal, 0.0]),
-        initial_coordinate=np.zeros(2),
-        evaluate_force=lambda value: (np.zeros_like(value), False),
-        reset_iteration=lambda: None,
-    )
+    with pytest.raises(ALB.CalculationError) as caught:
+        solver.solve(np.array([subnormal, 0.0]))
 
-    assert outcome.evaluations[0].residual == 1.0
-    assert not outcome.converged
+    assert caught.value.failure_snapshot is not None
+    snapshot = caught.value.failure_snapshot
+    assert snapshot.values["evaluation_relative_residual"][0] == 1.0
+    assert snapshot.metadata["success"] is False
 
 
 def test_equilibrium_stable_norm_keeps_normal_result_exact() -> None:
-    from ALB.api._analysis_numerics import _stable_load_norm
+    from ALB.api.analysis import _stable_load_norm
 
     value = np.array([3.0, 4.0], dtype=float)
     assert _stable_load_norm(value) == float(np.linalg.norm(value))

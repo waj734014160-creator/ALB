@@ -1,0 +1,139 @@
+{
+  "schema": "alb.equilibrium-analysis-refactor-reference.v1",
+  "purpose": "Pre-refactor exact reference for BearingAnalysis.find_equilibrium callback extraction.",
+  "generated_at_utc": "2026-07-27T09:23:08.468513+00:00",
+  "package_version": "0.4.3",
+  "python_version": "3.10.17",
+  "numpy_version": "1.24.3",
+  "cases": {
+    "liquid_film": {
+      "config_spec": {
+        "family": "liquid_film",
+        "unit_system": "dimensional",
+        "time_step": 0.0006667,
+        "node": 0,
+        "film": {
+          "circumferential_elements": 7,
+          "axial_elements": 5,
+          "max_iterations": 80,
+          "solver_tolerance": 1e-09,
+          "continuous_boundary": false,
+          "solver": "newton"
+        },
+        "restrictors": null,
+        "thermal": null
+      },
+      "initial_displacement": [
+        1e-05,
+        -5e-06
+      ],
+      "load": [
+        -205.98708055434173,
+        -637.5061586688851
+      ],
+      "options": {
+        "time": 0.0
+      },
+      "result_metadata": {
+        "schema": "alb.equilibrium-result.v0.4.1",
+        "success": true,
+        "evaluations": 1,
+        "stop_reason": "converged",
+        "inner_converged": true,
+        "unit_system": "dimensional"
+      },
+      "convergence": {
+        "residual": 0.0,
+        "converged": true,
+        "iterations": 0,
+        "message": "converged"
+      },
+      "array_fields": [
+        "displacement",
+        "bearing_force",
+        "load",
+        "residual",
+        "evaluation_displacement",
+        "evaluation_force",
+        "evaluation_relative_residual",
+        "evaluation_inner_converged"
+      ]
+    },
+    "active_lubricated": {
+      "config_spec": {
+        "family": "active_lubricated",
+        "unit_system": "dimensional",
+        "time_step": 0.0006667,
+        "node": 0,
+        "film": {
+          "circumferential_elements": 7,
+          "axial_elements": 5,
+          "max_iterations": 300,
+          "solver_tolerance": 1e-09,
+          "continuous_boundary": false,
+          "solver": "newton"
+        },
+        "restrictors": {
+          "positions": [
+            [
+              0.5,
+              0.25
+            ],
+            [
+              0.5,
+              0.5
+            ],
+            [
+              0.5,
+              0.75
+            ]
+          ]
+        },
+        "tank": {},
+        "valve": {
+          "model": "static"
+        },
+        "control": {
+          "mode": "uncontrolled"
+        },
+        "transforms": {},
+        "thermal": null
+      },
+      "initial_displacement": [
+        1e-05,
+        -5e-06
+      ],
+      "load": [
+        -679.284822691219,
+        -2077.7481991881473
+      ],
+      "options": {
+        "time": 0.0
+      },
+      "result_metadata": {
+        "schema": "alb.equilibrium-result.v0.4.1",
+        "success": true,
+        "evaluations": 1,
+        "stop_reason": "converged",
+        "inner_converged": true,
+        "unit_system": "dimensional"
+      },
+      "convergence": {
+        "residual": 0.0,
+        "converged": true,
+        "iterations": 0,
+        "message": "converged"
+      },
+      "array_fields": [
+        "displacement",
+        "bearing_force",
+        "load",
+        "residual",
+        "evaluation_displacement",
+        "evaluation_force",
+        "evaluation_relative_residual",
+        "evaluation_inner_converged"
+      ]
+    }
+  }
+}

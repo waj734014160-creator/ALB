@@ -1,6 +1,11 @@
 """User-facing ALB 0.4 facade."""
 
-from .analysis import BearingAnalysis, EllipseTrajectory, EquilibriumOptions
+from .analysis import (
+    BearingAnalysis,
+    EllipseTrajectory,
+    EquilibriumOptions,
+    EquilibriumSolver,
+)
 from .bearing import Bearing, bearing_from_file, build_bearing
 from .config import BearingConfig, SCHEMA_VERSION, load_bearing_config
 from .errors import (
@@ -35,6 +40,7 @@ __all__ = [
     "ConfigurationError",
     "EllipseTrajectory",
     "EquilibriumOptions",
+    "EquilibriumSolver",
     "HistoryPolicy",
     "RotorBearingSimulation",
     "SCHEMA_VERSION",

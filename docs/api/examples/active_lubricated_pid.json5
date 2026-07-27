@@ -1,0 +1,42 @@
+// Active dimensional bearing with three restrictors and PID control.
+{
+  schema_version: "0.4.0",
+  kind: "bearing",
+  spec: {
+    family: "active_lubricated",
+    unit_system: "dimensional",
+    time_step: 0.001,
+    node: 0,
+    film: {
+      circumferential_elements: 5,
+      axial_elements: 3,
+      max_iterations: 20,
+      solver_tolerance: 1e-6,
+    },
+    restrictors: {
+      positions: [[0.5, 0.25], [0.5, 0.5], [0.5, 0.75]],
+      orifice_diameter: 0.002,
+      orifice_length: 0.02,
+      valve_area: 0.00000122,
+      discharge_coefficient: 0.6,
+    },
+    tank: {
+      x_range: [0.49, 0.51],
+      z_range: [0.2, 0.8],
+      depth_ratio: 2.0,
+    },
+    valve: {
+      model: "second_order",
+      response_time: 0.01,
+      damping_ratio: 0.7,
+    },
+    control: {
+      mode: "pid",
+      frequency_hz: 50.0,
+      sensor_angles_deg: [45.0, 135.0],
+      gains: {kp: 1.0, ki: 0.0, kd: 0.0, feedforward: 0.0},
+    },
+    thermal: null,
+    transforms: {},
+  },
+}

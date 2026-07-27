@@ -1,0 +1,45 @@
+// Two-pad aggregate using self-contained nested liquid-film specifications.
+{
+  schema_version: "0.4.0",
+  kind: "bearing",
+  spec: {
+    family: "multi_pad",
+    unit_system: "dimensional",
+    time_step: 0.001,
+    node: 0,
+    pads: [
+      {
+        family: "liquid_film",
+        unit_system: "dimensional",
+        time_step: 0.001,
+        node: 0,
+        film: {
+          start_angle_deg: 0,
+          arc_angle_deg: 150,
+          circumferential_elements: 5,
+          axial_elements: 3,
+          max_iterations: 20,
+          solver_tolerance: 1e-6,
+        },
+        restrictors: null,
+        thermal: null,
+      },
+      {
+        family: "liquid_film",
+        unit_system: "dimensional",
+        time_step: 0.001,
+        node: 0,
+        film: {
+          start_angle_deg: 180,
+          arc_angle_deg: 150,
+          circumferential_elements: 5,
+          axial_elements: 3,
+          max_iterations: 20,
+          solver_tolerance: 1e-6,
+        },
+        restrictors: null,
+        thermal: null,
+      },
+    ],
+  },
+}

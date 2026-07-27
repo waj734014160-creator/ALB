@@ -26,6 +26,11 @@ bearing = ALB.build_bearing(config)
 result = bearing.calculate(displacement=(0.0, 0.0), time=0.0)
 ```
 
+完整的类、函数、输入、输出和示例见
+[`docs/api/public_api_reference.md`](api/public_api_reference.md)。该参考直接从
+`ALB.__all__` 和运行时签名生成，并通过 `--check` 与 pytest 检查是否跟随源码
+更新；生成机制见 [`docs/api/README.md`](api/README.md)。
+
 根 namespace 分为四组：
 
 - 配置与构建：`BearingConfig`、`SimulationConfig`、`load_bearing_config()`、
@@ -33,7 +38,8 @@ result = bearing.calculate(displacement=(0.0, 0.0), time=0.0)
   `simulation_from_file()`。
 - 用户对象：`Bearing`、`BearingAnalysis`、`RotorBearingSimulation`、
   `BearingMount`、`HistoryPolicy`、`EllipseTrajectory` 和
-  `EquilibriumOptions`。
+  `EquilibriumOptions`；需要独立持有静平衡模型时可直接构造
+  `EquilibriumSolver(bearing)`。
 - 不可变结果：`BearingResult`、`AnalysisResult` 和 `SimulationResult`。
 - 稳定错误：`ALBError`、`ConfigurationError`、`BuildError`、
   `CalculationError` 和 `SimulationError`。
@@ -126,6 +132,7 @@ SHA-256 摘要必须完整匹配。旧 package 与 pickle scaler 只能在升级
 E:/Anaconda2023/envs/ALB/python.exe -m pip install -e ".[all]"
 E:/Anaconda2023/envs/ALB/python.exe -m pytest -q
 E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
+E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py --check
 ```
 
 0.4.0 发布功能以 `tools/validation/release_feature_manifest_0_4.json` 和

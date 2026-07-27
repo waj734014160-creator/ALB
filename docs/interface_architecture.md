@@ -19,6 +19,14 @@
 4. `Signal`、隐式 `lead_loop`、旧工厂和兼容 adapter 不进入任何运行时路径。
 5. 单位制、控制模式、阀类型、spool 和挂载拓扑必须显式，禁止运行时猜测。
 6. 所有公开结果不可变；读取属性不得触发计算或提交。
+7. runtime 复用应选择最小机制：禁止仅为改变继承形式而创建逐方法转发壳。
+   无状态薄 mixin 可以把 DTO 生命周期叠加到既有求解器，但不得复制数值方法
+   或新增第二份状态来源；是否保留以行为回归而非结构检查决定。
+
+mixed-film runtime 直接使用量纲或无量纲 `FilmSystem` 的数值实现，并以薄
+生命周期 mixin 发布 DTO 和不可变结果。它不再维护 `_film_solver` 代理，也不
+重复转发 `solve()`、`calc_capacity()`、`save()` 等原生方法。量纲、带节流器
+量纲和无量纲三条路径由冻结数值参考逐元素检查。
 
 ## 用户 facade
 
@@ -67,7 +75,11 @@ hook 或创建新 runtime。失败状态是终止性的；failure snapshot 不�
 
 ## 数值分析边界
 
-`find_equilibrium()` 使用独立静态 runtime 会话和专用阻尼 Newton 算法；
+`EquilibriumSolver(bearing).solve()` 是可由用户和内部模块直接构造的静平衡
+模型，使用独立静态 runtime 会话和专用阻尼 Newton 算法；
+`bearing.analysis.find_equilibrium()` 只转发到同一模型；
+液膜轴承与内部控制或不受控的主动润滑轴承共用这一实现，主动润滑静态试探会
+在每次评估前复位静态伺服阀；`external_spool` 不在此入口中隐式推断；
 `dynamic_coefficients()` 从一个 `EllipseTrajectory` 生成独立正反涡动并调用
 复数识别；`harmonic_linearize()` 直接计算压力方程导数和已验证的节流耦合。
 空间方向使用 `orientation_rad`，时间相位使用 `phase`，两者不可混用。任何
@@ -127,6 +139,12 @@ preflight → mutable execute → immutable candidate
 `write(path)` 是唯一面向用户的写盘入口，内部委托 artifact writer；数值模块
 不决定路径。单轴承只保留 `latest_result`，分析结果包含完整采样点，仿真历史
 由 `HistoryPolicy` 显式控制。
+
+单液膜结果直接提供 `force`、`friction`、`pressure` 和 `film_thickness`：
+量纲压力/膜厚为 Pa/m，无量纲压力/膜厚为 `p/ps`、`h/c`。多瓦和主动轴承的
+各瓦场保存在 `pad_pressure` 和 `pad_film_thickness`，避免构造没有物理意义的
+合成压力场。字段含义、单位和配置缺省值见
+`docs/api/bearing_config_reference.md`。
 
 ## 研究扩展
 

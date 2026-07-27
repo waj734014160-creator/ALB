@@ -35,98 +35,18 @@ from ALB.surrogate.package import load_albnn_package
 from ALB.surrogate.runtime import SurrogateBearingRuntime
 
 from .config import BearingConfig, load_bearing_config
+from ._config_fields import (
+    DIMENSIONAL_FILM_FIELDS,
+    GAS_FILM_FIELDS,
+    NONDIMENSIONAL_FILM_FIELDS,
+    native_name_map,
+)
 from .errors import BuildError, ConfigurationError
 
 
-_DIMENSIONAL_FILM_MAP = {
-    "eccentricity": "e",
-    "attitude_angle_deg": "angle",
-    "rotation_frequency_hz": "freq",
-    "start_angle_deg": "x0",
-    "arc_angle_deg": "lx",
-    "axial_length_ratio": "lz",
-    "circumferential_elements": "nx",
-    "axial_elements": "nz",
-    "viscosity": "miu",
-    "clearance": "c",
-    "radius": "r",
-    "length": "l",
-    "supply_pressure": "ps",
-    "density": "rho",
-    "reynolds_boundary": "reynold",
-    "continuous_boundary": "coe",
-    "ambient_pressure": "p_set",
-    "solver_tolerance": "error_set",
-    "max_iterations": "max_iter",
-    "relaxation": "damp",
-    "vibration_enabled": "vib",
-    "x_velocity": "dxt",
-    "y_velocity": "dyt",
-    "whirl_ratio": "vf",
-    "solver": "iter_method",
-    "save_pressure": "save_p",
-    "save_thickness": "save_h",
-    "gauss_points": "ngauss",
-    "gauss_relaxation": "gdamp",
-    "gauss_tolerance": "err",
-    "pad_bias_deg": "bias",
-    "adaptive_damping": "adaptive_damp",
-}
-_NONDIMENSIONAL_FILM_MAP = {
-    "bearing_number": "lambda_value",
-    "reference_bearing_number": "lambda0",
-    "length_ratio": "lr",
-    "arc_angle_deg": "lx",
-    "axial_length_ratio": "lz",
-    "circumferential_elements": "nx",
-    "axial_elements": "nz",
-    "pad_bias_deg": "bias",
-    "eccentricity": "e",
-    "attitude_angle_deg": "angle",
-    "reynolds_boundary": "reynold",
-    "continuous_boundary": "coe",
-    "ambient_pressure": "p_set",
-    "solver_tolerance": "error_set",
-    "max_iterations": "max_iter",
-    "relaxation": "damp",
-    "x_velocity": "dxt",
-    "y_velocity": "dyt",
-    "whirl_ratio": "vf",
-    "x_center_velocity": "xct",
-    "y_center_velocity": "yct",
-    "scale_viscosity": "scale_miu",
-    "scale_clearance": "scale_c",
-    "scale_radius": "scale_r",
-    "scale_length": "scale_l",
-    "scale_pressure": "scale_ps",
-    "scale_density": "scale_rho",
-    "scale_speed_rpm": "scale_w",
-    "save_pressure": "save_p",
-    "save_thickness": "save_h",
-    "adaptive_damping": "adaptive_damp",
-}
-_GAS_FILM_MAP = {
-    **_DIMENSIONAL_FILM_MAP,
-    "ambient_pressure_pa": "pa",
-    "gas_frequency_ratio": "gamma",
-    "foil_enabled": "foil_enabled",
-    "texture_enabled": "texture_enabled",
-    "texture_type": "texture_type",
-    "texture_depth": "texture_depth",
-    "texture_depth_ratio": "texture_depth_ratio",
-    "texture_circumferential_fraction": "texture_circ_fraction",
-    "texture_axial_fraction": "texture_axial_fraction",
-    "texture_start_theta_index": "texture_start_theta_index",
-    "texture_start_axial_index": "texture_start_z_index",
-    "foil_relaxation": "foil_relaxation",
-    "foil_tolerance": "foil_tol",
-    "foil_stiffness": "foil_stiffness",
-    "foil_pitch": "foil_pitch",
-    "foil_half_length": "foil_half_length",
-    "foil_thickness": "foil_thickness",
-    "foil_young_modulus": "foil_young",
-    "foil_poisson_ratio": "foil_poisson",
-}
+_DIMENSIONAL_FILM_MAP = native_name_map(DIMENSIONAL_FILM_FIELDS)
+_NONDIMENSIONAL_FILM_MAP = native_name_map(NONDIMENSIONAL_FILM_FIELDS)
+_GAS_FILM_MAP = native_name_map(GAS_FILM_FIELDS)
 
 
 def _plain(value: Any) -> Any:

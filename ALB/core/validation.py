@@ -18,6 +18,28 @@ from ALB.contracts.types import UnitSystem
 VALID_UNIT_SYSTEMS = frozenset(unit_system.value for unit_system in UnitSystem)
 
 
+def require_protocol(
+    value: object,
+    protocol: object,
+    name: str,
+) -> None:
+    """Require a value to satisfy one runtime-checkable protocol."""
+
+    protocol_type = cast(type[Any], protocol)
+    if not isinstance(value, protocol_type):
+        raise TypeError(f"{name} must satisfy {protocol_type.__name__}")
+
+
+def strict_nonnegative_integer(value: object, name: str) -> int:
+    """Return one nonnegative built-in integer while rejecting booleans."""
+
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, int):
+        raise TypeError(f"{name} must be an integer")
+    if value < 0:
+        raise ValueError(f"{name} must be nonnegative")
+    return value
+
+
 def finite_vector(value: Any, name: str, size: int = 2) -> FloatArray:
     """Return a finite one-dimensional vector with an exact size."""
 

@@ -1,0 +1,63 @@
+{
+  "environment": {
+    "numpy": "1.24.3",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.10.17",
+    "scipy": "1.10.1"
+  },
+  "generated_at_utc": "2026-07-27T12:03:34.565944+00:00",
+  "input_spec": {
+    "family": "liquid_film",
+    "film": {
+      "axial_elements": 3,
+      "circumferential_elements": 5,
+      "max_iterations": 8,
+      "solver_tolerance": 1e-05
+    },
+    "node": 0,
+    "restrictors": null,
+    "thermal": null,
+    "time_step": 0.001,
+    "unit_system": "dimensional"
+  },
+  "npz_sha256": "1222362deaf72d88b1f7d78155915b23abe74a76082d580e2aba4aa33d5aa476",
+  "outputs": {
+    "converged": true,
+    "force_shape": [
+      2
+    ],
+    "friction": 45.364377924707796,
+    "iterations": 1,
+    "pressure_shape": [
+      24
+    ],
+    "thickness_shape": [
+      24
+    ]
+  },
+  "resolved_defaults": {
+    "c": 8e-05,
+    "error_set": 1e-05,
+    "l": 0.06,
+    "max_iter": 8,
+    "miu": 0.0195,
+    "nx": 5,
+    "nz": 3,
+    "ps": 7000000.0,
+    "r": 0.04,
+    "rho": 872
+  },
+  "sample": {
+    "displacement": [
+      1e-06,
+      -2e-06
+    ],
+    "time": 0.125,
+    "velocity": [
+      0.0003,
+      -0.0004
+    ]
+  },
+  "schema": "alb.api-convergence-reference.v1",
+  "source_commit": "14c84f1cebf4ffab75759a853c7247f722307b17"
+}

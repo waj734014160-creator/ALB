@@ -27,12 +27,59 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import ALB
-from ALB.api._analysis_numerics import EquilibriumSolver
-from ALB.contracts import ConvergenceStatus, StepContext, UnitSystem
+from ALB.contracts import (
+    BearingInput,
+    BearingOutput,
+    ConvergenceStatus,
+    StepContext,
+    UnitSystem,
+)
 from ALB.dynamics.rotor import RossRotor
 from ALB.physics.bearing.units import BearingScaleSet, BearingUnitAdapter
 
 BASELINE_COMMIT = "a26435e2eb7652d6d64af2194865dd3cf05db61d"
+
+
+class _SyntheticEquilibriumRuntime:
+    """Return the deterministic force used by the equilibrium reference."""
+
+    def __init__(self) -> None:
+        self._input: BearingInput | None = None
+        self._output: BearingOutput | None = None
+        self.convergence_status = ConvergenceStatus(0.0, True)
+
+    @staticmethod
+    def _reset_for_owner() -> None:
+        return None
+
+    def input(self, value: BearingInput) -> None:
+        self._input = value
+
+    def evaluate_static(self) -> None:
+        assert self._input is not None
+        coordinate = np.asarray(self._input.displacement, dtype=float)
+        self._output = BearingOutput(
+            force=np.array(
+                [
+                    2.0 * coordinate[0],
+                    1.0 + 3.0 * coordinate[1],
+                ]
+            ),
+            time=self._input.time,
+            unit_system=UnitSystem.NONDIMENSIONAL,
+        )
+
+    def output(self) -> BearingOutput:
+        assert self._output is not None
+        return self._output
+
+
+class _SyntheticEquilibriumBearing:
+    config = SimpleNamespace(
+        unit_system="nondimensional",
+        control_mode="uncontrolled",
+        family="liquid_film",
+    )
 
 
 class _SyntheticWhirlRuntime:
@@ -143,23 +190,6 @@ def _assert_baseline_source() -> None:
 def _equilibrium_arrays() -> tuple[dict[str, Any], dict[str, np.ndarray]]:
     """Freeze a converged multi-step nonzero-load equilibrium path."""
 
-    evaluation_count = 0
-
-    def evaluate_force(
-        coordinate: np.ndarray,
-    ) -> tuple[np.ndarray, bool]:
-        nonlocal evaluation_count
-        evaluation_count += 1
-        return (
-            np.array(
-                [
-                    2.0 * coordinate[0],
-                    1.0 + 3.0 * coordinate[1],
-                ]
-            ),
-            True,
-        )
-
     inputs = {
         "load": [0.0, -1.0],
         "initial_displacement": [0.4, -0.4],
@@ -171,47 +201,63 @@ def _equilibrium_arrays() -> tuple[dict[str, Any], dict[str, np.ndarray]]:
         "stall_patience": 5,
         "stall_relative_tolerance": 0.0,
     }
-    solver = EquilibriumSolver(
-        stiffness=np.asarray(inputs["fallback_stiffness"], dtype=float),
-        max_iterations=int(inputs["max_iterations"]),
-        tolerance=float(inputs["relative_tolerance"]),
-        damping=float(inputs["damping"]),
-        jacobian_step=float(inputs["jacobian_step"]),
-        stall_patience=int(inputs["stall_patience"]),
-        stall_relative_tolerance=float(inputs["stall_relative_tolerance"]),
-    )
-    outcome = solver.run(
-        load=np.asarray(inputs["load"], dtype=float),
-        initial_coordinate=np.asarray(
-            inputs["initial_displacement"],
-            dtype=float,
+    solver = ALB.EquilibriumSolver(
+        _SyntheticEquilibriumBearing(),
+        ALB.EquilibriumOptions(
+            max_iterations=int(inputs["max_iterations"]),
+            relative_tolerance=float(inputs["relative_tolerance"]),
+            damping=float(inputs["damping"]),
+            jacobian_step=float(inputs["jacobian_step"]),
+            fallback_stiffness=(
+                float(inputs["fallback_stiffness"][0]),
+                float(inputs["fallback_stiffness"][1]),
+            ),
+            stall_patience=int(inputs["stall_patience"]),
+            stall_relative_tolerance=float(
+                inputs["stall_relative_tolerance"]
+            ),
         ),
-        evaluate_force=evaluate_force,
-        reset_iteration=lambda: None,
     )
+    setattr(solver, "_new_runtime", _SyntheticEquilibriumRuntime)
+    try:
+        result = solver.solve(
+            inputs["load"],
+            initial_displacement=inputs["initial_displacement"],
+        )
+    except ALB.CalculationError as exc:
+        if exc.failure_snapshot is None:
+            raise
+        values = exc.failure_snapshot.values
+        result_metadata = exc.failure_snapshot.metadata
+        residual = float(values["evaluation_relative_residual"][-1])
+        converged = False
+        iterations = int(inputs["max_iterations"]) - 1
+    else:
+        values = result.values
+        result_metadata = result.metadata
+        residual = result.convergence.residual
+        converged = result.convergence.converged
+        iterations = result.convergence.iterations
     metadata = {
         "input": inputs,
-        "residual": outcome.residual,
-        "converged": outcome.converged,
-        "inner_converged": outcome.inner_converged,
-        "stop_reason": outcome.stop_reason,
-        "iterations": outcome.iterations,
+        "residual": residual,
+        "converged": converged,
+        "inner_converged": result_metadata["inner_converged"],
+        "stop_reason": result_metadata["stop_reason"],
+        "iterations": iterations,
     }
     arrays = {
-        "equilibrium_coordinate": outcome.coordinate,
-        "equilibrium_force": outcome.force,
-        "equilibrium_evaluation_coordinate": np.asarray(
-            [item.coordinate for item in outcome.evaluations]
+        "equilibrium_coordinate": values["displacement"],
+        "equilibrium_force": values["bearing_force"],
+        "equilibrium_evaluation_coordinate": values[
+            "evaluation_displacement"
+        ],
+        "equilibrium_evaluation_force": values["evaluation_force"],
+        "equilibrium_evaluation_residual": (
+            values["evaluation_relative_residual"]
         ),
-        "equilibrium_evaluation_force": np.asarray(
-            [item.force for item in outcome.evaluations]
-        ),
-        "equilibrium_evaluation_residual": np.asarray(
-            [item.residual for item in outcome.evaluations]
-        ),
-        "equilibrium_evaluation_converged": np.asarray(
-            [item.inner_converged for item in outcome.evaluations],
-            dtype=bool,
+        "equilibrium_evaluation_converged": (
+            values["evaluation_inner_converged"]
         ),
     }
     return metadata, arrays

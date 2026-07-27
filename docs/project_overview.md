@@ -12,6 +12,7 @@
   `docs/daily_maintenance/daily_doc_update_index.md`、
   `docs/current_state.md`、
   `docs/alb_package_overview.md`、
+  `docs/api/README.md`、
   `docs/interface_architecture.md`、
   `docs/next_interface_development_plan.md`、
   `docs/adr/README.md`、
@@ -21,7 +22,8 @@
 
 ## 项目定位
 
-`ALB_MAIN` 是 `G:/ALB_PROJECTS` split workspace 中可复用的 ALB 数值库。0.2.0 负责维护以下稳定能力：
+`ALB_MAIN` 是 `G:/ALB_PROJECTS` split workspace 中可复用的 ALB 数值库。当前
+0.4 包负责维护以下稳定能力：
 
 - Reynolds 油膜、节流孔、液体/气体轴承和热流耦合模型。
 - PID、Fuzzy、LQG、伺服阀、降阶和控制辅助算法。
@@ -35,9 +37,9 @@
 
 | 路径 | 职责 |
 | --- | --- |
-| `ALB/` | 0.2.0 稳定包代码，按 contracts、core、config、physics、control、dynamics、surrogate、systems、infrastructure 和 workflows 分层。 |
+| `ALB/` | 0.4 稳定包代码，普通用户从根 facade 调用；实现按 contracts、core、config、physics、control、dynamics、surrogate、systems、infrastructure 和 workflows 分层。 |
 | `tests/` | 唯一 pytest 收集树；包含单元、集成、精确回归和工程验证。 |
-| `tools/` | benchmarks、diagnostics、manual、migrations、reference 和 validation 工具。 |
+| `tools/` | benchmarks、diagnostics、docs、manual、migrations、reference 和 validation 工具。 |
 | `refs/` | 不可覆盖的行为参考、固定输入和历史回归资产。 |
 | `docs/` | 稳定说明、当前状态、迁移资料、run 规则和维护文档。 |
 | `scripts/` | 仓库维护脚本；代码注释和 CLI help 使用英文。 |
@@ -52,13 +54,14 @@
 2. `docs/daily_maintenance/daily_doc_update_index.md`：编辑维护文档前确认其角色。
 3. `docs/current_state.md`：恢复当前发布状态、验证结论和风险。
 4. `docs/alb_package_overview.md`：修改 package module 或 public interface 前查看模块归属。
-5. `docs/interface_architecture.md`：定义接口、移动模块或接入组件前确认依赖方向和生命周期。
-6. `docs/next_interface_development_plan.md`：实施下一阶段用户构建、轴承原生生命周期、coupling、recorder 或 Signal 替换前确认目标和验收边界。
-7. `docs/adr/README.md`：查看下一阶段公共版本、`step()`、失败封锁、recorder、observer 和单位适配的五份 Accepted ADR。
-8. `docs/migrations/0.2.0.md`：迁移 0.1 import、配置、pickle 或外部调用时使用。
-9. `docs/file_classification.md`：整理、归档或清理文件前使用。
-10. `docs/run_index.md`：需要 run 编号、路径或 current-status 所有权时使用。
-11. `docs/remote_workstation_connection.md`：远程连接、Task Scheduler、runner 或 monitor 操作时使用。
+5. `docs/api/README.md`：查询根公开类、函数、输入输出和示例，或维护自动 API 文档时使用。
+6. `docs/interface_architecture.md`：定义接口、移动模块或接入组件前确认依赖方向和生命周期。
+7. `docs/next_interface_development_plan.md`：实施下一阶段用户构建、轴承原生生命周期、coupling、recorder 或 Signal 替换前确认目标和验收边界。
+8. `docs/adr/README.md`：查看公共版本、`step()`、失败封锁、recorder、observer 和单位适配的 Accepted ADR。
+9. `docs/migrations/0.2.0.md`：迁移 0.1 import、配置、pickle 或外部调用时使用。
+10. `docs/file_classification.md`：整理、归档或清理文件前使用。
+11. `docs/run_index.md`：需要 run 编号、路径或 current-status 所有权时使用。
+12. `docs/remote_workstation_connection.md`：远程连接、Task Scheduler、runner 或 monitor 操作时使用。
 
 ALBNN 活跃工作转向以下兄弟项目文档：
 
@@ -83,6 +86,7 @@ E:/Anaconda2023/envs/ALB/python.exe -m pytest --collect-only
 E:/Anaconda2023/envs/ALB/python.exe -m pytest
 E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/regression/api/test_review_fixes_0_4_2_reference.py -q
 E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
+E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py --check
 E:/Anaconda2023/envs/ALB/python.exe -m tools.validation.run_release_acceptance_0_4_2 --candidate HEAD
 ```
 

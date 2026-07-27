@@ -5,11 +5,10 @@ from typing import Protocol, TypeAlias, runtime_checkable
 
 import numpy.typing as npt
 
-from .numeric import FloatArray, finite_real_array
 from .lifecycle import RuntimeLifecycleProtocol
-from .types import UnitSystem
+from .numeric import FloatArray, finite_real_array
 from .ports import RotorLoadInput
-
+from .types import UnitSystem
 
 RotorStateMap: TypeAlias = Mapping[str, FloatArray]
 

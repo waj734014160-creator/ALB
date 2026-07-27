@@ -24,7 +24,9 @@ from ALB.contracts import (
     result_snapshot,
 )
 from ALB.core.diagnostics import sanitize_exception_message
+from ALB.core.validation import strict_nonnegative_integer
 from ALB.contracts.dynamics import _validate_coupled_rotor_output
+from ALB.dynamics.bindings import CouplingRuntimeDependencies
 from ALB.dynamics.coupling_runtime import (
     PostCommitObserverError,
     PostCommitRecordingError,
@@ -33,6 +35,7 @@ from ALB.dynamics.coupling_runtime import (
 from .config import (
     SCHEMA_VERSION,
     BearingConfig,
+    _freeze,
     _deep_merge,
     _finite_float,
     _positive_float,
@@ -47,9 +50,113 @@ from .errors import ConfigurationError, SimulationError
 from .results import SimulationResult
 
 
+def _normalize_load(value: Any, index: int) -> Mapping[str, Any]:
+    """Validate and freeze one documented rotor-load declaration.
+
+    Static loads require ``node`` and a finite two-component ``force``.
+    Gravity accepts an optional finite ``acceleration``. Unbalance loads
+    require ``node`` and accept ``phase``, ``t_max``, ``m``, ``freq``, ``e``,
+    and ``no_step`` using the same names as the rotor excitation model.
+    """
+
+    path = f"loads[{index}]"
+    load = _require_mapping(value, path)
+    load_type = load.get("type")
+    if load_type == "static":
+        _reject_unknown(load, {"type", "node", "force"}, path)
+        static_node = _require_integer(
+            load.get("node"),
+            f"{path}.node",
+            minimum=0,
+        )
+        try:
+            force = np.asarray(load.get("force"), dtype=float)
+        except (TypeError, ValueError) as exc:
+            raise ConfigurationError(
+                f"{path}.force must contain two real values"
+            ) from exc
+        if force.shape != (2,) or not np.all(np.isfinite(force)):
+            raise ConfigurationError(
+                f"{path}.force must contain two finite values"
+            )
+        normalized: dict[str, Any] = {
+            "type": "static",
+            "node": static_node,
+            "force": force,
+        }
+    elif load_type == "gravity":
+        _reject_unknown(load, {"type", "acceleration"}, path)
+        normalized = {
+            "type": "gravity",
+            "acceleration": _finite_float(
+                load.get("acceleration", 9.80665),
+                f"{path}.acceleration",
+            ),
+        }
+    elif load_type == "unbalance":
+        allowed = {
+            "type",
+            "node",
+            "phase",
+            "t_max",
+            "m",
+            "freq",
+            "e",
+            "no_step",
+        }
+        _reject_unknown(load, allowed, path)
+        raw_node = load.get("node")
+        if isinstance(raw_node, Sequence) and not isinstance(
+            raw_node,
+            (str, bytes),
+        ):
+            unbalance_node: int | tuple[int, ...] = tuple(
+                _require_integer(item, f"{path}.node[]", minimum=0)
+                for item in raw_node
+            )
+            if not unbalance_node:
+                raise ConfigurationError(
+                    f"{path}.node must not be an empty sequence"
+                )
+        else:
+            unbalance_node = _require_integer(
+                raw_node,
+                f"{path}.node",
+                minimum=0,
+            )
+        no_step = load.get("no_step", False)
+        if not isinstance(no_step, (bool, np.bool_)):
+            raise ConfigurationError(f"{path}.no_step must be a bool")
+        normalized = {
+            "type": "unbalance",
+            "node": unbalance_node,
+            "phase": _finite_float(load.get("phase", 0.0), f"{path}.phase"),
+            "t_max": _positive_float(
+                load.get("t_max", 1.0),
+                f"{path}.t_max",
+            ),
+            "m": _finite_float(load.get("m", 0.0), f"{path}.m"),
+            "freq": _finite_float(load.get("freq", 0.0), f"{path}.freq"),
+            "e": _finite_float(load.get("e", 0.0), f"{path}.e"),
+            "no_step": bool(no_step),
+        }
+    else:
+        raise ConfigurationError(
+            f"{path}.type must be static, gravity, or unbalance"
+        )
+    return cast(Mapping[str, Any], _freeze(normalized))
+
+
 @dataclass(frozen=True, slots=True)
 class BearingMount:
-    """Bind one immutable bearing config to a rotor node."""
+    """Bind one immutable bearing configuration to a unique rotor node.
+
+    ``node`` is the nonnegative rotor node used for displacement input and
+    bearing-force feedback. Dimensional bearings normally need no adapter;
+    a nondimensional bearing requires a ``BearingUnitAdapterProtocol`` that
+    converts step context, kinematics, and force. Bearings using
+    ``external_spool`` also require a ``SpoolCommandProviderProtocol``.
+    """
 
     config: BearingConfig
     node: int
@@ -59,15 +166,20 @@ class BearingMount:
     def __post_init__(self) -> None:
         if not isinstance(self.config, BearingConfig):
             raise TypeError("config must be BearingConfig")
-        if isinstance(self.node, bool) or not isinstance(self.node, int):
-            raise TypeError("node must be an integer")
-        if self.node < 0:
-            raise ValueError("node must be nonnegative")
+        strict_nonnegative_integer(self.node, "node")
 
 
 @dataclass(frozen=True, slots=True)
 class HistoryPolicy:
-    """Optional committed-history retention policy."""
+    """Select committed simulation fields, sampling, and storage.
+
+    ``memory`` retains all selected samples, ``ring_buffer`` retains the latest
+    ``capacity`` samples, and ``disk_stream`` writes selected samples below
+    ``directory`` instead of returning their arrays in memory. ``downsample``
+    keeps committed indices divisible by that positive integer, including the
+    initial index zero. Available fields are ``rotor_displacement``,
+    ``rotor_velocity``, and ``bearing_force``.
+    """
 
     mode: Literal["memory", "ring_buffer", "disk_stream"] = "memory"
     fields: tuple[str, ...] = (
@@ -122,11 +234,31 @@ class HistoryPolicy:
 
 @dataclass(frozen=True, slots=True)
 class SimulationConfig:
-    """Validated immutable inputs for one rotor-bearing simulation.
+    """Validate immutable inputs for one dimensional rotor simulation.
+
+    ``rotor`` must satisfy ``ALB.contracts.RotorProtocol`` and its ``dt`` must
+    equal ``time_step``. ``mounts`` contains at least one ``BearingMount`` with
+    unique nodes. ``steps`` counts advances after the initial committed state,
+    so memory history normally contains ``steps + 1`` samples.
+
+    Each load is a mapping with one of these shapes (SI units):
+
+    * ``{"type": "static", "node": int, "force": [Fx, Fy]}``;
+    * ``{"type": "gravity", "acceleration": 9.80665}``;
+    * ``{"type": "unbalance", "node": int | [int, ...], "phase": 0,
+      "t_max": 1, "m": 0, "freq": 0, "e": 0, "no_step": False}``.
+
+    Static and unbalance nodes are nonnegative. Load declarations are copied
+    and frozen during construction. ``history`` controls returned or streamed
+    fields. ``dependencies`` is an advanced runtime hook imported as
+    ``ALB.dynamics.CouplingRuntimeDependencies``; ordinary simulations leave it
+    as ``None``. The resulting ``RotorBearingSimulation`` is one-shot.
 
     Rotor time uses the global dimensional step. Each mounted bearing uses the
     step produced by its explicit unit adapter, and its entire materialized
-    configuration tree must agree with that bearing-local value.
+    configuration tree must agree with that bearing-local value. Topology and
+    load declarations are frozen; the supplied rotor, adapters, and optional
+    runtime dependencies remain owner-managed runtime objects.
     """
 
     rotor: RotorProtocol
@@ -135,7 +267,7 @@ class SimulationConfig:
     steps: int
     loads: tuple[Mapping[str, Any], ...] = ()
     history: HistoryPolicy = HistoryPolicy()
-    dependencies: object | None = None
+    dependencies: CouplingRuntimeDependencies | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.rotor, RotorProtocol):
@@ -215,10 +347,7 @@ class SimulationConfig:
                 expected_local_step,
                 path=f"mounts[{index}].config",
             )
-        if isinstance(self.steps, bool) or not isinstance(self.steps, int):
-            raise TypeError("steps must be an integer")
-        if self.steps < 0:
-            raise ValueError("steps must be nonnegative")
+        strict_nonnegative_integer(self.steps, "steps")
         try:
             _validate_coupled_rotor_output(
                 self.rotor.output(nodes),
@@ -229,23 +358,40 @@ class SimulationConfig:
             raise ConfigurationError(
                 f"rotor.output(nodes) is invalid: {exc}"
             ) from exc
-        loads = tuple(_require_mapping(item, "loads[]") for item in self.loads)
+        loads = tuple(
+            _normalize_load(item, index)
+            for index, item in enumerate(self.loads)
+        )
         if not isinstance(self.history, HistoryPolicy):
             raise TypeError("history must be HistoryPolicy")
+        if self.dependencies is not None and not isinstance(
+            self.dependencies,
+            CouplingRuntimeDependencies,
+        ):
+            raise TypeError(
+                "dependencies must be CouplingRuntimeDependencies or None"
+            )
         object.__setattr__(self, "mounts", mounts)
         object.__setattr__(self, "time_step", time_step)
         object.__setattr__(self, "loads", loads)
 
 
 class RotorBearingSimulation:
-    """Ready one-shot simulation with immutable topology."""
+    """Ready one-shot simulation with immutable topology.
 
-    __slots__ = ("_config", "_has_run", "_last_result")
+    ``run()`` commits the initial state at time zero and then performs the
+    configured number of advances. A second call raises ``RuntimeError``;
+    construct a new simulation to repeat or change a run. Access
+    ``latest_result`` only after successful completion.
+    """
+
+    __slots__ = ("_config", "_coupling", "_has_run", "_last_result")
 
     def __init__(self, config: SimulationConfig) -> None:
         if not isinstance(config, SimulationConfig):
             raise TypeError("config must be SimulationConfig")
         self._config = config
+        self._coupling = self._build_coupling()
         self._has_run = False
         self._last_result: SimulationResult | None = None
 
@@ -328,8 +474,7 @@ class RotorBearingSimulation:
                 "simulation instances are one-shot; build a new simulation "
                 "for another run"
             )
-        self._has_run = True
-        coupling = self._build_coupling()
+        coupling = self._coupling
         policy = self._config.history
         snapshots: list[Any] = []
         retained_indices: set[int] = set()
@@ -350,6 +495,7 @@ class RotorBearingSimulation:
                     f"history directory is not empty: {stream_root}"
                 )
             stream_root.mkdir(parents=True, exist_ok=True)
+        self._has_run = True
 
         def write_snapshot(
             snapshot: Any,
@@ -631,7 +777,7 @@ class RotorBearingSimulation:
             run_close_receipt = close_run(allow_incomplete=False)
             failure_phase = "history_manifest"
             finalize_stream(complete=True)
-        except BaseException as exc:
+        except Exception as exc:
             secondary_errors = persistence_secondary_errors
             if isinstance(
                 exc,

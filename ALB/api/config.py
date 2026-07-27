@@ -12,6 +12,11 @@ from typing import Any
 import numpy as np
 
 from .errors import ConfigurationError
+from ._config_fields import (
+    DIMENSIONAL_FILM_FIELDS,
+    GAS_FILM_FIELDS,
+    NONDIMENSIONAL_FILM_FIELDS,
+)
 
 
 SCHEMA_VERSION = "0.4.0"
@@ -27,97 +32,6 @@ _UNIT_SYSTEMS = {"dimensional", "nondimensional"}
 _CONTROL_MODES = {"pid", "fuzzy_pid", "uncontrolled", "external_spool"}
 _VALVE_MODELS = {"second_order", "third_order", "static"}
 
-_DIMENSIONAL_FILM_FIELDS = {
-    "eccentricity",
-    "attitude_angle_deg",
-    "rotation_frequency_hz",
-    "start_angle_deg",
-    "arc_angle_deg",
-    "axial_length_ratio",
-    "circumferential_elements",
-    "axial_elements",
-    "viscosity",
-    "clearance",
-    "radius",
-    "length",
-    "supply_pressure",
-    "density",
-    "reynolds_boundary",
-    "continuous_boundary",
-    "ambient_pressure",
-    "solver_tolerance",
-    "max_iterations",
-    "relaxation",
-    "vibration_enabled",
-    "x_velocity",
-    "y_velocity",
-    "whirl_ratio",
-    "solver",
-    "save_pressure",
-    "save_thickness",
-    "gauss_points",
-    "gauss_relaxation",
-    "gauss_tolerance",
-    "pad_bias_deg",
-    "adaptive_damping",
-}
-_NONDIMENSIONAL_FILM_FIELDS = {
-    "bearing_number",
-    "reference_bearing_number",
-    "length_ratio",
-    "arc_angle_deg",
-    "axial_length_ratio",
-    "circumferential_elements",
-    "axial_elements",
-    "pad_bias_deg",
-    "eccentricity",
-    "attitude_angle_deg",
-    "reynolds_boundary",
-    "continuous_boundary",
-    "ambient_pressure",
-    "solver_tolerance",
-    "max_iterations",
-    "relaxation",
-    "x_velocity",
-    "y_velocity",
-    "whirl_ratio",
-    "x_center_velocity",
-    "y_center_velocity",
-    "scale_viscosity",
-    "scale_clearance",
-    "scale_radius",
-    "scale_length",
-    "scale_pressure",
-    "scale_density",
-    "scale_speed_rpm",
-    "save_pressure",
-    "save_thickness",
-    "adaptive_damping",
-}
-_GAS_FILM_FIELDS = (
-    _DIMENSIONAL_FILM_FIELDS
-    | {
-        "ambient_pressure_pa",
-        "gas_frequency_ratio",
-        "foil_enabled",
-        "texture_enabled",
-        "texture_type",
-        "texture_depth",
-        "texture_depth_ratio",
-        "texture_circumferential_fraction",
-        "texture_axial_fraction",
-        "texture_start_theta_index",
-        "texture_start_axial_index",
-        "foil_relaxation",
-        "foil_tolerance",
-        "foil_stiffness",
-        "foil_pitch",
-        "foil_half_length",
-        "foil_thickness",
-        "foil_young_modulus",
-        "foil_poisson_ratio",
-    }
-)
 _THERMAL_FIELDS = {
     "t_in",
     "t_ref",
@@ -258,12 +172,111 @@ def _validate_film(
     unit_system: str,
 ) -> None:
     if family == "gas_film":
-        allowed = _GAS_FILM_FIELDS
+        allowed = set(GAS_FILM_FIELDS)
     elif unit_system == "dimensional":
-        allowed = _DIMENSIONAL_FILM_FIELDS
+        allowed = set(DIMENSIONAL_FILM_FIELDS)
     else:
-        allowed = _NONDIMENSIONAL_FILM_FIELDS
+        allowed = set(NONDIMENSIONAL_FILM_FIELDS)
     _reject_unknown(film, allowed, "spec.film")
+
+    # Check only invariants that are unambiguous at the public boundary. More
+    # specialized solver relationships remain owned by the native config
+    # classes so this facade does not duplicate every numerical validation.
+    integer_minimums = {
+        "circumferential_elements": 2,
+        "axial_elements": 2,
+        "max_iterations": 1,
+        "gauss_points": 1,
+        "texture_start_theta_index": 1,
+        "texture_start_axial_index": 1,
+    }
+    for name, minimum in integer_minimums.items():
+        if name in film:
+            _require_integer(
+                film[name],
+                f"spec.film.{name}",
+                minimum=minimum,
+            )
+    positive_names = {
+        "rotation_frequency_hz",
+        "arc_angle_deg",
+        "axial_length_ratio",
+        "viscosity",
+        "clearance",
+        "radius",
+        "length",
+        "supply_pressure",
+        "density",
+        "solver_tolerance",
+        "bearing_number",
+        "length_ratio",
+        "scale_viscosity",
+        "scale_clearance",
+        "scale_radius",
+        "scale_length",
+        "scale_pressure",
+        "scale_density",
+        "scale_speed_rpm",
+        "ambient_pressure_pa",
+        "foil_tolerance",
+        "foil_stiffness",
+        "foil_pitch",
+        "foil_half_length",
+        "foil_thickness",
+        "foil_young_modulus",
+    }
+    for name in positive_names:
+        if name in film:
+            _positive_float(film[name], f"spec.film.{name}")
+    if "eccentricity" in film:
+        eccentricity = _finite_float(
+            film["eccentricity"],
+            "spec.film.eccentricity",
+        )
+        if not 0.0 <= eccentricity < 1.0:
+            raise ConfigurationError(
+                "spec.film.eccentricity must be in [0, 1)"
+            )
+    reynolds = film.get("reynolds_boundary")
+    if (
+        reynolds is not None
+        and not isinstance(reynolds, (bool, np.bool_))
+        and reynolds != "half_reynold"
+    ):
+        raise ConfigurationError(
+            "spec.film.reynolds_boundary must be a bool or 'half_reynold'"
+        )
+    for name in (
+        "continuous_boundary",
+        "vibration_enabled",
+        "save_pressure",
+        "save_thickness",
+        "foil_enabled",
+        "texture_enabled",
+    ):
+        if name in film and not isinstance(film[name], (bool, np.bool_)):
+            raise ConfigurationError(f"spec.film.{name} must be a bool")
+    if "texture_type" in film:
+        texture_type = _require_integer(
+            film["texture_type"],
+            "spec.film.texture_type",
+        )
+        if texture_type not in {1, 2, 3}:
+            raise ConfigurationError(
+                "spec.film.texture_type must be one of: 1, 2, 3"
+            )
+    if "solver" in film:
+        solver = film["solver"]
+        if family == "gas_film":
+            if solver != "skfem_newton":
+                raise ConfigurationError(
+                    "spec.film.solver must be skfem_newton for gas_film"
+                )
+        elif solver not in {"newton", "gauss", "lsq", "skfem_newton"}:
+            raise ConfigurationError(
+                "spec.film.solver must be newton, gauss, lsq, or "
+                "skfem_newton"
+            )
 
 
 def _validate_thermal(value: Any) -> None:
@@ -551,7 +564,22 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
 
 @dataclass(frozen=True, slots=True)
 class BearingConfig:
-    """Validated immutable bearing configuration."""
+    """Validate and freeze one public ALB 0.4 bearing specification.
+
+    ``spec`` must declare ``family``, ``unit_system``, ``time_step``, and
+    ``node``. Supported families are ``liquid_film``, ``active_lubricated``,
+    ``gas_film``, ``multi_pad``, and ``surrogate``. Film-bearing families use
+    a ``film`` mapping; their dimensional values use SI units unless a field
+    is explicitly a ratio or angle in degrees. Nondimensional configurations
+    use normalized film values and explicit ``scale_*`` fields for output
+    conversion. Gas film currently requires dimensional units.
+
+    The specification and nested arrays are copied into read-only values.
+    ``source_path`` records the originating document, while ``resource_root``
+    resolves relative pad, rule, and model-package resources. See
+    ``docs/api/bearing_config_reference.md`` for all fields and
+    ``docs/api/examples/`` for complete JSON5 documents.
+    """
 
     spec: Mapping[str, Any]
     source_path: Path | None = None
@@ -614,7 +642,14 @@ class BearingConfig:
         }
 
     def with_overrides(self, overrides: Mapping[str, Any]) -> "BearingConfig":
-        """Return a revalidated copy with dotted-path values replaced."""
+        """Return a revalidated copy with dotted-path values replaced.
+
+        Paths are relative to ``spec``; for example,
+        ``{"film.supply_pressure": 5.0e6}`` updates one nested film value.
+        Every intermediate segment must already name a mapping. The original
+        configuration is unchanged, and the returned copy preserves its source
+        and resource root.
+        """
 
         if not isinstance(overrides, Mapping):
             raise TypeError("overrides must be a mapping")
@@ -647,7 +682,12 @@ class BearingConfig:
         path: str,
         values: Iterable[Any],
     ) -> tuple["BearingConfig", ...]:
-        """Return one validated immutable configuration per supplied value."""
+        """Return one validated immutable configuration per supplied value.
+
+        ``path`` follows the same spec-relative dotted-path rules as
+        :meth:`with_overrides`. Values are consumed once and returned in input
+        order; any invalid candidate raises ``ConfigurationError``.
+        """
 
         return tuple(self.with_overrides({path: value}) for value in values)
 
@@ -759,7 +799,18 @@ def _load_bearing_document(
 
 
 def load_bearing_config(path: str | Path) -> BearingConfig:
-    """Load one strict UTF-8 0.4 bearing document with bounded includes."""
+    """Load one strict UTF-8 ALB 0.4 bearing JSON5 document.
+
+    The top-level document must use ``schema_version: "0.4.0"``,
+    ``kind: "bearing"``, and a ``spec`` mapping. Relative ``includes`` may
+    reference ``bearing_profile`` documents below the top-level document
+    directory; profiles merge in order and the local spec wins. Duplicate,
+    cyclic, absolute, or escaping includes raise ``ConfigurationError``.
+
+    The returned configuration records the document path and uses its parent
+    as ``resource_root`` for relative pad, fuzzy-rule, and surrogate-package
+    resources. Copyable documents are in ``docs/api/examples/``.
+    """
 
     source = Path(path).resolve()
     _, spec = _load_bearing_document(

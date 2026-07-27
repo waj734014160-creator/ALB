@@ -1,0 +1,23 @@
+// Minimal dimensional gas-film bearing; gas film requires skfem_newton.
+{
+  schema_version: "0.4.0",
+  kind: "bearing",
+  spec: {
+    family: "gas_film",
+    unit_system: "dimensional",
+    time_step: 0.001,
+    node: 0,
+    film: {
+      circumferential_elements: 5,
+      axial_elements: 3,
+      max_iterations: 20,
+      solver_tolerance: 1e-6,
+      solver: "skfem_newton",
+      eccentricity: 0.0,
+      texture_enabled: false,
+      texture_type: 1,
+      texture_start_theta_index: 1,
+      texture_start_axial_index: 1,
+    },
+  },
+}

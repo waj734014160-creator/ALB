@@ -71,6 +71,14 @@
 - PAPER_WORK 在修改前保存 150 个声明活跃文件；清单摘要为
   `89663a1c3f093d7478efe3df3d96677a86556fd8f0edb4a3c9f6adbd7f1f98af`，
   快照位于 `docs/migrations/alb_0_4_pre_migration_20260724/`（PAPER_WORK 内）。
+- mixed-film runtime 已删除逐属性、逐方法转发的 `_film_solver` 代理；量纲与
+  无量纲实现直接使用原生 `FilmSystem` 数值方法，薄 mixin 只负责 DTO 生命周期、
+  结果和失败诊断。结构型继承门禁已取消，量纲、带节流器量纲和无量纲路径继续
+  由冻结行为参考保护。
+- 静平衡已收口为唯一的公开 `EquilibriumSolver(bearing)` 模型；用户和内部模块
+  均可直接构造，`bearing.analysis.find_equilibrium()` 只转发到该模型。旧
+  `_InternalEquilibriumSolver` 和第二个数值 solver 已删除，主动润滑静态试探
+  会复位静态伺服阀，能够连续评估不同位移。
 
 ## 当前验证
 
@@ -120,13 +128,20 @@
   隔离安装及 PAPER_WORK、SURROGATE_TRAIN 和 remote CLI smoke。
 - 0.4.3 目标、邻近和精确参考测试为 `57 passed`；修复前后的静平衡、
   simulation 和区间内 fixed-spool surrogate 数组逐元素相等。
-- 0.4.3 开发工作树完整 pytest 为
-  `365 passed, 13 skipped, 10 subtests passed`，并以 `-W error` 确认零
-  未处理 warning。分层 mypy 仍为 23 个 strict target 零错误，实施层旧基线
-  保持 363 条诊断、85 组，没有扩大。
+- 0.4.3 开发工作树在 mixed-film 组合重构后完整 pytest 为
+  `371 passed, 13 skipped, 10 subtests passed`。重构前参考覆盖量纲、
+  带节流器量纲和无量纲三条路径，力与压力场逐元素相等；既有 thermal wrapper
+  参考 smoke 仍通过。分层 mypy 为 23 个 strict target 零错误，实施层旧基线
+  从 363 条、85 组降至 356 条、84 组，没有新增诊断。
 - 开发工作树已构建 150 个成员的 `re_alb-0.4.3-py3-none-any.whl`，以
   `--no-deps --target` 隔离安装后，根 API、版本和液膜最小计算 smoke 通过；
   该制品不是固定 SHA 正式发布 wheel。
+- 静平衡收口及 API 收敛后，编辑前冻结的液膜与主动润滑结果逐元素相等；
+  mixed-film 代理移除后的量纲、带节流器量纲和无量纲路径继续精确匹配参考。
+  API/unit/regression 目标组为 `133 passed`；完整 pytest 为
+  `390 passed, 13 skipped, 10 subtests passed`。分层 mypy 的 23 个 strict
+  target 零错误，实现层旧基线保持 352 条、82 组并覆盖 146 个源码文件；
+  26 个顶层公开符号的生成文档漂移检查通过。
 
 ## 当前风险与边界
 
@@ -150,8 +165,8 @@
 
 ## 当前下一步
 
-1. 复核 0.4.3 完整 diff 和严格配置兼容边界，确认不扩大到本轮明确延期的
-   observer、资源路径、loads 深冻结和 `BaseException` 债务。
+1. 复核 0.4.3 完整 diff 和严格配置兼容边界；loads 深冻结、高层取消语义和
+   用户结果字段已经收口，后续只保留 observer 与资源路径 containment 债务。
 2. 如需发布，形成干净实现候选后再新增 0.4.3 manifest/test map 和固定 SHA
    detached 验收；不移动 `v0.4.2`。
 3. 后续数值算法变化继续遵守 ADR-0007，已登记债务按独立维护范围处理。

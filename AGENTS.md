@@ -19,10 +19,7 @@ Spend time on thinking; you do not need to use the commentary channel to report 
 - 所有代码注释必须使用英文。
 - 新脚本至少要包含简短英文注释，说明主流程、假设和不明显步骤。
 - package/module 代码必须为 public API、重要数据契约和非平凡逻辑提供完整、可维护的 docstring 和注释。
-- 黏度变量使用 `miu`，不要使用 `u`。
-- 使用 `lambda_value`，不要使用裸 `lambda`。
-- 测试文件中的 `plt.show()` 必须包在 `if __name__ == '__main__':` 下。
-- 搜索文件和文本时优先使用 `rg`。
+
 
 ## 编码策略
 

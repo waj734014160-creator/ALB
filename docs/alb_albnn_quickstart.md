@@ -20,10 +20,24 @@ E:/Anaconda2023/envs/ALB/python.exe -c "import ALB; print(ALB.__version__, ALB._
 
 ## 从文件计算轴承
 
+可直接从 [`docs/api/examples/`](api/examples/) 复制最接近的完整 JSON5：
+
+- `liquid_film_minimal.json5`：最小量纲液膜；
+- `gas_film_minimal.json5`：固定 `skfem_newton` 与一基织构索引；
+- `active_lubricated_pid.json5`：正式节流器、阀和 PID 配置；
+- `multi_pad_nested.json5`：自包含嵌套多瓦。
+
+完整字段、单位和条件约束见
+[`docs/api/bearing_config_reference.md`](api/bearing_config_reference.md)。
+
 ```python
 import ALB
 
-bearing = ALB.bearing_from_file("paper_alb.json5")
+config = ALB.load_bearing_config(
+    "docs/api/examples/liquid_film_minimal.json5"
+)
+bearing = ALB.build_bearing(config)
+# Equivalent shorthand: bearing = ALB.bearing_from_file(path)
 result = bearing.calculate(
     displacement=(0.02, -0.01),
     velocity=(0.0, 0.0),
@@ -149,18 +163,20 @@ coefficients = bearing.analysis.dynamic_coefficients(
 )
 ```
 
-静平衡使用显式选项：
+静平衡模型直接接收已经构造的轴承：
 
 ```python
-equilibrium = bearing.analysis.find_equilibrium(
+solver = ALB.EquilibriumSolver(bearing)
+equilibrium = solver.solve(
     load=(0.0, -5000.0),
     initial_displacement=(0.0, 0.0),
-    options=ALB.EquilibriumOptions(
-        max_iterations=30,
-        relative_tolerance=1.0e-4,
-    ),
 )
 ```
+
+`bearing.analysis.find_equilibrium(...)` 是同一模型的便捷入口，不包含另一套
+静平衡算法。该入口同时适用于液膜轴承和受内部控制或不受控的主动润滑轴承；
+`external_spool` 配置不会擅自推断外部阀芯状态，因此不属于该静平衡入口。
+需要调整迭代参数时，再把 `ALB.EquilibriumOptions(...)` 作为第二个参数传入。
 
 `dynamic_coefficients()` 会从同一椭圆自动生成正反涡动。`phase` 是时间相位，
 `orientation_rad` 是空间旋转。时间网格必须有限、严格递增且均匀，目标频率
