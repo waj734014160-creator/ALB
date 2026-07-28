@@ -4,7 +4,7 @@
     "package_version": {
       "title": "检查安装位置和版本",
       "description": "先确认当前解释器导入的是预期的 ALB 安装，而不是同名目录或旧 wheel。",
-      "code": "import ALB\n\nprint(ALB.__version__)\nprint(ALB.__file__)"
+      "code": "import ALB\n\nprint(ALB.__version__)\nprint(ALB.SCHEMA_VERSION)\nprint(ALB.__file__)"
     },
     "bearing_from_file": {
       "title": "从 JSON5 构建并计算轴承",
@@ -606,6 +606,13 @@
           }
         }
       }
+    },
+    "SCHEMA_VERSION": {
+      "summary": "bearing 与 simulation JSON5 接受的 schema 版本字符串，独立于 re-alb 包版本。",
+      "returns": "返回当前严格配置契约版本 0.4.0。",
+      "examples": [
+        "package_version"
+      ]
     },
     "UnitSystem": {
       "summary": "所有数值积分边界使用的单位制枚举，避免量纲和无量纲值被隐式混用。",

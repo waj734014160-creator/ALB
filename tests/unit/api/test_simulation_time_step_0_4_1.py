@@ -71,7 +71,7 @@ def _mount(config: ALB.BearingConfig) -> tuple[ALB.BearingMount, ...]:
 
 
 def test_patch_release_keeps_the_0_4_configuration_schema() -> None:
-    assert ALB.__version__ == "0.4.3"
+    assert ALB.__version__ == "0.4.4"
     assert SCHEMA_VERSION == "0.4.0"
 
 

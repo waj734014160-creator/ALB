@@ -20,7 +20,7 @@ jobs:
       - name: Install core package
         run: python -m pip install .
       - name: Import public core and config namespaces
-        run: python -c "import ALB; import ALB.config; from ALB.config import ALBConfig, NodimALBConfig; ALBConfig(); NodimALBConfig()"
+        run: python -c "import ALB; import ALB.config; from ALB.config import ALBConfig, NodimALBConfig; assert ALB.SCHEMA_VERSION == '0.4.0'; ALBConfig(); NodimALBConfig()"
 
   docs-build:
     runs-on: ubuntu-latest

@@ -15,8 +15,8 @@
 
 ## 当前快照
 
-- 分支：`codex/alb-0.4.3`。
-- 开发版本：`0.4.3`；包名 `re-alb`；导入名 `ALB`；最低 Python 3.10。
+- 分支：`codex/alb-0.4.4`。
+- 开发版本：`0.4.4`；包名 `re-alb`；导入名 `ALB`；最低 Python 3.10。
   JSON5 schema 和 surrogate package 格式继续使用 `0.4.0`。
 - 起点：`codex/full-repo-refactor` 的 `93dd63d`。
 - 迁移前参考提交：`f23975d`，新增
@@ -41,8 +41,10 @@
   不反向修改候选。
 - 0.4.3 从 0.4.2 evidence 提交 `50c7b4a` 创建。修复前有效路径参考为
   `refs/alb_0_4_3_guard_reference_v1.json/.npz`，NPZ SHA-256 为
-  `3a8e017ca25466c7612f47ce2325968af368ff60aa433f92fda7c9b592a08ef8`。
-  当前尚未形成固定实现候选或正式发布标签。
+  `3a8e017ca25466c7612f47ce2325968af368ff60aa433f92fda7c9b592a08ef8`；数值、
+  API 收敛和公共文档站点开发边界已提交，但未形成固定发布候选或正式标签。
+- 0.4.4 从 0.4.3 文档站点提交 `59682b8` 创建，目标是让配置 schema 版本可从
+  包根直接发现；当前同样不是固定发布候选。
 
 ## 已完成的实现边界
 
@@ -67,6 +69,9 @@
 - 0.4.3 已拒绝非 dimensional 或输出字段/形状非法的自定义 rotor；静平衡在
   相对残差分母下溢或溢出时不再发布虚假收敛。JSON5 禁止重复键和标量静默
   转换，surrogate fixed spool 与 external spool 统一限制为 `[-1, 1]`。
+- 0.4.4 将已有 `ALB.api.SCHEMA_VERSION` 显式提升为根入口
+  `ALB.SCHEMA_VERSION`；包版本为 `0.4.4`，JSON5 schema 与 surrogate package
+  格式仍为 `0.4.0`，不改变配置、数值或制品合同。
 - SURROGATE_TRAIN 迁移已形成独立本地提交 `70934ae`。
 - PAPER_WORK 在修改前保存 150 个声明活跃文件；清单摘要为
   `89663a1c3f093d7478efe3df3d96677a86556fd8f0edb4a3c9f6adbd7f1f98af`，
@@ -143,14 +148,17 @@
   target 零错误，实现层旧基线保持 352 条、82 组并覆盖 146 个源码文件；
   26 个顶层公开符号及 3 个高级 namespace 的生成文档漂移检查通过。公共文档
   站点的 19 项目标测试与严格 MkDocs 构建通过，机器 JSON 证据不进入站点。
+- 0.4.4 根 API、生成参考、文档和 optional-import 目标组为 `33 passed`；完整
+  pytest 为 `414 passed, 13 skipped, 10 subtests passed`。27 个根符号的生成
+  漂移检查、严格 MkDocs 构建和 `0.4.4/0.4.0` 双版本 import smoke 均通过。
 
 ## 当前风险与边界
 
 - 0.4.0 的分析 facade 曾以新数值方法替换旧算法且验收未覆盖双侧数值比较；
   `0.4.1` 恢复算法，`0.4.2` 进一步关闭输入域、local dt 和仿真失败原子性
-  缺陷并完成正式 detached 验收，仍是当前推荐发布版本。0.4.3 处于开发复验
-  阶段，尚未执行固定 SHA detached 发布验收。历史 `v0.4.0`、
-  `v0.4.1` 标签、wheel 和验收证据保持不变。
+  缺陷并完成正式 detached 验收，仍是当前推荐发布版本。0.4.3 已完成开发提交但
+  未执行固定 SHA detached 发布验收；0.4.4 继续处于开发复验阶段。历史
+  `v0.4.0`、`v0.4.1`、`v0.4.2` 标签、wheel 和验收证据保持不变。
 - 0.4.1 谐波线性化只声明量纲液膜和三节点 CSOrifice 主动润滑拓扑；无量纲、
   Gas、MultiPad、surrogate、热包装及其他节流拓扑会明确失败。
 - 0.4.1 不支持可倾瓦轴承；未来重新加入必须作为新功能设计和验证。
@@ -166,11 +174,12 @@
 
 ## 当前下一步
 
-1. 复核 0.4.3 完整 diff 和严格配置兼容边界；loads 深冻结、高层取消语义和
-   用户结果字段已经收口，后续只保留 observer 与资源路径 containment 债务。
-2. 如需发布，形成干净实现候选后再新增 0.4.3 manifest/test map 和固定 SHA
+1. 0.4.4 根 API、生成参考和公共站点开发验证已经通过；后续保持 schema 与包
+   版本独立，不再扩大本轮范围。
+2. 如需发布，形成干净实现候选后再新增对应 manifest/test map 和固定 SHA
    detached 验收；不移动 `v0.4.2`。
-3. 后续数值算法变化继续遵守 ADR-0007，已登记债务按独立维护范围处理。
+3. observer 与资源路径 containment 债务继续按独立 P3 维护范围处理；数值算法
+   变化继续遵守 ADR-0007。
 
 ## 稳定入口
 
@@ -181,6 +190,7 @@
 - 0.4.1 修复：`docs/migrations/0.4.1.md`
 - 0.4.2 修复：`docs/migrations/0.4.2.md`
 - 0.4.3 修复：`docs/migrations/0.4.3.md`
+- 0.4.4 API 易用性：`docs/migrations/0.4.4.md`
 - 0.4.2 保留债务：`docs/migrations/0.4.2_deferred_debt.md`
 - 0.4.2 两轮审查：`docs/migrations/0.4.2_review_log.md`
 - 决策：`docs/adr/0006-alb-0-4-no-legacy-friendly-api.md`

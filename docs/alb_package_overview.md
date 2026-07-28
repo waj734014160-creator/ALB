@@ -35,8 +35,10 @@ result = bearing.calculate(displacement=(0.0, 0.0), time=0.0)
 [Surrogate](api/namespaces/surrogate.md)。生成器静态读取各 namespace 的字面量
 `_EXPORTS`，不会导入可选 backend 或扩大公开边界。
 
-根 namespace 分为四组：
+根 namespace 分为五组：
 
+- 版本元数据：`__version__` 表示当前安装包版本，`SCHEMA_VERSION` 表示
+  bearing/simulation JSON5 配置契约版本；二者独立演进。
 - 配置与构建：`BearingConfig`、`SimulationConfig`、`load_bearing_config()`、
   `build_bearing()`、`bearing_from_file()`、`build_simulation()` 和
   `simulation_from_file()`。
@@ -90,7 +92,8 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 ## 配置与结果
 
 0.4 JSON5 文档固定使用 `schema_version: "0.4.0"`、`kind`、可选
-`includes` 和 `spec`。`BearingConfig` 不可变，`with_overrides()` 与
+`includes` 和 `spec`。0.4.4 可通过根入口 `ALB.SCHEMA_VERSION` 读取该契约版本，
+无需从内部配置模块导入或把它与 `ALB.__version__` 混同。`BearingConfig` 不可变，`with_overrides()` 与
 `sweep()` 每次都重新执行完整校验。
 
 `Bearing.calculate()` 不累计历史，只更新只读 `latest_result`。分析服务用

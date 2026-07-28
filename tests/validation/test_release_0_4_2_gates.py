@@ -99,7 +99,7 @@ def test_historical_release_evidence_remains_content_unchanged() -> None:
 
 
 def test_package_version_changes_without_schema_migration() -> None:
-    assert ALB.__version__ == "0.4.3"
+    assert ALB.__version__ == "0.4.4"
     assert SCHEMA_VERSION == "0.4.0"
 
 

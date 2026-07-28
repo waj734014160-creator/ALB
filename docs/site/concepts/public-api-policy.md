@@ -8,7 +8,7 @@ ALB 将接口分为三个层级。网站只把明确承诺的层级作为 API re
 import ALB
 ```
 
-`ALB.__all__` 中的 26 个符号是 0.4.3 普通用户入口，覆盖配置、构建、计算、分析、仿真、结果和稳定异常。首先查阅[根公开 API](../../api/public_api_reference.md)。
+`ALB.__all__` 中的 27 个符号是 0.4.4 普通用户入口，覆盖版本元数据、配置、构建、计算、分析、仿真、结果和稳定异常。`ALB.__version__` 表示安装包版本，`ALB.SCHEMA_VERSION` 表示严格 JSON5 配置契约版本。首先查阅[根公开 API](../../api/public_api_reference.md)。
 
 ## 高级用户：显式 namespace
 

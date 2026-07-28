@@ -16,6 +16,7 @@ from .api import (
     EquilibriumSolver,
     HistoryPolicy,
     RotorBearingSimulation,
+    SCHEMA_VERSION,
     SimulationConfig,
     SimulationError,
     SimulationResult,
@@ -29,7 +30,7 @@ from .api import (
 from .contracts import UnitSystem
 
 
-__version__ = "0.4.3"
+__version__ = "0.4.4"
 
 __all__ = [
     "ALBError",
@@ -47,6 +48,7 @@ __all__ = [
     "EquilibriumSolver",
     "HistoryPolicy",
     "RotorBearingSimulation",
+    "SCHEMA_VERSION",
     "SimulationConfig",
     "SimulationError",
     "SimulationResult",

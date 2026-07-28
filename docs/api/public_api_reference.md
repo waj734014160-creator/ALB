@@ -11,9 +11,9 @@
 
 <!-- This file is generated. Do not edit it directly. -->
 
-- 包版本：`0.4.3`
-- 公开符号数：`26`
-- 接口表面摘要：`sha256:fbff84dd297624d3`
+- 包版本：`0.4.4`
+- 公开符号数：`27`
+- 接口表面摘要：`sha256:930467a100017a67`
 - 重新生成：`E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py`
 - 一致性检查：`E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py --check`
 
@@ -39,6 +39,7 @@
 | `EquilibriumSolver` | 类 | 直接接收一个已构造 Bearing，并使用既有静平衡算法求载荷平衡。 | `ALB/api/analysis.py:435` |
 | `HistoryPolicy` | 类 | 控制仿真已提交历史的字段筛选、降采样、环形缓存或磁盘流式写入。 | `ALB/api/simulation.py:172` |
 | `RotorBearingSimulation` | 类 | 拓扑不可变的一次性转子-轴承耦合仿真 facade。 | `ALB/api/simulation.py:379` |
+| `SCHEMA_VERSION` | 常量 | bearing 与 simulation JSON5 接受的 schema 版本字符串，独立于 re-alb 包版本。 | `-` |
 | `SimulationConfig` | 类 | 一次转子-轴承耦合计算的不可变拓扑、时步、载荷、历史策略和可选依赖。 | `ALB/api/simulation.py:235` |
 | `SimulationError` | 异常 | 耦合仿真失败时抛出的稳定异常，可携带截至最后真实提交点的部分结果。 | `ALB/api/errors.py:33` |
 | `SimulationResult` | 类 | 转子-轴承仿真中按策略保留的不可变已提交历史。 | `ALB/api/results.py:196` |
@@ -62,6 +63,7 @@
 import ALB
 
 print(ALB.__version__)
+print(ALB.SCHEMA_VERSION)
 print(ALB.__file__)
 ```
 
@@ -1321,11 +1323,20 @@ JSON5 文档、程序化配置或跨字段约束不合法时抛出的稳定异�
 
 ## 包元数据
 
+### `SCHEMA_VERSION`
+
+bearing 与 simulation JSON5 接受的 schema 版本字符串，独立于 re-alb 包版本。
+
+- 当前值：`0.4.0`
+- 输出：`str`。返回当前严格配置契约版本 0.4.0。
+- 源码：`-`
+- 示例：[检查安装位置和版本](#example-package_version)。
+
 ### `__version__`
 
 当前导入的 re-alb 包版本字符串。
 
-- 当前值：`0.4.3`
+- 当前值：`0.4.4`
 - 输出：`str`。返回遵循项目版本号的字符串。
 - 源码：`-`
 - 示例：[检查安装位置和版本](#example-package_version)。

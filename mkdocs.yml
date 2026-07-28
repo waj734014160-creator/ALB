@@ -31,6 +31,7 @@ nav:
       - 包结构概览: alb_package_overview.md
   - 维护文档:
       - 文档贡献流程: site/contributing/docs.md
+      - 0.4.4 迁移说明: migrations/0.4.4.md
       - 0.4.3 迁移说明: migrations/0.4.3.md
 
 exclude_docs: |

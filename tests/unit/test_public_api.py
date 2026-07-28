@@ -4,7 +4,7 @@ import ALB
 
 
 def test_package_root_exports_only_friendly_api():
-    assert ALB.__version__ == "0.4.3"
+    assert ALB.__version__ == "0.4.4"
     assert set(ALB.__all__) == {
         "ALBError",
         "AnalysisResult",
@@ -21,6 +21,7 @@ def test_package_root_exports_only_friendly_api():
         "EquilibriumSolver",
         "HistoryPolicy",
         "RotorBearingSimulation",
+        "SCHEMA_VERSION",
         "SimulationConfig",
         "SimulationError",
         "SimulationResult",
@@ -33,5 +34,6 @@ def test_package_root_exports_only_friendly_api():
         "load_simulation_config",
         "simulation_from_file",
     }
+    assert ALB.SCHEMA_VERSION == "0.4.0"
     for removed_name in ("ALB", "Signal", "ALBBuilder", "RsRotorBearingCouple"):
         assert not hasattr(ALB, removed_name)

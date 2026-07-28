@@ -2,7 +2,7 @@
 
 <div class="alb-hero">
   <div>
-    <div class="alb-hero__eyebrow">Active lubricated bearing · 0.4.3</div>
+    <div class="alb-hero__eyebrow">Active lubricated bearing · 0.4.4</div>
     <h1 class="alb-hero__title">轴承模型，按稳定接口运行。</h1>
     <p class="alb-hero__summary">
       ALB 将液膜、气膜、主动润滑、转子耦合和 ALBNN 代理模型组织为一致的
@@ -40,7 +40,7 @@ print(result.fx, result.fy)
 
 - [安装与能力组件](site/getting-started/installation.md)：选择 core 或 optional extra。
 - [配置字段参考](api/bearing_config_reference.md)：查询字段、单位、默认值和约束。
-- [根公开 API](api/public_api_reference.md)：查询 26 个稳定符号的真实签名。
+- [根公开 API](api/public_api_reference.md)：查询 27 个稳定符号的真实签名。
 - [公开接口边界](site/concepts/public-api-policy.md)：了解普通入口、高级 namespace 和内部实现的区别。
 
 !!! info "文档范围"
