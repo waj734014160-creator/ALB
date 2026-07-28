@@ -41,7 +41,7 @@
 | `tests/` | 唯一 pytest 收集树；包含单元、集成、精确回归和工程验证。 |
 | `tools/` | benchmarks、diagnostics、docs、manual、migrations、reference 和 validation 工具。 |
 | `refs/` | 不可覆盖的行为参考、固定输入和历史回归资产。 |
-| `docs/` | 稳定说明、当前状态、迁移资料、run 规则和维护文档。 |
+| `docs/` | 稳定说明、公共文档站点源码、生成式 API 参考、当前状态、迁移资料、run 规则和维护文档；站点输出 `site/` 不跟踪。 |
 | `scripts/` | 仓库维护脚本；代码注释和 CLI help 使用英文。 |
 | `paper_config/` | 仍由本项目跟踪的稳定论文调用配置资产，不存放论文任务运行状态。 |
 | `test/` | 从旧测试树保留的图件和轻量配置；不在 `pyproject.toml` 的 pytest `testpaths` 中。 |
@@ -87,6 +87,9 @@ E:/Anaconda2023/envs/ALB/python.exe -m pytest
 E:/Anaconda2023/envs/ALB/python.exe -m pytest tests/regression/api/test_review_fixes_0_4_2_reference.py -q
 E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
 E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py --check
+E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_bearing_config_reference.py --check
+E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_namespace_reference.py --check
+E:/Anaconda2023/envs/ALB/python.exe -m mkdocs build --strict
 E:/Anaconda2023/envs/ALB/python.exe -m tools.validation.run_release_acceptance_0_4_2 --candidate HEAD
 ```
 

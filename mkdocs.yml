@@ -1,0 +1,124 @@
+site_name: ALB Documentation
+site_description: 主动润滑轴承物理、控制、动力学与代理模型用户文档
+site_author: ALB maintainers
+docs_dir: docs
+site_dir: site
+strict: true
+use_directory_urls: true
+
+nav:
+  - 首页: index.md
+  - 开始使用:
+      - 安装与能力组件: site/getting-started/installation.md
+      - 第一个轴承计算: site/getting-started/first-bearing.md
+  - 用户指南:
+      - 配置与 JSON5: site/guides/configuration.md
+      - 计算与结果: site/guides/calculation.md
+      - 分析工作流: site/guides/analysis.md
+      - 转子-轴承仿真: site/guides/simulation.md
+      - ALBNN 模型包: site/guides/albnn.md
+  - 配置参考:
+      - 字段参考: api/bearing_config_reference.md
+      - 完整示例: site/examples.md
+  - API 参考:
+      - 根公开 API: api/public_api_reference.md
+      - 高级 namespace:
+          - Control: api/namespaces/control.md
+          - Dynamics: api/namespaces/dynamics.md
+          - Surrogate: api/namespaces/surrogate.md
+  - 核心概念:
+      - 公开接口边界: site/concepts/public-api-policy.md
+      - 包结构概览: alb_package_overview.md
+  - 维护文档:
+      - 文档贡献流程: site/contributing/docs.md
+      - 0.4.3 迁移说明: migrations/0.4.3.md
+
+exclude_docs: |
+  current_state.md
+  daily_summary_log.md
+  daily_maintenance/
+  remote_workstation_connection.md
+  run_index.md
+  paper_notes.md
+  audits/
+  adr/
+  formula/
+  alb_albnn_quickstart.md
+  file_classification.md
+  interface_architecture.md
+  next_interface_development_plan.md
+  project_overview.md
+  api/README.md
+  migrations/0.2.0*.md
+  migrations/0.4.0.md
+  migrations/0.4.1.md
+  migrations/0.4.2*.md
+  **/*.json
+  **/*status*.txt
+  api/bearing_config_reference_source.md
+  api/public_api_docs.json
+  api/namespace_reference_docs.json
+
+theme:
+  name: material
+  language: zh
+  logo: assets/images/bearing-mark.svg
+  favicon: assets/images/bearing-mark.svg
+  font: false
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: 使用深色主题
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: 使用浅色主题
+
+plugins:
+  - search:
+      lang:
+        - zh
+        - en
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_css:
+  - assets/stylesheets/alb-docs.css
+
+copyright: ALB 0.4 用户文档 · 生成站点不包含实时运行状态与内部维护证据

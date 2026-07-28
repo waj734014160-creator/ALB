@@ -1,0 +1,39 @@
+{
+  "schema_version": "0.4.0",
+  "namespaces": {
+    "ALB.control": {
+      "title": "Control",
+      "extra": "control",
+      "stability": "advanced",
+      "summary": "控制器、阀和自适应阻尼策略的高级显式入口。",
+      "symbols": {
+        "ControllerBlock": "把满足控制器协议的实现绑定为可组合控制 block。",
+        "ValveBlock": "把阀模型绑定为严格输入输出 block。",
+        "AdaptiveDampConfig": "声明数值迭代自适应阻尼参数。",
+        "AdaptiveDampController": "根据残差变化调整数值阻尼。"
+      }
+    },
+    "ALB.dynamics": {
+      "title": "Dynamics",
+      "extra": "dynamics",
+      "stability": "advanced",
+      "summary": "转子适配、自由度布局和耦合运行依赖的高级入口。",
+      "symbols": {
+        "CouplingRuntimeDependencies": "显式注入 recorder、observer、run ID 和失败策略。",
+        "RossRotor": "将 ROSS rotor 包装为 ALB RotorProtocol。",
+        "RotorDofLayout": "描述转子节点与全局自由度之间的布局。"
+      }
+    },
+    "ALB.surrogate": {
+      "title": "Surrogate",
+      "extra": "surrogate",
+      "stability": "advanced",
+      "summary": "创建、检查和加载已部署 ALBNN 模型包。",
+      "symbols": {
+        "create_model_package": "从已验证模型资产创建可部署 package。",
+        "open_model_package": "检查 package manifest、scaler 和资源边界。",
+        "load_albnn_package": "加载 package 并创建供 Bearing facade 使用的代理模型。"
+      }
+    }
+  }
+}

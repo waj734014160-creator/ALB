@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 360" role="img" aria-labelledby="title description">
+  <title id="title">ALB calculation lifecycle</title>
+  <desc id="description">Bearing configuration enters the bearing runtime and produces an immutable result.</desc>
+  <defs>
+    <linearGradient id="pressure" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00a7b5" stop-opacity=".2"/>
+      <stop offset=".65" stop-color="#00a7b5" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#f2a900" stop-opacity=".95"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0l8 4-8 4z" fill="#00a7b5"/>
+    </marker>
+  </defs>
+  <rect width="620" height="360" rx="12" fill="#102a43"/>
+  <g fill="none" stroke-linecap="round">
+    <circle cx="310" cy="165" r="112" stroke="#486581" stroke-width="3"/>
+    <circle cx="326" cy="151" r="61" stroke="#f4f8fa" stroke-width="5"/>
+    <path d="M213 120c35-67 121-90 184-43 44 33 56 90 38 138-21 55-82 88-140 69-46-15-81-56-87-104" stroke="url(#pressure)" stroke-width="20"/>
+    <path d="M326 151l-16 14" stroke="#f2a900" stroke-width="3" marker-end="url(#arrow)"/>
+    <path d="M88 165h83" stroke="#00a7b5" stroke-width="3" marker-end="url(#arrow)"/>
+    <path d="M450 165h83" stroke="#00a7b5" stroke-width="3" marker-end="url(#arrow)"/>
+  </g>
+  <g font-family="Cascadia Code, Consolas, monospace" text-anchor="middle">
+    <text x="91" y="126" fill="#3dd4df" font-size="13">01 / CONFIGURE</text>
+    <text x="91" y="151" fill="#f4f8fa" font-size="17">BearingConfig</text>
+    <text x="310" y="322" fill="#3dd4df" font-size="13">02 / CALCULATE · Bearing</text>
+    <text x="536" y="126" fill="#f2a900" font-size="13">03 / INSPECT</text>
+    <text x="536" y="151" fill="#f4f8fa" font-size="17">BearingResult</text>
+  </g>
+</svg>

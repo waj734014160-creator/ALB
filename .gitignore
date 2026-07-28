@@ -27,6 +27,7 @@ venv/
 env/
 build/
 dist/
+/site/
 tmp/
 temp/
 

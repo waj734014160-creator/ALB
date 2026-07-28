@@ -21,3 +21,24 @@ jobs:
         run: python -m pip install .
       - name: Import public core and config namespaces
         run: python -c "import ALB; import ALB.config; from ALB.config import ALBConfig, NodimALBConfig; ALBConfig(); NodimALBConfig()"
+
+  docs-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install documentation dependencies
+        run: python -m pip install ".[docs,test]"
+      - name: Check generated references
+        run: |
+          python tools/docs/generate_public_api_reference.py --check
+          python tools/docs/generate_bearing_config_reference.py --check
+          python tools/docs/generate_namespace_reference.py --check
+      - name: Test documentation contracts
+        run: python -m pytest tests/unit/docs tests/unit/api/test_public_api_reference.py tests/unit/api/test_bearing_config_reference.py tests/integration/api/test_documented_examples.py -q
+      - name: Build public documentation
+        run: python -m mkdocs build --strict
+      - name: Test built public site
+        run: python -m pytest tests/integration/docs -q

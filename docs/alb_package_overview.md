@@ -29,7 +29,11 @@ result = bearing.calculate(displacement=(0.0, 0.0), time=0.0)
 完整的类、函数、输入、输出和示例见
 [`docs/api/public_api_reference.md`](api/public_api_reference.md)。该参考直接从
 `ALB.__all__` 和运行时签名生成，并通过 `--check` 与 pytest 检查是否跟随源码
-更新；生成机制见 [`docs/api/README.md`](api/README.md)。
+更新；维护流程见[文档贡献流程](site/contributing/docs.md)。`ALB.control`、
+`ALB.dynamics` 和 `ALB.surrogate` 的显式高级接口分别见
+[Control](api/namespaces/control.md)、[Dynamics](api/namespaces/dynamics.md) 和
+[Surrogate](api/namespaces/surrogate.md)。生成器静态读取各 namespace 的字面量
+`_EXPORTS`，不会导入可选 backend 或扩大公开边界。
 
 根 namespace 分为四组：
 

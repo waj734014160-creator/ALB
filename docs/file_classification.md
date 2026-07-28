@@ -46,7 +46,7 @@
 | 冻结行为等价 | `tests/regression/` | 对 v1 数组使用精确相等；不以放宽容差掩盖漂移。 |
 | 架构、物理和发布验收 | `tests/validation/` | 包含 import、optional dependency、wheel、迁移、时序和工程门禁。 |
 | 自动诊断 | `tools/diagnostics/` | 人工触发；输出必须去 ignored/临时目录。 |
-| API 文档生成 | `tools/docs/` | 从公开接口和语义元数据生成 `docs/api/public_api_reference.md`；`--check` 不写文件并纳入 pytest。 |
+| API 与站点文档生成 | `tools/docs/`、`docs/api/`、`docs/site/`、`mkdocs.yml` | 从根公开接口、配置字段和高级 namespace 显式导出生成稳定参考；`--check` 不写文件并纳入 pytest，`site/` 是 ignored 可再生输出。 |
 | 手动 GUI/绘图 | `tools/manual/` | 不由 pytest 自动运行。 |
 | 基准 | `tools/benchmarks/` | 先过精确参考，再执行计时。 |
 | 参考生成 | `tools/reference/` | 只创建新版本 reference；禁止覆盖 v1。 |

@@ -1,0 +1,201 @@
+:root {
+  --alb-journal: #102a43;
+  --alb-steel: #486581;
+  --alb-lubricant: #00a7b5;
+  --alb-pressure: #f2a900;
+  --alb-mist: #f4f8fa;
+  --alb-graphite: #17212b;
+  --md-primary-fg-color: var(--alb-journal);
+  --md-primary-fg-color--light: var(--alb-steel);
+  --md-primary-fg-color--dark: #091d2e;
+  --md-accent-fg-color: var(--alb-lubricant);
+}
+
+[data-md-color-scheme="default"] {
+  --md-default-bg-color: var(--alb-mist);
+  --md-default-fg-color: var(--alb-graphite);
+  --md-typeset-a-color: #007e89;
+  --md-code-bg-color: #e8f0f4;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #091d2e;
+  --md-accent-fg-color: #3dd4df;
+  --md-typeset-a-color: #52d2dc;
+}
+
+body,
+input {
+  font-family: "Noto Sans CJK SC", "Microsoft YaHei UI", "PingFang SC",
+    "Source Han Sans SC", system-ui, sans-serif;
+}
+
+code,
+kbd,
+pre {
+  font-family: "Cascadia Code", "JetBrains Mono", "SFMono-Regular", Consolas,
+    monospace;
+}
+
+.md-header,
+.md-tabs {
+  box-shadow: none;
+}
+
+.md-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--alb-lubricant) 42%, transparent);
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3 {
+  color: var(--alb-journal);
+  font-weight: 680;
+  letter-spacing: -0.018em;
+}
+
+[data-md-color-scheme="slate"] .md-typeset h1,
+[data-md-color-scheme="slate"] .md-typeset h2,
+[data-md-color-scheme="slate"] .md-typeset h3 {
+  color: #e8f6f8;
+}
+
+.md-typeset h1 {
+  border-bottom: 2px solid var(--alb-lubricant);
+  padding-bottom: 0.35em;
+}
+
+.md-typeset table:not([class]) {
+  display: table;
+  width: max-content;
+  min-width: 100%;
+}
+
+.md-typeset .highlight,
+.md-typeset pre,
+.md-typeset table:not([class]) {
+  overflow-x: auto;
+}
+
+.md-typeset .admonition.warning,
+.md-typeset details.warning {
+  border-color: var(--alb-pressure);
+}
+
+.md-typeset a:focus-visible,
+.md-nav__link:focus-visible,
+.md-search__input:focus-visible,
+.alb-path-card:focus-visible {
+  outline: 3px solid var(--alb-pressure);
+  outline-offset: 3px;
+}
+
+.alb-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
+  padding: clamp(1.5rem, 4vw, 3.5rem) 0 2rem;
+}
+
+.alb-hero__eyebrow {
+  color: var(--alb-lubricant);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.alb-hero__title {
+  border: 0 !important;
+  font-size: clamp(2.25rem, 6vw, 5.2rem);
+  line-height: 0.96;
+  margin: 0.35rem 0 1rem !important;
+  max-width: 11ch;
+  padding: 0 !important;
+}
+
+.alb-hero__summary {
+  color: var(--alb-steel);
+  font-size: 1.05rem;
+  line-height: 1.75;
+  max-width: 38rem;
+}
+
+[data-md-color-scheme="slate"] .alb-hero__summary {
+  color: #b7cad7;
+}
+
+.alb-lifecycle {
+  background: color-mix(in srgb, var(--alb-journal) 96%, white);
+  border: 1px solid color-mix(in srgb, var(--alb-lubricant) 35%, transparent);
+  border-radius: 0.35rem;
+  padding: 1.25rem;
+}
+
+.alb-paths {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.alb-path-card {
+  background: color-mix(in srgb, var(--md-default-bg-color) 90%, var(--alb-lubricant));
+  border-left: 4px solid var(--alb-lubricant);
+  color: inherit !important;
+  display: block;
+  min-height: 8rem;
+  padding: 1.15rem 1.25rem;
+  text-decoration: none;
+  transition: transform 150ms ease, border-color 150ms ease;
+}
+
+.alb-path-card:hover {
+  border-left-color: var(--alb-pressure);
+  transform: translateY(-2px);
+}
+
+.alb-path-card strong {
+  color: var(--alb-journal);
+  display: block;
+  font-size: 1.08rem;
+  margin-bottom: 0.45rem;
+}
+
+[data-md-color-scheme="slate"] .alb-path-card strong {
+  color: #ecfbfc;
+}
+
+@media (max-width: 50rem) {
+  .alb-hero,
+  .alb-paths {
+    grid-template-columns: 1fr;
+  }
+
+  .alb-hero__title {
+    font-size: clamp(2.3rem, 12vw, 4rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@media print {
+  .md-header,
+  .md-sidebar,
+  .md-footer {
+    display: none;
+  }
+
+  .md-main__inner {
+    margin: 0;
+  }
+}

@@ -141,7 +141,8 @@
   API/unit/regression 目标组为 `133 passed`；完整 pytest 为
   `390 passed, 13 skipped, 10 subtests passed`。分层 mypy 的 23 个 strict
   target 零错误，实现层旧基线保持 352 条、82 组并覆盖 146 个源码文件；
-  26 个顶层公开符号的生成文档漂移检查通过。
+  26 个顶层公开符号及 3 个高级 namespace 的生成文档漂移检查通过。公共文档
+  站点的 19 项目标测试与严格 MkDocs 构建通过，机器 JSON 证据不进入站点。
 
 ## 当前风险与边界
 
