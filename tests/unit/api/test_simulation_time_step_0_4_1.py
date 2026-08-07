@@ -71,7 +71,7 @@ def _mount(config: ALB.BearingConfig) -> tuple[ALB.BearingMount, ...]:
 
 
 def test_patch_release_keeps_the_0_4_configuration_schema() -> None:
-    assert ALB.__version__ == "0.4.4"
+    assert ALB.__version__ == "0.4.5"
     assert SCHEMA_VERSION == "0.4.0"
 
 
@@ -146,7 +146,11 @@ def test_materialized_controller_valve_and_thermal_share_bearing_step() -> None:
                 "positions": [[0.5, 0.25], [0.5, 0.5], [0.5, 0.75]],
             },
             "tank": {},
-            "valve": {"model": "second_order"},
+            "valve": {
+                "model": "second_order",
+                "natural_frequency_hz": 166.0,
+                "damping_ratio": 0.7,
+            },
             "control": {
                 "mode": "pid",
                 "gains": {"kp": 1.0, "ki": 0.0, "kd": 0.0},

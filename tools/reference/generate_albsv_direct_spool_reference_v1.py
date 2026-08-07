@@ -18,12 +18,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from ALB.config import (
-    Moog2ndServoConfig,
     NodimALBConfig,
     NodimOrificeConfig,
     NodimPadConfig,
     TankConfig,
     ThermalConfig,
+    TransferFunctionServoConfig,
 )
 from ALB.contracts import (
     BearingInput,
@@ -128,7 +128,11 @@ def config_from_payload(
             ps=payload["ps"],
             p0=payload["p0"],
         ),
-        servo_config=Moog2ndServoConfig(dt=payload["dt"]),
+        servo_config=TransferFunctionServoConfig(
+            dt=payload["dt"],
+            numerator=(1.0,),
+            denominator=(1.0,),
+        ),
         tank_config=TankConfig(
             xrange=payload["xrange"],
             zrange=payload["zrange"],
@@ -137,7 +141,6 @@ def config_from_payload(
         controller_config=None,
         dt=payload["dt"],
         control_mode="external_spool",
-        valve_model="static",
     )
 
 

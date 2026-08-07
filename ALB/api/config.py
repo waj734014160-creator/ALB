@@ -30,7 +30,7 @@ _BEARING_FAMILIES = {
 }
 _UNIT_SYSTEMS = {"dimensional", "nondimensional"}
 _CONTROL_MODES = {"pid", "fuzzy_pid", "uncontrolled", "external_spool"}
-_VALVE_MODELS = {"second_order", "third_order", "static"}
+_VALVE_MODELS = {"second_order", "transfer_function"}
 
 _THERMAL_FIELDS = {
     "t_in",
@@ -131,6 +131,24 @@ def _positive_float(value: Any, path: str) -> float:
     if result <= 0.0:
         raise ConfigurationError(f"{path} must be finite and > 0")
     return result
+
+
+def _polynomial_coefficients(value: Any, path: str) -> tuple[float, ...]:
+    """Return one strict polynomial in descending powers of ``s``."""
+
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise ConfigurationError(f"{path} must be a coefficient sequence")
+    if not value:
+        raise ConfigurationError(f"{path} must not be empty")
+    coefficients = tuple(
+        _finite_float(item, f"{path}[{index}]")
+        for index, item in enumerate(value)
+    )
+    if coefficients[0] == 0.0:
+        raise ConfigurationError(
+            f"{path} leading coefficient must be nonzero"
+        )
+    return coefficients
 
 
 def _require_integer(
@@ -293,21 +311,53 @@ def _validate_thermal(value: Any) -> None:
 
 def _validate_active_sections(spec: Mapping[str, Any]) -> None:
     valve = _require_mapping(spec.get("valve"), "spec.valve")
-    _reject_unknown(
-        valve,
-        {
-            "model",
-            "response_time",
-            "damping_ratio",
-            "third_order_time_constant",
-            "delay",
-        },
-        "spec.valve",
-    )
-    if valve.get("model") not in _VALVE_MODELS:
+    model = valve.get("model")
+    if model not in _VALVE_MODELS:
         raise ConfigurationError(
-            "spec.valve.model must be second_order, third_order, or static"
+            "spec.valve.model must be second_order or transfer_function"
         )
+    if model == "second_order":
+        _reject_unknown(
+            valve,
+            {
+                "model",
+                "natural_frequency_hz",
+                "damping_ratio",
+                "delay",
+            },
+            "spec.valve",
+        )
+        for field in ("natural_frequency_hz", "damping_ratio"):
+            if field not in valve:
+                raise ConfigurationError(f"spec.valve.{field} is required")
+            _positive_float(valve[field], f"spec.valve.{field}")
+        if "delay" in valve and _finite_float(
+            valve["delay"], "spec.valve.delay"
+        ) < 0.0:
+            raise ConfigurationError("spec.valve.delay must be >= 0")
+    else:
+        _reject_unknown(
+            valve,
+            {"model", "numerator", "denominator"},
+            "spec.valve",
+        )
+        for field in ("numerator", "denominator"):
+            if field not in valve:
+                raise ConfigurationError(f"spec.valve.{field} is required")
+        numerator = _polynomial_coefficients(
+            valve["numerator"], "spec.valve.numerator"
+        )
+        denominator = _polynomial_coefficients(
+            valve["denominator"], "spec.valve.denominator"
+        )
+        if all(value == 0.0 for value in numerator):
+            raise ConfigurationError(
+                "spec.valve.numerator must not be the zero polynomial"
+            )
+        if len(numerator) > len(denominator):
+            raise ConfigurationError(
+                "spec.valve transfer function must be proper"
+            )
 
     control = _require_mapping(spec.get("control"), "spec.control")
     _reject_unknown(

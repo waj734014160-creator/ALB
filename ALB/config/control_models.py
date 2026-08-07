@@ -1,33 +1,107 @@
 """Domain configuration models split from the historical monolith."""
 
 from dataclasses import dataclass, field, fields
+from numbers import Real
 from typing import Union
 
 import numpy as np
 
 from .common_models import ConfigData
 
-@dataclass
-class ServoConfig(ConfigData):
-    """Configuration for the servovalve.
 
-    The class defaults define the standard ``moog`` servovalve parameters.
-    ``ALBConfig`` and ``NodimALBConfig`` install the current ``moog_2nd``
-    defaults through their own ``servo_config`` default factories.
+def _finite_real(name: str, value: object) -> float:
+    """Return one finite real servovalve configuration value."""
+
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise TypeError(f"{name} must be a real number")
+    result = float(value)
+    if not np.isfinite(result):
+        raise ValueError(f"{name} must be finite")
+    return result
+
+
+def _polynomial(name: str, value) -> tuple[float, ...]:
+    """Normalize one nonempty finite polynomial coefficient sequence."""
+
+    if isinstance(value, (str, bytes)):
+        raise TypeError(f"{name} must be a coefficient sequence")
+    try:
+        coefficients = tuple(
+            _finite_real(f"{name}[{index}]", item)
+            for index, item in enumerate(value)
+        )
+    except TypeError as exc:
+        raise TypeError(f"{name} must be a coefficient sequence") from exc
+    if not coefficients:
+        raise ValueError(f"{name} must not be empty")
+    if coefficients[0] == 0.0:
+        raise ValueError(f"{name} leading coefficient must be nonzero")
+    return coefficients
+
+
+@dataclass
+class SecondOrderServoConfig(ConfigData):
+    """Continuous-time second-order servovalve configuration.
+
+    ``natural_frequency_hz`` is specified in cycles per second. The runtime
+    converts it to the historical ``tw = 1 / (2*pi*f_n)`` representation so
+    the validated numerical transfer function remains unchanged.
     """
 
     dt: float = 6.667e-4
-    tw: float = 1.5059e-8
-    zeta: float = 0.0039795
-    tp3: float = 0.0017924
+    natural_frequency_hz: float = 166.0
+    damping_ratio: float = 0.7
     delay: float = 0.0
 
-@dataclass
-class Moog2ndServoConfig(ServoConfig):
-    """Default configuration for the single-second-order Moog servovalve."""
+    def __post_init__(self) -> None:
+        self.dt = _finite_real("dt", self.dt)
+        self.natural_frequency_hz = _finite_real(
+            "natural_frequency_hz", self.natural_frequency_hz
+        )
+        self.damping_ratio = _finite_real(
+            "damping_ratio", self.damping_ratio
+        )
+        self.delay = _finite_real("delay", self.delay)
+        if self.dt <= 0.0:
+            raise ValueError("dt must be > 0")
+        if self.natural_frequency_hz <= 0.0:
+            raise ValueError("natural_frequency_hz must be > 0")
+        if self.damping_ratio <= 0.0:
+            raise ValueError("damping_ratio must be > 0")
+        if self.delay < 0.0:
+            raise ValueError("delay must be >= 0")
 
-    tw: float = 9.587647174210562e-4
-    zeta: float = 0.7
+
+@dataclass
+class TransferFunctionServoConfig(ConfigData):
+    """Continuous-time SISO servovalve defined by polynomial coefficients.
+
+    Coefficients use descending powers of ``s`` and include the complete gain
+    and any rational delay approximation. Improper transfer functions are
+    rejected because the runtime requires a causal state-space realization.
+    """
+
+    dt: float = 6.667e-4
+    numerator: tuple[float, ...] = (1.0,)
+    denominator: tuple[float, ...] = (1.0,)
+
+    def __post_init__(self) -> None:
+        self.dt = _finite_real("dt", self.dt)
+        if self.dt <= 0.0:
+            raise ValueError("dt must be > 0")
+        self.numerator = _polynomial("numerator", self.numerator)
+        self.denominator = _polynomial("denominator", self.denominator)
+        if all(value == 0.0 for value in self.numerator):
+            raise ValueError("numerator must not be the zero polynomial")
+        if len(self.numerator) > len(self.denominator):
+            raise ValueError("transfer function must be proper")
+
+    @property
+    def is_static(self) -> bool:
+        """Return whether the transfer function has no dynamic poles."""
+
+        return len(self.denominator) == 1
+
 
 @dataclass
 class PIDConfig(ConfigData):
@@ -113,4 +187,10 @@ class FuzzyPIDConfig(ConfigData):
     rule_path: str = "../fuzzy_rule.csv"
     sensor_angles: list = field(default_factory=lambda: [45, 135])
 
-__all__ = ['ServoConfig', 'Moog2ndServoConfig', 'PIDConfig', 'LQGConfig', 'FuzzyPIDConfig']
+__all__ = [
+    'SecondOrderServoConfig',
+    'TransferFunctionServoConfig',
+    'PIDConfig',
+    'LQGConfig',
+    'FuzzyPIDConfig',
+]

@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 
-from ALB.config import Moog2ndServoConfig, PIDConfig
+from ALB.config import PIDConfig, SecondOrderServoConfig
 from ALB.control.blocks import run_controller_step, run_valve_step
 from ALB.control.pid import PID
 from ALB.core import LifecycleState, RuntimeLifecycle
@@ -21,7 +21,7 @@ from ALB.contracts import (
     UnitSystem,
     result_snapshot,
 )
-from ALB.control.valve import moog_2nd_servovalve
+from ALB.control.valve import second_order_servovalve
 
 from ._harmonic_runtime import (
     HarmonicForceEvaluator,
@@ -65,7 +65,7 @@ class _HarmonicBearingRuntime:
         coefficients: ALBHarmonicCoefficients,
         *,
         node_link: int,
-        servo_config: Moog2ndServoConfig,
+        servo_config: SecondOrderServoConfig,
         controller_config: PIDConfig | None = None,
         warmup_steps: int = 64,
         base_tolerance: float = 1.0e-8,
@@ -93,8 +93,8 @@ class _HarmonicBearingRuntime:
             raise TypeError("coefficients must be ALBHarmonicCoefficients")
         if isinstance(node_link, bool) or not isinstance(node_link, (int, np.integer)):
             raise TypeError("node_link must be an integer")
-        if not isinstance(servo_config, Moog2ndServoConfig):
-            raise TypeError("servo_config must be Moog2ndServoConfig")
+        if not isinstance(servo_config, SecondOrderServoConfig):
+            raise TypeError("servo_config must be SecondOrderServoConfig")
         if not isinstance(controller_config, PIDConfig):
             raise TypeError("controller_config must be PIDConfig")
         if int(warmup_steps) < 2:
@@ -296,11 +296,13 @@ class _HarmonicBearingRuntime:
         controller._reset_for_owner()
         self._controller = controller
         self._servovalves = [
-            moog_2nd_servovalve(
+            second_order_servovalve(
                 self.dt,
+                natural_frequency_hz=float(
+                    self.servo_config.natural_frequency_hz
+                ),
+                damping_ratio=float(self.servo_config.damping_ratio),
                 delay=float(self.servo_config.delay),
-                tw=float(self.servo_config.tw),
-                zeta=float(self.servo_config.zeta),
             )
             for _ in range(2)
         ]
@@ -623,10 +625,10 @@ def _build_harmonic_runtime(
             controller_payload["sensor_angles_deg"], dtype=float
         ),
     )
-    servo_config = Moog2ndServoConfig(
+    servo_config = SecondOrderServoConfig(
         dt=runtime_dt,
-        tw=float(servo_payload["tw_s"]),
-        zeta=float(servo_payload["zeta"]),
+        natural_frequency_hz=float(servo_payload["natural_frequency_hz"]),
+        damping_ratio=float(servo_payload["zeta"]),
         delay=float(servo_payload.get("delay_s", 0.0)),
     )
     steps = int(

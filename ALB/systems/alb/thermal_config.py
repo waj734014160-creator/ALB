@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import warnings
 
-from ALB.config import ThermalConfig
+from ALB.config import ThermalConfig, TransferFunctionServoConfig
 
 
 def resolve_alb_thermal_config(
@@ -32,7 +32,10 @@ def resolve_alb_thermal_config(
     thermal_args["args_nodim"] = args_nodim
     resolved = ThermalConfig.from_dict(thermal_args)
 
-    static_servo = alb_config.valve_model == "static"
+    static_servo = (
+        isinstance(alb_config.servo_config, TransferFunctionServoConfig)
+        and alb_config.servo_config.is_static
+    )
     if static_servo and resolved.transient_enabled:
         warnings.warn(
             "static servo dynamics are paired with transient thermal dynamics",

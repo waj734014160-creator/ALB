@@ -188,6 +188,72 @@ MOOG_2ND_TW = 9.587647174210562e-4
 MOOG_2ND_ZETA = 0.7
 
 
+def second_order_servovalve(
+    dt,
+    natural_frequency_hz=MOOG_2ND_NATURAL_FREQ_HZ,
+    damping_ratio=MOOG_2ND_ZETA,
+    delay=0.0,
+):
+    """Build a unity-gain second-order servovalve from physical parameters.
+
+    ``natural_frequency_hz`` is converted to the historical time-scale form
+    ``tw = 1 / (2*pi*f_n)`` before the validated transfer function is built.
+    """
+
+    frequency = float(natural_frequency_hz)
+    damping = float(damping_ratio)
+    delay_value = float(delay)
+    if not np.isfinite(frequency) or frequency <= 0.0:
+        raise ValueError("natural_frequency_hz must be finite and > 0")
+    if not np.isfinite(damping) or damping <= 0.0:
+        raise ValueError("damping_ratio must be finite and > 0")
+    if not np.isfinite(delay_value) or delay_value < 0.0:
+        raise ValueError("delay must be finite and >= 0")
+    tw = 1.0 / (2.0 * np.pi * frequency)
+    return moog_2nd_servovalve(
+        dt,
+        delay=delay_value,
+        tw=tw,
+        zeta=damping,
+    )
+
+
+def transfer_function_servovalve(dt, numerator, denominator):
+    """Build a SISO servovalve from continuous-time polynomial coefficients.
+
+    Coefficients use descending powers of ``s``. The numerator includes the
+    complete gain and any rational delay approximation. Static proper systems
+    use the discrete wrapper so ``[1] / [1]`` remains exactly equivalent to
+    the established static valve behavior.
+    """
+
+    num = np.asarray(numerator)
+    den = np.asarray(denominator)
+    if np.iscomplexobj(num) or np.iscomplexobj(den):
+        raise TypeError("servovalve coefficients must be real")
+    try:
+        num = np.asarray(numerator, dtype=float)
+        den = np.asarray(denominator, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise TypeError("servovalve coefficients must be real sequences") from exc
+    if num.ndim != 1 or num.size == 0:
+        raise ValueError("numerator must be a nonempty one-dimensional sequence")
+    if den.ndim != 1 or den.size == 0:
+        raise ValueError("denominator must be a nonempty one-dimensional sequence")
+    if not np.all(np.isfinite(num)) or not np.all(np.isfinite(den)):
+        raise ValueError("servovalve coefficients must be finite")
+    if num[0] == 0.0 or den[0] == 0.0:
+        raise ValueError("leading polynomial coefficients must be nonzero")
+    if np.all(num == 0.0):
+        raise ValueError("numerator must not be the zero polynomial")
+    if num.size > den.size:
+        raise ValueError("servovalve transfer function must be proper")
+
+    transfer = cl.tf(num, den)
+    lti = TSDlti(transfer, dt) if den.size == 1 else BaseLti(transfer, dt)
+    return ServoValve2(lti, [])
+
+
 def moog_servovalve(dt, delay=0, tw=1.5059e-8, zeta=0.0039795, tp3=0.0017924):
     """
     moog servovalve model with optional delay. If delay is zero, returns a standard second-order system. If delay is greater than zero, includes a Pade approximation of the delay in the transfer function.

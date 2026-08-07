@@ -163,9 +163,13 @@
   `spool_flow_coefficient` 和 `pressure_flow_coefficient`。
 - `tank.x_range`、`z_range`：油腔在局部坐标中的范围；
   `depth_ratio`：油腔深度与间隙之比。
-- `valve.model`：`second_order`、`third_order` 或 `static`；
-  `response_time`：s；`damping_ratio`：1；`third_order_time_constant`：s；
-  `delay`：s。
+- `valve.model: second_order`：必须输入 `natural_frequency_hz`（Hz）和
+  `damping_ratio`（1），可选 `delay`（s，缺省 `0`）。运行时使用
+  `tw = 1 / (2*pi*natural_frequency_hz)` 保持既有二阶传递函数。
+- `valve.model: transfer_function`：必须输入 `numerator` 和 `denominator`；
+  两者都是按连续时间变量 `s` 降幂排列的有限实数多项式系数。分子包含完整
+  增益及任何有理延迟近似，不再接受独立 `delay`。传递函数必须因果且 proper，
+  即分子阶数不得高于分母阶数。
 - `control.mode`：`pid`、`fuzzy_pid`、`uncontrolled` 或 `external_spool`。
   `pid` 模式的 `gains` 包含 `kp`、`ki`、`kd` 和 `feedforward`；
   `frequency_hz` 是控制频率；`sensor_angles_deg` 是两个传感器角度。

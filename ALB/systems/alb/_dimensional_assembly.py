@@ -20,15 +20,20 @@ from ALB.config import (
     NodimALBConfig,
     OrificeConfig,
     PIDConfig,
-    ServoConfig,
+    SecondOrderServoConfig,
     TankConfig,
+    TransferFunctionServoConfig,
 )
 from ALB.control.fuzzy import FuzzyPID
 from ALB.control.pid import PID
 from ALB.control.blocks import run_controller_step, run_valve_step
 from ALB.physics.hydraulics.orifice import CSOrifice, NodimCSOrifice
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
-from ALB.control.valve import moog_2nd_servovalve, moog_servovalve, static_sv
+from ALB.control.valve import (
+    second_order_servovalve,
+    static_sv,
+    transfer_function_servovalve,
+)
 from ALB.physics.thermal.solver import (
     NodimThermalHydroBearing,
     wrap_pad_collection_with_thermal,
@@ -56,7 +61,11 @@ class _DimensionalActiveAssembler:
         self.pad_config: Union[FPBConfig, None] = (
             alb_config.pad_config if alb_config else None
         )
-        self.servo_config: Union[ServoConfig, None] = (
+        self.servo_config: Union[
+            SecondOrderServoConfig,
+            TransferFunctionServoConfig,
+            None,
+        ] = (
             alb_config.servo_config if alb_config else None
         )
         self.orifice_config: Union[OrificeConfig, None] = (
@@ -84,7 +93,10 @@ class _DimensionalActiveAssembler:
         self.pad_config = config
         return self
 
-    def set_servo_config(self, config: ServoConfig):
+    def set_servo_config(
+        self,
+        config: Union[SecondOrderServoConfig, TransferFunctionServoConfig],
+    ):
         self.servo_config = config
         return self
 
@@ -113,44 +125,37 @@ class _DimensionalActiveAssembler:
             raise ValueError("Pad configuration is missing.")
         return four_pads_bearings(self.pad_config)
 
-    def _create_servos(self, servo_type: str):
+    def _create_servos(self):
         if not self.servo_config:
             raise ValueError("Servo configuration is missing.")
 
         # Create Dynamic Servos (for control)
-        if servo_type == "third_order":
-            sv_x = moog_servovalve(
+        if isinstance(self.servo_config, SecondOrderServoConfig):
+            sv_x = second_order_servovalve(
                 self.servo_config.dt,
+                self.servo_config.natural_frequency_hz,
+                self.servo_config.damping_ratio,
                 self.servo_config.delay,
-                self.servo_config.tw,
-                self.servo_config.zeta,
-                self.servo_config.tp3,
             )
-            sv_y = moog_servovalve(
+            sv_y = second_order_servovalve(
                 self.servo_config.dt,
+                self.servo_config.natural_frequency_hz,
+                self.servo_config.damping_ratio,
                 self.servo_config.delay,
-                self.servo_config.tw,
-                self.servo_config.zeta,
-                self.servo_config.tp3,
             )
-        elif servo_type == "second_order":
-            sv_x = moog_2nd_servovalve(
+        elif isinstance(self.servo_config, TransferFunctionServoConfig):
+            sv_x = transfer_function_servovalve(
                 self.servo_config.dt,
-                self.servo_config.delay,
-                self.servo_config.tw,
-                self.servo_config.zeta,
+                self.servo_config.numerator,
+                self.servo_config.denominator,
             )
-            sv_y = moog_2nd_servovalve(
+            sv_y = transfer_function_servovalve(
                 self.servo_config.dt,
-                self.servo_config.delay,
-                self.servo_config.tw,
-                self.servo_config.zeta,
+                self.servo_config.numerator,
+                self.servo_config.denominator,
             )
-        elif servo_type == "static":
-            sv_x = static_sv(self.servo_config.dt)
-            sv_y = static_sv(self.servo_config.dt)
         else:
-            raise ValueError(f"Unknown servo type: {servo_type}")
+            raise TypeError("Unknown servovalve configuration type")
 
         # Create Static Servos (for static equilibrium calculation)
         # Note: ALB class expects static_sv to be available implicitly or created internally,
@@ -258,9 +263,7 @@ class _DimensionalActiveAssembler:
 
         # 1. Create Components
         pads_dict = self._create_pads()
-        servos, static_servos = self._create_servos(
-            self.alb_config.valve_model
-        )
+        servos, static_servos = self._create_servos()
         orifices = self._create_orifices()
         controller = self._create_controller()
 

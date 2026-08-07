@@ -15,8 +15,8 @@
 
 ## 当前快照
 
-- 分支：`codex/alb-0.4.4`。
-- 开发版本：`0.4.4`；包名 `re-alb`；导入名 `ALB`；最低 Python 3.10。
+- 分支：`codex/alb-0.4.5`。
+- 开发版本：`0.4.5`；包名 `re-alb`；导入名 `ALB`；最低 Python 3.10。
   JSON5 schema 和 surrogate package 格式继续使用 `0.4.0`。
 - 起点：`codex/full-repo-refactor` 的 `93dd63d`。
 - 迁移前参考提交：`f23975d`，新增
@@ -45,6 +45,8 @@
   API 收敛和公共文档站点开发边界已提交，但未形成固定发布候选或正式标签。
 - 0.4.4 从 0.4.3 文档站点提交 `59682b8` 创建，目标是让配置 schema 版本可从
   包根直接发现；当前同样不是固定发布候选。
+- 0.4.5 在测试树归并提交 `7308f54` 后创建；修改前伺服阀数值参考固定于
+  `2ecb97e`，目标是把主动轴承公开阀配置收敛为二阶 Hz 参数和任意传递函数。
 
 ## 已完成的实现边界
 
@@ -72,6 +74,10 @@
 - 0.4.4 将已有 `ALB.api.SCHEMA_VERSION` 显式提升为根入口
   `ALB.SCHEMA_VERSION`；包版本为 `0.4.4`，JSON5 schema 与 surrogate package
   格式仍为 `0.4.0`，不改变配置、数值或制品合同。
+- 0.4.5 的主动轴承 JSON5 阀配置只接受 `second_order` 和
+  `transfer_function`。二阶阀直接使用 `natural_frequency_hz`、
+  `damping_ratio` 和可选 `delay`；任意高阶阀直接使用连续时间分子/分母
+  多项式系数。内部静态阀继续服务于静平衡和直接阀芯路径。
 - SURROGATE_TRAIN 迁移已形成独立本地提交 `70934ae`。
 - PAPER_WORK 在修改前保存 150 个声明活跃文件；清单摘要为
   `89663a1c3f093d7478efe3df3d96677a86556fd8f0edb4a3c9f6adbd7f1f98af`，
@@ -151,13 +157,19 @@
 - 0.4.4 根 API、生成参考、文档和 optional-import 目标组为 `33 passed`；完整
   pytest 为 `414 passed, 13 skipped, 10 subtests passed`。27 个根符号的生成
   漂移检查、严格 MkDocs 构建和 `0.4.4/0.4.0` 双版本 import smoke 均通过。
+- 0.4.5 伺服阀接口、配置、既有分析参考和文档示例目标组为
+  `47 passed, 10 subtests passed`；完整 pytest 为
+  `433 passed, 13 skipped, 10 subtests passed`。修改前参考覆盖四组阀模型、
+  43 个数组；新二阶/传递函数接口的连续矩阵、离散矩阵和固定命令响应逐元素
+  精确相等。23 个 strict mypy target 零错误，生成参考漂移检查与严格 MkDocs
+  构建通过；PAPER_WORK 的共享主动轴承配置已迁移为 166 Hz 二阶阀。
 
 ## 当前风险与边界
 
 - 0.4.0 的分析 facade 曾以新数值方法替换旧算法且验收未覆盖双侧数值比较；
   `0.4.1` 恢复算法，`0.4.2` 进一步关闭输入域、local dt 和仿真失败原子性
   缺陷并完成正式 detached 验收，仍是当前推荐发布版本。0.4.3 已完成开发提交但
-  未执行固定 SHA detached 发布验收；0.4.4 继续处于开发复验阶段。历史
+  未执行固定 SHA detached 发布验收；0.4.5 继续处于开发复验阶段。历史
   `v0.4.0`、`v0.4.1`、`v0.4.2` 标签、wheel 和验收证据保持不变。
 - 0.4.1 谐波线性化只声明量纲液膜和三节点 CSOrifice 主动润滑拓扑；无量纲、
   Gas、MultiPad、surrogate、热包装及其他节流拓扑会明确失败。
@@ -174,11 +186,9 @@
 
 ## 当前下一步
 
-1. 0.4.4 根 API、生成参考和公共站点开发验证已经通过；后续保持 schema 与包
-   版本独立，不再扩大本轮范围。
-2. 如需发布，形成干净实现候选后再新增对应 manifest/test map 和固定 SHA
+1. 如需发布，形成干净实现候选后再新增对应 manifest/test map 和固定 SHA
    detached 验收；不移动 `v0.4.2`。
-3. observer 与资源路径 containment 债务继续按独立 P3 维护范围处理；数值算法
+2. observer 与资源路径 containment 债务继续按独立 P3 维护范围处理；数值算法
    变化继续遵守 ADR-0007。
 
 ## 稳定入口
@@ -191,10 +201,12 @@
 - 0.4.2 修复：`docs/migrations/0.4.2.md`
 - 0.4.3 修复：`docs/migrations/0.4.3.md`
 - 0.4.4 API 易用性：`docs/migrations/0.4.4.md`
+- 0.4.5 伺服阀接口：`docs/migrations/0.4.5.md`
 - 0.4.2 保留债务：`docs/migrations/0.4.2_deferred_debt.md`
 - 0.4.2 两轮审查：`docs/migrations/0.4.2_review_log.md`
 - 决策：`docs/adr/0006-alb-0-4-no-legacy-friendly-api.md`
 - 数值算法决策：`docs/adr/0007-preserve-validated-numerical-algorithms.md`
+- 伺服阀配置决策：`docs/adr/0008-servovalve-public-configuration.md`
 - 功能门禁：`tools/validation/release_feature_manifest_0_4.json`
 - 0.4.1 功能门禁：`tools/validation/release_feature_manifest_0_4_1.json`
 - 0.4.2 功能门禁：`tools/validation/release_feature_manifest_0_4_2.json`

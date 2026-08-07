@@ -2,7 +2,7 @@
 
 <div class="alb-hero">
   <div>
-    <div class="alb-hero__eyebrow">Active lubricated bearing · 0.4.4</div>
+    <div class="alb-hero__eyebrow">Active lubricated bearing · 0.4.5</div>
     <h1 class="alb-hero__title">轴承模型，按稳定接口运行。</h1>
     <p class="alb-hero__summary">
       ALB 将液膜、气膜、主动润滑、转子耦合和 ALBNN 代理模型组织为一致的

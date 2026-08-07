@@ -21,7 +21,6 @@ from ALB.config import (
     NodimALBConfig,
     OrificeConfig,
     PIDConfig,
-    ServoConfig,
     TankConfig,
     ThermalConfig,
 )
@@ -41,7 +40,7 @@ from ALB.contracts import (
     UnitSystem,
     result_snapshot,
 )
-from ALB.control.valve import moog_2nd_servovalve, moog_servovalve, static_sv
+from ALB.control.valve import static_sv
 from ALB.physics.thermal.solver import (
     NodimThermalHydroBearing,
     wrap_pad_collection_with_thermal,

@@ -10,9 +10,9 @@ import numpy as np
 
 from ALB.config.control_models import (
     FuzzyPIDConfig,
-    Moog2ndServoConfig,
     PIDConfig,
-    ServoConfig,
+    SecondOrderServoConfig,
+    TransferFunctionServoConfig,
 )
 from ALB.config.film_models import FPBConfig, HydConfig, NodimPadConfig
 from ALB.config.gas_models import GasConfig
@@ -187,23 +187,26 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
     valve_source = config.spec["valve"]
     assert isinstance(valve_source, Mapping)
     valve_model = str(valve_source["model"])
-    valve_type = (
-        Moog2ndServoConfig
-        if valve_model == "second_order"
-        else ServoConfig
-    )
-    valve = valve_type(
-        dt=float(config.spec["time_step"]),
-        tw=float(valve_source.get("response_time", valve_type().tw)),
-        zeta=float(valve_source.get("damping_ratio", valve_type().zeta)),
-        tp3=float(
-            valve_source.get(
-                "third_order_time_constant",
-                valve_type().tp3,
-            )
-        ),
-        delay=float(valve_source.get("delay", 0.0)),
-    )
+    valve: SecondOrderServoConfig | TransferFunctionServoConfig
+    if valve_model == "second_order":
+        valve = SecondOrderServoConfig(
+            dt=float(config.spec["time_step"]),
+            natural_frequency_hz=float(
+                valve_source["natural_frequency_hz"]
+            ),
+            damping_ratio=float(valve_source["damping_ratio"]),
+            delay=float(valve_source.get("delay", 0.0)),
+        )
+    else:
+        valve = TransferFunctionServoConfig(
+            dt=float(config.spec["time_step"]),
+            numerator=tuple(
+                float(value) for value in valve_source["numerator"]
+            ),
+            denominator=tuple(
+                float(value) for value in valve_source["denominator"]
+            ),
+        )
     control_source = config.spec["control"]
     assert isinstance(control_source, Mapping)
     mode = str(control_source["mode"])
@@ -275,7 +278,6 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
             dtype=float,
         ),
         "control_mode": mode,
-        "valve_model": valve_model,
     }
     resolved = NodimALBConfig(**common) if nodim else ALBConfig(**common)
     expected_dt = float(config.spec["time_step"])

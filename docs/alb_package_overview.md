@@ -92,13 +92,18 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 ## 配置与结果
 
 0.4 JSON5 文档固定使用 `schema_version: "0.4.0"`、`kind`、可选
-`includes` 和 `spec`。0.4.4 可通过根入口 `ALB.SCHEMA_VERSION` 读取该契约版本，
+`includes` 和 `spec`。0.4.5 可通过根入口 `ALB.SCHEMA_VERSION` 读取该契约版本，
 无需从内部配置模块导入或把它与 `ALB.__version__` 混同。`BearingConfig` 不可变，`with_overrides()` 与
 `sweep()` 每次都重新执行完整校验。
 
 `Bearing.calculate()` 不累计历史，只更新只读 `latest_result`。分析服务用
 独立 runtime，不污染当前轴承状态。转子轴承仿真默认保留全部已提交步骤；
 只有显式 `HistoryPolicy` 才能降采样或使用 ring buffer。
+
+0.4.5 的主动轴承公开阀配置只接受 `second_order` 和 `transfer_function`。
+前者直接使用 `natural_frequency_hz`、`damping_ratio` 和可选 `delay`；后者直接
+使用按连续时间 `s` 降幂排列的 `numerator` / `denominator` 多项式系数。内部
+静态阀仍服务于静平衡和直接阀芯路径，但不再是第三种 JSON5 配置接口。
 
 0.4.1 的静平衡保留专用阻尼 Newton、冻结 Jacobian 和固定刚度回退算法；
 动态系数由同一旋转椭圆自动生成正反涡动并使用复数识别；谐波线性化使用压力

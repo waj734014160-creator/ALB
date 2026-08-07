@@ -18,6 +18,33 @@
 
 profile 使用 `kind: "bearing_profile"`。include 按顺序合并，本地 `spec` 最后覆盖；mapping 深度合并，数组和标量整体替换，显式 `null` 表示关闭而不是继承。
 
+## 主动轴承伺服阀
+
+0.4.5 的主动轴承只接受两种阀配置。标准二阶阀直接使用 Hz：
+
+```json5
+valve: {
+  model: "second_order",
+  natural_frequency_hz: 166.0,
+  damping_ratio: 0.7,
+  delay: 0.0,
+}
+```
+
+任意高阶或已辨识模型使用完整连续时间传递函数，系数按 `s` 的降幂排列：
+
+```json5
+valve: {
+  model: "transfer_function",
+  numerator: [1.0],
+  denominator: [1.0e-9, 2.0e-6, 1.0e-3, 1.0],
+}
+```
+
+`transfer_function` 的分子已经包含增益及任何有理延迟近似，不能再额外设置
+`delay`。旧字段 `response_time`、`third_order_time_constant` 以及旧模型名
+`third_order`、`static` 均由严格配置边界拒绝。
+
 ## 程序化 override 与 sweep
 
 ```python

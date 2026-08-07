@@ -3,15 +3,15 @@
 from .control_models import (
     FuzzyPIDConfig,
     LQGConfig,
-    Moog2ndServoConfig,
     PIDConfig,
-    ServoConfig,
+    SecondOrderServoConfig,
+    TransferFunctionServoConfig,
 )
 
 __all__ = [
     "FuzzyPIDConfig",
     "LQGConfig",
-    "Moog2ndServoConfig",
     "PIDConfig",
-    "ServoConfig",
+    "SecondOrderServoConfig",
+    "TransferFunctionServoConfig",
 ]

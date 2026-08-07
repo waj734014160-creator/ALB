@@ -5,9 +5,9 @@ from .parameters import ParameterHub
 from .control import (
     FuzzyPIDConfig,
     LQGConfig,
-    Moog2ndServoConfig,
     PIDConfig,
-    ServoConfig,
+    SecondOrderServoConfig,
+    TransferFunctionServoConfig,
 )
 from .film import FPBConfig, HydConfig, NodimPadConfig
 from .gas import GasConfig
@@ -31,7 +31,6 @@ __all__ = [
     "HydConfig",
     "HybridOrificeConfig",
     "LQGConfig",
-    "Moog2ndServoConfig",
     "NodimALBConfig",
     "NodimOrificeConfig",
     "NodimPadConfig",
@@ -39,8 +38,9 @@ __all__ = [
     "ParameterHub",
     "PIDConfig",
     "ResolvedTimeGrid",
-    "ServoConfig",
+    "SecondOrderServoConfig",
     "TankConfig",
     "ThermalConfig",
     "TimeGridConfig",
+    "TransferFunctionServoConfig",
 ]

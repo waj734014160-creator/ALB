@@ -8,13 +8,14 @@ from ALB.config import (
     ALBConfig,
     FuzzyPIDConfig,
     NodimALBConfig,
+    SecondOrderServoConfig,
+    TransferFunctionServoConfig,
 )
 from ALB.control.fuzzy import FuzzyPID
 from ALB.control.pid import PID
 from ALB.control.valve import (
-    moog_2nd_servovalve,
-    moog_servovalve,
-    static_sv,
+    second_order_servovalve,
+    transfer_function_servovalve,
 )
 from ALB.physics.bearing.solver import _build_liquid_film_runtime
 from ALB.physics.hydraulics.orifice import NodimCSOrifice
@@ -51,30 +52,26 @@ def _controller_from_config(config: NodimALBConfig):
 def _servovalves(config: NodimALBConfig):
     source = copy.deepcopy(config.servo_config)
     source.dt = config.dt
-    if config.valve_model == "third_order":
+    if isinstance(source, SecondOrderServoConfig):
         return [
-            moog_servovalve(
+            second_order_servovalve(
                 source.dt,
+                source.natural_frequency_hz,
+                source.damping_ratio,
                 source.delay,
-                source.tw,
-                source.zeta,
-                source.tp3,
             )
             for _ in range(2)
         ]
-    if config.valve_model == "second_order":
+    if isinstance(source, TransferFunctionServoConfig):
         return [
-            moog_2nd_servovalve(
+            transfer_function_servovalve(
                 source.dt,
-                source.delay,
-                source.tw,
-                source.zeta,
+                source.numerator,
+                source.denominator,
             )
             for _ in range(2)
         ]
-    if config.valve_model == "static":
-        return [static_sv(source.dt) for _ in range(2)]
-    raise ValueError("unknown active-bearing valve model")
+    raise TypeError("unknown active-bearing servovalve configuration")
 
 
 def _assemble_nondimensional(config: NodimALBConfig):

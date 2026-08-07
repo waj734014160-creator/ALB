@@ -87,9 +87,9 @@ class TestALBConfigValidation(unittest.TestCase):
         with self.assertRaises(TypeError):
             ALBConfig(switch=False)
 
-    def test_invalid_valve_model_is_rejected(self):
-        with self.assertRaises(ValueError):
-            ALBConfig(valve_model="bad")
+    def test_invalid_servo_config_type_is_rejected(self):
+        with self.assertRaises(TypeError):
+            ALBConfig(servo_config=object())
 
 
 class TestThermalConfigValidation(unittest.TestCase):

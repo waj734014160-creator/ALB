@@ -27,8 +27,9 @@
     },
     valve: {
       model: "second_order",
-      response_time: 0.01,
+      natural_frequency_hz: 166.0,
       damping_ratio: 0.7,
+      delay: 0.0,
     },
     control: {
       mode: "pid",

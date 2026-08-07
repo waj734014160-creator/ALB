@@ -4,7 +4,7 @@ import ALB
 
 
 def test_package_root_exports_only_friendly_api():
-    assert ALB.__version__ == "0.4.4"
+    assert ALB.__version__ == "0.4.5"
     assert set(ALB.__all__) == {
         "ALBError",
         "AnalysisResult",

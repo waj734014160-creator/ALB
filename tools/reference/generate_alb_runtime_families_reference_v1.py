@@ -22,10 +22,10 @@ if str(ROOT) not in sys.path:
 from ALB.config import (
     ALBConfig,
     FPBConfig,
-    Moog2ndServoConfig,
     NodimALBConfig,
     OrificeConfig,
     TankConfig,
+    TransferFunctionServoConfig,
 )
 from ALB.contracts import (
     BearingInput,
@@ -59,14 +59,17 @@ def _dimensional_config(kind: str) -> ALBConfig:
             max_iter=80,
             error_set=1.0e-6,
         ),
-        servo_config=Moog2ndServoConfig(dt=DT),
+        servo_config=TransferFunctionServoConfig(
+            dt=DT,
+            numerator=(1.0,),
+            denominator=(1.0,),
+        ),
         orifice_config=OrificeConfig(),
         tank_config=TankConfig(),
         controller_config=None,
         dt=DT,
         node_link=2,
         control_mode="external_spool" if kind == "ALBSV" else "uncontrolled",
-        valve_model="static",
     )
 
 

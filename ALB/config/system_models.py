@@ -8,7 +8,10 @@ import numpy as np
 
 from .common_models import ConfigData
 from .control_models import (
-    FuzzyPIDConfig, Moog2ndServoConfig, PIDConfig, ServoConfig,
+    FuzzyPIDConfig,
+    PIDConfig,
+    SecondOrderServoConfig,
+    TransferFunctionServoConfig,
 )
 from .film_models import FPBConfig, NodimPadConfig
 from .hydraulics_models import (
@@ -59,8 +62,14 @@ def _normalize_alb_common(config) -> None:
         "external_spool",
     }:
         raise ValueError("control_mode is invalid")
-    if config.valve_model not in {"second_order", "third_order", "static"}:
-        raise ValueError("valve_model is invalid")
+    if not isinstance(
+        config.servo_config,
+        (SecondOrderServoConfig, TransferFunctionServoConfig),
+    ):
+        raise TypeError(
+            "servo_config must be SecondOrderServoConfig or "
+            "TransferFunctionServoConfig"
+        )
     if config.control_mode in {"uncontrolled", "external_spool"}:
         if config.controller_config is not None:
             raise ValueError(
@@ -88,7 +97,10 @@ class ALBConfig(ConfigData):
     """Configuration for the Active Lubricated Bearing (ALB) system."""
 
     pad_config: FPBConfig = field(default_factory=FPBConfig)
-    servo_config: ServoConfig = field(default_factory=Moog2ndServoConfig)
+    servo_config: Union[
+        SecondOrderServoConfig,
+        TransferFunctionServoConfig,
+    ] = field(default_factory=SecondOrderServoConfig)
     orifice_config: OrificeConfig = field(default_factory=OrificeConfig)
     tank_config: TankConfig = field(default_factory=TankConfig)
     controller_config: Optional[Union[PIDConfig, FuzzyPIDConfig]] = field(
@@ -99,7 +111,6 @@ class ALBConfig(ConfigData):
     gxy: np.ndarray = field(default_factory=lambda: np.eye(2))
     gxyt: np.ndarray = field(default_factory=lambda: np.zeros((2, 2)))
     control_mode: str = "pid"
-    valve_model: str = "second_order"
     c: Optional[float] = None  # Optional displacement scale override.
     w: Optional[float] = None  # Optional speed scale override, rpm.
 
@@ -120,6 +131,14 @@ class ALBConfig(ConfigData):
     def thermal_config(self) -> Optional["ThermalConfig"]:
         """Forward ``pad_config.thermal_config`` for convenience."""
         return self.pad_config.thermal_config
+
+    @property
+    def valve_model(self) -> str:
+        """Return the model discriminator derived from ``servo_config``."""
+
+        if isinstance(self.servo_config, SecondOrderServoConfig):
+            return "second_order"
+        return "transfer_function"
 
     def to_dict(self) -> dict:
         """Serialize nested values with an explicit controller type tag."""
@@ -160,7 +179,10 @@ class NodimALBConfig(ConfigData):
 
     pad_config: NodimPadConfig = field(default_factory=NodimPadConfig)
     orifice_config: NodimOrificeConfig = field(default_factory=NodimOrificeConfig)
-    servo_config: ServoConfig = field(default_factory=Moog2ndServoConfig)
+    servo_config: Union[
+        SecondOrderServoConfig,
+        TransferFunctionServoConfig,
+    ] = field(default_factory=SecondOrderServoConfig)
     tank_config: TankConfig = field(default_factory=TankConfig)
     controller_config: Optional[Union[PIDConfig, FuzzyPIDConfig]] = field(
         default_factory=PIDConfig
@@ -170,7 +192,6 @@ class NodimALBConfig(ConfigData):
     gxy: np.ndarray = field(default_factory=lambda: np.eye(2))
     gxyt: np.ndarray = field(default_factory=lambda: np.zeros((2, 2)))
     control_mode: str = "pid"
-    valve_model: str = "second_order"
 
     def __post_init__(self) -> None:
         _normalize_alb_common(self)
@@ -178,6 +199,14 @@ class NodimALBConfig(ConfigData):
     @property
     def thermal_config(self) -> Optional[ThermalConfig]:
         return self.pad_config.thermal_config
+
+    @property
+    def valve_model(self) -> str:
+        """Return the model discriminator derived from ``servo_config``."""
+
+        if isinstance(self.servo_config, SecondOrderServoConfig):
+            return "second_order"
+        return "transfer_function"
 
     def to_dict(self) -> dict:
         """Serialize nested values with an explicit controller type tag."""
