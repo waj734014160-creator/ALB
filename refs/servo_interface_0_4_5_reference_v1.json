@@ -1,0 +1,366 @@
+{
+  "cases": {
+    "legacy_static": {
+      "arrays": {
+        "legacy_static_commands": {
+          "dtype": "float64",
+          "shape": [
+            6
+          ]
+        },
+        "legacy_static_continuous_A": {
+          "dtype": "float64",
+          "shape": [
+            0,
+            0
+          ]
+        },
+        "legacy_static_continuous_B": {
+          "dtype": "float64",
+          "shape": [
+            0,
+            1
+          ]
+        },
+        "legacy_static_continuous_C": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            0
+          ]
+        },
+        "legacy_static_continuous_D": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "legacy_static_implementation_A": {
+          "dtype": "float64",
+          "shape": [
+            0,
+            0
+          ]
+        },
+        "legacy_static_implementation_B": {
+          "dtype": "float64",
+          "shape": [
+            0,
+            1
+          ]
+        },
+        "legacy_static_implementation_C": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            0
+          ]
+        },
+        "legacy_static_implementation_D": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "legacy_static_outputs": {
+          "dtype": "float64",
+          "shape": [
+            6,
+            1
+          ]
+        }
+      },
+      "input_count": 1,
+      "output_count": 1,
+      "parameters": {
+        "dt": 0.001
+      },
+      "state_count": 0
+    },
+    "legacy_third_order": {
+      "arrays": {
+        "legacy_third_order_commands": {
+          "dtype": "float64",
+          "shape": [
+            6
+          ]
+        },
+        "legacy_third_order_continuous_A": {
+          "dtype": "float64",
+          "shape": [
+            4,
+            4
+          ]
+        },
+        "legacy_third_order_continuous_B": {
+          "dtype": "float64",
+          "shape": [
+            4,
+            1
+          ]
+        },
+        "legacy_third_order_continuous_C": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            4
+          ]
+        },
+        "legacy_third_order_continuous_D": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "legacy_third_order_implementation_A": {
+          "dtype": "float64",
+          "shape": [
+            4,
+            4
+          ]
+        },
+        "legacy_third_order_implementation_Bd0": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            4
+          ]
+        },
+        "legacy_third_order_implementation_Bd1": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            4
+          ]
+        },
+        "legacy_third_order_implementation_C": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            4
+          ]
+        },
+        "legacy_third_order_implementation_D": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "legacy_third_order_outputs": {
+          "dtype": "float64",
+          "shape": [
+            6,
+            1
+          ]
+        }
+      },
+      "input_count": 1,
+      "output_count": 1,
+      "parameters": {
+        "damping_ratio": 0.65,
+        "delay": 0.001,
+        "dt": 0.001,
+        "natural_frequency_hz": 120.0,
+        "third_order_time_constant": 0.003
+      },
+      "state_count": 4
+    },
+    "second_order_166hz": {
+      "arrays": {
+        "second_order_166hz_commands": {
+          "dtype": "float64",
+          "shape": [
+            6
+          ]
+        },
+        "second_order_166hz_continuous_A": {
+          "dtype": "float64",
+          "shape": [
+            2,
+            2
+          ]
+        },
+        "second_order_166hz_continuous_B": {
+          "dtype": "float64",
+          "shape": [
+            2,
+            1
+          ]
+        },
+        "second_order_166hz_continuous_C": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            2
+          ]
+        },
+        "second_order_166hz_continuous_D": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "second_order_166hz_implementation_A": {
+          "dtype": "float64",
+          "shape": [
+            2,
+            2
+          ]
+        },
+        "second_order_166hz_implementation_Bd0": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            2
+          ]
+        },
+        "second_order_166hz_implementation_Bd1": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            2
+          ]
+        },
+        "second_order_166hz_implementation_C": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            2
+          ]
+        },
+        "second_order_166hz_implementation_D": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "second_order_166hz_outputs": {
+          "dtype": "float64",
+          "shape": [
+            6,
+            1
+          ]
+        }
+      },
+      "input_count": 1,
+      "output_count": 1,
+      "parameters": {
+        "damping_ratio": 0.7,
+        "delay": 0.0,
+        "dt": 0.001,
+        "natural_frequency_hz": 166.0
+      },
+      "state_count": 2
+    },
+    "second_order_80hz_delayed": {
+      "arrays": {
+        "second_order_80hz_delayed_commands": {
+          "dtype": "float64",
+          "shape": [
+            6
+          ]
+        },
+        "second_order_80hz_delayed_continuous_A": {
+          "dtype": "float64",
+          "shape": [
+            3,
+            3
+          ]
+        },
+        "second_order_80hz_delayed_continuous_B": {
+          "dtype": "float64",
+          "shape": [
+            3,
+            1
+          ]
+        },
+        "second_order_80hz_delayed_continuous_C": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            3
+          ]
+        },
+        "second_order_80hz_delayed_continuous_D": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "second_order_80hz_delayed_implementation_A": {
+          "dtype": "float64",
+          "shape": [
+            3,
+            3
+          ]
+        },
+        "second_order_80hz_delayed_implementation_Bd0": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            3
+          ]
+        },
+        "second_order_80hz_delayed_implementation_Bd1": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            3
+          ]
+        },
+        "second_order_80hz_delayed_implementation_C": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            3
+          ]
+        },
+        "second_order_80hz_delayed_implementation_D": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "second_order_80hz_delayed_outputs": {
+          "dtype": "float64",
+          "shape": [
+            6,
+            1
+          ]
+        }
+      },
+      "input_count": 1,
+      "output_count": 1,
+      "parameters": {
+        "damping_ratio": 0.6,
+        "delay": 0.002,
+        "dt": 0.001,
+        "natural_frequency_hz": 80.0
+      },
+      "state_count": 3
+    }
+  },
+  "coefficient_order": "descending powers of continuous-time s",
+  "comparison": {
+    "matrices": "np.testing.assert_array_equal",
+    "responses": "np.testing.assert_array_equal"
+  },
+  "environment": {
+    "alb": "0.4.4",
+    "control": "0.10.2",
+    "numpy": "1.24.3",
+    "python": "3.10.17"
+  },
+  "generated_at": "2026-08-07T12:56:14.194486+00:00",
+  "purpose": "Freeze the pre-0.4.5 second-order, third-order, and static valve behavior before replacing the public JSON interface.",
+  "schema": "alb.servo-interface-0.4.5-reference.v1",
+  "source_commit": "7308f54"
+}
