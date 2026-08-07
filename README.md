@@ -30,11 +30,11 @@ print(result.fx, result.fy)
 ## 目录
 
 - `ALB/`：0.4 包代码；普通流程使用根 facade，高级实现按明确 namespace 分层。
-- `tests/`：正式 pytest，分为 unit、integration、regression 和 validation。
+- `tests/`：唯一测试树，分为 unit、integration、regression 和 validation；
+  `fixtures/legacy/` 保存迁移后的历史测试图件与轻量配置，不参与 pytest 收集。
 - `tools/`：benchmark、诊断、文档、迁移、参考生成和发布验证工具。
 - `refs/`：不可覆盖的行为参考、固定输入和历史回归资产。
 - `docs/`：API、架构、当前状态、迁移、文件分类和远程操作说明。
-- `test/`：迁移后保留的历史图件和轻量配置，不属于 pytest 收集目录。
 
 ## 安装与验证
 

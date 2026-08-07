@@ -1,0 +1,100 @@
+{
+  "schema": "alb.test-tree-consolidation-reference.v1",
+  "generated_at": "2026-08-07T20:18:49.4983085+08:00",
+  "source_commit": "66f2207b4923ad9a230adda4655009ad5b0176bc",
+  "environment": {
+    "python": "3.10.17",
+    "platform": "Windows-10-10.0.26200-SP0"
+  },
+  "collection": {
+    "command": "E:/Anaconda2023/envs/ALB/python.exe -m pytest --collect-only -q",
+    "node_count": 427,
+    "sorted_nodeids_sha256": "b3003906f40fe0b2e4c615896f3ea5c67d7e11a35d35192e43e85372ddeacd18"
+  },
+  "tracked_assets": [
+    {
+      "source": "test/bearing/_gas_bearing/latest_gas_pressure_cloud.png",
+      "target": "tests/fixtures/legacy/bearing/gas_bearing/latest_gas_pressure_cloud.png",
+      "bytes": 77127,
+      "sha256": "53a1ec21a992bbc74f6e952b66813845f138f916f095447476e1ecf96819ab92"
+    },
+    {
+      "source": "test/bearing/_gas_bearing/paper_textured_foil_pressure_cloud.png",
+      "target": "tests/fixtures/legacy/bearing/gas_bearing/paper_textured_foil_pressure_cloud.png",
+      "bytes": 86186,
+      "sha256": "3e032569be01c086dd5e217a6331c5d3101fdcdde53b3db4a54e00bf6f89a54b"
+    },
+    {
+      "source": "test/bearing/_thermal_plots/full_vs_half_coupling.png",
+      "target": "tests/fixtures/legacy/bearing/thermal_plots/full_vs_half_coupling.png",
+      "bytes": 221640,
+      "sha256": "0e10b3baa3e6219ef2856cebee7555af71b6b347d626f225018766ea8c1def5c"
+    },
+    {
+      "source": "test/bearing/alb_fuzzy/dynamic_config/albfuzzy12.json5",
+      "target": "tests/fixtures/legacy/bearing/alb_fuzzy/dynamic_config/albfuzzy12.json5",
+      "bytes": 1766,
+      "sha256": "268e2e006a816a52ab113b93afe67a7c4f61742b3adea32e05569ba5bd004495"
+    },
+    {
+      "source": "test/bearing/alb_fuzzy/dynamic_config/dynamic_track.json5",
+      "target": "tests/fixtures/legacy/bearing/alb_fuzzy/dynamic_config/dynamic_track.json5",
+      "bytes": 98,
+      "sha256": "b683f2856135f9bdd5c93d0d608baa9491a3f9dc41e21370d0ad5015b7611357"
+    },
+    {
+      "source": "test/bearing/alb_fuzzy/dynamic_config/et.json5",
+      "target": "tests/fixtures/legacy/bearing/alb_fuzzy/dynamic_config/et.json5",
+      "bytes": 109,
+      "sha256": "4e5bc2f408561133a173df1e7472091d55a02585361029d23870ad9b297659a1"
+    },
+    {
+      "source": "test/bearing/alb_fuzzy/dynamic_config/fuzzy_rules.csv",
+      "target": "tests/fixtures/legacy/bearing/alb_fuzzy/dynamic_config/fuzzy_rules.csv",
+      "bytes": 419,
+      "sha256": "a3288ec202cf93f1db5b65ae1c67f75ba94ec65edf14ff9fc808aa4bfe225c0d"
+    },
+    {
+      "source": "test/bearing/alb_fuzzy/dynamic_config/share.json5",
+      "target": "tests/fixtures/legacy/bearing/alb_fuzzy/dynamic_config/share.json5",
+      "bytes": 2450,
+      "sha256": "e47a716365c22054a381509e2d12e8711ede44864e844256dda88b41dd6b88f2"
+    },
+    {
+      "source": "test/bearing/alb_fuzzy/dynamic_config/tbo.json5",
+      "target": "tests/fixtures/legacy/bearing/alb_fuzzy/dynamic_config/tbo.json5",
+      "bytes": 51,
+      "sha256": "9a1428f789c3348b56aa40f5b42bc4c143e5c7d65326ebf9e765a2d967a8bafe"
+    },
+    {
+      "source": "test/bearing/alb_fuzzy/dynamic_config/time_iter.json5",
+      "target": "tests/fixtures/legacy/bearing/alb_fuzzy/dynamic_config/time_iter.json5",
+      "bytes": 59,
+      "sha256": "3685f29997cc6f2c8cb658f7ce7bcbfae0299d941127788ef00ca6e7beaf0535"
+    }
+  ],
+  "local_only_evidence": {
+    "lqg": {
+      "source": "test/control/LQG",
+      "target": "tools/manual/control/LQG",
+      "excludes": ["**/__pycache__/**"],
+      "file_count": 371,
+      "bytes": 238953186,
+      "tree_sha256": "56c436e99fc112a07ca0769859e6742d31a56a2ef7c56a1c54d90c64b702064d"
+    },
+    "regenerated_thermal_plots": [
+      {
+        "source": "test/bearing/_thermal_plots/alb_thermal_4pads.png",
+        "target": "tests/fixtures/legacy/bearing/thermal_plots/alb_thermal_4pads.png",
+        "bytes": 2400169,
+        "sha256": "3043c4f2d55eaef1e68c26b8acaf3666c5548ff01617bf5291dda141ca4def1e"
+      },
+      {
+        "source": "test/bearing/_thermal_plots/orifice_thermal_comparison.png",
+        "target": "tests/fixtures/legacy/bearing/thermal_plots/orifice_thermal_comparison.png",
+        "bytes": 308014,
+        "sha256": "d5a655d34e10f084476ca88f730d8d2049a5c96361018c705f45727eb2430e28"
+      }
+    ]
+  }
+}

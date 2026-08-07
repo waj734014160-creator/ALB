@@ -38,13 +38,12 @@
 | 路径 | 职责 |
 | --- | --- |
 | `ALB/` | 0.4 稳定包代码，普通用户从根 facade 调用；实现按 contracts、core、config、physics、control、dynamics、surrogate、systems、infrastructure 和 workflows 分层。 |
-| `tests/` | 唯一 pytest 收集树；包含单元、集成、精确回归和工程验证。 |
+| `tests/` | 唯一测试树；包含单元、集成、精确回归、工程验证，以及不参与收集的 `fixtures/legacy/` 历史资产。 |
 | `tools/` | benchmarks、diagnostics、docs、manual、migrations、reference 和 validation 工具。 |
 | `refs/` | 不可覆盖的行为参考、固定输入和历史回归资产。 |
 | `docs/` | 稳定说明、公共文档站点源码、生成式 API 参考、当前状态、迁移资料、run 规则和维护文档；站点输出 `site/` 不跟踪。 |
 | `scripts/` | 仓库维护脚本；代码注释和 CLI help 使用英文。 |
 | `paper_config/` | 仍由本项目跟踪的稳定论文调用配置资产，不存放论文任务运行状态。 |
-| `test/` | 从旧测试树保留的图件和轻量配置；不在 `pyproject.toml` 的 pytest `testpaths` 中。 |
 | `pyproject.toml` | Python 版本、核心依赖、领域 extras、CLI、构建和测试配置。 |
 | `AGENTS.md` | 代理环境、编码、文档边界和远程操作规则。 |
 

@@ -65,10 +65,12 @@ include = ["ALB", "ALB.*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-p", "no:cacheprovider"]
+cache_dir = ".cache/pytest"
 
 [tool.mypy]
 python_version = "3.10"
 strict = true
+cache_dir = ".cache/mypy"
 files = [
     "ALB/contracts",
     "ALB/core",
@@ -95,3 +97,6 @@ files = [
     "tools/validation/run_release_acceptance_0_4_2.py",
 ]
 exclude = ["ALB/core/fem", "ALB/core/numerics"]
+
+[tool.ruff]
+cache-dir = ".cache/ruff"

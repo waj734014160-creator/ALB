@@ -17,7 +17,7 @@
 ## 分类原则
 
 - `ALB/` 是稳定 package 边界；领域代码不得复制到兄弟项目。
-- `tests/` 是唯一 pytest 收集树；`test/` 不再作为正式测试目录。
+- `tests/` 是唯一测试树；仓库根目录不再保留并行的 `test/`。
 - 原始证据优先保留。图、CSV、JSON、日志、checkpoint 和 pickle 不因文档整理而删除。
 - 生成物与源码分离。缓存、wheel、隔离安装和运行输出不得成为 package import 依赖。
 - 当前 `git status` 中与任务无关的修改视为用户工作，未经明确授权不暂存、不移动、不覆盖。
@@ -35,7 +35,7 @@
 | 包和测试配置 | `pyproject.toml`、`.editorconfig`、`.gitignore` | 保留；`testpaths` 只能指向 `tests`。 |
 | 维护脚本 | `scripts/` | 保留；注释、docstring 和 CLI help 使用英文。 |
 | 稳定调用配置 | `paper_config/` | 保留；只存稳定配置，不写论文实时任务状态。 |
-| 历史图件和配置 | `test/bearing/_gas_bearing/`、`test/bearing/_thermal_plots/full_vs_half_coupling.png`、`test/bearing/alb_fuzzy/dynamic_config/` | 作为迁移后遗留资产保留；不参与 pytest 收集，清理需单独确认。两张会被本地运行反复覆盖的 thermal 图已改为 local-only。 |
+| 历史测试资产 | `tests/fixtures/legacy/bearing/` | 保存从旧 `test/` 归并的气膜图件、热耦合图件和 Fuzzy ALB 配置；不参与 pytest 收集。两张会被本地运行反复覆盖的 thermal 图保持 local-only。 |
 
 ## 测试与工具边界
 
@@ -45,6 +45,7 @@
 | 多组件和 IO 边界测试 | `tests/integration/` | 使用临时目录，不写 tracked 文件。 |
 | 冻结行为等价 | `tests/regression/` | 对 v1 数组使用精确相等；不以放宽容差掩盖漂移。 |
 | 架构、物理和发布验收 | `tests/validation/` | 包含 import、optional dependency、wheel、迁移、时序和工程门禁。 |
+| 历史测试资产 | `tests/fixtures/legacy/` | 只保存迁移后仍需保留的图件和轻量配置；不是测试模块，也不得作为测试输出目录。 |
 | 自动诊断 | `tools/diagnostics/` | 人工触发；输出必须去 ignored/临时目录。 |
 | API 与站点文档生成 | `tools/docs/`、`docs/api/`、`docs/site/`、`mkdocs.yml` | 从根公开接口、配置字段和高级 namespace 显式导出生成稳定参考；`--check` 不写文件并纳入 pytest，`site/` 是 ignored 可再生输出。 |
 | 手动 GUI/绘图 | `tools/manual/` | 不由 pytest 自动运行。 |
@@ -59,7 +60,7 @@
 
 | 类别 | 常见路径 | 策略 |
 | --- | --- | --- |
-| Python 缓存 | `**/__pycache__/`、`*.pyc`、`.pytest_cache/` | 可再生；保持 ignored。 |
+| Python 与开发工具缓存 | `**/__pycache__/`、`*.pyc`、`.cache/{pytest,mypy,ruff}/` | 可再生；统一存放在根目录 `.cache/` 并保持 ignored。 |
 | 构建产物 | `dist/`、`build/`、`*.egg-info/` | 可再生；发布前核对 wheel digest，通常不提交二进制 wheel。 |
 | 本地验证环境 | `outputs/.devtools/`、`outputs/wheel_smoke/` | 可再生；保持 ignored，不作为运行时依赖。 |
 | 训练/计算输出 | `outputs/`、模型目录、远程日志目录 | 原始证据；默认不删除，按所属项目状态文档定位。 |
@@ -72,12 +73,13 @@
 
 以下内容按用户确认保留在本机，但不再进入 Git 工作树状态或后续提交：
 
-- `test/bearing/_thermal_plots/alb_thermal_4pads.png`
-- `test/bearing/_thermal_plots/orifice_thermal_comparison.png`
+- `tests/fixtures/legacy/bearing/thermal_plots/alb_thermal_4pads.png`
+- `tests/fixtures/legacy/bearing/thermal_plots/orifice_thermal_comparison.png`
 - `.codex/`
-- `test/control/LQG/`
+- `tools/manual/control/LQG/albnn_rotor0_lqg_small_signal.py`
+- `tools/manual/control/LQG/output/`
 
-两张 thermal 图从 tracked 集合解除，但本地文件不删除；可从 `v0.2.0` 或更早提交恢复历史版本。`.codex/` 和 LQG 脚本/输出继续原地保留。以上路径均由根 `.gitignore` 的精确规则覆盖，不应再被误报为测试副作用。
+两张 thermal 图从 tracked 集合解除但本地文件不删除；可从 `v0.2.0` 或更早提交恢复历史版本。`.codex/` 保持原位，LQG 本地脚本和输出归入 `tools/manual/control/LQG/`。以上路径均由根 `.gitignore` 的精确规则覆盖，不应再被误报为测试副作用。
 
 ## 外部项目归属
 
