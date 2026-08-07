@@ -21,9 +21,9 @@ from ALB.config import (
     NodimALBConfig,
     NodimOrificeConfig,
     NodimPadConfig,
+    StaticServoConfig,
     TankConfig,
     ThermalConfig,
-    TransferFunctionServoConfig,
 )
 from ALB.contracts import (
     BearingInput,
@@ -128,11 +128,7 @@ def config_from_payload(
             ps=payload["ps"],
             p0=payload["p0"],
         ),
-        servo_config=TransferFunctionServoConfig(
-            dt=payload["dt"],
-            numerator=(1.0,),
-            denominator=(1.0,),
-        ),
+        servo_config=StaticServoConfig(dt=payload["dt"]),
         tank_config=TankConfig(
             xrange=payload["xrange"],
             zrange=payload["zrange"],

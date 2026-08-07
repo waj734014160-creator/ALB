@@ -9,12 +9,14 @@ from ALB.config import (
     FuzzyPIDConfig,
     NodimALBConfig,
     SecondOrderServoConfig,
+    StaticServoConfig,
     TransferFunctionServoConfig,
 )
 from ALB.control.fuzzy import FuzzyPID
 from ALB.control.pid import PID
 from ALB.control.valve import (
     second_order_servovalve,
+    static_sv,
     transfer_function_servovalve,
 )
 from ALB.physics.bearing.solver import _build_liquid_film_runtime
@@ -71,6 +73,8 @@ def _servovalves(config: NodimALBConfig):
             )
             for _ in range(2)
         ]
+    if isinstance(source, StaticServoConfig):
+        return [static_sv(source.dt) for _ in range(2)]
     raise TypeError("unknown active-bearing servovalve configuration")
 
 

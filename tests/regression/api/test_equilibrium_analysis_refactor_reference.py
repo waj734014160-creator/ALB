@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-from copy import deepcopy
 import inspect
 import json
 from pathlib import Path
@@ -26,25 +25,13 @@ _REFERENCE_NPZ = (
 )
 
 
-def _current_config_spec(case: dict) -> dict:
-    """Translate frozen legacy valve input to the current public contract."""
-    spec = deepcopy(case["config_spec"])
-    if spec.get("valve", {}).get("model") == "static":
-        spec["valve"] = {
-            "model": "transfer_function",
-            "numerator": [1.0],
-            "denominator": [1.0],
-        }
-    return spec
-
-
 @pytest.mark.parametrize("case_name", ["liquid_film", "active_lubricated"])
 def test_equilibrium_analysis_matches_pre_refactor_reference_exactly(
     case_name: str,
 ) -> None:
     metadata = json.loads(_REFERENCE_JSON.read_text(encoding="utf-8"))
     case = metadata["cases"][case_name]
-    bearing = ALB.build_bearing(ALB.BearingConfig(_current_config_spec(case)))
+    bearing = ALB.build_bearing(ALB.BearingConfig(case["config_spec"]))
     result = ALB.EquilibriumSolver(
         bearing,
         ALB.EquilibriumOptions(**case["options"]),
@@ -69,7 +56,7 @@ def test_equilibrium_analysis_matches_pre_refactor_reference_exactly(
 def test_bearing_analysis_delegates_to_public_equilibrium_solver() -> None:
     metadata = json.loads(_REFERENCE_JSON.read_text(encoding="utf-8"))
     case = metadata["cases"]["liquid_film"]
-    bearing = ALB.build_bearing(ALB.BearingConfig(_current_config_spec(case)))
+    bearing = ALB.build_bearing(ALB.BearingConfig(case["config_spec"]))
     result = bearing.analysis.find_equilibrium(
         case["load"],
         case["initial_displacement"],
@@ -90,7 +77,7 @@ def test_bearing_analysis_delegates_to_public_equilibrium_solver() -> None:
 def test_active_lubricated_equilibrium_supports_multiple_evaluations() -> None:
     metadata = json.loads(_REFERENCE_JSON.read_text(encoding="utf-8"))
     case = metadata["cases"]["active_lubricated"]
-    bearing = ALB.build_bearing(ALB.BearingConfig(_current_config_spec(case)))
+    bearing = ALB.build_bearing(ALB.BearingConfig(case["config_spec"]))
     load = np.asarray(case["load"], dtype=float) * 0.9
 
     result = ALB.EquilibriumSolver(

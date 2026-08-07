@@ -7,6 +7,7 @@ from .control import (
     LQGConfig,
     PIDConfig,
     SecondOrderServoConfig,
+    StaticServoConfig,
     TransferFunctionServoConfig,
 )
 from .film import FPBConfig, HydConfig, NodimPadConfig
@@ -39,6 +40,7 @@ __all__ = [
     "PIDConfig",
     "ResolvedTimeGrid",
     "SecondOrderServoConfig",
+    "StaticServoConfig",
     "TankConfig",
     "ThermalConfig",
     "TimeGridConfig",

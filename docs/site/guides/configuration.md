@@ -20,7 +20,7 @@ profile 使用 `kind: "bearing_profile"`。include 按顺序合并，本地 `spe
 
 ## 主动轴承伺服阀
 
-0.4.5 的主动轴承只接受两种阀配置。标准二阶阀直接使用 Hz：
+0.4.5 的主动轴承接受三种阀配置。标准二阶阀直接使用 Hz：
 
 ```json5
 valve: {
@@ -28,6 +28,14 @@ valve: {
   natural_frequency_hz: 166.0,
   damping_ratio: 0.7,
   delay: 0.0,
+}
+```
+
+无动态响应的单位增益静态阀不需要额外参数：
+
+```json5
+valve: {
+  model: "static",
 }
 ```
 
@@ -43,7 +51,7 @@ valve: {
 
 `transfer_function` 的分子已经包含增益及任何有理延迟近似，不能再额外设置
 `delay`。旧字段 `response_time`、`third_order_time_constant` 以及旧模型名
-`third_order`、`static` 均由严格配置边界拒绝。
+`third_order` 均由严格配置边界拒绝；`static` 只允许 `model` 字段。
 
 ## 程序化 override 与 sweep
 

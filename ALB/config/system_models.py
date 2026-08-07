@@ -11,6 +11,7 @@ from .control_models import (
     FuzzyPIDConfig,
     PIDConfig,
     SecondOrderServoConfig,
+    StaticServoConfig,
     TransferFunctionServoConfig,
 )
 from .film_models import FPBConfig, NodimPadConfig
@@ -64,11 +65,15 @@ def _normalize_alb_common(config) -> None:
         raise ValueError("control_mode is invalid")
     if not isinstance(
         config.servo_config,
-        (SecondOrderServoConfig, TransferFunctionServoConfig),
+        (
+            SecondOrderServoConfig,
+            StaticServoConfig,
+            TransferFunctionServoConfig,
+        ),
     ):
         raise TypeError(
-            "servo_config must be SecondOrderServoConfig or "
-            "TransferFunctionServoConfig"
+            "servo_config must be SecondOrderServoConfig, "
+            "StaticServoConfig, or TransferFunctionServoConfig"
         )
     if config.control_mode in {"uncontrolled", "external_spool"}:
         if config.controller_config is not None:
@@ -99,6 +104,7 @@ class ALBConfig(ConfigData):
     pad_config: FPBConfig = field(default_factory=FPBConfig)
     servo_config: Union[
         SecondOrderServoConfig,
+        StaticServoConfig,
         TransferFunctionServoConfig,
     ] = field(default_factory=SecondOrderServoConfig)
     orifice_config: OrificeConfig = field(default_factory=OrificeConfig)
@@ -138,6 +144,8 @@ class ALBConfig(ConfigData):
 
         if isinstance(self.servo_config, SecondOrderServoConfig):
             return "second_order"
+        if isinstance(self.servo_config, StaticServoConfig):
+            return "static"
         return "transfer_function"
 
     def to_dict(self) -> dict:
@@ -181,6 +189,7 @@ class NodimALBConfig(ConfigData):
     orifice_config: NodimOrificeConfig = field(default_factory=NodimOrificeConfig)
     servo_config: Union[
         SecondOrderServoConfig,
+        StaticServoConfig,
         TransferFunctionServoConfig,
     ] = field(default_factory=SecondOrderServoConfig)
     tank_config: TankConfig = field(default_factory=TankConfig)
@@ -206,6 +215,8 @@ class NodimALBConfig(ConfigData):
 
         if isinstance(self.servo_config, SecondOrderServoConfig):
             return "second_order"
+        if isinstance(self.servo_config, StaticServoConfig):
+            return "static"
         return "transfer_function"
 
     def to_dict(self) -> dict:

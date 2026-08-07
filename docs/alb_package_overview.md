@@ -100,10 +100,11 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 独立 runtime，不污染当前轴承状态。转子轴承仿真默认保留全部已提交步骤；
 只有显式 `HistoryPolicy` 才能降采样或使用 ring buffer。
 
-0.4.5 的主动轴承公开阀配置只接受 `second_order` 和 `transfer_function`。
-前者直接使用 `natural_frequency_hz`、`damping_ratio` 和可选 `delay`；后者直接
-使用按连续时间 `s` 降幂排列的 `numerator` / `denominator` 多项式系数。内部
-静态阀仍服务于静平衡和直接阀芯路径，但不再是第三种 JSON5 配置接口。
+0.4.5 的主动轴承公开阀配置接受 `second_order`、`static` 和
+`transfer_function`。二阶阀直接使用 `natural_frequency_hz`、
+`damping_ratio` 和可选 `delay`；静态阀是无参数、无记忆的单位增益模型；
+传递函数阀直接使用按连续时间 `s` 降幂排列的 `numerator` / `denominator`
+多项式系数。
 
 0.4.1 的静平衡保留专用阻尼 Newton、冻结 Jacobian 和固定刚度回退算法；
 动态系数由同一旋转椭圆自动生成正反涡动并使用复数识别；谐波线性化使用压力

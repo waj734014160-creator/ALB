@@ -8,8 +8,12 @@ import control
 import numpy as np
 import pytest
 
+import ALB
+from ALB.api.building import _active_config
+from ALB.config import StaticServoConfig
 from ALB.control.valve import (
     second_order_servovalve,
+    static_sv,
     transfer_function_servovalve,
 )
 from tools.reference.generate_servo_interface_0_4_5_reference import (
@@ -19,6 +23,7 @@ from tools.reference.generate_servo_interface_0_4_5_reference import (
 
 
 REFERENCE = Path("refs/servo_interface_0_4_5_reference_v1.npz")
+EXAMPLE = Path("docs/api/examples/active_lubricated_pid.json5")
 
 
 def _equivalent_valves() -> dict[str, object]:
@@ -59,3 +64,20 @@ def test_new_servo_interfaces_match_pre_0_4_5_reference_exactly(
 
     for array_name, values in actual.items():
         np.testing.assert_array_equal(values, reference[array_name])
+
+
+def test_public_static_config_matches_frozen_static_reference_exactly() -> None:
+    """Require the restored public static model to retain legacy behavior."""
+
+    spec = ALB.load_bearing_config(EXAMPLE).to_dict()["spec"]
+    spec["valve"] = {"model": "static"}
+    resolved = _active_config(ALB.BearingConfig(spec))
+    assert isinstance(resolved.servo_config, StaticServoConfig)
+
+    _, actual = _capture_case(
+        "legacy_static",
+        static_sv(resolved.servo_config.dt),
+    )
+    with np.load(REFERENCE) as reference:
+        for array_name, values in actual.items():
+            np.testing.assert_array_equal(values, reference[array_name])

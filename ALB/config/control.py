@@ -5,6 +5,7 @@ from .control_models import (
     LQGConfig,
     PIDConfig,
     SecondOrderServoConfig,
+    StaticServoConfig,
     TransferFunctionServoConfig,
 )
 
@@ -13,5 +14,6 @@ __all__ = [
     "LQGConfig",
     "PIDConfig",
     "SecondOrderServoConfig",
+    "StaticServoConfig",
     "TransferFunctionServoConfig",
 ]

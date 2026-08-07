@@ -31,10 +31,10 @@
 | [ADR-0005](0005-bearing-unit-adapter.md) | Accepted | 轴承单位换算、local context、primitive descriptor 和转换方向元数据 |
 | [ADR-0006](0006-alb-0-4-no-legacy-friendly-api.md) | Accepted | 0.4 无 legacy、友好 facade、严格配置、不可变 simulation 和发布门禁 |
 | [ADR-0007](0007-preserve-validated-numerical-algorithms.md) | Accepted | 接口重构保留已验证数值算法、双侧参考条件和 0.4.1 数值门禁 |
-| [ADR-0008](0008-servovalve-public-configuration.md) | Accepted | 0.4.5 二阶 Hz 参数与任意传递函数两类伺服阀公开配置 |
+| [ADR-0008](0008-servovalve-public-configuration.md) | Accepted | 0.4.5 二阶 Hz、静态与任意传递函数三类伺服阀公开配置 |
 
 ADR-0006 替代 ADR-0001。ADR-0002 至 ADR-0005 的失败、提交、记录和单位原则
 继续约束 0.4 内部 runtime；当前用户接口以 `docs/interface_architecture.md` 和
 `docs/alb_albnn_quickstart.md` 为准。ADR-0007 补充 ADR-0006 的数值算法保留
-边界；ADR-0008 固定 0.4.5 的两类伺服阀配置。Accepted 表示决策已采用，
+边界；ADR-0008 固定 0.4.5 的三类伺服阀配置。Accepted 表示决策已采用，
 不等于发布验收已通过。

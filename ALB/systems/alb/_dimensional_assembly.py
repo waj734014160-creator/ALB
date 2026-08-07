@@ -21,6 +21,7 @@ from ALB.config import (
     OrificeConfig,
     PIDConfig,
     SecondOrderServoConfig,
+    StaticServoConfig,
     TankConfig,
     TransferFunctionServoConfig,
 )
@@ -63,6 +64,7 @@ class _DimensionalActiveAssembler:
         )
         self.servo_config: Union[
             SecondOrderServoConfig,
+            StaticServoConfig,
             TransferFunctionServoConfig,
             None,
         ] = (
@@ -95,7 +97,11 @@ class _DimensionalActiveAssembler:
 
     def set_servo_config(
         self,
-        config: Union[SecondOrderServoConfig, TransferFunctionServoConfig],
+        config: Union[
+            SecondOrderServoConfig,
+            StaticServoConfig,
+            TransferFunctionServoConfig,
+        ],
     ):
         self.servo_config = config
         return self
@@ -154,6 +160,9 @@ class _DimensionalActiveAssembler:
                 self.servo_config.numerator,
                 self.servo_config.denominator,
             )
+        elif isinstance(self.servo_config, StaticServoConfig):
+            sv_x = static_sv(self.servo_config.dt)
+            sv_y = static_sv(self.servo_config.dt)
         else:
             raise TypeError("Unknown servovalve configuration type")
 

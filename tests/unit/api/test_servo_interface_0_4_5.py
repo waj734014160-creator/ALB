@@ -12,6 +12,7 @@ import ALB
 from ALB.api.building import _active_config
 from ALB.config import (
     SecondOrderServoConfig,
+    StaticServoConfig,
     TransferFunctionServoConfig,
 )
 
@@ -76,6 +77,21 @@ def test_transfer_function_public_config_builds_and_calculates() -> None:
     assert np.all(np.isfinite(result.force))
 
 
+def test_static_json_builds_memoryless_unity_gain_valves() -> None:
+    spec = _active_spec()
+    spec["valve"] = {"model": "static"}
+
+    config = ALB.BearingConfig(spec)
+    resolved = _active_config(config)
+    bearing = ALB.build_bearing(config)
+    result = bearing.calculate(displacement=(0.0, 0.0), time=0.0)
+
+    assert isinstance(resolved.servo_config, StaticServoConfig)
+    assert resolved.valve_model == "static"
+    assert result.force.shape == (2,)
+    assert np.all(np.isfinite(result.force))
+
+
 @pytest.mark.parametrize(
     "valve",
     [
@@ -91,6 +107,7 @@ def test_transfer_function_public_config_builds_and_calculates() -> None:
             "model": "transfer_function",
             "numerator": [1.0],
         },
+        {"model": "static", "delay": 0.0},
         {
             "model": "transfer_function",
             "numerator": [1.0, 0.0],
@@ -114,7 +131,6 @@ def test_transfer_function_public_config_builds_and_calculates() -> None:
             "denominator": [1.0],
         },
         {"model": "third_order"},
-        {"model": "static"},
     ],
 )
 def test_invalid_or_removed_valve_contracts_are_rejected(valve: dict) -> None:

@@ -74,10 +74,10 @@
 - 0.4.4 将已有 `ALB.api.SCHEMA_VERSION` 显式提升为根入口
   `ALB.SCHEMA_VERSION`；包版本为 `0.4.4`，JSON5 schema 与 surrogate package
   格式仍为 `0.4.0`，不改变配置、数值或制品合同。
-- 0.4.5 的主动轴承 JSON5 阀配置只接受 `second_order` 和
+- 0.4.5 的主动轴承 JSON5 阀配置接受 `second_order`、`static` 和
   `transfer_function`。二阶阀直接使用 `natural_frequency_hz`、
-  `damping_ratio` 和可选 `delay`；任意高阶阀直接使用连续时间分子/分母
-  多项式系数。内部静态阀继续服务于静平衡和直接阀芯路径。
+  `damping_ratio` 和可选 `delay`；静态阀为无参数单位增益模型；任意高阶阀
+  直接使用连续时间分子/分母多项式系数。
 - SURROGATE_TRAIN 迁移已形成独立本地提交 `70934ae`。
 - PAPER_WORK 在修改前保存 150 个声明活跃文件；清单摘要为
   `89663a1c3f093d7478efe3df3d96677a86556fd8f0edb4a3c9f6adbd7f1f98af`，
@@ -158,11 +158,11 @@
   pytest 为 `414 passed, 13 skipped, 10 subtests passed`。27 个根符号的生成
   漂移检查、严格 MkDocs 构建和 `0.4.4/0.4.0` 双版本 import smoke 均通过。
 - 0.4.5 伺服阀接口、配置、既有分析参考和文档示例目标组为
-  `47 passed, 10 subtests passed`；完整 pytest 为
-  `433 passed, 13 skipped, 10 subtests passed`。修改前参考覆盖四组阀模型、
-  43 个数组；新二阶/传递函数接口的连续矩阵、离散矩阵和固定命令响应逐元素
-  精确相等。23 个 strict mypy target 零错误，生成参考漂移检查与严格 MkDocs
-  构建通过；PAPER_WORK 的共享主动轴承配置已迁移为 166 Hz 二阶阀。
+  `52 passed, 10 subtests passed`；完整 pytest 为
+  `435 passed, 13 skipped, 10 subtests passed`。修改前参考覆盖四组阀模型、
+  43 个数组；二阶、静态和传递函数接口的连续矩阵、离散矩阵和固定命令响应
+  逐元素精确相等。23 个 strict mypy target 零错误，生成参考漂移检查与严格
+  MkDocs 构建通过；PAPER_WORK 的共享主动轴承配置已迁移为 166 Hz 二阶阀。
 
 ## 当前风险与边界
 

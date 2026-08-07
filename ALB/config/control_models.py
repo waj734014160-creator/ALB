@@ -73,6 +73,18 @@ class SecondOrderServoConfig(ConfigData):
 
 
 @dataclass
+class StaticServoConfig(ConfigData):
+    """Memoryless unity-gain servovalve configuration."""
+
+    dt: float = 6.667e-4
+
+    def __post_init__(self) -> None:
+        self.dt = _finite_real("dt", self.dt)
+        if self.dt <= 0.0:
+            raise ValueError("dt must be > 0")
+
+
+@dataclass
 class TransferFunctionServoConfig(ConfigData):
     """Continuous-time SISO servovalve defined by polynomial coefficients.
 
@@ -189,6 +201,7 @@ class FuzzyPIDConfig(ConfigData):
 
 __all__ = [
     'SecondOrderServoConfig',
+    'StaticServoConfig',
     'TransferFunctionServoConfig',
     'PIDConfig',
     'LQGConfig',

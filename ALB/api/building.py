@@ -12,6 +12,7 @@ from ALB.config.control_models import (
     FuzzyPIDConfig,
     PIDConfig,
     SecondOrderServoConfig,
+    StaticServoConfig,
     TransferFunctionServoConfig,
 )
 from ALB.config.film_models import FPBConfig, HydConfig, NodimPadConfig
@@ -187,7 +188,11 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
     valve_source = config.spec["valve"]
     assert isinstance(valve_source, Mapping)
     valve_model = str(valve_source["model"])
-    valve: SecondOrderServoConfig | TransferFunctionServoConfig
+    valve: (
+        SecondOrderServoConfig
+        | StaticServoConfig
+        | TransferFunctionServoConfig
+    )
     if valve_model == "second_order":
         valve = SecondOrderServoConfig(
             dt=float(config.spec["time_step"]),
@@ -197,7 +202,7 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
             damping_ratio=float(valve_source["damping_ratio"]),
             delay=float(valve_source.get("delay", 0.0)),
         )
-    else:
+    elif valve_model == "transfer_function":
         valve = TransferFunctionServoConfig(
             dt=float(config.spec["time_step"]),
             numerator=tuple(
@@ -207,6 +212,8 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
                 float(value) for value in valve_source["denominator"]
             ),
         )
+    else:
+        valve = StaticServoConfig(dt=float(config.spec["time_step"]))
     control_source = config.spec["control"]
     assert isinstance(control_source, Mapping)
     mode = str(control_source["mode"])

@@ -24,8 +24,8 @@ from ALB.config import (
     FPBConfig,
     NodimALBConfig,
     OrificeConfig,
+    StaticServoConfig,
     TankConfig,
-    TransferFunctionServoConfig,
 )
 from ALB.contracts import (
     BearingInput,
@@ -59,11 +59,7 @@ def _dimensional_config(kind: str) -> ALBConfig:
             max_iter=80,
             error_set=1.0e-6,
         ),
-        servo_config=TransferFunctionServoConfig(
-            dt=DT,
-            numerator=(1.0,),
-            denominator=(1.0,),
-        ),
+        servo_config=StaticServoConfig(dt=DT),
         orifice_config=OrificeConfig(),
         tank_config=TankConfig(),
         controller_config=None,

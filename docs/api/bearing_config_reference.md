@@ -166,6 +166,7 @@
 - `valve.model: second_order`：必须输入 `natural_frequency_hz`（Hz）和
   `damping_ratio`（1），可选 `delay`（s，缺省 `0`）。运行时使用
   `tw = 1 / (2*pi*natural_frequency_hz)` 保持既有二阶传递函数。
+- `valve.model: static`：无记忆、单位增益阀，只允许 `model` 字段。
 - `valve.model: transfer_function`：必须输入 `numerator` 和 `denominator`；
   两者都是按连续时间变量 `s` 降幂排列的有限实数多项式系数。分子包含完整
   增益及任何有理延迟近似，不再接受独立 `delay`。传递函数必须因果且 proper，

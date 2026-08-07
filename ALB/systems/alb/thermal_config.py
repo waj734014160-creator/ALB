@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import warnings
 
-from ALB.config import ThermalConfig, TransferFunctionServoConfig
+from ALB.config import (
+    StaticServoConfig,
+    ThermalConfig,
+    TransferFunctionServoConfig,
+)
 
 
 def resolve_alb_thermal_config(
@@ -33,8 +37,11 @@ def resolve_alb_thermal_config(
     resolved = ThermalConfig.from_dict(thermal_args)
 
     static_servo = (
-        isinstance(alb_config.servo_config, TransferFunctionServoConfig)
-        and alb_config.servo_config.is_static
+        isinstance(alb_config.servo_config, StaticServoConfig)
+        or (
+            isinstance(alb_config.servo_config, TransferFunctionServoConfig)
+            and alb_config.servo_config.is_static
+        )
     )
     if static_servo and resolved.transient_enabled:
         warnings.warn(

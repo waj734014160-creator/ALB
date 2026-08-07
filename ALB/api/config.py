@@ -30,7 +30,7 @@ _BEARING_FAMILIES = {
 }
 _UNIT_SYSTEMS = {"dimensional", "nondimensional"}
 _CONTROL_MODES = {"pid", "fuzzy_pid", "uncontrolled", "external_spool"}
-_VALVE_MODELS = {"second_order", "transfer_function"}
+_VALVE_MODELS = {"second_order", "static", "transfer_function"}
 
 _THERMAL_FIELDS = {
     "t_in",
@@ -314,7 +314,8 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
     model = valve.get("model")
     if model not in _VALVE_MODELS:
         raise ConfigurationError(
-            "spec.valve.model must be second_order or transfer_function"
+            "spec.valve.model must be second_order, static, or "
+            "transfer_function"
         )
     if model == "second_order":
         _reject_unknown(
@@ -335,7 +336,7 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
             valve["delay"], "spec.valve.delay"
         ) < 0.0:
             raise ConfigurationError("spec.valve.delay must be >= 0")
-    else:
+    elif model == "transfer_function":
         _reject_unknown(
             valve,
             {"model", "numerator", "denominator"},
@@ -358,6 +359,8 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
             raise ConfigurationError(
                 "spec.valve transfer function must be proper"
             )
+    else:
+        _reject_unknown(valve, {"model"}, "spec.valve")
 
     control = _require_mapping(spec.get("control"), "spec.control")
     _reject_unknown(

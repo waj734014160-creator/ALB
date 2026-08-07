@@ -122,11 +122,7 @@ def _active_linearization_config() -> ALB.BearingConfig:
                 "positions": [[0.5, 0.25], [0.5, 0.5], [0.5, 0.75]],
             },
             "tank": {},
-            "valve": {
-                "model": "transfer_function",
-                "numerator": [1.0],
-                "denominator": [1.0],
-            },
+            "valve": {"model": "static"},
             "control": {"mode": "external_spool"},
             "transforms": {},
             "thermal": None,
