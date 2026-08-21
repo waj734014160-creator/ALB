@@ -78,7 +78,7 @@
 | `ALB_MAIN/docs/remote_workstation_connection.md` | 稳定远程操作手册 | 远程连接、Task Scheduler、SSH、runner 和 monitor 机制。 | 连接事实、稳定命令模式、wrapper 归属、凭据处理规则、可复用操作经验。 | 当前任务进度、PID、最新 loss、活跃 ETA、单次 run 指标。 | 远程机制、路径、wrapper 或凭据处理规则变化时。 |
 | `ALB_MAIN/docs/daily_summary_log.md` | 项目级日常维护摘要 | 文档维护和稳定项目组织决策的简洁日记录。 | 日常维护摘要、清理确认、稳定文档/代码组织决策。 | 实时任务状态、原始日志堆叠、应归入 `albnn_training_log.md` 的详细 ALBNN 指标。 | 日常维护 pass 或显式项目摘要请求。 |
 | `ALB_MAIN/docs/daily_maintenance/doc_maintenance_audit_YYYYMMDD.md` | 单次日常审计证据 | 一次计划文档维护的检查证据。 | 已检查文件、决策、无变更原因、陈旧候选、清理确认清单。 | 源码编辑、运行状态归属、长期项目手册内容。 | 每次计划审计创建或刷新。 |
-| `ALB_MAIN/docs/formula/thermal_model.md` | 稳定公式和实现参考 | 热压力模型、离散化和实现映射的公式级说明。 | 控制方程、无量纲形式、FEM 离散、边界条件解释、代码到公式映射。 | 实时运行状态、单次 run 指标、任务 PID、原始日志。 | 热压力方程、离散方式或实现映射变化时。 |
+| `ALB_MAIN/docs/formula/thermal_model.md` | 稳定公式和实现参考 | 压力-流量-温度-黏度耦合模型、离散化和实现映射的完整公式说明。 | 薄膜速度与流量、Reynolds 方程、孔口质量/焓源、油膜能量方程、无量纲形式、FEM 离散、边界条件和代码映射。 | 实时运行状态、单次 run 指标、任务 PID、原始日志。 | 压力、流量、温度方程、离散方式或实现映射变化时。 |
 | `ALB_MAIN/docs/formula/alb_harmonic_linearization.md` | 稳定公式、离散线性化和数值计算参考 | ALB 压力-温度-节流器解析谐波线性化、固定活动集规则与动态系数计算。 | 控制方程、解析一阶展开、固定活动集规则、频域矩阵、量纲换算、稳定数值结果和实现映射。 | 实时运行状态、训练进度、临时日志和移动空化边界描述函数。 | 控制方程、线性化定义、涡动频率比、数值工作点或正式系数变化时。 |
 | `SURROGATE_TRAIN/docs/current_runtime_status.md` | 短期记忆 / 实时状态缓冲区 | 活跃训练、采样、队列和 monitor 工作的唯一实时状态。 | 活跃任务名、PID、最新 loss/进度/ETA、活跃日志路径、检查命令、下一步。 | 耐久经验、完整事故复盘、历史叙事、稳定手册。 | 状态检查、启动、同步、停止或 monitor 运行后。 |
 | `SURROGATE_TRAIN/docs/albnn_training_log.md` | 长期记忆 / 时间顺序日志 | “睡前”维护后沉淀的每日 ALBNN 耐久历史。 | 每日最多一条日期记录：完成事件、关键指标、事故根因、可复现命令、最终结论。 | 实时 tick、最新 loss polling、活跃 PID、活跃 ETA、重复 monitor 快照。 | 默认日常维护时更新，或用户显式要求立即沉淀。 |

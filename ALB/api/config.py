@@ -11,6 +11,8 @@ from typing import Any
 
 import numpy as np
 
+from ALB.config.hydraulics_models import FLOW_PROJECTION_MODES
+
 from .errors import ConfigurationError
 from ._config_fields import (
     DIMENSIONAL_FILM_FIELDS,
@@ -215,6 +217,22 @@ def _validate_film(
                 f"spec.film.{name}",
                 minimum=minimum,
             )
+    explicit_mesh_fields = {"mesh_type", "element_order"}
+    present_mesh_fields = explicit_mesh_fields.intersection(film)
+    if present_mesh_fields and present_mesh_fields != explicit_mesh_fields:
+        raise ConfigurationError(
+            "spec.film.mesh_type and spec.film.element_order must be provided together"
+        )
+    if present_mesh_fields:
+        if film["mesh_type"] not in {"triangular", "quadrilateral"}:
+            raise ConfigurationError(
+                "spec.film.mesh_type must be triangular or quadrilateral"
+            )
+        element_order = _require_integer(
+            film["element_order"], "spec.film.element_order"
+        )
+        if element_order not in {1, 2}:
+            raise ConfigurationError("spec.film.element_order must be 1 or 2")
     positive_names = {
         "rotation_frequency_hz",
         "arc_angle_deg",
@@ -421,6 +439,7 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
         "orifice_length",
         "valve_area",
         "discharge_coefficient",
+        "flow_projection",
     }
     if unit_system == "nondimensional":
         allowed |= {
@@ -429,6 +448,12 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
             "pressure_flow_coefficient",
         }
     _reject_unknown(restrictors, allowed, "spec.restrictors")
+    flow_projection = restrictors.get("flow_projection", "nearest_node")
+    if flow_projection not in FLOW_PROJECTION_MODES:
+        raise ConfigurationError(
+            "spec.restrictors.flow_projection must be nearest_node or "
+            "element_shape"
+        )
     for name in (
         "orifice_diameter",
         "orifice_length",
@@ -535,9 +560,39 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
     if family in {"active_lubricated", "liquid_film", "gas_film"}:
         film = _require_mapping(spec.get("film"), "spec.film")
         _validate_film(film, family=str(family), unit_system=str(unit_system))
+        if "mesh_type" in film and family != "active_lubricated":
+            raise ConfigurationError(
+                "explicit film meshes currently require family='active_lubricated'"
+            )
     if family == "active_lubricated":
         _validate_active_sections(spec)
         _validate_thermal(spec.get("thermal"))
+        if "mesh_type" in film:
+            thermal = spec.get("thermal")
+            if not isinstance(thermal, Mapping):
+                raise ConfigurationError(
+                    "explicit film meshes require steady thermal coupling"
+                )
+            if unit_system != "dimensional":
+                raise ConfigurationError(
+                    "explicit film meshes require dimensional active_lubricated units"
+                )
+            if film.get("solver") != "skfem_newton":
+                raise ConfigurationError(
+                    "explicit film meshes require spec.film.solver='skfem_newton'"
+                )
+            if film.get("continuous_boundary", False):
+                raise ConfigurationError(
+                    "explicit film meshes require nonperiodic continuous_boundary=false"
+                )
+            if thermal.get("transient_enabled", False):
+                raise ConfigurationError(
+                    "explicit film meshes require steady thermal coupling"
+                )
+            if thermal.get("iter_method", "direct") != "direct":
+                raise ConfigurationError(
+                    "explicit film meshes currently require thermal iter_method='direct'"
+                )
     elif family == "liquid_film":
         _validate_liquid_restrictors(spec.get("restrictors"))
         _validate_thermal(spec.get("thermal"))

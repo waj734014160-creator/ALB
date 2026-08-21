@@ -13,7 +13,7 @@
 
 - 包版本：`0.4.5`
 - 公开符号数：`27`
-- 接口表面摘要：`sha256:6ad849e17aa4347f`
+- 接口表面摘要：`sha256:6b1f52aac97b8341`
 - 重新生成：`E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py`
 - 一致性检查：`E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py --check`
 
@@ -28,7 +28,7 @@
 | `AnalysisResult` | 类 | 分析服务返回的不可变通用结果，保存数值结果、诊断元数据和收敛状态。 | `ALB/api/results.py:143` |
 | `Bearing` | 类 | 单个已构建轴承的用户 facade，负责顺序计算、最新结果读取、诊断和独立分析入口。 | `ALB/api/bearing.py:26` |
 | `BearingAnalysis` | 类 | 基于一个 Bearing 配置执行状态隔离的静平衡、轨迹、动态系数和谐波线性化。 | `ALB/api/analysis.py:926` |
-| `BearingConfig` | 类 | 严格校验、深度冻结的 0.4 轴承配置，支持安全覆盖、扫描和序列化。 | `ALB/api/config.py:618` |
+| `BearingConfig` | 类 | 严格校验、深度冻结的 0.4 轴承配置，支持安全覆盖、扫描和序列化。 | `ALB/api/config.py:673` |
 | `BearingMount` | 类 | 把一个不可变轴承配置固定挂载到转子节点，并可附加单位和阀芯命令适配器。 | `ALB/api/simulation.py:150` |
 | `BearingResult` | 类 | 一次成功二维轴承计算的不可变结果，包含力、时间、单位、收敛状态和完整诊断。 | `ALB/api/results.py:42` |
 | `BuildError` | 异常 | 配置已经通过校验，但对应 runtime 无法完成装配时抛出的稳定异常。 | `ALB/api/errors.py:16` |
@@ -48,7 +48,7 @@
 | `bearing_from_file` | 函数 | 读取严格 0.4 JSON5 轴承文档并一步构建可计算轴承。 | `ALB/api/bearing.py:186` |
 | `build_bearing` | 函数 | 从已验证的不可变配置构建一个可直接计算的轴承 facade。 | `ALB/api/bearing.py:175` |
 | `build_simulation` | 函数 | 从已验证的仿真配置构建一次性转子-轴承仿真对象。 | `ALB/api/simulation.py:1145` |
-| `load_bearing_config` | 函数 | 读取严格 UTF-8 0.4 bearing 文档，安全合并受限 include 并完成校验。 | `ALB/api/config.py:854` |
+| `load_bearing_config` | 函数 | 读取严格 UTF-8 0.4 bearing 文档，安全合并受限 include 并完成校验。 | `ALB/api/config.py:909` |
 | `load_simulation_config` | 函数 | 读取严格 0.4 simulation 文档，并解析转子、挂载轴承、时间网格、载荷和历史策略。 | `ALB/api/simulation.py:991` |
 | `simulation_from_file` | 函数 | 读取严格 JSON5 仿真文档并一步构建一次性仿真对象。 | `ALB/api/simulation.py:1151` |
 
@@ -584,7 +584,7 @@ print(bundle.metadata["schema"], manifest)
 
 示例：[程序化配置、参数覆盖与扫描](#example-bearing_programmatic)、[从 JSON5 构建并计算轴承](#example-bearing_from_file)。
 
-源码：`ALB/api/config.py:618`。
+源码：`ALB/api/config.py:673`。
 
 公开数据字段：
 
@@ -1189,7 +1189,7 @@ print(bundle.metadata["schema"], manifest)
 
 示例：[从 JSON5 构建并计算轴承](#example-bearing_from_file)。
 
-源码：`ALB/api/config.py:854`。
+源码：`ALB/api/config.py:909`。
 
 ### `ALB.load_simulation_config(path: 'str | Path') -> 'SimulationConfig'`
 

@@ -24,6 +24,9 @@ class HydConfig(ConfigData):
     lz: float = 2  # LZ, non-dimensional axial length
     nx: int = 59  # NX, number of grids in x direction
     nz: int = 39  # NZ, number of grids in z direction
+    mesh_type: Optional[str] = None
+    element_order: Optional[int] = None
+    triangle_diagonal: str = "default"
     miu: float = 0.0195  # dynamic viscosity of the liquid
     c: float = 80e-6  # c, nominal clearance of the bearing
     r: float = 0.04  # r, radius of the bearing
@@ -64,6 +67,17 @@ class HydConfig(ConfigData):
             raise ValueError("freq must be > 0")
         if self.nx < 2 or self.nz < 2:
             raise ValueError("nx and nz must be >= 2")
+        if (self.mesh_type is None) != (self.element_order is None):
+            raise ValueError("mesh_type and element_order must be provided together")
+        if self.mesh_type is not None:
+            if self.mesh_type not in {"triangular", "quadrilateral"}:
+                raise ValueError(
+                    "mesh_type must be 'triangular' or 'quadrilateral'"
+                )
+            if self.element_order not in {1, 2}:
+                raise ValueError("element_order must be 1 or 2")
+        if self.triangle_diagonal not in {"default", "mirrored"}:
+            raise ValueError("triangle_diagonal must be 'default' or 'mirrored'")
         if self.lx <= 0 or self.lz <= 0:
             raise ValueError("lx and lz must be > 0")
         if self.error_set <= 0:
@@ -112,6 +126,9 @@ class HydConfig(ConfigData):
             "lz",
             "nx",
             "nz",
+            "mesh_type",
+            "element_order",
+            "triangle_diagonal",
             "miu",
             "c",
             "r",

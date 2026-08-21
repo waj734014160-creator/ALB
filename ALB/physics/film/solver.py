@@ -12,7 +12,9 @@ from skfem import (
     Basis,
     BilinearForm,
     ElementQuad1,
+    ElementQuad2,
     ElementTriP1,
+    ElementTriP2,
     LinearForm,
     MeshQuad,
     MeshTri,
@@ -55,6 +57,8 @@ __all__ = [
     "FilmModel",
     "RectFilmElem",
     "RectFilmNode",
+    "SkfemFilmElem",
+    "build_explicit_film_mesh",
     "FilmBoundary",
     "ThicknessModel",
     "NodimNewtonFilm",
@@ -217,6 +221,104 @@ class RectFilmElem(BaseElem):
         pass
 
 
+class SkfemFilmElem(BaseElem):
+    """Native connectivity record for a scikit-fem pressure element.
+
+    Matrix assembly and integration are owned by the shared scikit-fem basis;
+    this lightweight record keeps the historical node/element managers usable
+    by boundaries, coupling code, and diagnostics.
+    """
+
+    matrixs_name = ["ke"]
+    rights_name = ["fe"]
+
+    def __init__(self, nodes, *, lx: float, lz: float):
+        super().__init__(nodes)
+        self.lx = float(lx)
+        self.lz = float(lz)
+
+
+def _explicit_element(mesh_type: str, element_order: int):
+    """Return the supported scikit-fem element for one explicit mesh."""
+
+    if mesh_type == "triangular":
+        return ElementTriP1() if element_order == 1 else ElementTriP2()
+    if mesh_type == "quadrilateral":
+        return ElementQuad1() if element_order == 1 else ElementQuad2()
+    raise ValueError(f"unsupported explicit mesh_type: {mesh_type!r}")
+
+
+def _explicit_mesh(mesh_type: str, x_axis, z_axis, triangle_diagonal: str):
+    """Return one deterministic macro mesh, optionally mirroring triangles."""
+
+    if mesh_type == "quadrilateral":
+        return MeshQuad.init_tensor(x_axis, z_axis)
+    if triangle_diagonal == "default":
+        return MeshTri.init_tensor(x_axis, z_axis)
+    points = np.asarray([(x, z) for x in x_axis for z in z_axis], dtype=float).T
+    nz_nodes = len(z_axis)
+    connectivity = []
+    for i in range(len(x_axis) - 1):
+        for j in range(len(z_axis) - 1):
+            v00 = i * nz_nodes + j
+            v01 = v00 + 1
+            v10 = (i + 1) * nz_nodes + j
+            v11 = v10 + 1
+            connectivity.extend(((v00, v01, v10), (v01, v11, v10)))
+    return MeshTri(points, np.asarray(connectivity, dtype=int).T).oriented()
+
+
+def build_explicit_film_mesh(model):
+    """Build synchronized native and scikit-fem records for an explicit mesh."""
+
+    mesh_type = model.args.get("mesh_type")
+    element_order = model.args.get("element_order")
+    if mesh_type is None or element_order is None:
+        raise ValueError("explicit film mesh fields are not configured")
+
+    nx = int(model.args["nx"])
+    nz = int(model.args["nz"])
+    x_axis = np.linspace(*model.args["x_lim"], nx + 1)
+    z_axis = np.linspace(*model.args["z_lim"], nz + 1)
+    mesh_skfem = _explicit_mesh(
+        str(mesh_type),
+        x_axis,
+        z_axis,
+        str(model.args.get("triangle_diagonal", "default")),
+    )
+    element = _explicit_element(str(mesh_type), int(element_order))
+    basis = Basis(mesh_skfem, element, intorder=8)
+
+    nodes = np.asarray(
+        [RectFilmNode(basis.doflocs[:, index]) for index in range(basis.N)],
+        dtype=object,
+    )
+    lx = float((model.args["x_lim"][1] - model.args["x_lim"][0]) / nx)
+    lz = float((model.args["z_lim"][1] - model.args["z_lim"][0]) / nz)
+    elems = np.asarray(
+        [
+            SkfemFilmElem(nodes[local_dofs], lx=lx, lz=lz)
+            for local_dofs in basis.element_dofs.T
+        ],
+        dtype=object,
+    )
+
+    model.mesh_skfem = mesh_skfem
+    model.basis = basis
+    model._skfem_initialized = True
+    model.args.update(
+        {
+            "integration_order": 8,
+            "actual_element_count": int(mesh_skfem.nelements),
+            "pressure_dofs": int(basis.N),
+            "triangle_diagonal": str(
+                model.args.get("triangle_diagonal", "default")
+            ),
+        }
+    )
+    return nodes, elems
+
+
 def film_args_trans(w, x0, lx, lz, nx, nz, miu, c, r, l, ps, rho, dxt, dyt, vf):
     """
     Transform dimensional film inputs into solver-ready nondimensional arguments.
@@ -312,6 +414,9 @@ class NodimFilmModel(BaseMainModel):
         yct=0.0,
         angle_unit="deg",
         input_args=None,
+        mesh_type=None,
+        element_order=None,
+        triangle_diagonal="default",
         **kwargs,
     ):
         """
@@ -369,6 +474,9 @@ class NodimFilmModel(BaseMainModel):
             "yct": yct,
             "args_nodim": True,
             "angle_unit": angle_unit,
+            "mesh_type": mesh_type,
+            "element_order": element_order,
+            "triangle_diagonal": triangle_diagonal,
         }
         self._all_recalc = True
         # self.delogger_level = kwargs.get('delogger_level', 'debug')
@@ -379,6 +487,28 @@ class NodimFilmModel(BaseMainModel):
         }
         self._save_p = []
         self._save_h = []
+
+    def discretization_metadata(self) -> dict:
+        """Return stable mesh and quadrature metadata for result manifests."""
+
+        explicit = self.args.get("mesh_type") is not None
+        return {
+            "mesh_type": (
+                str(self.args["mesh_type"]) if explicit else "quadrilateral"
+            ),
+            "element_order": int(self.args.get("element_order") or 1),
+            "integration_order": int(self.args.get("integration_order", 0)),
+            "actual_element_count": int(
+                self.args.get(
+                    "actual_element_count",
+                    int(self.args["nx"]) * int(self.args["nz"]),
+                )
+            ),
+            "pressure_dofs": int(self.node_manager.freedoms),
+            "triangle_diagonal": str(
+                self.args.get("triangle_diagonal", "default")
+            ),
+        }
 
 
 class FilmModel(NodimFilmModel):
@@ -755,6 +885,10 @@ class NodimNewtonFilm(FilmModel):
             self._dp = sl.spsolve(J_reg, -Phi)
 
         p = p + self._dp * self.current_damp
+        if self.args.get("mesh_type") is not None:
+            # Explicit meshes expose all high-order DOFs, so project the
+            # complementarity iterate to the admissible pressure set.
+            p = self._reynold_boundary(p)
         self.add_result(p)
 
         self.matrixs["ke_all"] = self.matrixs["ke"].copy()
@@ -909,11 +1043,46 @@ class SkfemNewtonFilm(NewtonFilm):
         # Reuse NewtonFilm behavior and add skfem-specific cache.
         super().__init__(*args, **kwargs)
 
-        self._skfem_initialized = False
-        self.mesh_skfem = None
-        self.basis = None
+        if not hasattr(self, "_skfem_initialized"):
+            self._skfem_initialized = False
+        if not hasattr(self, "mesh_skfem"):
+            self.mesh_skfem = None
+        if not hasattr(self, "basis"):
+            self.basis = None
 
     def _init_skfem(self):
+        mesh_type = self.args.get("mesh_type")
+        element_order = self.args.get("element_order")
+        if mesh_type is not None and element_order is not None:
+            x_axis = np.linspace(*self.args["x_lim"], int(self.args["nx"]) + 1)
+            z_axis = np.linspace(*self.args["z_lim"], int(self.args["nz"]) + 1)
+            self.mesh_skfem = _explicit_mesh(
+                str(mesh_type),
+                x_axis,
+                z_axis,
+                str(self.args.get("triangle_diagonal", "default")),
+            )
+            self.basis = Basis(
+                self.mesh_skfem,
+                _explicit_element(str(mesh_type), int(element_order)),
+                intorder=8,
+            )
+            if self.basis.N != self.node_manager.non:
+                raise ValueError(
+                    "explicit scikit-fem basis does not match native pressure DOFs"
+                )
+            self.args.update(
+                {
+                    "integration_order": 8,
+                    "actual_element_count": int(self.mesh_skfem.nelements),
+                    "pressure_dofs": int(self.basis.N),
+                    "triangle_diagonal": str(
+                        self.args.get("triangle_diagonal", "default")
+                    ),
+                }
+            )
+            self._skfem_initialized = True
+            return
         num_nodes = self.node_manager.non
         coords = np.zeros((2, num_nodes))
 
@@ -1287,15 +1456,39 @@ class FilmPostProcess(BasePostProcess):
     def __init__(self, model: FilmModel):
         super().__init__()
         self.model = model
+        if model.args.get("mesh_type") is not None and model.basis is None:
+            model._init_skfem()
         size = model.args["size"]
         y = [node.coords[0] for node in model.nodes.values()]
         x = [node.coords[1] for node in model.nodes.values()]
         self.X, self.Y = np.array(x), np.array(y)
-        self.X = self.X.reshape(size[0] + 1, size[1] + 1)
-        self.Y = self.Y.reshape(size[0] + 1, size[1] + 1)
+        if model.args.get("mesh_type") is None:
+            self.X = self.X.reshape(size[0] + 1, size[1] + 1)
+            self.Y = self.Y.reshape(size[0] + 1, size[1] + 1)
+        else:
+            _, self.X, self.Y = self._explicit_field_grid(np.zeros_like(self.X))
+
+    def _explicit_field_grid(self, values):
+        """Return one explicit nodal field on its tensor plotting grid."""
+
+        basis = self.model.basis
+        coords = np.asarray(basis.doflocs, dtype=float)
+        x_axis = np.unique(np.round(coords[0], 14))
+        z_axis = np.unique(np.round(coords[1], 14))
+        ix = np.searchsorted(x_axis, np.round(coords[0], 14))
+        iz = np.searchsorted(z_axis, np.round(coords[1], 14))
+        field = np.full((x_axis.size, z_axis.size), np.nan, dtype=float)
+        field[ix, iz] = np.asarray(values, dtype=float).reshape(-1)
+        z_grid, x_grid = np.meshgrid(z_axis, x_axis)
+        return field, z_grid, x_grid
 
     @property
     def p(self):
+        if self.model.args.get("mesh_type") is not None:
+            result, _, _ = self._explicit_field_grid(
+                self.model.results[-1][: self.model.basis.N]
+            )
+            return result
         size = self.model.args["size"]
         result = self.model.results[-1][0 : len(self.model.nodes)].reshape(
             size[0] + 1, size[1] + 1
@@ -1304,6 +1497,11 @@ class FilmPostProcess(BasePostProcess):
 
     @property
     def h(self):
+        if self.model.args.get("mesh_type") is not None:
+            result, _, _ = self._explicit_field_grid(
+                [node.h for node in self.model.nodes.values()]
+            )
+            return result
         size = self.model.args["size"]
         result = np.array([node.h for node in self.model.nodes.values()]).reshape(
             size[0] + 1, size[1] + 1
@@ -1411,12 +1609,23 @@ class FilmPostProcess(BasePostProcess):
 
     def calc_capacity_nodim(self, calc=True):
         if calc:
-            f = np.array([elem.intergral() for elem in self.model.elems.values()])
-            mean_coords = np.array(
-                [elem.mean_coords()[0] for elem in self.model.elems.values()]
-            )
-            fx = (f.dot(np.sin(mean_coords))).sum()
-            fy = -(f.dot(np.cos(mean_coords))).sum()
+            if self.model.args.get("mesh_type") is not None:
+                basis = self.model.basis
+                pressure = basis.interpolate(
+                    np.asarray(self.model.latest_result[: basis.N], dtype=float)
+                )
+                coords = basis.mapping.F(basis.X)
+                fx = float(np.sum(pressure * np.sin(coords[0]) * basis.dx))
+                fy = float(-np.sum(pressure * np.cos(coords[0]) * basis.dx))
+            else:
+                f = np.array(
+                    [elem.intergral() for elem in self.model.elems.values()]
+                )
+                mean_coords = np.array(
+                    [elem.mean_coords()[0] for elem in self.model.elems.values()]
+                )
+                fx = (f.dot(np.sin(mean_coords))).sum()
+                fy = -(f.dot(np.cos(mean_coords))).sum()
             self.postprocess_result["fx"] = fx
             self.postprocess_result["fy"] = fy
             return np.array((fx, fy))
@@ -1482,6 +1691,54 @@ class FilmPostProcess(BasePostProcess):
         """
         model = self.model
         args = model.args
+        if args.get("mesh_type") is not None:
+            basis = model.basis
+            pressure = basis.interpolate(
+                np.asarray(model.latest_result[: basis.N], dtype=float)
+            )
+            h_nodal = np.asarray(
+                [node.h for node in model.node_manager.nodes.values()], dtype=float
+            )
+            h_qp = np.maximum(basis.interpolate(h_nodal), 1.0e-12)
+            miu0 = float(args.get("miu0", args["miu"]))
+            miu_nodal = np.asarray(
+                [
+                    miu0 * float(getattr(node, "miu_ratio", 1.0))
+                    for node in model.node_manager.nodes.values()
+                ],
+                dtype=float,
+            )
+            miu_qp = basis.interpolate(miu_nodal)
+            pressure_shear = (
+                float(args["ps"])
+                * float(args["c"])
+                * float(args["l"])
+                / 4.0
+                * h_qp
+                * pressure.grad[0]
+            )
+            viscous_shear = (
+                miu_qp
+                * float(args["w_rad"])
+                * float(args["r"]) ** 2
+                * float(args["l"])
+                / (2.0 * float(args["c"]) * h_qp)
+            )
+            friction = float(np.sum((pressure_shear + viscous_shear) * basis.dx))
+            if nodim:
+                power = friction * float(args["w_rad"]) * float(args["r"])
+                friction = (
+                    power
+                    * float(args["c"])
+                    / (
+                        np.pi**3
+                        * miu0
+                        * float(args["w_hz"]) ** 2
+                        * float(args["l"])
+                        * (2.0 * float(args["r"])) ** 3
+                    )
+                )
+            return friction
         nx = args["nx"]
         nz = args["nz"]
 

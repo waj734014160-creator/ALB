@@ -4,11 +4,13 @@ import os.path
 import numpy as np
 import pandas as pd
 from scipy.optimize import brentq
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, csr_matrix, issparse
+from skfem import Basis, ElementQuad1, MeshQuad
 
 from ALB.core.component import BaseSimpleModel
 from ALB.core.fem.base import BaseSimpleModels
 from ALB.config import CsoArgs
+from ALB.config.hydraulics_models import normalize_flow_projection
 
 # from ALB.infrastructure.logging import logger
 from ALB.contracts.result_tree import DataFrameResult, SaveTreeNode
@@ -27,21 +29,128 @@ __all__ = [
     "NodimCSOrifice",
     "CSOrifice",
     "CsoArgs",
+    "FilmPointAttachment",
 ]
 
 
-def _get_node(model, position):
-    """
-    Abstract method to be implemented by subclasses.
-    """
+class FilmPointAttachment:
+    """Exact finite-element attachment for one physical supply-hole point."""
+
+    def __init__(self, model, coords):
+        basis = _flow_projection_basis(model)
+        point = np.asarray(coords, dtype=float).reshape(2, 1)
+        if not np.all(np.isfinite(point)):
+            raise ValueError("supply-hole point coordinates must be finite")
+        try:
+            probe = basis.probes(point).tocsr()
+        except ValueError as exc:
+            raise ValueError("supply-hole point is outside the film mesh") from exc
+        if probe.nnz == 0:
+            raise ValueError("supply-hole point is outside the film mesh")
+        weights = np.asarray(probe.data, dtype=float)
+        if not np.all(np.isfinite(weights)):
+            raise ValueError("supply-hole projection weights must be finite")
+        if not np.isclose(np.sum(weights), 1.0, rtol=0.0, atol=1.0e-12):
+            raise ValueError("supply-hole projection weights must sum to one")
+        self.model = model
+        self.coords = point[:, 0].copy()
+        self.indices = probe.indices.copy()
+        self.weights = weights.copy()
+        self.number = int(self.indices[np.argmax(np.abs(self.weights))])
+
+    @property
+    def p(self):
+        """Return pressure interpolated at the attached physical point."""
+
+        values = np.asarray(self.model.latest_result, dtype=float)
+        return float(self.weights @ values[self.indices])
+
+    @property
+    def h(self):
+        """Return film thickness interpolated at the attached physical point."""
+
+        values = np.asarray(
+            [self.model.node_manager.nodes[int(i)].h for i in self.indices],
+            dtype=float,
+        )
+        return float(self.weights @ values)
+
+
+def _flow_projection_basis(model):
+    """Return the pressure basis used to project one supply-hole point."""
+
+    basis = getattr(model, "basis", None)
+    if basis is not None:
+        return basis
+    cached = getattr(model, "_orifice_projection_basis", None)
+    if cached is not None:
+        return cached
+
+    freedom_count = int(model.node_manager.freedoms)
+    coords = np.zeros((2, freedom_count), dtype=float)
+    for index in range(freedom_count):
+        coords[:, index] = model.node_manager.nodes[index].coords
+
+    element_count = int(model.elem_manager.noe)
+    nodes_per_element = len(model.elem_manager.elems[0].mapping)
+    if nodes_per_element != 4:
+        raise ValueError(
+            "element_shape flow projection requires a supported film basis"
+        )
+    connectivity = np.zeros((nodes_per_element, element_count), dtype=int)
+    for index in range(element_count):
+        connectivity[:, index] = model.elem_manager.elems[index].mapping
+    connectivity[[2, 3], :] = connectivity[[3, 2], :]
+    basis = Basis(MeshQuad(coords, connectivity), ElementQuad1())
+    if basis.N != freedom_count:
+        raise ValueError("supply-hole projection basis does not match film DOFs")
+    model._orifice_projection_basis = basis
+    return basis
+
+
+def _attachment_matrix(nodes, freedom_count: int):
+    """Return the hole-by-film projection matrix for node/point attachments."""
+
+    rows = []
+    columns = []
+    values = []
+    for row, node in enumerate(nodes):
+        if isinstance(node, FilmPointAttachment):
+            indices = np.asarray(node.indices, dtype=int)
+            weights = np.asarray(node.weights, dtype=float)
+        else:
+            indices = np.asarray([node.number], dtype=int)
+            weights = np.ones(1, dtype=float)
+        rows.extend([row] * len(indices))
+        columns.extend(indices.tolist())
+        values.extend(weights.tolist())
+    return csr_matrix(
+        (values, (rows, columns)),
+        shape=(len(nodes), int(freedom_count)),
+    )
+
+
+def _map_normalized_position(model, position):
+    """Map one local ``[0, 1]`` position into film coordinates."""
+
     x_lim = model.args["x_lim"]
     y_lim = model.args["z_lim"]
-    position = [
-        position[0] * (x_lim[1] - x_lim[0]) + x_lim[0],
-        position[1] * (y_lim[1] - y_lim[0]) + y_lim[0],
-    ]
-    add_node = model.node_manager.mindistance_search(position)
-    return add_node
+    return np.asarray(
+        [
+            position[0] * (x_lim[1] - x_lim[0]) + x_lim[0],
+            position[1] * (y_lim[1] - y_lim[0]) + y_lim[0],
+        ],
+        dtype=float,
+    )
+
+
+def _get_node(model, position, flow_projection="nearest_node"):
+    """Attach one normalized supply-hole position to the film pressure field."""
+
+    mapped = _map_normalized_position(model, position)
+    if normalize_flow_projection(flow_projection) == "element_shape":
+        return FilmPointAttachment(model, mapped)
+    return model.node_manager.mindistance_search(mapped)
 
 
 def _physical_flow_reference(model):
@@ -347,6 +456,7 @@ class NodimCSOrifice(BaseOrifice):
         p0=0.0,
         q_leak=0.0,
         *args,
+        flow_projection="nearest_node",
         **kwargs,
     ):
         """
@@ -357,9 +467,11 @@ class NodimCSOrifice(BaseOrifice):
         :param ps: nondimensional supply pressure for positive valve opening.
         :param p0: nondimensional return pressure for negative valve opening.
         :param q_leak: retained configuration field; only zero is supported.
+        :param flow_projection: nearest-node or finite-element point coupling.
         """
         super().__init__(*args, **kwargs)
         _require_zero_leakage(q_leak)
+        self.flow_projection = normalize_flow_projection(flow_projection)
         self.position = np.array(position).reshape(-1, 2)
         self.args = None
         self.xv = 0
@@ -460,7 +572,9 @@ class NodimCSOrifice(BaseOrifice):
         if self.node is None:
             self.node = []
             for position in self.position:
-                self.node.append(_get_node(model, position))
+                self.node.append(
+                    _get_node(model, position, self.flow_projection)
+                )
         return self.node
 
     def _add_q_and_qdp(self, model):
@@ -476,6 +590,23 @@ class NodimCSOrifice(BaseOrifice):
         q = self._flow_to_model_units(q, qw, model)
         qdp = self._cal_qdp(nodes_p)
         qdp = self._flow_derivative_to_model_units(qdp, qw, model)
+        if any(isinstance(node, FilmPointAttachment) for node in nodes):
+            freedom_count = model.node_manager.freedoms
+            if not all(isinstance(node, FilmPointAttachment) for node in nodes):
+                raise TypeError(
+                    "element-shape orifice coupling requires point attachments "
+                    "for all holes"
+                )
+            weights = _attachment_matrix(nodes, freedom_count)
+            model.matrix_process.rights["fe"] += np.asarray(
+                weights.T @ q, dtype=float
+            ).reshape(-1)
+            matrix_update = weights.T @ csr_matrix(qdp) @ weights
+            if issparse(model.matrix_process.matrixs["ke"]):
+                model.matrix_process.matrixs["ke"] += matrix_update
+            else:
+                model.matrix_process.matrixs["ke"] += matrix_update.toarray()
+            return nodes_p, q
         for n, node in enumerate(nodes):
             model.matrix_process.add_to_right(q[n], node.number, "fe")
         X, Y = np.meshgrid(numbers_p, numbers_p)
@@ -603,6 +734,7 @@ class NodimCSOrifice(BaseOrifice):
             "cq2": self.cq2,
             "q_leak": self.q_leak,
             "args": self.args,
+            "flow_projection": self.flow_projection,
         }
         if self.node is None:
             return {"structure": structure, "flow_params": []}
@@ -634,6 +766,7 @@ class NodimCSOrifice(BaseOrifice):
                     "q_nondim": q_nondim,
                     "q_vol": q_vol,
                     "qw": qw,
+                    "flow_projection": self.flow_projection,
                 }
             )
         return {"structure": structure, "flow_params": flow_params}
@@ -650,11 +783,21 @@ class CSOrifice(NodimCSOrifice):
     shared nondimensional nonlinear equations are solved.
     """
 
-    def __init__(self, position, ps, cso_args, p0=0, *args, **kwargs):
+    def __init__(
+        self,
+        position,
+        ps,
+        cso_args,
+        p0=0,
+        *args,
+        flow_projection="nearest_node",
+        **kwargs,
+    ):
         """
         :param position: the positions of the orifices, the shape should be (n, 2)
         :param ps: the supply pressure
         :param cso_args: the dimensional parameters of the orifices, namedtuple
+        :param flow_projection: nearest-node or finite-element point coupling.
         :param args: other parameters
         :param kwargs: tol_err, the error of the iteration, default is 1E-3
         """
@@ -666,6 +809,7 @@ class CSOrifice(NodimCSOrifice):
             ps=ps,
             p0=p0,
             q_leak=cso_args.q_leak,
+            flow_projection=flow_projection,
             *args,
             **kwargs,
         )

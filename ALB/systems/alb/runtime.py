@@ -396,6 +396,19 @@ class ALB:
                         "time": output.time,
                         "unit_system": output.unit_system.value,
                         "converged": convergence.converged,
+                        **(
+                            self._pads[0]
+                            .bearing.main_model.discretization_metadata()
+                            if hasattr(self._pads[0], "bearing")
+                            and hasattr(
+                                self._pads[0].bearing.main_model,
+                                "discretization_metadata",
+                            )
+                            else {}
+                        ),
+                        "temperature_dofs": int(
+                            pad_results[0].metadata.get("temperature_dofs", 0)
+                        ),
                     },
                 )
                 self._latest_output = output

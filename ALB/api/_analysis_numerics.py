@@ -33,7 +33,11 @@ def linearize_film_runtime(runtime: Any) -> tuple[FloatArray, FloatArray]:
 def linearize_pad_spool_force(pad: Any) -> FloatArray:
     """Return the original coupled restrictor spool-to-force derivative."""
 
-    from ALB.physics.hydraulics.orifice import CSOrifice
+    from ALB.physics.hydraulics.orifice import (
+        CSOrifice,
+        FilmPointAttachment,
+        _attachment_matrix,
+    )
 
     if len(pad.simple_models) != 1:
         raise TypeError(
@@ -79,26 +83,35 @@ def linearize_pad_spool_force(pad: Any) -> FloatArray:
     )
     pressure_rhs = branch_inverse.dot(source_rhs)
     pressure_coupling = branch_inverse
-    node_numbers = np.asarray(
-        [node.number for node in nodes],
-        dtype=np.int64,
-    )
-    columns = np.repeat(
-        node_numbers.reshape((1, -1)),
-        3,
-        axis=0,
-    )
-    rows = columns.T
-    coupling_matrix = sp.coo_matrix(
-        (
-            pressure_coupling.reshape(-1),
-            (rows.reshape(-1), columns.reshape(-1)),
-        ),
-        shape=(freedoms, freedoms),
-    )
+    if any(isinstance(node, FilmPointAttachment) for node in nodes):
+        if not all(isinstance(node, FilmPointAttachment) for node in nodes):
+            raise TypeError(
+                "active linearization requires one consistent flow projection mode"
+            )
+        projection = _attachment_matrix(nodes, freedoms)
+        coupling_matrix = projection.T @ sp.csr_matrix(pressure_coupling) @ projection
+        right = np.asarray(projection.T @ pressure_rhs, dtype=float).reshape(-1)
+    else:
+        node_numbers = np.asarray(
+            [node.number for node in nodes],
+            dtype=np.int64,
+        )
+        columns = np.repeat(
+            node_numbers.reshape((1, -1)),
+            3,
+            axis=0,
+        )
+        rows = columns.T
+        coupling_matrix = sp.coo_matrix(
+            (
+                pressure_coupling.reshape(-1),
+                (rows.reshape(-1), columns.reshape(-1)),
+            ),
+            shape=(freedoms, freedoms),
+        )
+        right = np.zeros(freedoms)
+        right[node_numbers] = pressure_rhs
     coupled_matrix = film_matrix + coupling_matrix
-    right = np.zeros(freedoms)
-    right[node_numbers] = pressure_rhs
     pressure = np.asarray(
         pad.main_model.latest_result[:freedoms],
         dtype=float,

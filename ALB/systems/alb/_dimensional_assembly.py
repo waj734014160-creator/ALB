@@ -191,10 +191,18 @@ class _DimensionalActiveAssembler:
         )
 
         soa_x = CSOrifice(
-            ps=ps, p0=p0, cso_args=csorifice_args, position=position
+            ps=ps,
+            p0=p0,
+            cso_args=csorifice_args,
+            position=position,
+            flow_projection=self.orifice_config.flow_projection,
         )
         sob_x = CSOrifice(
-            ps=p0, p0=ps, cso_args=csorifice_args, position=position
+            ps=p0,
+            p0=ps,
+            cso_args=csorifice_args,
+            position=position,
+            flow_projection=self.orifice_config.flow_projection,
         )
         soa_y = copy.deepcopy(soa_x)
         sob_y = copy.deepcopy(sob_x)

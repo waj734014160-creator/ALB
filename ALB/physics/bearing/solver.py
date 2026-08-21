@@ -43,6 +43,7 @@ from ALB.physics.film.solver import (
     RectFilmNode,
     SkfemNewtonFilm,
     ThicknessModel,
+    build_explicit_film_mesh,
 )
 from ALB.core.numerics.dynamic import (
     calc_fe_dx,
@@ -163,8 +164,11 @@ def _create_skfem_model(
         "adaptive_damp",
         "save_p",
         "save_h",
+        "mesh_type",
+        "element_order",
+        "triangle_diagonal",
     ]
-    kargs = phub.direct(request_key)
+    kargs = phub.soft_direct(request_key, warning=False)
     film_model = SkfemNewtonFilm(
         **kargs,
         mesh=mesh,
@@ -309,9 +313,16 @@ class _DimensionalFilmRuntime(FilmSystem):
         self.input_args = hub = ParameterHub(hyd_config)
         film_model = _create_model(hub, mesh, nodes, elems, matrix_process)
         args = film_model.args
-        nds, els = mesh.build_rect(
-            RectFilmNode, RectFilmElem, args["x_lim"], args["z_lim"], args["size"]
-        )
+        if args.get("mesh_type") is None:
+            nds, els = mesh.build_rect(
+                RectFilmNode,
+                RectFilmElem,
+                args["x_lim"],
+                args["z_lim"],
+                args["size"],
+            )
+        else:
+            nds, els = build_explicit_film_mesh(film_model)
         nodes.adds(nds)
         elems.adds(els)
         self.thickness = ThicknessModel(e=hyd_config.e, angle=hyd_config.angle_rad)

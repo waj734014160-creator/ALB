@@ -44,6 +44,8 @@
 | `axial_length_ratio` | 1 | `2` | 建模轴向长度与轴承长度的比值。 |
 | `circumferential_elements` | 个 | `59` | 周向有限元数量，至少为 2。节点数为该值加 1。 |
 | `axial_elements` | 个 | `39` | 轴向有限元数量，至少为 2。节点数为该值加 1。 |
+| `mesh_type` | 字符串 | 不启用显式网格 | 显式压力-热同网格拓扑：`triangular` 或 `quadrilateral`；必须与 `element_order` 同时提供。 |
+| `element_order` | 整数 | 不启用显式网格 | 显式压力-热基函数阶次：`1` 或 `2`；必须与 `mesh_type` 同时提供。 |
 | `viscosity` | Pa·s | `0.0195` | 润滑油动力黏度。变量在内部统一命名为 `miu`。 |
 | `clearance` | m | `8e-5` | 轴承径向间隙 `c`。 |
 | `radius` | m | `0.04` | 轴颈半径。 |
@@ -68,6 +70,14 @@
 | `gauss_tolerance` | 1 | `1e-3` | Gauss 方法允许残差。 |
 | `pad_bias_deg` | deg | `0` | 瓦块相对基准位置的角偏置。 |
 | `adaptive_damping` | 布尔或映射 | `null` | 自适应松弛配置；`null` 表示使用固定 `relaxation`。 |
+
+显式网格模式当前只用于量纲 `active_lubricated` 稳态热耦合，且要求
+`solver: "skfem_newton"`、`continuous_boundary: false`、
+`thermal.iter_method: "direct"` 和 `thermal.transient_enabled: false`。压力与温度
+共享拓扑、阶次和自由度位置，三角 P1/P2 与四边形 Q1/Q2 均固定使用 8 阶积分；
+不满足这些边界的配置在构建前直接拒绝。未填写两个显式字段时仍走原有 Q1
+压力和三角 P1 热模型。供油孔如何耦合到这些自由度由
+`restrictors.flow_projection` 独立控制，不能根据是否使用显式网格自动推断。
 
 ## 无量纲液膜 `film`
 
@@ -139,6 +149,7 @@
 
 `liquid_film` 可以把该节点设为 `null`，表示纯动压/静压膜而不附加节流孔。
 存在节流孔时，`radius` 与 `flow_coefficient` 必须且只能提供一个。
+该轴承族不接受主动轴承专用的 `flow_projection` 字段。
 
 | 字段 | 单位 | 缺省值 | 含义 |
 | --- | --- | --- | --- |
@@ -159,6 +170,11 @@
 - `restrictors.orifice_diameter` / `orifice_length` / `valve_area`：m、m、m²，
   都必须为正数。
 - `restrictors.discharge_coefficient`：孔口流量系数，缺省 `0.6`。
+- `restrictors.flow_projection`：供油孔点流量到压力和温度自由度的投影方式，
+  缺省为 `"nearest_node"`，把每个孔的全部流量装配到最近节点并保持历史结果；
+  `"element_shape"` 在孔所在单元使用原生形函数。Q1、P1、P2、Q2 分别作用于
+  4、3、6、9 个局部自由度。两种方式都守恒孔口总流量，且都仍是集中点源，
+  不是有限孔径面源。
 - 无量纲主动轴承还可使用 `base_flow_coefficient`、
   `spool_flow_coefficient` 和 `pressure_flow_coefficient`。
 - `tank.x_range`、`z_range`：油腔在局部坐标中的范围；
@@ -228,6 +244,8 @@
   `result.details.values["pad_pressure"]` 和
   `result.details.values["pad_film_thickness"]`。
 - 网格字段的二维形状和单位也记录在 `result.diagnostics` 中。
+- 显式网格结果还记录 `mesh_type`、`element_order`、`integration_order`、
+  `actual_element_count`、`pressure_dofs` 和 `temperature_dofs`。
 
 ## `SimulationConfig.loads`
 

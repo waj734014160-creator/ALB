@@ -1,0 +1,396 @@
+{
+  "schema": "alb.mesh-independence-legacy-reference.v1",
+  "baseline_commit": "75f2c9c42ad6285ab4caa75cf7b853cecdb24606",
+  "source_config": "F:\\BaiduSyncdisk\\博士论文\\PAPER_WORK\\task\\PAPER\\config\\alb12.json5",
+  "derived_spec": {
+    "family": "active_lubricated",
+    "unit_system": "dimensional",
+    "time_step": 0.001,
+    "node": 12,
+    "film": {
+      "eccentricity": 0.0,
+      "attitude_angle_deg": 0.0,
+      "rotation_frequency_hz": 50.0,
+      "arc_angle_deg": 80.0,
+      "axial_length_ratio": 2.0,
+      "circumferential_elements": 10,
+      "axial_elements": 5,
+      "viscosity": 0.0195,
+      "clearance": 0.00012,
+      "radius": 0.04,
+      "length": 0.06,
+      "supply_pressure": 7000000.0,
+      "density": 872.0,
+      "reynolds_boundary": true,
+      "continuous_boundary": false,
+      "ambient_pressure": 0.0,
+      "solver_tolerance": 1e-06,
+      "max_iterations": 60,
+      "relaxation": 0.8,
+      "vibration_enabled": false,
+      "whirl_ratio": 1.0,
+      "solver": "skfem_newton",
+      "save_pressure": false,
+      "save_thickness": false,
+      "gauss_relaxation": 1.2,
+      "gauss_points": 50,
+      "gauss_tolerance": 0.0001,
+      "pad_bias_deg": 45.0
+    },
+    "restrictors": {
+      "positions": [
+        [
+          0.5,
+          0.25
+        ],
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.5,
+          0.75
+        ]
+      ],
+      "supply_pressure": 7000000.0,
+      "tank_pressure": 0.0,
+      "orifice_diameter": 0.002,
+      "orifice_length": 0.02,
+      "valve_area": 1.22e-06,
+      "discharge_coefficient": 0.6
+    },
+    "tank": {
+      "x_range": [
+        0.49,
+        0.51
+      ],
+      "z_range": [
+        0.2,
+        0.8
+      ],
+      "depth_ratio": 2.0
+    },
+    "valve": {
+      "model": "second_order",
+      "natural_frequency_hz": 166.0,
+      "damping_ratio": 0.7,
+      "delay": 0.0
+    },
+    "control": {
+      "mode": "external_spool",
+      "gains": null,
+      "frequency_hz": 50.0,
+      "sensor_angles_deg": [
+        45.0,
+        135.0
+      ]
+    },
+    "thermal": {
+      "t_in": 20.0,
+      "t_ref": null,
+      "miu0": null,
+      "beta": 0.03,
+      "k_lub": 0.0,
+      "cp_lub": 2000.0,
+      "max_delta_t": 80.0,
+      "heat_partition": 0.9,
+      "relax": 0.5,
+      "miu_update": "log",
+      "miu_update_max_ratio": 1.2,
+      "heat_partition_steps": [
+        0.2,
+        0.4,
+        0.6,
+        0.8,
+        0.9
+      ],
+      "iter_method": "direct",
+      "tol": 0.0001,
+      "max_iter": 60,
+      "miu_min": 0.0001,
+      "miu_max": 1.0,
+      "coupling": "full",
+      "t_supply": null,
+      "axial_side_bc": "inflow_fixed",
+      "axial_side_t": null,
+      "supg": true,
+      "transient_enabled": false
+    },
+    "transforms": {
+      "displacement_to_control": [
+        [
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0
+        ]
+      ],
+      "velocity_to_control": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ]
+    }
+  },
+  "environment": {
+    "python": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "numpy": "1.24.3",
+    "scipy": "1.10.1",
+    "scikit-fem": "12.0.1"
+  },
+  "status": {
+    "supply_off": {
+      "converged": true,
+      "iterations": null,
+      "message": "all ALB child calculations finished",
+      "thermal_converged_by_pad": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "thermal_iterations_by_pad": [
+        6,
+        6,
+        5,
+        7
+      ]
+    },
+    "supply_on": {
+      "converged": true,
+      "iterations": null,
+      "message": "all ALB child calculations finished",
+      "thermal_converged_by_pad": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "thermal_iterations_by_pad": [
+        6,
+        6,
+        5,
+        7
+      ]
+    }
+  },
+  "arrays": {
+    "supply_off.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "bac8557bca5ad12efc10211259c0aa4fc763b6e293c44168114925999045b6e5"
+    },
+    "supply_off.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "supply_off.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "supply_off.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "fe3a91c839eb40925faf31e6823f8ec1a0f1a82ff586dfd0960adc0f4b1a636e"
+    },
+    "supply_off.output.pad_force": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "26d608c521471c36478452a8c0200ef0259039440ed55c3c3e15b5202a1b617e"
+    },
+    "supply_off.output.friction": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "7ffc88bf97ea15b273d449885ce36abdf63f9cadfb06d34585f50dc112099922"
+    },
+    "supply_off.film.pressure_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "d4bfb973a687016f77c5813520c0c5256992523bf093c0200c94e2705551682a"
+    },
+    "supply_off.film.thickness_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "671ac2a159fd7cd0f8ac3d6b758a7af98fd62347c5b07f725b2688193fba997b"
+    },
+    "supply_off.thermal.temperature_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "7b1a26c0f3dda35ebbe22f1b5c9855747932d9ac5eeb218e5f4f665e66419e65"
+    },
+    "supply_off.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "6e9498622fe4ce6dc5702960d70373537058bfe5777e49ea59116541f7f1689c"
+    },
+    "supply_off.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "3465985ed668a4af0f192d4dfbea1bebb0835f6249621cd344e9e907d3b16860"
+    },
+    "supply_off.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "8271f38e47d2c20a97b327b6afe376e6cf011d90e9e414bdbbd709618b285690"
+    },
+    "supply_off.orifice.flow_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "2ea9ab9198d1638007400cd2c3bef1cc745b864b76011a0e1bc52180ac6452d4"
+    },
+    "supply_off.orifice.pressure_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "f3851faf69156604c3c3acc51f2c5d9ae15ad2c691ac8667d02117ca515d3f7f"
+    },
+    "supply_on.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "bac8557bca5ad12efc10211259c0aa4fc763b6e293c44168114925999045b6e5"
+    },
+    "supply_on.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "supply_on.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d12aa3e2737c0457959f960da73a0b76651149f74e1d64ce957ea7e9724e0876"
+    },
+    "supply_on.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "414236f3497a5dc4a6be1815d395e448d3a333a11f2becf629a83f1a92c1b3a9"
+    },
+    "supply_on.output.pad_force": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "8fa570fa1cc7c9239e17ef5f7235b7aac814a5fd3c7fcd1f22cb3cce53112780"
+    },
+    "supply_on.output.friction": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "fa43f71e0bd84af98b98c66a5ae715f1fcc4285b0f99b22c82c6270c32b351d9"
+    },
+    "supply_on.film.pressure_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "50bd301039a9003cf8fd31b74fdcdd58c5a85b3bf18bf700e3a5c01766488968"
+    },
+    "supply_on.film.thickness_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "671ac2a159fd7cd0f8ac3d6b758a7af98fd62347c5b07f725b2688193fba997b"
+    },
+    "supply_on.thermal.temperature_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "97bec235f9fa0758180500fceb4ad21887be9408f644e141e72c1f53113775d3"
+    },
+    "supply_on.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "6d21e780631b1cca80ba7d32ded49de279e285dfefe1c843a47533597203caec"
+    },
+    "supply_on.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "f2fc276c310615059e9e538364826bc055b1489ece429e4a87dc899aaf2cf6e3"
+    },
+    "supply_on.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "8271f38e47d2c20a97b327b6afe376e6cf011d90e9e414bdbbd709618b285690"
+    },
+    "supply_on.orifice.flow_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "12d28c8d465133de3cf2eee34a5b387c592185d19d886e8ccbc0e7ca8b8d20bd"
+    },
+    "supply_on.orifice.pressure_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "94657f0a6e006027f318840adf82dee53a43ec1afbb35a8eb203bc6dddf6caa2"
+    }
+  }
+}

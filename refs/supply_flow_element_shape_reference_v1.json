@@ -1,0 +1,1068 @@
+{
+  "schema": "alb.supply-flow-element-shape-reference.v1",
+  "baseline_commit": "75f2c9c42ad6285ab4caa75cf7b853cecdb24606",
+  "generated_at_utc": "2026-08-20T02:51:41.385365+00:00",
+  "source_reference": "refs/mesh_independence_legacy_reference_v1.json",
+  "projection_behavior": "pre-parameterization implicit element-shape projection",
+  "case_specs": {
+    "tri_p1": {
+      "family": "active_lubricated",
+      "unit_system": "dimensional",
+      "time_step": 0.001,
+      "node": 12,
+      "film": {
+        "eccentricity": 0.0,
+        "attitude_angle_deg": 0.0,
+        "rotation_frequency_hz": 50.0,
+        "arc_angle_deg": 80.0,
+        "axial_length_ratio": 2.0,
+        "circumferential_elements": 10,
+        "axial_elements": 5,
+        "viscosity": 0.0195,
+        "clearance": 0.00012,
+        "radius": 0.04,
+        "length": 0.06,
+        "supply_pressure": 7000000.0,
+        "density": 872.0,
+        "reynolds_boundary": true,
+        "continuous_boundary": false,
+        "ambient_pressure": 0.0,
+        "solver_tolerance": 1e-06,
+        "max_iterations": 60,
+        "relaxation": 0.8,
+        "vibration_enabled": false,
+        "whirl_ratio": 1.0,
+        "solver": "skfem_newton",
+        "save_pressure": false,
+        "save_thickness": false,
+        "gauss_relaxation": 1.2,
+        "gauss_points": 50,
+        "gauss_tolerance": 0.0001,
+        "pad_bias_deg": 45.0,
+        "mesh_type": "triangular",
+        "element_order": 1
+      },
+      "restrictors": {
+        "positions": [
+          [
+            0.5,
+            0.25
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.5,
+            0.75
+          ]
+        ],
+        "supply_pressure": 7000000.0,
+        "tank_pressure": 0.0,
+        "orifice_diameter": 0.002,
+        "orifice_length": 0.02,
+        "valve_area": 1.22e-06,
+        "discharge_coefficient": 0.6
+      },
+      "tank": {
+        "x_range": [
+          0.49,
+          0.51
+        ],
+        "z_range": [
+          0.2,
+          0.8
+        ],
+        "depth_ratio": 2.0
+      },
+      "valve": {
+        "model": "second_order",
+        "natural_frequency_hz": 166.0,
+        "damping_ratio": 0.7,
+        "delay": 0.0
+      },
+      "control": {
+        "mode": "external_spool",
+        "gains": null,
+        "frequency_hz": 50.0,
+        "sensor_angles_deg": [
+          45.0,
+          135.0
+        ]
+      },
+      "thermal": {
+        "t_in": 20.0,
+        "t_ref": null,
+        "miu0": null,
+        "beta": 0.03,
+        "k_lub": 0.0,
+        "cp_lub": 2000.0,
+        "max_delta_t": 80.0,
+        "heat_partition": 0.9,
+        "relax": 0.5,
+        "miu_update": "log",
+        "miu_update_max_ratio": 1.2,
+        "heat_partition_steps": [
+          0.2,
+          0.4,
+          0.6,
+          0.8,
+          0.9
+        ],
+        "iter_method": "direct",
+        "tol": 0.0001,
+        "max_iter": 60,
+        "miu_min": 0.0001,
+        "miu_max": 1.0,
+        "coupling": "full",
+        "t_supply": null,
+        "axial_side_bc": "inflow_fixed",
+        "axial_side_t": null,
+        "supg": true,
+        "transient_enabled": false
+      },
+      "transforms": {
+        "displacement_to_control": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0
+          ]
+        ],
+        "velocity_to_control": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ]
+      }
+    },
+    "tri_p2": {
+      "family": "active_lubricated",
+      "unit_system": "dimensional",
+      "time_step": 0.001,
+      "node": 12,
+      "film": {
+        "eccentricity": 0.0,
+        "attitude_angle_deg": 0.0,
+        "rotation_frequency_hz": 50.0,
+        "arc_angle_deg": 80.0,
+        "axial_length_ratio": 2.0,
+        "circumferential_elements": 10,
+        "axial_elements": 5,
+        "viscosity": 0.0195,
+        "clearance": 0.00012,
+        "radius": 0.04,
+        "length": 0.06,
+        "supply_pressure": 7000000.0,
+        "density": 872.0,
+        "reynolds_boundary": true,
+        "continuous_boundary": false,
+        "ambient_pressure": 0.0,
+        "solver_tolerance": 1e-06,
+        "max_iterations": 60,
+        "relaxation": 0.8,
+        "vibration_enabled": false,
+        "whirl_ratio": 1.0,
+        "solver": "skfem_newton",
+        "save_pressure": false,
+        "save_thickness": false,
+        "gauss_relaxation": 1.2,
+        "gauss_points": 50,
+        "gauss_tolerance": 0.0001,
+        "pad_bias_deg": 45.0,
+        "mesh_type": "triangular",
+        "element_order": 2
+      },
+      "restrictors": {
+        "positions": [
+          [
+            0.5,
+            0.25
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.5,
+            0.75
+          ]
+        ],
+        "supply_pressure": 7000000.0,
+        "tank_pressure": 0.0,
+        "orifice_diameter": 0.002,
+        "orifice_length": 0.02,
+        "valve_area": 1.22e-06,
+        "discharge_coefficient": 0.6
+      },
+      "tank": {
+        "x_range": [
+          0.49,
+          0.51
+        ],
+        "z_range": [
+          0.2,
+          0.8
+        ],
+        "depth_ratio": 2.0
+      },
+      "valve": {
+        "model": "second_order",
+        "natural_frequency_hz": 166.0,
+        "damping_ratio": 0.7,
+        "delay": 0.0
+      },
+      "control": {
+        "mode": "external_spool",
+        "gains": null,
+        "frequency_hz": 50.0,
+        "sensor_angles_deg": [
+          45.0,
+          135.0
+        ]
+      },
+      "thermal": {
+        "t_in": 20.0,
+        "t_ref": null,
+        "miu0": null,
+        "beta": 0.03,
+        "k_lub": 0.0,
+        "cp_lub": 2000.0,
+        "max_delta_t": 80.0,
+        "heat_partition": 0.9,
+        "relax": 0.5,
+        "miu_update": "log",
+        "miu_update_max_ratio": 1.2,
+        "heat_partition_steps": [
+          0.2,
+          0.4,
+          0.6,
+          0.8,
+          0.9
+        ],
+        "iter_method": "direct",
+        "tol": 0.0001,
+        "max_iter": 60,
+        "miu_min": 0.0001,
+        "miu_max": 1.0,
+        "coupling": "full",
+        "t_supply": null,
+        "axial_side_bc": "inflow_fixed",
+        "axial_side_t": null,
+        "supg": true,
+        "transient_enabled": false
+      },
+      "transforms": {
+        "displacement_to_control": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0
+          ]
+        ],
+        "velocity_to_control": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ]
+      }
+    },
+    "quad_q1": {
+      "family": "active_lubricated",
+      "unit_system": "dimensional",
+      "time_step": 0.001,
+      "node": 12,
+      "film": {
+        "eccentricity": 0.0,
+        "attitude_angle_deg": 0.0,
+        "rotation_frequency_hz": 50.0,
+        "arc_angle_deg": 80.0,
+        "axial_length_ratio": 2.0,
+        "circumferential_elements": 10,
+        "axial_elements": 5,
+        "viscosity": 0.0195,
+        "clearance": 0.00012,
+        "radius": 0.04,
+        "length": 0.06,
+        "supply_pressure": 7000000.0,
+        "density": 872.0,
+        "reynolds_boundary": true,
+        "continuous_boundary": false,
+        "ambient_pressure": 0.0,
+        "solver_tolerance": 1e-06,
+        "max_iterations": 60,
+        "relaxation": 0.8,
+        "vibration_enabled": false,
+        "whirl_ratio": 1.0,
+        "solver": "skfem_newton",
+        "save_pressure": false,
+        "save_thickness": false,
+        "gauss_relaxation": 1.2,
+        "gauss_points": 50,
+        "gauss_tolerance": 0.0001,
+        "pad_bias_deg": 45.0,
+        "mesh_type": "quadrilateral",
+        "element_order": 1
+      },
+      "restrictors": {
+        "positions": [
+          [
+            0.5,
+            0.25
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.5,
+            0.75
+          ]
+        ],
+        "supply_pressure": 7000000.0,
+        "tank_pressure": 0.0,
+        "orifice_diameter": 0.002,
+        "orifice_length": 0.02,
+        "valve_area": 1.22e-06,
+        "discharge_coefficient": 0.6
+      },
+      "tank": {
+        "x_range": [
+          0.49,
+          0.51
+        ],
+        "z_range": [
+          0.2,
+          0.8
+        ],
+        "depth_ratio": 2.0
+      },
+      "valve": {
+        "model": "second_order",
+        "natural_frequency_hz": 166.0,
+        "damping_ratio": 0.7,
+        "delay": 0.0
+      },
+      "control": {
+        "mode": "external_spool",
+        "gains": null,
+        "frequency_hz": 50.0,
+        "sensor_angles_deg": [
+          45.0,
+          135.0
+        ]
+      },
+      "thermal": {
+        "t_in": 20.0,
+        "t_ref": null,
+        "miu0": null,
+        "beta": 0.03,
+        "k_lub": 0.0,
+        "cp_lub": 2000.0,
+        "max_delta_t": 80.0,
+        "heat_partition": 0.9,
+        "relax": 0.5,
+        "miu_update": "log",
+        "miu_update_max_ratio": 1.2,
+        "heat_partition_steps": [
+          0.2,
+          0.4,
+          0.6,
+          0.8,
+          0.9
+        ],
+        "iter_method": "direct",
+        "tol": 0.0001,
+        "max_iter": 60,
+        "miu_min": 0.0001,
+        "miu_max": 1.0,
+        "coupling": "full",
+        "t_supply": null,
+        "axial_side_bc": "inflow_fixed",
+        "axial_side_t": null,
+        "supg": true,
+        "transient_enabled": false
+      },
+      "transforms": {
+        "displacement_to_control": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0
+          ]
+        ],
+        "velocity_to_control": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ]
+      }
+    },
+    "quad_q2": {
+      "family": "active_lubricated",
+      "unit_system": "dimensional",
+      "time_step": 0.001,
+      "node": 12,
+      "film": {
+        "eccentricity": 0.0,
+        "attitude_angle_deg": 0.0,
+        "rotation_frequency_hz": 50.0,
+        "arc_angle_deg": 80.0,
+        "axial_length_ratio": 2.0,
+        "circumferential_elements": 10,
+        "axial_elements": 5,
+        "viscosity": 0.0195,
+        "clearance": 0.00012,
+        "radius": 0.04,
+        "length": 0.06,
+        "supply_pressure": 7000000.0,
+        "density": 872.0,
+        "reynolds_boundary": true,
+        "continuous_boundary": false,
+        "ambient_pressure": 0.0,
+        "solver_tolerance": 1e-06,
+        "max_iterations": 60,
+        "relaxation": 0.8,
+        "vibration_enabled": false,
+        "whirl_ratio": 1.0,
+        "solver": "skfem_newton",
+        "save_pressure": false,
+        "save_thickness": false,
+        "gauss_relaxation": 1.2,
+        "gauss_points": 50,
+        "gauss_tolerance": 0.0001,
+        "pad_bias_deg": 45.0,
+        "mesh_type": "quadrilateral",
+        "element_order": 2
+      },
+      "restrictors": {
+        "positions": [
+          [
+            0.5,
+            0.25
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.5,
+            0.75
+          ]
+        ],
+        "supply_pressure": 7000000.0,
+        "tank_pressure": 0.0,
+        "orifice_diameter": 0.002,
+        "orifice_length": 0.02,
+        "valve_area": 1.22e-06,
+        "discharge_coefficient": 0.6
+      },
+      "tank": {
+        "x_range": [
+          0.49,
+          0.51
+        ],
+        "z_range": [
+          0.2,
+          0.8
+        ],
+        "depth_ratio": 2.0
+      },
+      "valve": {
+        "model": "second_order",
+        "natural_frequency_hz": 166.0,
+        "damping_ratio": 0.7,
+        "delay": 0.0
+      },
+      "control": {
+        "mode": "external_spool",
+        "gains": null,
+        "frequency_hz": 50.0,
+        "sensor_angles_deg": [
+          45.0,
+          135.0
+        ]
+      },
+      "thermal": {
+        "t_in": 20.0,
+        "t_ref": null,
+        "miu0": null,
+        "beta": 0.03,
+        "k_lub": 0.0,
+        "cp_lub": 2000.0,
+        "max_delta_t": 80.0,
+        "heat_partition": 0.9,
+        "relax": 0.5,
+        "miu_update": "log",
+        "miu_update_max_ratio": 1.2,
+        "heat_partition_steps": [
+          0.2,
+          0.4,
+          0.6,
+          0.8,
+          0.9
+        ],
+        "iter_method": "direct",
+        "tol": 0.0001,
+        "max_iter": 60,
+        "miu_min": 0.0001,
+        "miu_max": 1.0,
+        "coupling": "full",
+        "t_supply": null,
+        "axial_side_bc": "inflow_fixed",
+        "axial_side_t": null,
+        "supg": true,
+        "transient_enabled": false
+      },
+      "transforms": {
+        "displacement_to_control": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0
+          ]
+        ],
+        "velocity_to_control": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ]
+      }
+    }
+  },
+  "environment": {
+    "python": "3.10.17 | packaged by conda-forge | (main, Apr 10 2025, 22:06:35) [MSC v.1943 64 bit (AMD64)]",
+    "numpy": "1.24.3",
+    "scipy": "1.10.1",
+    "scikit-fem": "12.0.1"
+  },
+  "source_file_sha256": {
+    "ALB/physics/hydraulics/orifice.py": "d43dbf026dd12a8fc04ef5cccc54bf2eaa642af7f3c3ed46fa89efd339caf504",
+    "ALB/physics/thermal/solver.py": "4736390f2753cfa4e24525060b083a82b75fcc4168267fca5b779d3bceb79be1",
+    "ALB/physics/film/solver.py": "683cdf9977643023325264954e7a5bf7ca4136b6b8b524a5efdb37c26cb374a6"
+  },
+  "status": {
+    "tri_p1": {
+      "converged": true,
+      "iterations": null,
+      "message": "all ALB child calculations finished",
+      "thermal_converged_by_pad": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "thermal_iterations_by_pad": [
+        6,
+        6,
+        5,
+        6
+      ]
+    },
+    "tri_p2": {
+      "converged": true,
+      "iterations": null,
+      "message": "all ALB child calculations finished",
+      "thermal_converged_by_pad": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "thermal_iterations_by_pad": [
+        6,
+        6,
+        5,
+        6
+      ]
+    },
+    "quad_q1": {
+      "converged": true,
+      "iterations": null,
+      "message": "all ALB child calculations finished",
+      "thermal_converged_by_pad": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "thermal_iterations_by_pad": [
+        6,
+        6,
+        5,
+        7
+      ]
+    },
+    "quad_q2": {
+      "converged": true,
+      "iterations": null,
+      "message": "all ALB child calculations finished",
+      "thermal_converged_by_pad": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "thermal_iterations_by_pad": [
+        6,
+        6,
+        5,
+        6
+      ]
+    }
+  },
+  "arrays": {
+    "tri_p1.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "bac8557bca5ad12efc10211259c0aa4fc763b6e293c44168114925999045b6e5"
+    },
+    "tri_p1.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "tri_p1.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d12aa3e2737c0457959f960da73a0b76651149f74e1d64ce957ea7e9724e0876"
+    },
+    "tri_p1.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "a8781487ffbe8227bc1614a8bba0a7dd4319b740ea627356f8b6b48ce1f31829"
+    },
+    "tri_p1.output.pad_force": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d12aa245d68acb4844b5b8ce367fe1f82963dde8671f5f15d3b0dd9b93e663e7"
+    },
+    "tri_p1.output.friction": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "2c9756dd1c1847125d8fe5cca864b810f741d5e3e8db03999943c4ab383c9026"
+    },
+    "tri_p1.film.pressure_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "1b69c5ecd538d9e21a0e130ecc968b863b1597bced28ea44f8f7569acaaa5e90"
+    },
+    "tri_p1.film.thickness_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "671ac2a159fd7cd0f8ac3d6b758a7af98fd62347c5b07f725b2688193fba997b"
+    },
+    "tri_p1.thermal.temperature_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "4724a914b7d7b99ec05fe84423b17d87153a87454eecfad59b4879fc7b4760e1"
+    },
+    "tri_p1.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "90f18bbd1adef6635403a9c9ff6b0d037a35b10e18a4385dddba34e1fab7038a"
+    },
+    "tri_p1.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "720d9d21a88b9945ab1afec725695fbb9591054675714f3aba9a0b25aee86a30"
+    },
+    "tri_p1.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "257eb9bc17783c3b56abbe85aec449c1d9a58fef668fb8c5effa33086483b2da"
+    },
+    "tri_p1.orifice.flow_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "0add947803b1eb1d32f389e2141997710bbbe826fac784252e1bb5ec6e973066"
+    },
+    "tri_p1.orifice.pressure_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "7b753b8cc43a3721b1734c31fec73acf54780017de25c4a852120c87f990437c"
+    },
+    "tri_p2.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "bac8557bca5ad12efc10211259c0aa4fc763b6e293c44168114925999045b6e5"
+    },
+    "tri_p2.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "tri_p2.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d12aa3e2737c0457959f960da73a0b76651149f74e1d64ce957ea7e9724e0876"
+    },
+    "tri_p2.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d7d8c6b4dde662afd343a1f09aa4a19e4fe33bba4ed84237b07ea57ff8f08de0"
+    },
+    "tri_p2.output.pad_force": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "2518ca40d067bb921e3043ad9869c1ed16832324e808f9c8debb9115128bfba9"
+    },
+    "tri_p2.output.friction": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "ecf184a80f809db89813cbf1ad17d92114b17424143599606cdd2f582e7c0723"
+    },
+    "tri_p2.film.pressure_fields": {
+      "shape": [
+        4,
+        231
+      ],
+      "dtype": "float64",
+      "sha256": "fc8b01b97942ef5dde7d161ca12b7d56b2b0eb925dbe7cc53f53503400e6294e"
+    },
+    "tri_p2.film.thickness_fields": {
+      "shape": [
+        4,
+        231
+      ],
+      "dtype": "float64",
+      "sha256": "0c6ca7ba3b10acc0e153418d21a63b0efd501d350e1201dab3f642ea9f31e81a"
+    },
+    "tri_p2.thermal.temperature_fields": {
+      "shape": [
+        4,
+        231
+      ],
+      "dtype": "float64",
+      "sha256": "6d0cd7474b4d7f6a3bb9f51fc739c8f4d5a35a2ba9814ea2a988c574c417533a"
+    },
+    "tri_p2.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        231
+      ],
+      "dtype": "float64",
+      "sha256": "b2438e2a31d442d5fad74f04858306b7273bd179c8c917f3a8be2f5c937274a8"
+    },
+    "tri_p2.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "4f033a80708f747afe5411f834dd31600fe7f50b2c34594a68b9d80ec6fe8c30"
+    },
+    "tri_p2.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "257eb9bc17783c3b56abbe85aec449c1d9a58fef668fb8c5effa33086483b2da"
+    },
+    "tri_p2.orifice.flow_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "69bb72b5f6484269268e1142703a27100f68be3284696c51acbbe6676d679759"
+    },
+    "tri_p2.orifice.pressure_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "e327c4b01646ebdcba3c73c33e1d06cf32420fcdb0fc72a4dce656e1f3feb930"
+    },
+    "quad_q1.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "bac8557bca5ad12efc10211259c0aa4fc763b6e293c44168114925999045b6e5"
+    },
+    "quad_q1.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "quad_q1.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d12aa3e2737c0457959f960da73a0b76651149f74e1d64ce957ea7e9724e0876"
+    },
+    "quad_q1.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "3a542dcca82b61fd2d2fa1b33af0b58ed6f33f11c846996622fc75f87717d93c"
+    },
+    "quad_q1.output.pad_force": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "069d240d390946fc5d02211aed5315ed1cebe5d9e66191929dd8431bb43adda2"
+    },
+    "quad_q1.output.friction": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "f3673ed40c4652d7de5e29395875e317a32d312fe36f6f56a7fec7f54ff7cc67"
+    },
+    "quad_q1.film.pressure_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "5188506735fbefc73228198c60fa08708f59fa1a946378580cb590b63eb69faa"
+    },
+    "quad_q1.film.thickness_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "671ac2a159fd7cd0f8ac3d6b758a7af98fd62347c5b07f725b2688193fba997b"
+    },
+    "quad_q1.thermal.temperature_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "fe7f29fa6b1bead823c2a2465f8ae6fa9045461400db58f2a4643adc783adf8e"
+    },
+    "quad_q1.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "649f7c4967decd9d7d9c4d5b066d7425ec16474098ea5740ab9e92348c3d5fce"
+    },
+    "quad_q1.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "ddc377d955c8212a6aeffa9d22d7f489ef51f7cb1d507bf7203ca532f0542413"
+    },
+    "quad_q1.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "8271f38e47d2c20a97b327b6afe376e6cf011d90e9e414bdbbd709618b285690"
+    },
+    "quad_q1.orifice.flow_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "9812af341b013c25bd91762dec4f683dec79794d5ed41b098a369ca48c3f50ba"
+    },
+    "quad_q1.orifice.pressure_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "9682cb37c274a35c5149d8a36c4aacf78149e04e6277c3b1f6c81b0efee5c97f"
+    },
+    "quad_q2.input.displacement": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "bac8557bca5ad12efc10211259c0aa4fc763b6e293c44168114925999045b6e5"
+    },
+    "quad_q2.input.velocity": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb"
+    },
+    "quad_q2.input.spool": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "d12aa3e2737c0457959f960da73a0b76651149f74e1d64ce957ea7e9724e0876"
+    },
+    "quad_q2.output.force": {
+      "shape": [
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "f752389e700a78951b0555bf51dc6e2b550f13ee4a2da70824014512e566b956"
+    },
+    "quad_q2.output.pad_force": {
+      "shape": [
+        4,
+        2
+      ],
+      "dtype": "float64",
+      "sha256": "205f071aac38b8e5122386a8e180281c5a08f0e00ee52a7f425d32ee1ecba5ab"
+    },
+    "quad_q2.output.friction": {
+      "shape": [
+        1
+      ],
+      "dtype": "float64",
+      "sha256": "e0016cf722e7700eb215aa7b713097c5c55a1ae0cd3c6c65a3785dc7231505b6"
+    },
+    "quad_q2.film.pressure_fields": {
+      "shape": [
+        4,
+        231
+      ],
+      "dtype": "float64",
+      "sha256": "ac2be3c24558aada35db900a813bbd7e86e965a8f837e80a4f8deea8838007ba"
+    },
+    "quad_q2.film.thickness_fields": {
+      "shape": [
+        4,
+        231
+      ],
+      "dtype": "float64",
+      "sha256": "16ce588ee3cf6a42fee65d8dd14246a0f0cd69fac928a45e2dc63d87f0465917"
+    },
+    "quad_q2.thermal.temperature_fields": {
+      "shape": [
+        4,
+        231
+      ],
+      "dtype": "float64",
+      "sha256": "e661a850f83587645754b5faa4a214a3b4bd19b553797931ff238382fb6f0f91"
+    },
+    "quad_q2.thermal.viscosity_fields": {
+      "shape": [
+        4,
+        231
+      ],
+      "dtype": "float64",
+      "sha256": "ae13337d81d9a4463f010f59841108c985ea166e2b5db0884d7e9e18affd4d71"
+    },
+    "quad_q2.thermal.t_eff": {
+      "shape": [
+        4
+      ],
+      "dtype": "float64",
+      "sha256": "68878660851e444849fda8f17f723e8f7badd9d370c1d5620246f38cc1fa3919"
+    },
+    "quad_q2.thermal.iterations": {
+      "shape": [
+        4
+      ],
+      "dtype": "int64",
+      "sha256": "257eb9bc17783c3b56abbe85aec449c1d9a58fef668fb8c5effa33086483b2da"
+    },
+    "quad_q2.orifice.flow_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "c2c29c6a7fb90ed8953532cfa9b5316b371fb1d55ffa35a33203d63c5dee7d3d"
+    },
+    "quad_q2.orifice.pressure_fields": {
+      "shape": [
+        4,
+        3
+      ],
+      "dtype": "float64",
+      "sha256": "16d53cc4c66f119a6e71420f125bfeab8d6742bfeacf029055e3f6cce46764df"
+    }
+  }
+}

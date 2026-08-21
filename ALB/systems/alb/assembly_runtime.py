@@ -97,6 +97,7 @@ def _assemble_nondimensional(config: NodimALBConfig):
         ps=orifice.ps,
         p0=orifice.p0,
         q_leak=orifice.q_leak,
+        flow_projection=orifice.flow_projection,
     )
     return_x = NodimCSOrifice(
         position=orifice.position,
@@ -106,6 +107,7 @@ def _assemble_nondimensional(config: NodimALBConfig):
         ps=orifice.p0,
         p0=orifice.ps,
         q_leak=orifice.q_leak,
+        flow_projection=orifice.flow_projection,
     )
     orifices = {
         "soa_x": supply_x,

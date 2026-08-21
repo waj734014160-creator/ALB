@@ -100,6 +100,17 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 独立 runtime，不污染当前轴承状态。转子轴承仿真默认保留全部已提交步骤；
 只有显式 `HistoryPolicy` 才能降采样或使用 ring buffer。
 
+量纲主动润滑轴承可成对设置 `film.mesh_type` 与 `film.element_order`，显式选择
+三角 P1/P2 或四边形 Q1/Q2 压力-热同网格离散。该模式当前限定为非周期单瓦、
+`skfem_newton` 和稳态直接热耦合，并统一采用 8 阶积分；省略字段时继续使用
+原有数值路径。完整约束和结果元数据见
+[`docs/api/bearing_config_reference.md`](api/bearing_config_reference.md)。
+
+主动轴承的 `restrictors.flow_projection` 独立选择供油孔耦合：缺省
+`nearest_node` 保持统一最近节点路径，`element_shape` 则在压力和温度空间按
+孔所在单元的原生形函数守恒分配。该选择贯通量纲/无量纲装配和主动轴承解析
+线性化；普通 `liquid_film` 节流孔不接受此字段。
+
 0.4.5 的主动轴承公开阀配置接受 `second_order`、`static` 和
 `transfer_function`。二阶阀直接使用 `natural_frequency_hz`、
 `damping_ratio` 和可选 `delay`；静态阀是无参数、无记忆的单位增益模型；

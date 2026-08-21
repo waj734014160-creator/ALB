@@ -58,6 +58,18 @@ DIMENSIONAL_FILM_FIELDS: dict[str, ConfigField] = {
     "axial_elements": ConfigField(
         "nz", "count", "Finite-element count along the bearing axis."
     ),
+    "mesh_type": ConfigField(
+        "mesh_type",
+        "name",
+        "Explicit pressure/thermal mesh topology.",
+        choices=("triangular", "quadrilateral"),
+    ),
+    "element_order": ConfigField(
+        "element_order",
+        "count",
+        "Polynomial order of the explicit pressure/thermal basis.",
+        choices=(1, 2),
+    ),
     "viscosity": ConfigField("miu", "Pa*s", "Lubricant dynamic viscosity."),
     "clearance": ConfigField("c", "m", "Radial bearing clearance."),
     "radius": ConfigField("r", "m", "Journal radius."),

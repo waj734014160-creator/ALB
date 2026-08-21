@@ -5,7 +5,19 @@ from typing import Dict, Optional, Union
 
 import numpy as np
 from scipy.sparse.linalg import spsolve
-from skfem import Basis, BilinearForm, ElementTriP1, LinearForm, MeshTri, asm, enforce
+from skfem import (
+    Basis,
+    BilinearForm,
+    ElementQuad1,
+    ElementQuad2,
+    ElementTriP1,
+    ElementTriP2,
+    LinearForm,
+    MeshQuad,
+    MeshTri,
+    asm,
+    enforce,
+)
 from skfem.helpers import dot, grad
 
 from ALB.physics.bearing.decorators import BearingDecoratorBase
@@ -23,6 +35,7 @@ from ALB.core.fem.base import BasePostProcess
 from ALB.core.lifecycle import RuntimeLifecycle
 from ALB.core.validation import validate_bearing_output
 from ALB.config import ThermalConfig
+from ALB.config.hydraulics_models import normalize_flow_projection
 from ALB.core.numerics.damping import AdaptiveDampController
 from ALB.physics.film.solver import (
     FilmOutput,
@@ -100,6 +113,94 @@ def _node_coords_array(nodes) -> np.ndarray:
     return np.asarray([node.coords for node in nodes], dtype=float)
 
 
+def _mesh_doflocs(mesh) -> np.ndarray:
+    """Return basis DOF coordinates, including higher-order edge/interior DOFs."""
+
+    return np.asarray(getattr(mesh, "_alb_doflocs", mesh.p), dtype=float)
+
+
+def _supg_characteristic_length(mesh) -> float:
+    """Return the structured-grid length used by the existing SUPG model.
+
+    Explicit pressure/thermal meshes carry their macro-grid dimensions and
+    polynomial order.  Computing the nominal nodal spacing from those values
+    avoids round-off-sized gaps between coincident Q2 coordinate layers.  The
+    legacy mesh path deliberately retains its previous coordinate-based rule.
+    """
+
+    doflocs = _mesh_doflocs(mesh)
+    if getattr(mesh, "_alb_explicit_mesh", False):
+        nx, nz = getattr(mesh, "_alb_macro_shape")
+        element_order = int(getattr(mesh, "_alb_element_order"))
+        if nx <= 0 or nz <= 0 or element_order <= 0:
+            raise ValueError("explicit thermal mesh metadata must be positive")
+        dx_mesh = float(np.ptp(doflocs[0])) / (int(nx) * element_order)
+        dz_mesh = float(np.ptp(doflocs[1])) / (int(nz) * element_order)
+    else:
+        tx_unique = np.unique(doflocs[0])
+        tz_unique = np.unique(doflocs[1])
+        dx_mesh = (
+            float(np.min(np.diff(tx_unique))) if tx_unique.size > 1 else 1.0
+        )
+        dz_mesh = (
+            float(np.min(np.diff(tz_unique))) if tz_unique.size > 1 else 1.0
+        )
+    return float(np.sqrt(dx_mesh**2 + dz_mesh**2))
+
+
+def _thermal_element(mesh_type: str, element_order: int):
+    """Return the pressure-matched thermal finite element."""
+
+    if mesh_type == "triangular":
+        return ElementTriP1() if element_order == 1 else ElementTriP2()
+    if mesh_type == "quadrilateral":
+        return ElementQuad1() if element_order == 1 else ElementQuad2()
+    raise ValueError(f"unsupported thermal mesh type: {mesh_type!r}")
+
+
+def _apply_exact_point_coupling(K, f, basis, point, coefficient, source_value):
+    """Apply one conservative point sink/source through FE probe weights."""
+
+    point_array = np.asarray(point, dtype=float).reshape(2, 1)
+    if not np.all(np.isfinite(point_array)):
+        raise ValueError("supply-hole point coordinates must be finite")
+    try:
+        weights = basis.probes(point_array).tocsr()
+    except ValueError as exc:
+        raise ValueError("supply-hole point is outside the thermal mesh") from exc
+    if weights.nnz == 0:
+        raise ValueError("supply-hole point is outside the thermal mesh")
+    if not np.all(np.isfinite(weights.data)):
+        raise ValueError("supply-hole thermal projection weights must be finite")
+    if not np.isclose(float(weights.sum()), 1.0, rtol=0.0, atol=1.0e-12):
+        raise ValueError("supply-hole thermal projection weights must sum to one")
+    K = K.tocsr() + float(coefficient) * (weights.T @ weights)
+    load = np.asarray(weights.T.toarray(), dtype=float).reshape(-1)
+    f = np.asarray(f, dtype=float) + float(coefficient) * float(source_value) * load
+    return K, f
+
+
+def _orifice_source_components(item):
+    """Return coordinates, flow, and projection from one thermal source item."""
+
+    if len(item) == 3:
+        ox, oz, flow = item
+        projection = "nearest_node"
+    elif len(item) == 4:
+        ox, oz, flow, projection = item
+    else:
+        raise ValueError("thermal orifice data must contain three or four values")
+    values = np.asarray([ox, oz, flow], dtype=float)
+    if not np.all(np.isfinite(values)):
+        raise ValueError("thermal orifice coordinates and flow must be finite")
+    return (
+        float(values[0]),
+        float(values[1]),
+        float(values[2]),
+        normalize_flow_projection(projection),
+    )
+
+
 def _build_film_grid(model) -> ThermalFilmGrid:
     nodes = _node_sequence(model)
     coords = _node_coords_array(nodes)
@@ -147,8 +248,85 @@ def _build_thermal_mesh_data(
     differ, so keeping this block shared prevents the two build_mesh methods
     from drifting apart.
     """
+    explicit = model.args.get("mesh_type") is not None
+    if explicit:
+        pressure_mesh = model.mesh_skfem
+        pressure_x = np.asarray(model.args["x_lim"], dtype=float)
+        pressure_z = np.asarray(model.args["z_lim"], dtype=float)
+        same_coordinates = np.allclose(
+            [x_axis[0], x_axis[-1], z_axis[0], z_axis[-1]],
+            [pressure_x[0], pressure_x[1], pressure_z[0], pressure_z[1]],
+            rtol=0.0,
+            atol=1.0e-11,
+        )
+        if same_coordinates:
+            points = pressure_mesh.p.copy()
+        else:
+            scale_x = (float(x_axis[-1]) - float(x_axis[0])) / (
+                pressure_x[1] - pressure_x[0]
+            )
+            scale_z = (float(z_axis[-1]) - float(z_axis[0])) / (
+                pressure_z[1] - pressure_z[0]
+            )
+            points = np.empty_like(pressure_mesh.p, dtype=float)
+            points[0] = (
+                pressure_mesh.p[0] - pressure_x[0]
+            ) * scale_x + float(x_axis[0])
+            points[1] = (
+                pressure_mesh.p[1] - pressure_z[0]
+            ) * scale_z + float(z_axis[0])
+        if model.args["mesh_type"] == "triangular":
+            mesh = MeshTri(points, pressure_mesh.t.copy())
+        else:
+            mesh = MeshQuad(points, pressure_mesh.t.copy())
+        basis = Basis(
+            mesh,
+            _thermal_element(
+                str(model.args["mesh_type"]), int(model.args["element_order"])
+            ),
+            intorder=8,
+        )
+        doflocs = np.asarray(basis.doflocs, dtype=float)
+        mesh._alb_doflocs = doflocs
+        mesh._alb_basis = basis
+        mesh._alb_explicit_mesh = True
+        mesh._alb_macro_shape = (int(model.args["nx"]), int(model.args["nz"]))
+        mesh._alb_element_order = int(model.args["element_order"])
+
+        nodes = list(model.nodes.values())
+        if len(nodes) != basis.N:
+            raise ValueError("pressure and thermal explicit DOF counts must match")
+        h_nodal = np.maximum(
+            np.asarray([node.h for node in nodes], dtype=float)
+            * float(model.args["c"])
+            / h_scale,
+            1e-9,
+        )
+        p_nodal = np.asarray([node.p for node in nodes], dtype=float) * ps
+        p_field = basis.interpolate(p_nodal)
+        dp_dx_nodal = basis.project(p_field.grad[0])
+        dp_dz_nodal = basis.project(p_field.grad[1])
+        node_ix = SkfemThermalModel._nearest_index(x_axis, doflocs[0])
+        node_iz = SkfemThermalModel._nearest_index(z_axis, doflocs[1])
+        identity = np.arange(basis.N, dtype=int)
+        return {
+            "mesh": mesh,
+            "basis": basis,
+            "h_nodal": h_nodal,
+            "grid": grid,
+            "ps": ps,
+            "dp_dx_nodal": dp_dx_nodal,
+            "dp_dz_nodal": dp_dz_nodal,
+            "node_ix": node_ix,
+            "node_iz": node_iz,
+            "film_to_thermal_idx": identity,
+            "thermal_to_film_idx": identity.copy(),
+            "explicit_mesh": True,
+        }
+
     mesh = MeshTri.init_tensor(x_axis, z_axis)
     basis = Basis(mesh, ElementTriP1())
+    mesh._alb_basis = basis
 
     node_ix = SkfemThermalModel._nearest_index(x_axis, mesh.p[0])
     node_iz = SkfemThermalModel._nearest_index(z_axis, mesh.p[1])
@@ -486,6 +664,15 @@ class SkfemThermalModel:
         """Update only the pressure gradients in mesh_data (no mesh rebuild)."""
         grid = mesh_data["grid"]
         ps = mesh_data["ps"]
+        if mesh_data.get("explicit_mesh", False):
+            basis = mesh_data["basis"]
+            p_nodal = np.asarray(
+                [node.p for node in model.nodes.values()], dtype=float
+            ) * ps
+            pressure = basis.interpolate(p_nodal)
+            mesh_data["dp_dx_nodal"] = basis.project(pressure.grad[0])
+            mesh_data["dp_dz_nodal"] = basis.project(pressure.grad[1])
+            return
         x_dim = grid["x_dim"]
         z_dim = grid["z_dim"]
 
@@ -506,13 +693,13 @@ class SkfemThermalModel:
         viscosity_input = np.asarray(viscosity, dtype=float)
         if viscosity_input.size == 1:
             viscosity_nodal = np.full(
-                mesh.p.shape[1], float(viscosity_input), dtype=float
+                _mesh_doflocs(mesh).shape[1], float(viscosity_input), dtype=float
             )
-        elif viscosity_input.size == mesh.p.shape[1]:
+        elif viscosity_input.size == _mesh_doflocs(mesh).shape[1]:
             viscosity_nodal = viscosity_input.reshape(-1).copy()
         else:
             viscosity_nodal = np.full(
-                mesh.p.shape[1], float(np.mean(viscosity_input)), dtype=float
+                _mesh_doflocs(mesh).shape[1], float(np.mean(viscosity_input)), dtype=float
             )
         return np.clip(viscosity_nodal, self.config.miu_min, self.config.miu_max)
 
@@ -618,20 +805,8 @@ class SkfemThermalModel:
     ):
         if not self.config.supg:
             return K, f
-        tx_arr = mesh.p[0]
-        tz_arr = mesh.p[1]
         q_mag = np.sqrt(qx_nodal**2 + qz_nodal**2)
-        dx_mesh = (
-            float(np.min(np.diff(np.unique(tx_arr))))
-            if len(np.unique(tx_arr)) > 1
-            else 1.0
-        )
-        dz_mesh = (
-            float(np.min(np.diff(np.unique(tz_arr))))
-            if len(np.unique(tz_arr)) > 1
-            else 1.0
-        )
-        h_elem = np.sqrt(dx_mesh**2 + dz_mesh**2)
+        h_elem = _supg_characteristic_length(mesh)
         alpha_diff = self._conductivity_2d_nodal(h_nodal) / (rho_cv + 1e-30)
         pe_h = q_mag * h_elem / (2.0 * alpha_diff + 1e-30)
         pe_safe = np.clip(pe_h, 1e-10, 500.0)
@@ -660,8 +835,9 @@ class SkfemThermalModel:
         return K, f
 
     def _boundary_nodes(self, mesh, qz_nodal):
-        tx = mesh.p[0]
-        tz = mesh.p[1]
+        doflocs = _mesh_doflocs(mesh)
+        tx = doflocs[0]
+        tz = doflocs[1]
         x_min, x_max = float(tx.min()), float(tx.max())
         z_min, z_max = float(tz.min()), float(tz.max())
         tol_x = (x_max - x_min) * 1e-8
@@ -691,18 +867,34 @@ class SkfemThermalModel:
     def _apply_orifice_sources(self, K, f, mesh, rho_cv, t_supply, orifice_data):
         if not orifice_data:
             return K, f
-        tx = mesh.p[0]
-        tz = mesh.p[1]
-        K = K.tolil()
-        for ox, oz, q_vol in orifice_data:
-            if q_vol <= 0:
+        doflocs = _mesh_doflocs(mesh)
+        tx = doflocs[0]
+        tz = doflocs[1]
+        sources = [_orifice_source_components(item) for item in orifice_data]
+        for ox, oz, q_vol, projection in sources:
+            if q_vol > 0 and projection == "element_shape":
+                K, f = _apply_exact_point_coupling(
+                    K,
+                    f,
+                    mesh._alb_basis,
+                    (ox, oz),
+                    rho_cv * q_vol,
+                    t_supply,
+                )
+        nearest_matrix = None
+        for ox, oz, q_vol, projection in sources:
+            if q_vol <= 0 or projection != "nearest_node":
                 continue
+            if nearest_matrix is None:
+                nearest_matrix = K.tolil()
             dist2 = (tx - ox) ** 2 + (tz - oz) ** 2
             j = int(np.argmin(dist2))
             alpha_o = rho_cv * q_vol
-            K[j, j] += alpha_o
+            nearest_matrix[j, j] += alpha_o
             f[j] += alpha_o * t_supply
-        return K.tocsr(), f
+        if nearest_matrix is not None:
+            K = nearest_matrix.tocsr()
+        return K, f
 
     def _temperature_boundary_values(self, size, inlet_nodes, t_supply):
         side_temp = (
@@ -761,20 +953,8 @@ class SkfemThermalModel:
     def _calc_supg_tau_nodal(
         self, mesh, rho_cv, h_nodal, qx_nodal, qz_nodal
     ):
-        tx_arr = mesh.p[0]
-        tz_arr = mesh.p[1]
         q_mag = np.sqrt(qx_nodal**2 + qz_nodal**2)
-        dx_mesh = (
-            float(np.min(np.diff(np.unique(tx_arr))))
-            if len(np.unique(tx_arr)) > 1
-            else 1.0
-        )
-        dz_mesh = (
-            float(np.min(np.diff(np.unique(tz_arr))))
-            if len(np.unique(tz_arr)) > 1
-            else 1.0
-        )
-        h_elem = np.sqrt(dx_mesh**2 + dz_mesh**2)
+        h_elem = _supg_characteristic_length(mesh)
         alpha_diff = self._conductivity_2d_nodal(h_nodal) / (rho_cv + 1e-30)
         pe_h = q_mag * h_elem / (2.0 * alpha_diff + 1e-30)
         pe_safe = np.clip(pe_h, 1e-10, 500.0)
@@ -1220,17 +1400,33 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         """Apply explicit nondimensional point-source flow to the thermal system."""
         if not orifice_data:
             return K, f
-        tx = mesh.p[0]
-        tz = mesh.p[1]
-        K = K.tolil()
-        for ox, oz, q_nondim in orifice_data:
-            if q_nondim <= 0.0:
+        doflocs = _mesh_doflocs(mesh)
+        tx = doflocs[0]
+        tz = doflocs[1]
+        sources = [_orifice_source_components(item) for item in orifice_data]
+        for ox, oz, q_nondim, projection in sources:
+            if q_nondim > 0.0 and projection == "element_shape":
+                K, f = _apply_exact_point_coupling(
+                    K,
+                    f,
+                    mesh._alb_basis,
+                    (ox, oz),
+                    q_nondim,
+                    t_supply_nondim,
+                )
+        nearest_matrix = None
+        for ox, oz, q_nondim, projection in sources:
+            if q_nondim <= 0.0 or projection != "nearest_node":
                 continue
+            if nearest_matrix is None:
+                nearest_matrix = K.tolil()
             dist2 = (tx - ox) ** 2 + (tz - oz) ** 2
             node_index = int(np.argmin(dist2))
-            K[node_index, node_index] += float(q_nondim)
+            nearest_matrix[node_index, node_index] += float(q_nondim)
             f[node_index] += float(q_nondim) * float(t_supply_nondim)
-        return K.tocsr(), f
+        if nearest_matrix is not None:
+            K = nearest_matrix.tocsr()
+        return K, f
 
     def build_mesh(self, model, grid: Optional[ThermalFilmGrid] = None):
         if grid is None:
@@ -1326,20 +1522,8 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         return diff_x, diff_x / (scales.lr**2)
 
     def _calc_nondim_supg_tau_nodal(self, mesh, diff_x, diff_z, conv_x, conv_z):
-        tx_arr = mesh.p[0]
-        tz_arr = mesh.p[1]
         q_mag = np.sqrt(conv_x**2 + conv_z**2)
-        dx_mesh = (
-            float(np.min(np.diff(np.unique(tx_arr))))
-            if len(np.unique(tx_arr)) > 1
-            else 1.0
-        )
-        dz_mesh = (
-            float(np.min(np.diff(np.unique(tz_arr))))
-            if len(np.unique(tz_arr)) > 1
-            else 1.0
-        )
-        h_elem = np.sqrt(dx_mesh**2 + dz_mesh**2)
+        h_elem = _supg_characteristic_length(mesh)
         alpha_nd = np.maximum(np.maximum(diff_x, diff_z), 1e-30)
         pe_h = q_mag * h_elem / (2.0 * alpha_nd + 1e-30)
         pe_safe = np.clip(pe_h, 1e-10, 500.0)
@@ -1348,6 +1532,15 @@ class SkfemThermalModelNondim(SkfemThermalModel):
 
     def update_pressure_gradients(self, model, mesh_data: dict):
         grid = mesh_data["grid"]
+        if mesh_data.get("explicit_mesh", False):
+            basis = mesh_data["basis"]
+            p_nodal = np.asarray(
+                [node.p for node in model.nodes.values()], dtype=float
+            )
+            pressure = basis.interpolate(p_nodal)
+            mesh_data["dp_dx_nodal"] = basis.project(pressure.grad[0])
+            mesh_data["dp_dz_nodal"] = basis.project(pressure.grad[1])
+            return
         x_axis = grid["x_axis"]
         z_axis = grid["z_axis"]
 
@@ -1477,8 +1670,9 @@ class SkfemThermalModelNondim(SkfemThermalModel):
             else t_supply_dim
         )
         side_temp_bar = scales.temperature_to_nondim(side_temp, t_supply_dim)
-        tx = mesh.p[0]
-        tz = mesh.p[1]
+        doflocs = _mesh_doflocs(mesh)
+        tx = doflocs[0]
+        tz = doflocs[1]
         x_min, x_max = float(tx.min()), float(tx.max())
         z_min, z_max = float(tz.min()), float(tz.max())
         tol_x = (x_max - x_min) * 1e-8
@@ -1698,12 +1892,18 @@ class SkfemThermalModelNondim(SkfemThermalModel):
 
         viscosity_input = np.asarray(viscosity, dtype=float)
         if viscosity_input.size == 1:
-            miu_nodal = np.full(mesh.p.shape[1], float(viscosity_input), dtype=float)
-        elif viscosity_input.size == mesh.p.shape[1]:
+            miu_nodal = np.full(
+                _mesh_doflocs(mesh).shape[1],
+                float(viscosity_input),
+                dtype=float,
+            )
+        elif viscosity_input.size == _mesh_doflocs(mesh).shape[1]:
             miu_nodal = viscosity_input.reshape(-1).copy()
         else:
             miu_nodal = np.full(
-                mesh.p.shape[1], float(np.mean(viscosity_input)), dtype=float
+                _mesh_doflocs(mesh).shape[1],
+                float(np.mean(viscosity_input)),
+                dtype=float,
             )
         miu_nodal = np.clip(miu_nodal, self.config.miu_min, self.config.miu_max)
         miu_bar = np.clip(scales.viscosity_to_nondim(miu_nodal), 1e-12, None)
@@ -1733,20 +1933,8 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         f = asm(_source_form, basis, q=basis.interpolate(phi_bar))
 
         if self.config.supg:
-            tx_arr = mesh.p[0]
-            tz_arr = mesh.p[1]
             q_mag = np.sqrt(conv_x**2 + conv_z**2)
-            dx_mesh = (
-                float(np.min(np.diff(np.unique(tx_arr))))
-                if len(np.unique(tx_arr)) > 1
-                else 1.0
-            )
-            dz_mesh = (
-                float(np.min(np.diff(np.unique(tz_arr))))
-                if len(np.unique(tz_arr)) > 1
-                else 1.0
-            )
-            h_elem = np.sqrt(dx_mesh**2 + dz_mesh**2)
+            h_elem = _supg_characteristic_length(mesh)
             alpha_nd = np.maximum(np.maximum(diff_x, diff_z), 1e-30)
             pe_h = q_mag * h_elem / (2.0 * alpha_nd + 1e-30)
             pe_safe = np.clip(pe_h, 1e-10, 500.0)
@@ -1789,8 +1977,9 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         )
         side_temp_bar = scales.temperature_to_nondim(side_temp, t_supply)
 
-        tx = mesh.p[0]
-        tz = mesh.p[1]
+        doflocs = _mesh_doflocs(mesh)
+        tx = doflocs[0]
+        tz = doflocs[1]
         x_min, x_max = float(tx.min()), float(tx.max())
         z_min, z_max = float(tz.min()), float(tz.max())
         tol_x = (x_max - x_min) * 1e-8
@@ -2278,6 +2467,9 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
             yct=old_model.args.get("yct", 0.0),
             angle_unit="rad",
             input_args=getattr(old_model, "_input_args", {}),
+            mesh_type=old_model.args.get("mesh_type"),
+            element_order=old_model.args.get("element_order"),
+            triangle_diagonal=old_model.args.get("triangle_diagonal", "default"),
             reynold=old_model.args.get("reynold", True),
             error_set=getattr(old_model, "_error_set", 1e-7),
             damp=getattr(old_model, "_damp", 0.8),
@@ -2396,8 +2588,9 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         film_nodes = list(model.nodes.values())
         r = model.args["r"]
         l_half = model.args["l"] / 2.0
-        tx = thermal_mesh.p[0]
-        tz = thermal_mesh.p[1]
+        doflocs = _mesh_doflocs(thermal_mesh)
+        tx = doflocs[0]
+        tz = doflocs[1]
 
         t_film = np.empty(len(film_nodes), dtype=float)
         for i, node in enumerate(film_nodes):
@@ -2455,8 +2648,9 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         film_xs_dim = grid["film_xs"] * r
         film_zs_dim = grid["film_zs"] * l_half
 
-        tx = thermal_mesh.p[0]
-        tz = thermal_mesh.p[1]
+        doflocs = _mesh_doflocs(thermal_mesh)
+        tx = doflocs[0]
+        tz = doflocs[1]
         miu_thermal = np.empty(tx.size, dtype=float)
         for j in range(tx.size):
             dist = (film_xs_dim - tx[j]) ** 2 + (film_zs_dim - tz[j]) ** 2
@@ -2557,7 +2751,8 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
     def _collect_orifice_info(self):
         """Return explicit nondimensional point-source data from bearing orifices.
 
-        The nondimensional thermal core consumes ``(x_bar, z_bar, q_bar)``.
+        The nondimensional thermal core consumes
+        ``(x_bar, z_bar, q_bar, flow_projection)``.
         Tuple-form flow data is unsupported because its dimensional
         coordinates and volumetric flow are ambiguous at this
         boundary.
@@ -2589,6 +2784,9 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
                             float(position[0]),
                             float(position[1]),
                             float(item["q_nondim"]),
+                            normalize_flow_projection(
+                                item.get("flow_projection", "nearest_node")
+                            ),
                         )
                     )
 
@@ -3209,6 +3407,20 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
                         "t_eff": float(raw.get("t_eff", np.nan)),
                         "temperature": raw.get("temperature"),
                         "viscosity_field": raw.get("viscosity_field"),
+                        "pressure": np.asarray(
+                            self.bearing.main_model.latest_result,
+                            dtype=float,
+                        ).copy(),
+                        "film_thickness": np.asarray(
+                            [
+                                node.h
+                                for node in self.bearing.main_model.nodes.values()
+                            ],
+                            dtype=float,
+                        ),
+                        "q_orifice_total": float(
+                            raw.get("q_orifice_total_vol", 0.0)
+                        ),
                     },
                     {
                         "schema": "alb.thermal-bearing-result.v1",
@@ -3217,6 +3429,10 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
                         "converged": converged,
                         "iterations": int(raw.get("thermal_iterations", 0)),
                         "transient": bool(raw.get("thermal_transient", False)),
+                        **self.bearing.main_model.discretization_metadata(),
+                        "temperature_dofs": int(
+                            np.asarray(raw.get("temperature"), dtype=float).size
+                        ),
                     },
                 )
                 self._pending_input = None
@@ -3346,6 +3562,9 @@ class ThermalHydroBearing(NodimThermalHydroBearing):
             yct=nd_args["yct"],
             angle_unit="rad",
             input_args=input_args,
+            mesh_type=old_model.args.get("mesh_type"),
+            element_order=old_model.args.get("element_order"),
+            triangle_diagonal=old_model.args.get("triangle_diagonal", "default"),
             reynold=old_model.args.get("reynold", True),
             error_set=getattr(old_model, "_error_set", 1e-7),
             damp=getattr(old_model, "_damp", 0.8),

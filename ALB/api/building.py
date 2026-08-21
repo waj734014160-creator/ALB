@@ -156,6 +156,9 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
             ),
             ps=float(restrictors.get("supply_pressure", 1.0)),
             p0=float(restrictors.get("tank_pressure", 0.0)),
+            flow_projection=str(
+                restrictors.get("flow_projection", "nearest_node")
+            ),
         )
     else:
         orifice = OrificeConfig(
@@ -175,6 +178,9 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
             ),
             discharge_coefficient=float(
                 restrictors.get("discharge_coefficient", 0.6)
+            ),
+            flow_projection=str(
+                restrictors.get("flow_projection", "nearest_node")
             ),
         )
 

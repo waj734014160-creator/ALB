@@ -8,6 +8,20 @@ import numpy as np
 
 from .common_models import ConfigData
 
+
+FLOW_PROJECTION_MODES = frozenset({"nearest_node", "element_shape"})
+
+
+def normalize_flow_projection(value: str) -> str:
+    """Return one validated active-orifice flow projection mode."""
+
+    normalized = str(value).strip().lower()
+    if normalized not in FLOW_PROJECTION_MODES:
+        choices = ", ".join(sorted(FLOW_PROJECTION_MODES))
+        raise ValueError(f"flow_projection must be one of: {choices}")
+    return normalized
+
+
 @dataclass
 class TankConfig(ConfigData):
     """Configuration for the oil tank."""
@@ -15,6 +29,7 @@ class TankConfig(ConfigData):
     xrange: list = field(default_factory=lambda: [0.49, 0.51])
     zrange: list = field(default_factory=lambda: [0.2, 0.8])
     h_tank: float = 2
+
 
 @dataclass
 class OrificeConfig(ConfigData):
@@ -30,6 +45,11 @@ class OrificeConfig(ConfigData):
     length: float = 0.02
     valve_area: float = 1.83e-5 / 15
     discharge_coefficient: float = 0.6
+    flow_projection: str = "nearest_node"
+
+    def __post_init__(self) -> None:
+        self.flow_projection = normalize_flow_projection(self.flow_projection)
+
 
 @dataclass
 class NodimOrificeConfig(ConfigData):
@@ -44,9 +64,11 @@ class NodimOrificeConfig(ConfigData):
     ps: float = 1.0
     p0: float = 0.0
     q_leak: float = 0.0
+    flow_projection: str = "nearest_node"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # Store the position array in a consistent numeric shape for builders.
+        self.flow_projection = normalize_flow_projection(self.flow_projection)
         self.position = np.asarray(self.position, dtype=float)
         self.cq1 = np.asarray(self.cq1, dtype=float)
         if self.cq1.size != 1:
@@ -76,6 +98,7 @@ class NodimOrificeConfig(ConfigData):
             "ps",
             "p0",
             "q_leak",
+            "flow_projection",
         ]
         direct_args = {
             key: config_dict[key] for key in direct_keys if key in config_dict
