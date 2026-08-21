@@ -49,8 +49,9 @@
   `2ecb97e`，目标是把主动轴承公开阀配置收敛为二阶 Hz 参数和任意传递函数。
 - 公共用户指南与 API Reference 已从私有 ALB 源仓库发布到
   <https://waj734014160-creator.github.io/ALB/>。当前线上内容对应源提交
-  `e8a7821aa0ecc3e7b76f33ef67fd9f13cca86ef1`，静态站点保存在公开 Pages 仓库的
-  `ALB/` 子目录。
+  `30b42fcc6bb667d0b0cdb1b2b5ebb62cdb1b28c7`，覆盖 27 个根公开符号、三个高级
+  namespace 的 10 个显式导出、186 行轴承配置字段和 36 行仿真配置字段；静态站点
+  保存在公开 Pages 仓库的 `ALB/` 子目录。
 
 ## 已完成的实现边界
 
@@ -196,16 +197,18 @@
   `492 passed, 13 skipped, 10 subtests passed`。配置参考和公共 API 参考生成检查均
   通过，缺省主动线性化与无量纲热 runtime 仍通过既有逐元素精确参考。
 - 公共文档发布工作流
-  [32473313401](https://github.com/waj734014160-creator/ALB/actions/runs/32473313401)
-  在源提交 `e8a7821aa0ecc3e7b76f33ef67fd9f13cca86ef1` 上通过三类生成参考检查、
-  `19 passed` 文档/API 合同测试、严格 MkDocs 构建和跨仓库发布。Python 3.10
-  全新临时环境安装 `.[docs,test,film,control]` 后同一测试组也为 `19 passed`；
-  `control` extra 已显式包含 `networkx>=3.0`，避免依赖已安装环境掩盖运行需求。
-  公开仓库提交为
-  [a801388](https://github.com/waj734014160-creator/waj734014160-creator.github.io/commit/a8013889945dbb3133c91d5cf792e01524d455a7)，
-  Pages API 状态为 `built`、HTTPS 已强制且公开可见。站点首页、根 API、配置字段、
-  Control/Dynamics/Surrogate 六个路由以及代表性 CSS、SVG 资源均实测返回 HTTP 200，
-  页面 canonical URL 均保留 `/ALB/` 前缀。
+  [32481748559](https://github.com/waj734014160-creator/ALB/actions/runs/32481748559)
+  在源提交 `30b42fcc6bb667d0b0cdb1b2b5ebb62cdb1b28c7` 上通过四类生成参考检查、
+  `32 passed` 文档/API 合同测试、严格 MkDocs 构建和跨仓库发布。本地最终树的同一
+  文档测试组为 `32 passed`，完整 API unit suite 为 `140 passed, 3 warnings`；三个
+  warning 均为既有的稳态热模型与动态伺服配对提示。构建后的 69 个公共文本资产未
+  命中本机绝对路径、私钥头或被排除的内部维护路径。
+- 公开仓库提交为
+  [b75d82f](https://github.com/waj734014160-creator/waj734014160-creator.github.io/commit/b75d82fb8a73841c743aede0fc1cfe85cbad7d1e)，
+  Pages API 状态为 `built` 且强制 HTTPS。首页、根 API、轴承/仿真配置、
+  Control/Dynamics/Surrogate、两个配置模板、样式表和搜索索引共 11 个公开路由或
+  资产均实测返回 HTTP 200 并包含预期内容；搜索索引支持中文、普通 API 名称和
+  带下划线的配置字段标识符。
 
 ## 当前风险与边界
 
