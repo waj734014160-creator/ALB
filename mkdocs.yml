@@ -103,6 +103,7 @@ plugins:
       lang:
         - zh
         - en
+      separator: '[\s\-_]+'
 
 markdown_extensions:
   - admonition
