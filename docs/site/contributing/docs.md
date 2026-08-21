@@ -29,10 +29,18 @@ E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_namespace_reference.py -
 E:/Anaconda2023/envs/ALB/python.exe -m mkdocs build --strict
 ```
 
-## 4. 内容规则
+## 4. 对外发布
+
+- 正式站点发布到 <https://waj734014160-creator.github.io/ALB/>；用户指南和 API Reference 使用同一站点与同一版本。
+- ALB 源仓库保持私有；生成后的静态站点单独发布到公开仓库 `waj734014160-creator/waj734014160-creator.github.io` 的 `ALB/` 子目录。
+- `.github/workflows/docs-pages.yml` 负责严格检查、构建和跨仓库发布；当前开发分支 `codex/alb-0.4.5` 与后续 `main` 更新会触发发布，也可从 GitHub Actions 手动运行。
+- 发布前必须通过三类生成参考漂移检查、文档/API 目标测试、严格 MkDocs 构建和公共站点内容边界测试。不要绕过工作流直接上传手工修改的 `site/`。
+- Pages 仓库只保存可再生的静态站点；部署凭据使用只对该仓库有写权限的 SSH deploy key，并保存为源仓库 Actions secret `PAGES_DEPLOY_KEY`。
+- 源仓库为私有仓库，但 GitHub Pages 站点和 Pages artifact 仓库面向公众；任何进入站点的内容都必须按公开材料审查。
+
+## 5. 内容规则
 
 - 面向用户的指南、说明和维护正文使用中文。
 - 源码 docstring、代码注释和 CLI help 使用英文。
 - 不把实时状态、PID、远程连接、daily logs、审计证据或单次实验写入公共站点。
 - `site/` 是可复现 build artifact，不提交。
-- 对外发布不是本地 build 的默认结果；启用 Pages 或其他 hosting 前必须单独确认。

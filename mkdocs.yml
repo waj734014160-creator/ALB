@@ -1,6 +1,7 @@
 site_name: ALB Documentation
 site_description: 主动润滑轴承物理、控制、动力学与代理模型用户文档
 site_author: ALB maintainers
+site_url: https://waj734014160-creator.github.io/ALB/
 docs_dir: docs
 site_dir: site
 strict: true

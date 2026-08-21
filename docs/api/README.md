@@ -13,7 +13,13 @@
 
 ## 阅读入口
 
-[公开 API 自动参考](public_api_reference.md) 是主文档，完整展示当前
+线上站点统一发布用户指南与 API Reference：
+
+- [根公开 API](https://waj734014160-creator.github.io/ALB/api/public_api_reference/)
+- [轴承配置字段](https://waj734014160-creator.github.io/ALB/api/bearing_config_reference/)
+- 高级 namespace：[Control](https://waj734014160-creator.github.io/ALB/api/namespaces/control/)、[Dynamics](https://waj734014160-creator.github.io/ALB/api/namespaces/dynamics/) 和 [Surrogate](https://waj734014160-creator.github.io/ALB/api/namespaces/surrogate/)
+
+[公开 API 自动参考](public_api_reference.md) 是仓库内的主文档，完整展示当前
 `ALB` 根命名空间中的：
 
 - 类、枚举、异常、函数和包版本；

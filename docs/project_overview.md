@@ -42,6 +42,7 @@
 | `tools/` | benchmarks、diagnostics、docs、manual、migrations、reference 和 validation 工具。 |
 | `refs/` | 不可覆盖的行为参考、固定输入和历史回归资产。 |
 | `docs/` | 稳定说明、公共文档站点源码、生成式 API 参考、当前状态、迁移资料、run 规则和维护文档；站点输出 `site/` 不跟踪。 |
+| `.github/workflows/` | Python 兼容性、文档合同与 GitHub Pages 自动发布工作流。 |
 | `scripts/` | 仓库维护脚本；代码注释和 CLI help 使用英文。 |
 | `paper_config/` | 仍由本项目跟踪的稳定论文调用配置资产，不存放论文任务运行状态。 |
 | `pyproject.toml` | Python 版本、核心依赖、领域 extras、CLI、构建和测试配置。 |
@@ -71,6 +72,8 @@ ALBNN 活跃工作转向以下兄弟项目文档：
 论文活跃任务状态转向 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md`。
 
 ## 开发和验证入口
+
+公共用户指南与 API Reference：<https://waj734014160-creator.github.io/ALB/>。发布工作流为 `.github/workflows/docs-pages.yml`；它在当前开发分支和 `main` 上先执行生成参考漂移检查、目标测试与严格 MkDocs 构建，再把可再生静态站点发布到公开 Pages 仓库的 `ALB/` 子目录。ALB 源仓库继续保持私有。
 
 默认环境：
 

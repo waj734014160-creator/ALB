@@ -51,6 +51,15 @@ def test_public_site_build_contains_primary_user_routes(site_root: Path) -> None
     assert "BearingConfig" in home
     assert "BearingResult" in home
     assert "bearing-lifecycle.svg" in home
+    assert 'href="https://waj734014160-creator.github.io/ALB/"' in home
+
+    api_reference = (
+        site_root / "api/public_api_reference/index.html"
+    ).read_text(encoding="utf-8")
+    assert (
+        'href="https://waj734014160-creator.github.io/ALB/'
+        'api/public_api_reference/"' in api_reference
+    )
 
 
 def test_public_site_excludes_machine_evidence(site_root: Path) -> None:
