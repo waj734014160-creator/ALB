@@ -4,44 +4,44 @@ ALB 的核心安装包含配置、公共 facade、基础数值依赖和 JSON5 �
 
 === "核心"
 
-    ```powershell
-    E:/Anaconda2023/envs/ALB/python.exe -m pip install re-alb
+    ```bash
+    python -m pip install re-alb
     ```
 
 === "液膜 / 气膜"
 
-    ```powershell
-    E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[film]"
+    ```bash
+    python -m pip install "re-alb[film]"
     ```
 
 === "控制"
 
-    ```powershell
-    E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[control]"
+    ```bash
+    python -m pip install "re-alb[control]"
     ```
 
 === "转子动力学"
 
-    ```powershell
-    E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[dynamics]"
+    ```bash
+    python -m pip install "re-alb[dynamics]"
     ```
 
 === "ALBNN 代理模型"
 
-    ```powershell
-    E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[surrogate]"
+    ```bash
+    python -m pip install "re-alb[surrogate]"
     ```
 
 === "全部能力"
 
-    ```powershell
-    E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[all]"
+    ```bash
+    python -m pip install "re-alb[all]"
     ```
 
 ## 检查当前解释器
 
-```powershell
-E:/Anaconda2023/envs/ALB/python.exe -c "import ALB; print(ALB.__version__, ALB.__file__)"
+```bash
+python -c "import ALB; print(ALB.__version__, ALB.__file__)"
 ```
 
 输出中的版本应与当前项目版本一致，路径应指向预期环境。兄弟项目应安装 wheel 或 editable package，不要复制 `ALB/` 或临时修改 `sys.path`。

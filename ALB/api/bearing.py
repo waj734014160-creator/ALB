@@ -24,7 +24,30 @@ from .results import BearingResult
 
 
 class Bearing:
-    """Simple stateful facade over one native bearing runtime."""
+    """Stateful user facade over one validated native bearing runtime.
+
+    Parameters
+    ----------
+    config
+        Immutable :class:`BearingConfig` describing the family, unit system,
+        time step, resources, and child models. Construction materializes a new
+        runtime and does not perform a calculation.
+
+    Notes
+    -----
+    Calls to :meth:`calculate` are sequential and must advance exactly by the
+    configured ``time_step`` after the first sample. The facade retains only the
+    latest stable :class:`BearingResult`; :meth:`reset` creates a fresh runtime
+    without changing ``config``. Bound analysis services use isolated runtimes
+    and do not replace ``latest_result``.
+
+    Raises
+    ------
+    TypeError
+        If ``config`` is not a :class:`BearingConfig`.
+    ConfigurationError, BuildError
+        If the validated specification cannot be materialized.
+    """
 
     __slots__ = ("_config", "_runtime", "_latest_result")
 
@@ -42,19 +65,33 @@ class Bearing:
 
     @property
     def config(self) -> BearingConfig:
-        """Return the immutable source configuration."""
+        """Return the immutable source configuration used by this runtime.
+
+        The returned object may be shared safely; use ``with_overrides`` to
+        create a validated modified configuration rather than mutating it.
+        """
 
         return self._config
 
     @property
     def unit_system(self) -> UnitSystem:
-        """Return the units expected by calculate()."""
+        """Return the unit system required by displacement, velocity, and force.
+
+        Dimensional bearings accept displacement in m and velocity in m/s and
+        return force in N. Nondimensional bearings use their configured scales.
+        """
 
         return UnitSystem.coerce(self._config.unit_system)
 
     @property
     def latest_result(self) -> BearingResult:
-        """Return the latest result without calculation."""
+        """Return the most recently completed result without hidden evaluation.
+
+        Raises
+        ------
+        RuntimeError
+            If :meth:`calculate` has not completed since construction or reset.
+        """
 
         if self._latest_result is None:
             raise RuntimeError("no bearing result is available")
@@ -62,7 +99,12 @@ class Bearing:
 
     @property
     def analysis(self) -> BearingAnalysis:
-        """Return analysis services bound to this immutable configuration."""
+        """Return state-isolated analysis services for this configuration.
+
+        Each property access returns a lightweight :class:`BearingAnalysis` bound
+        to this facade. Its operations build fresh runtimes and therefore leave
+        the sequential calculation state and ``latest_result`` unchanged.
+        """
 
         return BearingAnalysis(self)
 
@@ -70,7 +112,12 @@ class Bearing:
         return Bearing(self._config)
 
     def reset(self) -> None:
-        """Start a fresh session without exposing implementation initialization."""
+        """Replace the native runtime and clear the latest result.
+
+        The immutable configuration is preserved. The next calculation may use
+        any finite starting time because the previous sequential time boundary is
+        discarded.
+        """
 
         from .building import build_runtime
 
@@ -88,7 +135,39 @@ class Bearing:
         time: float,
         spool: object | None = None,
     ) -> BearingResult:
-        """Evaluate one sequential bearing sample."""
+        """Evaluate and commit one sequential two-axis bearing sample.
+
+        Parameters
+        ----------
+        displacement
+            Finite ``(x, y)`` journal-center displacement. Dimensional bearings
+            use m; nondimensional bearings use displacement normalized by their
+            configured clearance scale.
+        velocity
+            Finite ``(vx, vy)`` center velocity in m/s or the corresponding
+            nondimensional velocity. The default is zero.
+        time
+            Finite sample time in the configured local time unit. After the first
+            successful sample it must equal the previous time plus ``time_step``.
+        spool
+            Optional finite normalized ``(sx, sy)`` valve command. It is required
+            only for ``external_spool`` control and forbidden for all other modes.
+
+        Returns
+        -------
+        BearingResult
+            Immutable force, convergence, field outputs, and diagnostics. The
+            same object becomes :attr:`latest_result` only after success.
+
+        Raises
+        ------
+        TypeError, ValueError
+            If array shapes, numeric values, time order, or spool ownership are
+            invalid.
+        CalculationError
+            If the native step fails after accepting the input. When available,
+            ``failure_snapshot`` preserves runtime diagnostics.
+        """
 
         input_value = BearingInput(
             displacement=np.asarray(displacement),
@@ -156,7 +235,11 @@ class Bearing:
         return result
 
     def diagnostic_snapshot(self) -> ResultBundle:
-        """Return immutable facade and runtime diagnostics."""
+        """Return an immutable diagnostic snapshot without advancing physics.
+
+        Native runtimes may expose family-specific values. The fallback snapshot
+        always records schema, family, unit system, and whether a result exists.
+        """
 
         diagnostic = getattr(self._runtime, "diagnostic_snapshot", None)
         if callable(diagnostic):
@@ -173,7 +256,28 @@ class Bearing:
 
 
 def build_bearing(config: BearingConfig) -> Bearing:
-    """Build one ready user-facing bearing."""
+    """Build a ready bearing facade from an immutable validated configuration.
+
+    Parameters
+    ----------
+    config
+        :class:`BearingConfig` containing the complete materialized specification
+        and resource root.
+
+    Returns
+    -------
+    Bearing
+        Fresh facade with no calculation history.
+
+    Raises
+    ------
+    TypeError
+        If ``config`` is not :class:`BearingConfig`.
+    ConfigurationError
+        If a resource or cross-section configuration is invalid.
+    BuildError
+        If runtime assembly fails for another reason.
+    """
 
     try:
         return Bearing(config)
@@ -184,7 +288,28 @@ def build_bearing(config: BearingConfig) -> Bearing:
 
 
 def bearing_from_file(path: str | Path) -> Bearing:
-    """Load one strict 0.4 JSON5 document and build a ready bearing."""
+    """Load one strict ALB 0.4 bearing document and build a fresh facade.
+
+    Parameters
+    ----------
+    path
+        UTF-8 JSON5 file with ``schema_version='0.4.0'`` and ``kind='bearing'``.
+        Relative includes and resources remain contained below its directory.
+
+    Returns
+    -------
+    Bearing
+        Ready facade whose immutable config records the resolved source path.
+
+    Raises
+    ------
+    ConfigurationError
+        If the document, include graph, fields, values, or resources are invalid.
+    ImportError
+        If JSON5 support from the ``io`` extra is unavailable.
+    BuildError
+        If the validated configuration cannot be assembled.
+    """
 
     return build_bearing(load_bearing_config(path))
 

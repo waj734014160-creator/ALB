@@ -39,7 +39,30 @@ class CoupledBearingBinding:
 
 @dataclass(frozen=True, slots=True)
 class CouplingRuntimeDependencies:
-    """Post-commit dependencies owned by one top-level coupling runtime."""
+    """Configure post-commit services owned by one coupling runtime.
+
+    Parameters
+    ----------
+    run_id
+        Nonempty stable identifier passed to the recorder lifecycle.
+    recorder
+        Optional object satisfying ``ResultRecorderProtocol``.
+    observers
+        Immutable observers called after each physical step is committed.
+    record_failure_policy
+        ``"return"`` records a failed receipt; ``"raise"`` propagates the
+        post-commit recording error.
+    observer_failure_policy
+        ``"isolate"`` records observer failures and continues; ``"raise"``
+        propagates the first post-commit observer error.
+
+    Raises
+    ------
+    TypeError
+        If a recorder or observer does not satisfy its runtime protocol.
+    ValueError
+        If ``run_id`` or either failure policy is invalid.
+    """
 
     run_id: str
     recorder: ResultRecorderProtocol | None = None

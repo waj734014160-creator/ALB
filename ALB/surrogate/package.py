@@ -37,7 +37,27 @@ class ModelPackage:
 
 
 def open_model_package(path: Path | str) -> ModelPackage:
-    """Validate schema, exact artifact roles, paths, and SHA-256 digests."""
+    """Validate and describe one pickle-free ALBNN 0.4 package.
+
+    Parameters
+    ----------
+    path
+        Directory containing ``manifest.json`` and the four exact artifact roles:
+        ``weights.pt``, two NPZ scalers, and ``metadata.json``.
+
+    Returns
+    -------
+    ModelPackage
+        Resolved artifact paths plus the validated manifest mapping.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the manifest or any declared artifact is absent.
+    ValueError
+        If schemas, role names, relative file names, metadata, or SHA-256 digests
+        do not match the ALBNN 0.4 package contract.
+    """
 
     root = Path(path).resolve()
     manifest_path = root / "manifest.json"
@@ -104,7 +124,35 @@ def create_model_package(
     output_scaler: object,
     metadata: Mapping[str, Any],
 ) -> ModelPackage:
-    """Create one deployable 0.4 package from trusted in-memory training state."""
+    """Create one deployable package from trusted training artifacts.
+
+    Parameters
+    ----------
+    path
+        Destination directory. It may be absent or empty, but existing content is
+        never overwritten.
+    checkpoint
+        Existing trusted Torch checkpoint copied to ``weights.pt``.
+    input_scaler, output_scaler
+        Fitted scaler objects accepted by ``write_scaler`` and serialized as NPZ.
+    metadata
+        Deployment metadata. Schema ``alb.surrogate-metadata.v0.4`` is inserted;
+        a conflicting explicit schema is rejected.
+
+    Returns
+    -------
+    ModelPackage
+        Newly written package after a complete digest-validation pass.
+
+    Raises
+    ------
+    FileExistsError
+        If the destination directory contains files.
+    FileNotFoundError
+        If ``checkpoint`` does not exist.
+    ValueError
+        If metadata conflicts with the 0.4 contract or a scaler is invalid.
+    """
 
     root = Path(path).resolve()
     if root.exists() and any(root.iterdir()):
@@ -157,7 +205,34 @@ def load_albnn_package(
     use_augment: bool | None = None,
     runtime_parameters: Mapping[str, Any] | None = None,
 ) -> Any:
-    """Load a digest-validated model with safe Torch and NPZ readers."""
+    """Load a digest-validated ALBNN package for CPU inference.
+
+    Parameters
+    ----------
+    path
+        Package directory accepted by ``open_model_package``.
+    use_augment
+        Optional runtime override for metadata ``use_augment``. ``None`` preserves
+        the packaged value.
+    runtime_parameters
+        Optional mapping exposed as attributes on the inference runtime config.
+
+    Returns
+    -------
+    Any
+        Initialized ``ALBNN`` inference object accepted by the surrogate bearing
+        runtime.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the package is incomplete.
+    ValueError
+        If digests, schemas, model type, checkpoint structure, or scalers are
+        invalid.
+    ImportError
+        If the ``surrogate`` extra, including Torch, is not installed.
+    """
 
     package = open_model_package(path)
     import torch

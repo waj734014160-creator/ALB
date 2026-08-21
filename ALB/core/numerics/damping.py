@@ -8,7 +8,27 @@ from typing import Optional
 
 @dataclass
 class AdaptiveDampConfig:
-    """Configuration for residual-trend based relaxation control."""
+    """Configure residual-trend based scalar relaxation control.
+
+    Parameters
+    ----------
+    enabled
+        Enable adaptive updates. Disabled controllers retain their initial value.
+    min_value
+        Positive lower bound for the relaxation value.
+    max_value
+        Optional upper bound. ``None`` uses the controller's initial value.
+    shrink_factor
+        Factor in ``(0, 1]`` applied when the residual worsens or is nonfinite.
+    growth_factor
+        Factor greater than or equal to one applied after sustained improvement.
+    improve_ratio
+        Current-to-previous residual ratio counted as an improvement.
+    worsen_ratio
+        Current-to-previous residual ratio counted as deterioration.
+    improve_patience
+        Consecutive improvements required before growth.
+    """
 
     enabled: bool = False
     min_value: float = 0.02
@@ -37,6 +57,27 @@ class AdaptiveDampConfig:
 
     @classmethod
     def from_dict(cls, data):
+        """Normalize a mapping, existing config, or ``None``.
+
+        Parameters
+        ----------
+        data
+            ``AdaptiveDampConfig``, plain mapping, or ``None``. Unknown mapping
+            keys are ignored for compatibility with larger solver mappings.
+
+        Returns
+        -------
+        AdaptiveDampConfig or None
+            The existing or newly constructed immutable contract value.
+
+        Raises
+        ------
+        TypeError
+            If ``data`` has an unsupported type.
+        ValueError
+            If a supplied field violates the dataclass constraints.
+        """
+
         if data is None:
             return None
         if isinstance(data, cls):
@@ -48,6 +89,12 @@ class AdaptiveDampConfig:
         raise TypeError("adaptive_damp must be an AdaptiveDampConfig, dict, or None")
 
     def to_dict(self):
+        """Return a caller-owned mapping containing every configuration field.
+
+        The mapping is detached from this immutable dataclass and can be edited or
+        serialized before a later :meth:`from_dict` normalization.
+        """
+
         return asdict(self)
 
 
@@ -58,7 +105,21 @@ def normalize_adaptive_damp_config(config):
 
 
 class AdaptiveDampController:
-    """Update a scalar relaxation value from residual trends."""
+    """Update one scalar relaxation value from residual trends.
+
+    Parameters
+    ----------
+    initial_value
+        Relaxation value used initially and after ``reset()`` unless replaced.
+    config
+        ``AdaptiveDampConfig``, compatible mapping, or ``None``. ``None`` leaves
+        adaptive control disabled and preserves ``initial_value``.
+
+    Notes
+    -----
+    Every enabled update appends an audit record to ``history`` containing the
+    residual, value before and after the update, and the selected action.
+    """
 
     def __init__(self, initial_value: float, config=None):
         self.config = normalize_adaptive_damp_config(config)
@@ -70,25 +131,62 @@ class AdaptiveDampController:
 
     @property
     def enabled(self) -> bool:
+        """Return whether residual-driven updates are enabled.
+
+        This is false when no adaptive configuration was supplied or when its
+        ``enabled`` field is false.
+        """
+
         return bool(self.config and self.config.enabled)
 
     @property
     def value(self) -> float:
+        """Return the relaxation value for the next solver iteration.
+
+        The value starts at ``initial_value`` and changes only through enabled
+        :meth:`update` calls or :meth:`reset`.
+        """
+
         return self._current_value
 
     @property
     def max_value(self) -> float:
+        """Return the effective upper relaxation bound.
+
+        An omitted configured bound falls back to the controller's initial value.
+        """
+
         if self.config is None or self.config.max_value is None:
             return self._initial_value
         return float(self.config.max_value)
 
     @property
     def min_value(self) -> float:
+        """Return the effective lower relaxation bound.
+
+        The configured minimum is clipped to the effective upper bound; a disabled
+        controller therefore returns its initial value for both bounds.
+        """
+
         if self.config is None:
             return self._initial_value
         return min(float(self.config.min_value), self.max_value)
 
     def reset(self, initial_value: Optional[float] = None):
+        """Clear residual history and optionally replace the initial value.
+
+        Parameters
+        ----------
+        initial_value
+            New finite scalar initial value, or ``None`` to reuse the existing
+            initial value.
+
+        Returns
+        -------
+        None
+            The controller is reset in place and ``history`` becomes empty.
+        """
+
         if initial_value is not None:
             self._initial_value = float(initial_value)
         self._current_value = self._initial_value
@@ -97,7 +195,19 @@ class AdaptiveDampController:
         self.history = []
 
     def update(self, error) -> float:
-        """Record a residual and update the value used by the next iteration."""
+        """Record one residual and return the next relaxation value.
+
+        Parameters
+        ----------
+        error
+            Residual convertible to ``float``. Nonfinite values trigger an
+            immediate shrink and clear the comparison baseline.
+
+        Returns
+        -------
+        float
+            Relaxation value to use for the next solver iteration.
+        """
 
         if not self.enabled:
             return self._current_value

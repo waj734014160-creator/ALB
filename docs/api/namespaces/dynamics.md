@@ -4,10 +4,14 @@
 
 > **高级 API。** 转子适配、自由度布局和耦合运行依赖的高级入口。
 
+- 显式导出数：`3`
+- 源码合同摘要：`sha256:9f1e377149086dbc`
+- 对应规则：中文语义元数据必须与源码参数、公开成员和英文 docstring 同步通过生成门禁。
+
 ## 安装
 
-```powershell
-E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[dynamics]"
+```bash
+python -m pip install "re-alb[dynamics]"
 ```
 
 ## 导入
@@ -16,15 +20,867 @@ E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[dynamics]"
 from ALB.dynamics import CouplingRuntimeDependencies, RossRotor, RotorDofLayout
 ```
 
-## 显式导出
+## 显式导出总览
 
-| 符号 | 用途 |
-| --- | --- |
-| `CouplingRuntimeDependencies` | 显式注入 recorder、observer、run ID 和失败策略。 |
-| `RossRotor` | 将 ROSS rotor 包装为 ALB RotorProtocol。 |
-| `RotorDofLayout` | 描述转子节点与全局自由度之间的布局。 |
+| 符号 | 类别 | 用途 | 源码 |
+| --- | --- | --- | --- |
+| `CouplingRuntimeDependencies` | 类 | 显式配置一个耦合 runtime 所拥有的 recorder、observer、run ID 和后提交失败策略。 | `ALB/dynamics/bindings.py:41` |
+| `RossRotor` | 类 | 把已有 ross.Rotor 包装成输入、推进和输出显式分离的量纲 ALB 转子 runtime。 | `ALB/dynamics/rotor.py:322` |
+| `RotorDofLayout` | 类 | 声明一个节点的平移/转动局部索引，并提供唯一的节点到全局 DOF 映射。 | `ALB/dynamics/rotor_layout.py:22` |
 
 !!! warning "高级接口边界"
-    本页只记录 namespace 显式导出的符号。其实现模块、私有 helper 和可导入的内部类型不因此成为稳定用户 API。
+    本页只记录 namespace 显式导出的符号及其源码声明的公开成员。实现模块、私有 helper 和其他可导入类型不因此成为稳定用户 API。
+
+## 示例
+
+<a id="example-coupling-dependencies"></a>
+### 配置耦合后提交服务
+
+普通 simulation 可把 dependencies 留为 None；只有高级 recorder/observer 集成需要显式构造。
+
+```python
+from ALB.dynamics import CouplingRuntimeDependencies
+
+dependencies = CouplingRuntimeDependencies(
+    run_id="case-001",
+    recorder=None,
+    observers=(),
+)
+```
+
+<a id="example-ross-rotor"></a>
+### 包装已有 ROSS rotor
+
+speed 使用 rad/s，dt 使用秒；输入、推进与读取状态是三个独立阶段。
+
+```python
+from ALB.dynamics import RossRotor
+
+ross_model = ...  # Constructed ross.Rotor
+rotor = RossRotor(ross_model, speed=2.0 * 3.141592653589793 * 50.0, dt=1e-4)
+```
+
+<a id="example-dof-layout"></a>
+### 建立六自由度节点布局
+
+布局将物理方向稳定映射到节点局部和全局自由度。
+
+```python
+from ALB.dynamics import RotorDofLayout
+
+layout = RotorDofLayout.from_dof_per_node(6)
+x_index = layout.global_index(node=3, direction="x", total_dof=60)
+```
+
+## 详细接口
+
+### `ALB.dynamics.CouplingRuntimeDependencies(run_id: str, recorder: ResultRecorderProtocol | None = None, observers: tuple[StepObserverProtocol, ...] = (), record_failure_policy: Literal['return', 'raise'] = 'return', observer_failure_policy: Literal['isolate', 'raise'] = 'isolate')`
+
+显式配置一个耦合 runtime 所拥有的 recorder、observer、run ID 和后提交失败策略。
+
+- 类别：`class`
+- 源码：`ALB/dynamics/bindings.py:41`
+- 返回标注：`CouplingRuntimeDependencies`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `run_id` | 传递给记录生命周期的非空稳定运行标识。 |
+| `recorder` | 可选 ResultRecorderProtocol；None 关闭外部记录。 |
+| `observers` | 每个物理步提交后调用的 StepObserverProtocol 元组。 |
+| `record_failure_policy` | return 保留失败 receipt；raise 传播记录异常。 |
+| `observer_failure_policy` | isolate 记录并隔离 observer 异常；raise 传播异常。 |
+
+输出：不可变 CouplingRuntimeDependencies，可传给 SimulationConfig.dependencies。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `TypeError` | recorder 或 observers 不满足对应 runtime protocol。 |
+| `ValueError` | run_id 或失败策略非法。 |
+
+示例：[配置耦合后提交服务](#example-coupling-dependencies)。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Configure post-commit services owned by one coupling runtime.
+
+    Parameters
+    ----------
+    run_id
+        Nonempty stable identifier passed to the recorder lifecycle.
+    recorder
+        Optional object satisfying ``ResultRecorderProtocol``.
+    observers
+        Immutable observers called after each physical step is committed.
+    record_failure_policy
+        ``"return"`` records a failed receipt; ``"raise"`` propagates the
+        post-commit recording error.
+    observer_failure_policy
+        ``"isolate"`` records observer failures and continues; ``"raise"``
+        propagates the first post-commit observer error.
+
+    Raises
+    ------
+    TypeError
+        If a recorder or observer does not satisfy its runtime protocol.
+    ValueError
+        If ``run_id`` or either failure policy is invalid.
+    ```
+
+公开数据字段：
+
+| 字段 | 说明 |
+| --- | --- |
+| `run_id` | 传递给记录生命周期的非空稳定运行标识。 |
+| `recorder` | 可选 ResultRecorderProtocol；None 关闭外部记录。 |
+| `observers` | 每个物理步提交后调用的 StepObserverProtocol 元组。 |
+| `record_failure_policy` | return 保留失败 receipt；raise 传播记录异常。 |
+| `observer_failure_policy` | isolate 记录并隔离 observer 异常；raise 传播异常。 |
+
+### `ALB.dynamics.RossRotor(rotor: rs.Rotor, speed, dt, discrete = False)`
+
+把已有 ross.Rotor 包装成输入、推进和输出显式分离的量纲 ALB 转子 runtime。
+
+- 类别：`class`
+- 源码：`ALB/dynamics/rotor.py:322`
+- 返回标注：`RossRotor`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `rotor` | 已经构造的 ross.Rotor；四/六自由度布局可映射节点 XY 力。 |
+| `speed` | ROSS 使用的角速度，单位 rad/s。 |
+| `dt` | 不可变积分时间步，单位 s。 |
+| `discrete` | true 使用 ROSS 离散模型；false 使用一阶保持离散化的连续模型。 |
+
+输出：RossRotor runtime；unit_system 固定为 dimensional。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError` | ROSS 模型的自由度或系统矩阵无法形成支持的 runtime。 |
+
+示例：[包装已有 ROSS rotor](#example-ross-rotor)。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Wrap one ROSS rotor with ALB's explicit runtime lifecycle.
+
+    Parameters
+    ----------
+    rotor
+        Constructed ``ross.Rotor`` instance. Four- and six-DOF node layouts are
+        mapped through ``RotorDofLayout``.
+    speed
+        Rotor angular speed passed to ROSS in rad/s.
+    dt
+        Positive dimensional integration step in seconds. Simulation configs
+        require this value to equal ``SimulationConfig.time_step``.
+    discrete
+        Use ROSS's discrete model when true; otherwise build the exact
+        first-order-hold matrices used by the continuous wrapper.
+
+    Notes
+    -----
+    Load input, ``advance()``, and state output are separate phases. A caller
+    must latch exactly one load before each advance; output methods never perform
+    hidden propagation. The wrapper always reports ``unit_system`` as
+    ``"dimensional"``.
+    ```
+
+公开成员：
+
+#### `RossRotor.dt() -> float`
+
+读取构造时固定的积分时间步。
+
+- 类别：`property`
+- 源码：`ALB/dynamics/rotor.py:402`
+- 返回标注：`float`
+
+输入：
+
+无。
+
+输出：float 秒。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return the immutable integration time step in seconds.
+
+    Every subsequently latched input time must advance by this exact interval
+    within the runtime tolerance.
+    ```
+
+#### `RossRotor.continuesys()`
+
+从 ROSS 连续系统构造一阶保持 Ad、Bd0、Bd1 矩阵。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:411`
+- 返回标注：`未标注`
+
+输入：
+
+无。
+
+输出：None；矩阵写入 runtime。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Discretize the ROSS continuous model for first-order held loads.
+
+    The method computes and stores ``Ad``, previous/current load operators,
+    and output matrices for the configured ``dt``. It returns ``None`` and is
+    normally selected by the constructor when ``discrete`` is false.
+    ```
+
+#### `RossRotor.discretesys()`
+
+调用 ROSS 离散化并保存 A、B、C、D。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:443`
+- 返回标注：`未标注`
+
+输入：
+
+无。
+
+输出：None；矩阵写入 runtime。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Select the ROSS built-in zero-order-held discrete model.
+
+    The method discretizes at ``dt`` and stores its state/input/output
+    matrices. It returns ``None`` and is normally selected by the constructor
+    when ``discrete`` is true.
+    ```
+
+#### `RossRotor.input_force(t, force, x0 = None, **kwargs)`
+
+锁存一个全局自由度力向量，供下一次 advance 使用。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:456`
+- 返回标注：`未标注`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `t` | 当前输入时间，必须有限且与前次输入相差 dt。 |
+| `force` | 长度为 rotor.ndof 的有限实数全局力向量。 |
+| `x0` | 可选状态覆盖，形状必须等于内部状态。 |
+| `kwargs` | 可选 force0，表示连续模型的前一步全局力。 |
+
+输出：None；输入进入 latched 生命周期状态。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `TypeError/ValueError/RuntimeError` | 时间、力、状态或生命周期无效。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Input global-DOF force vector at time t.
+
+    Optional kwargs:
+        x0: override current state.
+        force0: previous-step force for continuous interpolation.
+    ```
+
+#### `RossRotor.input_force2node(t, force, node, x0 = None, **kwargs)`
+
+把一个或多个节点的 XY 力映射到全局自由度后锁存。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:493`
+- 返回标注：`未标注`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `t` | 当前输入时间，单位 s。 |
+| `force` | 形状 (node_count, 2) 或单节点长度 2 的有限力，单位 N。 |
+| `node` | 非负节点索引或与力行数一致的索引序列。 |
+| `x0` | 可选状态覆盖。 |
+| `kwargs` | 可选 force0，按相同节点布局映射前一步力。 |
+
+输出：None；全局力被锁存。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError` | 布局不是四/六自由度，或节点、力、时间不合法。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Validate and latch two-axis nodal forces for the next advance.
+
+    ``force`` has one ``[Fx, Fy]`` pair in N per entry of ``node``; the ROSS
+    DOF layout maps these pairs into a global load vector. ``t`` must follow
+    ``dt``. Optional ``x0`` replaces the state and ``force0`` supplies the
+    previous-step loads used by continuous interpolation. The method returns
+    ``None`` and refuses a second input before the current one is advanced.
+    ```
+
+#### `RossRotor.input_load(value: RotorLoadInput) -> None`
+
+锁存一个已经验证的量纲 RotorLoadInput DTO。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:534`
+- 返回标注：`None`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `value` | UnitSystem.DIMENSIONAL 的 RotorLoadInput。 |
+
+输出：None；委托 input_force2node。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `TypeError/ValueError` | DTO 类型或单位制不正确。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Latch one validated dimensional nodal-load DTO.
+
+    ``value`` supplies time, current/previous ``[Fx, Fy]`` loads in N, and node
+    links. Nondimensional loads are rejected. The method delegates to
+    :meth:`input_force2node` and does not advance the state.
+    ```
+
+#### `RossRotor.lifecycle_state() -> LifecycleState`
+
+不推进模型地读取统一 runtime 生命周期状态。
+
+- 类别：`property`
+- 源码：`ALB/dynamics/rotor.py:577`
+- 返回标注：`LifecycleState`
+
+输入：
+
+无。
+
+输出：LifecycleState。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return the shared rotor runtime state without advancing.
+
+    Callers can inspect whether input is available, evaluation is active, or
+    output is readable while leaving all state and histories unchanged.
+    ```
+
+#### `RossRotor.advance()`
+
+使用当前锁存力推进恰好一个时间步并提交状态。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:640`
+- 返回标注：`未标注`
+
+输入：
+
+无。
+
+输出：内部状态向量 ndarray。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `RuntimeError` | 未锁存新输入或当前生命周期不允许推进。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Advance exactly once from the currently latched force input.
+
+    The returned NumPy vector is the next internal state. A successful advance
+    commits state/output history and makes output readable; lifecycle errors or
+    propagation failures do not publish a completed step.
+    ```
+
+#### `RossRotor.current_state(node = None)`
+
+读取当前状态，不执行隐藏推进。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:654`
+- 返回标注：`未标注`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `node` | None 返回完整状态；节点索引返回该节点的 uxy 与 uxyt。 |
+
+输出：完整状态 ndarray，或包含 uxy/uxyt 的映射。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError/RuntimeError` | 节点布局不支持、索引非法或没有可读输出。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Read the committed rotor state without advancing the model.
+
+    With ``node=None``, return a caller-owned copy of the complete state
+    vector. Otherwise return ``{'uxy', 'uxyt'}`` arrays of shape ``(nodes, 2)``
+    for displacement in m and velocity in m/s. Node extraction requires a
+    four- or six-DOF ROSS layout and readable lifecycle output.
+    ```
+
+#### `RossRotor.output(node = None)`
+
+作为 RotorProtocol 输出端口读取已完成状态。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:698`
+- 返回标注：`未标注`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `node` | 可选节点选择；语义与 current_state 相同。 |
+
+输出：完整状态 ndarray 或节点状态映射。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return completed state output without hidden propagation.
+
+    This is the runtime-facing alias for :meth:`current_state`; ``node`` and
+    the returned full-state or ``uxy``/``uxyt`` shapes have identical meaning.
+    ```
+
+#### `RossRotor.dof_layout() -> RotorDofLayout`
+
+读取从 ROSS 模型推导的不可变节点自由度布局。
+
+- 类别：`property`
+- 源码：`ALB/dynamics/rotor.py:708`
+- 返回标注：`RotorDofLayout`
+
+输入：
+
+无。
+
+输出：RotorDofLayout。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError` | 模型不是支持的四/六自由度布局。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return the immutable ROSS-derived node DOF layout.
+
+    Rotors whose ``number_dof`` is not four or six have no supported public
+    nodal x/y mapping and raise ``ValueError`` on access.
+    ```
+
+#### `RossRotor.results()`
+
+把已提交时间、状态和输出打包为 ROSS TimeResponseResults。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:723`
+- 返回标注：`未标注`
+
+输入：
+
+无。
+
+输出：ross.TimeResponseResults。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `RuntimeError` | 尚无可读输出。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return committed history as a ROSS ``TimeResponseResults`` object.
+
+    Time, output, and state histories include only successfully committed
+    advances. Reading requires lifecycle output to be available and does not
+    mutate the runtime.
+    ```
+
+#### `RossRotor.result_uxy(node)`
+
+提取指定节点的 XY 位移历史。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:735`
+- 返回标注：`未标注`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `node` | 要提取的非负转子节点。 |
+
+输出：形状 (sample_count, 2) 的位移 ndarray。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError/RuntimeError` | 布局不支持、节点越界或无输出。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return committed x/y displacement history for one rotor node.
+
+    The result is a NumPy array whose first axis follows committed times and
+    whose two columns are x/y displacement in m. A four- or six-DOF layout and
+    readable lifecycle output are required.
+    ```
+
+#### `RossRotor.plot_rotor(**kwargs)`
+
+把关键字参数原样转发到 ross.Rotor.plot_rotor。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:749`
+- 返回标注：`未标注`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `kwargs` | 当前 ROSS 版本接受的绘图关键字。 |
+
+输出：ROSS 返回的绘图对象。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return the underlying ROSS rotor geometry plot.
+
+    Parameters
+    ----------
+    **kwargs
+        Keyword arguments forwarded unchanged to ``ross.Rotor.plot_rotor``.
+
+    Returns
+    -------
+    object
+        Plot object returned by the installed ROSS version.
+    ```
+
+#### `RossRotor.save(tofile = True, path = None, name = None, *args, **kwargs)`
+
+把当前转子历史包装为 SaveTreeNode，并可写入磁盘。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor.py:765`
+- 返回标注：`未标注`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `tofile` | 是否立即写入文件。 |
+| `path` | 目标目录；None 使用 rotor_result。 |
+| `name` | 结果名称；None 使用 rotor。 |
+| `args` | 保留的兼容位置参数。 |
+| `kwargs` | 可选 writer 等保存后端参数。 |
+
+输出：构建后的 SaveTreeNode/保存结果。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `RuntimeError` | 尚无可读输出。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Package committed rotor results and optionally persist them.
+
+    ``path`` and ``name`` default to ``rotor_result`` and ``rotor``. Set
+    ``tofile=False`` to build the ``SaveTreeNode`` without writing; an optional
+    ``writer`` keyword customizes persistence. The result includes times,
+    states, outputs, the ROSS response, and rotor metadata, and requires
+    readable lifecycle output.
+    ```
+
+### `ALB.dynamics.RotorDofLayout(dof_per_node: int, x: int, y: int, alpha: int, beta: int)`
+
+声明一个节点的平移/转动局部索引，并提供唯一的节点到全局 DOF 映射。
+
+- 类别：`class`
+- 源码：`ALB/dynamics/rotor_layout.py:22`
+- 返回标注：`RotorDofLayout`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `dof_per_node` | 每节点自由度数量，至少 4。 |
+| `x` | 局部 x 平移索引。 |
+| `y` | 局部 y 平移索引。 |
+| `alpha` | 局部 alpha 转动索引。 |
+| `beta` | 局部 beta 转动索引。 |
+
+输出：不可变 RotorDofLayout。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError` | 索引重复、越界或节点自由度少于 4。 |
+
+示例：[建立六自由度节点布局](#example-dof-layout)。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Describe ROSS node-local DOFs and map them to global indices.
+
+    Parameters
+    ----------
+    dof_per_node
+        Number of degrees of freedom per ROSS node; at least four.
+    x, y
+        Local translational indices used for ALB displacement and force.
+    alpha, beta
+        Local rotational indices required to validate the ROSS layout.
+
+    Raises
+    ------
+    ValueError
+        If indices are repeated, negative, or outside the node layout.
+    ```
+
+公开数据字段：
+
+| 字段 | 说明 |
+| --- | --- |
+| `dof_per_node` | 每节点自由度数量，至少 4。 |
+| `x` | 局部 x 平移索引。 |
+| `y` | 局部 y 平移索引。 |
+| `alpha` | 局部 alpha 转动索引。 |
+| `beta` | 局部 beta 转动索引。 |
+
+公开成员：
+
+#### `RotorDofLayout.from_dof_per_node(dof_per_node: int) -> 'RotorDofLayout'`
+
+创建标准四或六自由度 ROSS 节点布局。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor_layout.py:56`
+- 返回标注：`'RotorDofLayout'`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `dof_per_node` | 4 或 6。 |
+
+输出：RotorDofLayout。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError` | 输入不是 4 或 6。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return the standard ROSS four- or six-DOF node layout.
+
+    Parameters
+    ----------
+    dof_per_node
+        Supported ROSS node width, either four or six.
+
+    Returns
+    -------
+    RotorDofLayout
+        Canonical translational and rotational local indices.
+
+    Raises
+    ------
+    ValueError
+        If the node width is not four or six.
+    ```
+
+#### `RotorDofLayout.from_ross(rotor: object) -> 'RotorDofLayout'`
+
+从 ROSS rotor 的 number_dof 与 shaft-element mapping 推导布局。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor_layout.py:82`
+- 返回标注：`'RotorDofLayout'`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `rotor` | 暴露 number_dof 和可选 shaft_elements 的 ROSS 兼容对象。 |
+
+输出：验证后的 RotorDofLayout。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `TypeError/ValueError` | 自由度类型或 shaft mapping 无效。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Build a layout from one ROSS rotor's shaft-element mapping.
+
+    Parameters
+    ----------
+    rotor
+        ROSS-compatible object exposing integer ``number_dof`` and optional
+        ``shaft_elements`` with ``dof_mapping()``.
+
+    Returns
+    -------
+    RotorDofLayout
+        Validated node-local DOF layout.
+
+    Raises
+    ------
+    TypeError
+        If ``number_dof`` is not an integer.
+    ValueError
+        If a shaft mapping omits a required physical direction.
+    ```
+
+#### `RotorDofLayout.local_index(direction: str) -> int`
+
+查询一个物理方向在节点内的零基索引。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor_layout.py:122`
+- 返回标注：`int`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `direction` | x、y、alpha 或 beta。 |
+
+输出：int 局部索引。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError` | direction 不受支持。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return the local index for one physical direction.
+
+    Parameters
+    ----------
+    direction
+        One of ``"x"``, ``"y"``, ``"alpha"``, or ``"beta"``.
+
+    Returns
+    -------
+    int
+        Zero-based index within a node.
+
+    Raises
+    ------
+    ValueError
+        If ``direction`` is unsupported.
+    ```
+
+#### `RotorDofLayout.global_index(node: int, direction: str, total_dof: int) -> int`
+
+把节点与物理方向映射为受 total_dof 约束的全局索引。
+
+- 类别：`method`
+- 源码：`ALB/dynamics/rotor_layout.py:145`
+- 返回标注：`int`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `node` | 非负整数节点。 |
+| `direction` | x、y、alpha 或 beta。 |
+| `total_dof` | 全局向量宽度上界。 |
+
+输出：int 全局索引。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `TypeError/ValueError` | 节点类型、方向、范围或 total_dof 边界无效。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Map one node and direction to a validated global DOF index.
+
+    Parameters
+    ----------
+    node
+        Nonnegative rotor node index.
+    direction
+        Physical direction accepted by ``local_index``.
+    total_dof
+        Total global vector width used as the upper bound.
+
+    Returns
+    -------
+    int
+        Zero-based global DOF index.
+
+    Raises
+    ------
+    TypeError
+        If ``node`` is not an integer.
+    ValueError
+        If the node is negative, the direction is invalid, or the result is
+        outside ``total_dof``.
+    ```
 
 返回[公开接口边界](../../site/concepts/public-api-policy.md)。

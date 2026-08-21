@@ -18,6 +18,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import ALB  # noqa: E402
+from tools.docs._source_contracts import render_docstring_details  # noqa: E402
 
 
 NOTES_PATH = REPOSITORY_ROOT / "docs" / "api" / "public_api_docs.json"
@@ -199,6 +200,24 @@ def _validate_parameter_notes(
             raise ValueError(f"{owner}.{name} needs a parameter description")
 
 
+def _validate_raises(owner: str, raw: Any) -> None:
+    """Require complete exception type and trigger descriptions."""
+
+    if raw is None:
+        return
+    if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
+        raise ValueError(f"{owner} raises must be a list")
+    for item in raw:
+        if (
+            not isinstance(item, Mapping)
+            or not isinstance(item.get("type"), str)
+            or not item["type"].strip()
+            or not isinstance(item.get("when"), str)
+            or not item["when"].strip()
+        ):
+            raise ValueError(f"{owner} contains incomplete exception metadata")
+
+
 def _validate_item_notes(
     *,
     owner: str,
@@ -217,6 +236,7 @@ def _validate_item_notes(
         signature=_signature(value, omit_receiver=omit_receiver),
         notes=notes,
     )
+    _validate_raises(owner, notes.get("raises", []))
     if require_examples:
         raw_examples = notes.get("examples")
         if not isinstance(raw_examples, Sequence) or isinstance(
@@ -261,6 +281,10 @@ def _validate_notes(
         kind = _kind(value)
         if kind != "constant" and not str(surface[name]["docstring"]).strip():
             raise ValueError(f"{name} needs a public source docstring")
+        if kind != "constant" and len(
+            [line for line in str(surface[name]["docstring"]).splitlines() if line.strip()]
+        ) < 2:
+            raise ValueError(f"{name} needs a detailed public source docstring")
         raw_symbol_notes = symbols[name]
         if not isinstance(raw_symbol_notes, Mapping):
             raise ValueError(f"{name} metadata must be an object")
@@ -298,11 +322,16 @@ def _validate_notes(
             continue
         public_members = _public_members(value)
         for member_name in public_members:
-            if not str(
-                surface[name]["members"][member_name]["docstring"]
-            ).strip():
+            member_docstring = str(surface[name]["members"][member_name]["docstring"])
+            if not member_docstring.strip():
                 raise ValueError(
                     f"{name}.{member_name} needs a public source docstring"
+                )
+            if len(
+                [line for line in member_docstring.splitlines() if line.strip()]
+            ) < 2:
+                raise ValueError(
+                    f"{name}.{member_name} needs a detailed public source docstring"
                 )
         raw_member_notes = raw_symbol_notes.get("members", {})
         if not isinstance(raw_member_notes, Mapping):
@@ -443,10 +472,14 @@ def _render_callable(
 ) -> str:
     signature = _signature(value, omit_receiver=omit_receiver)
     hashes = "#" * heading_level
+    source, line = _source_location(value)
+    source_text = source if line is None else f"{source}:{line}"
     lines = [
         f"{hashes} `{owner}{signature}`",
         "",
         str(notes["summary"]),
+        "",
+        f"源码：`{source_text}`。",
         "",
         "输入：",
         "",
@@ -467,6 +500,9 @@ def _render_callable(
                 + "。",
             ]
         )
+    docstring = inspect.getdoc(value) or ""
+    if docstring:
+        lines.extend(["", render_docstring_details(docstring)])
     return "\n".join(lines)
 
 
@@ -478,10 +514,14 @@ def _render_property(
 ) -> str:
     assert value.fget is not None
     signature = _signature(value.fget, omit_receiver=True)
+    source, line = _source_location(value.fget)
+    source_text = source if line is None else f"{source}:{line}"
     lines = [
         f"#### `{owner}`",
         "",
         str(notes["summary"]),
+        "",
+        f"源码：`{source_text}`。",
         "",
         f"输出：`{_annotation_text(signature.return_annotation)}`。"
         f"{notes['returns']}",
@@ -489,6 +529,9 @@ def _render_property(
     raises = _render_raises(notes)
     if raises:
         lines.append(raises)
+    docstring = inspect.getdoc(value.fget) or ""
+    if docstring:
+        lines.extend(["", render_docstring_details(docstring)])
     return "\n".join(lines)
 
 
@@ -535,6 +578,8 @@ def _render_symbol(
                 "示例："
                 + _render_example_links(notes["examples"], examples)
                 + "。",
+                "",
+                render_docstring_details(inspect.getdoc(value) or ""),
             ]
         )
     lines = [
@@ -633,8 +678,8 @@ def build_reference(notes: Mapping[str, Any] | None = None) -> str:
         f"- 包版本：`{ALB.__version__}`",
         f"- 公开符号数：`{len(ALB.__all__)}`",
         f"- 接口表面摘要：`sha256:{digest}`",
-        "- 重新生成：`E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py`",
-        "- 一致性检查：`E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py --check`",
+        "- 重新生成：`python tools/docs/generate_public_api_reference.py`",
+        "- 一致性检查：`python tools/docs/generate_public_api_reference.py --check`",
         "",
         "本文只覆盖普通用户应依赖的 `ALB` 根公开接口。领域实现命名空间用于高级开发，",
         "不应绕过 facade 直接拼装普通计算流程。",

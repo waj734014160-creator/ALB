@@ -10,7 +10,13 @@ import numpy as np
 
 
 class UnitSystem(str, Enum):
-    """Unit system declared at every numerical integration boundary."""
+    """Unit system declared explicitly at every numerical integration boundary.
+
+    ``DIMENSIONAL`` means each contract uses its documented engineering units
+    such as m, m/s, Pa, N, and s. ``NONDIMENSIONAL`` means values use the scales
+    declared by the bearing configuration. Coupled rotor simulations themselves
+    are dimensional and require explicit adapters for nondimensional bearings.
+    """
 
     DIMENSIONAL = "dimensional"
     NONDIMENSIONAL = "nondimensional"

@@ -3,8 +3,8 @@
 ALBNN 代理轴承通过与物理轴承一致的 `BearingConfig -> Bearing -> BearingResult` facade 使用。模型包负责保存模型、scaler、输入契约和运行参数，不应复制 ALB 包源码。
 
 !!! info "需要 surrogate extra"
-    ```powershell
-    E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[surrogate]"
+    ```bash
+    python -m pip install "re-alb[surrogate]"
     ```
 
 ## 配置形状

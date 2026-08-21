@@ -19,7 +19,8 @@ nav:
       - 转子-轴承仿真: site/guides/simulation.md
       - ALBNN 模型包: site/guides/albnn.md
   - 配置参考:
-      - 字段参考: api/bearing_config_reference.md
+      - 轴承配置: api/bearing_config_reference.md
+      - 转子-轴承仿真配置: api/simulation_config_reference.md
       - 完整示例: site/examples.md
   - API 参考:
       - 根公开 API: api/public_api_reference.md
@@ -59,6 +60,8 @@ exclude_docs: |
   **/*.json
   **/*status*.txt
   api/bearing_config_reference_source.md
+  api/simulation_config_reference_source.md
+  api/config_reference_docs.json
   api/public_api_docs.json
   api/namespace_reference_docs.json
 

@@ -274,7 +274,32 @@ class EquilibriumOptions:
 
 @dataclass(frozen=True, slots=True)
 class EllipseTrajectory:
-    """Two-axis ellipse with separate temporal phase and spatial orientation."""
+    """Immutable two-axis ellipse with independent phase and orientation.
+
+    Parameters
+    ----------
+    center
+        Finite ``(x, y)`` ellipse center in the bearing displacement unit.
+    semi_axes
+        Positive finite principal semi-axis lengths in the same unit.
+    direction
+        ``"forward"`` or ``"reverse"`` temporal traversal direction.
+    phase
+        Initial temporal phase in rad.
+    orientation_rad
+        Counterclockwise spatial rotation of the principal axes in rad.
+
+    Notes
+    -----
+    Construction copies ``center`` and ``semi_axes`` into read-only float arrays.
+    Direction changes temporal traversal only; orientation changes geometry in
+    the fixed x/y frame.
+
+    Raises
+    ------
+    TypeError, ValueError
+        If vectors, direction, phase, or orientation violate the contract.
+    """
 
     center: FloatArray
     semi_axes: FloatArray
@@ -303,7 +328,24 @@ class EllipseTrajectory:
         object.__setattr__(self, "orientation_rad", orientation)
 
     def with_direction(self, direction: str) -> "EllipseTrajectory":
-        """Return the same geometry traversed in the requested direction."""
+        """Return an immutable copy with the requested traversal direction.
+
+        Parameters
+        ----------
+        direction
+            ``"forward"`` or ``"reverse"``.
+
+        Returns
+        -------
+        EllipseTrajectory
+            New trajectory sharing the same numeric geometry, phase, and
+            orientation values.
+
+        Raises
+        ------
+        ValueError
+            If ``direction`` is not supported.
+        """
 
         return EllipseTrajectory(
             self.center,
@@ -319,7 +361,26 @@ class EllipseTrajectory:
         *,
         frequency_hz: float,
     ) -> tuple[FloatArray, FloatArray]:
-        """Return displacement and velocity samples on the rotated ellipse."""
+        """Sample displacement and analytic velocity on the rotated ellipse.
+
+        Parameters
+        ----------
+        time
+            Nonempty finite one-dimensional sample times.
+        frequency_hz
+            Positive traversal frequency in Hz. ``direction`` controls its sign.
+
+        Returns
+        -------
+        tuple[numpy.ndarray, numpy.ndarray]
+            Displacement and velocity arrays, each with shape ``(samples, 2)``.
+            Their units are the trajectory displacement unit and that unit/s.
+
+        Raises
+        ------
+        TypeError, ValueError
+            If the time grid or frequency is not finite and valid.
+        """
 
         times = np.asarray(time, dtype=float)
         if times.ndim != 1 or times.size == 0 or not np.all(np.isfinite(times)):
@@ -963,7 +1024,34 @@ class BearingAnalysis:
         initial_displacement: object = (0.0, 0.0),
         options: EquilibriumOptions = EquilibriumOptions(),
     ) -> AnalysisResult:
-        """Find load balance through the directly usable solver model."""
+        """Find the displacement at which bearing force balances a static load.
+
+        Parameters
+        ----------
+        load
+            Finite nonzero ``(Fx, Fy)`` applied load in the configured force unit.
+        initial_displacement
+            Finite initial ``(x, y)`` coordinate in the configured displacement
+            unit.
+        options
+            Damped-iteration limits, tolerances, fallback stiffness, and static
+            evaluation time.
+
+        Returns
+        -------
+        AnalysisResult
+            Solved displacement, bearing force, residual, evaluation history, and
+            convergence metadata from an isolated runtime.
+
+        Raises
+        ------
+        TypeError, ValueError
+            If inputs or options violate their public contracts.
+        CalculationError
+            If the family/control mode is unsupported, an inner solve fails, or
+            the equilibrium iteration does not converge. ``failure_snapshot``
+            preserves evaluated coordinates and forces.
+        """
 
         return EquilibriumSolver(self._bearing, options).solve(
             load,

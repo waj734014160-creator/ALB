@@ -75,4 +75,34 @@ cases = config.sweep(
 - 气膜当前只支持 dimensional。
 - 从文件加载时，文档父目录成为 `resource_root`，用于相对 pad、模糊规则和 surrogate package 路径。
 
-完整查询：[轴承配置字段参考](../../api/bearing_config_reference.md)。可复制文件：[完整示例](../examples.md)。
+轴承的完整查询入口是[轴承配置参考](../../api/bearing_config_reference.md)。其中每个公开字段都列出值类型、单位、必填性或默认值、可选值、约束、适用 family/unit system、原生映射和源码英文合同。
+
+## 转子-轴承仿真配置
+
+仿真文件使用同一套 UTF-8 JSON5 envelope，但声明 `kind: "simulation"`。`spec` 由 `rotor`、`time_grid`、`mounts`、`loads` 和 `history` 组成：
+
+```json5
+{
+  schema_version: "0.4.0",
+  kind: "simulation",
+  includes: [],
+  spec: {
+    rotor: {
+      model: "ross_excel",
+      path: "resources/rotor.xlsx",
+      frequency_hz: 50.0,
+    },
+    time_grid: { time_step: 1e-4, steps: 1000 },
+    mounts: [
+      { bearing: "bearings/left.json5", node: 0 },
+      { bearing: "bearings/right.json5", node: 4 },
+    ],
+    loads: [{ type: "gravity", acceleration: 9.80665 }],
+    history: { mode: "memory", downsample: 1 },
+  },
+}
+```
+
+文件中的转子 Excel、bearing 配置和 disk-stream history 路径必须位于配置文件的资源根目录内。程序化构造的 `SimulationConfig` 还可以承载 adapter、spool provider、recorder 和 observer；这些 runtime object 不能写入 JSON5。
+
+完整字段、提交语义、数组形状和失败边界见[仿真配置参考](../../api/simulation_config_reference.md)。轴承与仿真的可复制文件集中在[完整示例](../examples.md)。

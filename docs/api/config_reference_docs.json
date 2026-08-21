@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "bearing": {
+    "document": {"title": "JSON5 文档外壳", "summary": "顶层文档和 profile 共用的版本、角色、include 与 spec 合同。"},
+    "spec": {"title": "轴承 spec 顶层", "summary": "轴承族、单位制、时间步和按 family 选择的子配置。"},
+    "film_dimensional": {"title": "量纲液膜 film", "summary": "量纲液膜、主动润滑单瓦和气膜继承的几何、物性、网格及求解参数。"},
+    "film_nondimensional": {"title": "无量纲液膜 film", "summary": "无量纲压力、速度和用于工程单位换算的 scale 字段。"},
+    "film_gas_additions": {"title": "气膜覆盖与附加 film 字段", "summary": "列出气膜对通用量纲 film 默认值的覆盖，以及气体压力、织构和柔性箔片耦合参数。"},
+    "restrictors_liquid": {"title": "液膜 restrictors", "summary": "可选静压节流孔位置、几何/流量系数和供压。"},
+    "restrictors_active": {"title": "主动 restrictors", "summary": "量纲或无量纲主动供油节流器及点源投影方式。"},
+    "tank": {"title": "主动 tank", "summary": "油腔局部范围与深度比。"},
+    "valve_second_order": {"title": "二阶 valve", "summary": "二阶伺服阀的频率、阻尼和延迟。"},
+    "valve_static": {"title": "静态 valve", "summary": "无记忆单位增益阀，仅使用模型判别字段。"},
+    "valve_transfer_function": {"title": "传递函数 valve", "summary": "连续时间 proper 传递函数的分子和分母多项式。"},
+    "control": {"title": "主动 control", "summary": "PID、模糊 PID、无控制和外部阀芯模式的公共控制字段。"},
+    "control_pid_gains": {"title": "PID gains", "summary": "PID 比例、积分、微分与前馈增益。"},
+    "transforms": {"title": "主动 transforms", "summary": "物理位移/速度到控制器输入的显式变换矩阵。"},
+    "thermal": {"title": "thermal", "summary": "稳态或瞬态热黏耦合、边界条件、黏度更新与 Newton 参数。"},
+    "model_package": {"title": "代理 model_package", "summary": "ALBNN 0.4 模型包的受限相对路径和增强覆盖。"},
+    "surrogate_runtime": {"title": "代理 runtime", "summary": "推理参数、固定阀芯或外部阀芯输入模式。"}
+  },
+  "simulation": {
+    "document": {"title": "JSON5 文档外壳", "summary": "simulation 与 simulation_profile 的版本、include 和 spec 合同。"},
+    "spec": {"title": "simulation spec 顶层", "summary": "转子、时间网格、轴承挂载、载荷和历史策略。"},
+    "rotor": {"title": "rotor", "summary": "ROSS Excel 资源、转频和比例阻尼参数。"},
+    "time_grid": {"title": "time_grid", "summary": "全局量纲时间步和初始状态后的推进次数。"},
+    "mount": {"title": "mounts[]", "summary": "轴承文档与唯一转子节点之间的绑定。"},
+    "load_static": {"title": "静载荷", "summary": "指定节点上的固定二维力。"},
+    "load_gravity": {"title": "重力载荷", "summary": "统一 y 方向重力加速度。"},
+    "load_unbalance": {"title": "不平衡载荷", "summary": "节点、相位、质量、偏心、频率与斜坡参数。"},
+    "history": {"title": "history", "summary": "内存、环形缓冲或磁盘流式历史的字段和保留策略。"}
+  }
+}

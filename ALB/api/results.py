@@ -66,25 +66,41 @@ class BearingResult:
 
     @property
     def fx(self) -> float:
-        """Return the x-axis force."""
+        """Return the x-axis force component as a Python float.
+
+        Dimensional results use N; nondimensional results use the configured
+        bearing force scale.
+        """
 
         return float(self.force[0])
 
     @property
     def fy(self) -> float:
-        """Return the y-axis force."""
+        """Return the y-axis force component as a Python float.
+
+        Dimensional results use N; nondimensional results use the configured
+        bearing force scale.
+        """
 
         return float(self.force[1])
 
     @property
     def diagnostics(self) -> Mapping[str, Any]:
-        """Return immutable diagnostic metadata."""
+        """Return immutable family and convergence diagnostic metadata.
+
+        Keys beyond the documented schema are family-specific diagnostics rather
+        than a root-API compatibility promise.
+        """
 
         return self.details.metadata
 
     @property
     def friction(self) -> float | None:
-        """Return total friction force, or ``None`` when unavailable."""
+        """Return the total friction force when the bearing reports it.
+
+        Dimensional results use N. Nondimensional results use the family force
+        scale. Families that do not publish aggregate friction return ``None``.
+        """
 
         value = self.details.values.get("friction")
         return None if value is None else float(value)
@@ -115,7 +131,12 @@ class BearingResult:
         return None if value is None else cast(FloatArray, value)
 
     def as_bundle(self) -> ResultBundle:
-        """Return the complete persistable result bundle."""
+        """Return a complete immutable bundle for persistence or transport.
+
+        The bundle contains the force and family-specific detail values plus
+        schema, time, unit-system, and convergence metadata. Nested arrays and
+        mappings are read-only snapshots.
+        """
 
         return result_snapshot(
             {
@@ -135,7 +156,18 @@ class BearingResult:
         )
 
     def write(self, path: str | Path) -> ArtifactManifest:
-        """Persist this result to a new directory."""
+        """Persist the complete result to a new artifact directory.
+
+        Parameters
+        ----------
+        path
+            Destination directory, which must not contain an existing artifact.
+
+        Returns
+        -------
+        ArtifactManifest
+            Written files, digests, and schema metadata.
+        """
 
         return DirectoryArtifactWriter().write(self.as_bundle(), Path(path))
 
@@ -169,12 +201,20 @@ class AnalysisResult:
 
     @property
     def diagnostics(self) -> Mapping[str, Any]:
-        """Return immutable analysis diagnostics."""
+        """Return immutable operation-specific analysis diagnostics.
+
+        The mapping includes a schema identifier and the physical/numerical
+        context needed to interpret ``values``.
+        """
 
         return self.metadata
 
     def as_bundle(self) -> ResultBundle:
-        """Return the persistable analysis bundle."""
+        """Return a persistable immutable analysis bundle.
+
+        Operation values are copied with metadata augmented by convergence,
+        residual, iteration-count, and message fields.
+        """
 
         return result_snapshot(
             dict(self.values),
@@ -188,7 +228,18 @@ class AnalysisResult:
         )
 
     def write(self, path: str | Path) -> ArtifactManifest:
-        """Persist this analysis to a new directory."""
+        """Persist this analysis snapshot to a new artifact directory.
+
+        Parameters
+        ----------
+        path
+            Destination directory passed to ``DirectoryArtifactWriter``.
+
+        Returns
+        -------
+        ArtifactManifest
+            Written files and their integrity metadata.
+        """
 
         return DirectoryArtifactWriter().write(self.as_bundle(), Path(path))
 
@@ -243,12 +294,21 @@ class SimulationResult:
 
     @property
     def diagnostics(self) -> Mapping[str, Any]:
-        """Return immutable simulation diagnostics."""
+        """Return immutable simulation completion and history diagnostics.
+
+        Metadata records committed/requested steps, physical/history/post-commit
+        completion, history policy, and an optional disk-stream path.
+        """
 
         return self.metadata
 
     def as_bundle(self) -> ResultBundle:
-        """Return the complete persistable simulation bundle."""
+        """Return the complete committed in-memory history as a result bundle.
+
+        The bundle contains time, rotor displacement/velocity, and bearing force
+        arrays plus the simulation schema and convergence metadata. Disk-streamed
+        fields remain empty in memory and are identified by metadata.
+        """
 
         return result_snapshot(
             {
@@ -268,7 +328,18 @@ class SimulationResult:
         )
 
     def write(self, path: str | Path) -> ArtifactManifest:
-        """Persist this simulation to a new directory."""
+        """Persist the in-memory simulation result to a new artifact directory.
+
+        Parameters
+        ----------
+        path
+            Destination directory passed to ``DirectoryArtifactWriter``.
+
+        Returns
+        -------
+        ArtifactManifest
+            Written arrays, metadata, and integrity digests.
+        """
 
         return DirectoryArtifactWriter().write(self.as_bundle(), Path(path))
 

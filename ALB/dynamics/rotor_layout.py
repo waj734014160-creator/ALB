@@ -20,7 +20,22 @@ class _ShaftElementProtocol(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class RotorDofLayout:
-    """ROSS node-local DOF layout and the only node-to-global mapper."""
+    """Describe ROSS node-local DOFs and map them to global indices.
+
+    Parameters
+    ----------
+    dof_per_node
+        Number of degrees of freedom per ROSS node; at least four.
+    x, y
+        Local translational indices used for ALB displacement and force.
+    alpha, beta
+        Local rotational indices required to validate the ROSS layout.
+
+    Raises
+    ------
+    ValueError
+        If indices are repeated, negative, or outside the node layout.
+    """
 
     dof_per_node: int
     x: int
@@ -39,7 +54,23 @@ class RotorDofLayout:
 
     @classmethod
     def from_dof_per_node(cls, dof_per_node: int) -> "RotorDofLayout":
-        """Return the standard ROSS four- or six-DOF node layout."""
+        """Return the standard ROSS four- or six-DOF node layout.
+
+        Parameters
+        ----------
+        dof_per_node
+            Supported ROSS node width, either four or six.
+
+        Returns
+        -------
+        RotorDofLayout
+            Canonical translational and rotational local indices.
+
+        Raises
+        ------
+        ValueError
+            If the node width is not four or six.
+        """
 
         if dof_per_node == 4:
             return cls(4, x=0, y=1, alpha=2, beta=3)
@@ -49,7 +80,26 @@ class RotorDofLayout:
 
     @classmethod
     def from_ross(cls, rotor: object) -> "RotorDofLayout":
-        """Build the layout from a ROSS shaft-element DOF mapping."""
+        """Build a layout from one ROSS rotor's shaft-element mapping.
+
+        Parameters
+        ----------
+        rotor
+            ROSS-compatible object exposing integer ``number_dof`` and optional
+            ``shaft_elements`` with ``dof_mapping()``.
+
+        Returns
+        -------
+        RotorDofLayout
+            Validated node-local DOF layout.
+
+        Raises
+        ------
+        TypeError
+            If ``number_dof`` is not an integer.
+        ValueError
+            If a shaft mapping omits a required physical direction.
+        """
 
         number_dof: object = getattr(rotor, "number_dof", None)
         if isinstance(number_dof, (bool, np.bool_)) or not isinstance(
@@ -70,14 +120,53 @@ class RotorDofLayout:
         return cls(dof_per_node, **indices)
 
     def local_index(self, direction: str) -> int:
-        """Return the local index for one supported physical direction."""
+        """Return the local index for one physical direction.
+
+        Parameters
+        ----------
+        direction
+            One of ``"x"``, ``"y"``, ``"alpha"``, or ``"beta"``.
+
+        Returns
+        -------
+        int
+            Zero-based index within a node.
+
+        Raises
+        ------
+        ValueError
+            If ``direction`` is unsupported.
+        """
 
         if direction not in {"x", "y", "alpha", "beta"}:
             raise ValueError("direction must be one of: x, y, alpha, beta")
         return cast(int, getattr(self, direction))
 
     def global_index(self, node: int, direction: str, total_dof: int) -> int:
-        """Map one nonnegative node/direction pair into a global DOF index."""
+        """Map one node and direction to a validated global DOF index.
+
+        Parameters
+        ----------
+        node
+            Nonnegative rotor node index.
+        direction
+            Physical direction accepted by ``local_index``.
+        total_dof
+            Total global vector width used as the upper bound.
+
+        Returns
+        -------
+        int
+            Zero-based global DOF index.
+
+        Raises
+        ------
+        TypeError
+            If ``node`` is not an integer.
+        ValueError
+            If the node is negative, the direction is invalid, or the result is
+            outside ``total_dof``.
+        """
 
         if isinstance(node, (bool, np.bool_)) or not isinstance(
             node, (Integral, np.integer)

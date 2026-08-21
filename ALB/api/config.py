@@ -15,59 +15,34 @@ from ALB.config.hydraulics_models import FLOW_PROJECTION_MODES
 
 from .errors import ConfigurationError
 from ._config_fields import (
+    ACTIVE_RESTRICTOR_FIELDS,
+    BEARING_DOCUMENT_FIELDS,
+    BEARING_SPEC_FIELDS,
+    CONTROL_FIELDS,
     DIMENSIONAL_FILM_FIELDS,
     GAS_FILM_FIELDS,
+    LIQUID_RESTRICTOR_FIELDS,
+    MODEL_PACKAGE_FIELDS,
     NONDIMENSIONAL_FILM_FIELDS,
+    PID_GAIN_FIELDS,
+    SECOND_ORDER_VALVE_FIELDS,
+    STATIC_VALVE_FIELDS,
+    SURROGATE_RUNTIME_FIELDS,
+    TANK_FIELDS,
+    THERMAL_FIELDS as THERMAL_CONFIG_FIELDS,
+    TRANSFER_FUNCTION_VALVE_FIELDS,
+    TRANSFORM_FIELDS,
+    applicable_field_names,
 )
 
 
 SCHEMA_VERSION = "0.4.0"
-_BEARING_KINDS = {"bearing", "bearing_profile"}
-_BEARING_FAMILIES = {
-    "active_lubricated",
-    "gas_film",
-    "liquid_film",
-    "multi_pad",
-    "surrogate",
-}
-_UNIT_SYSTEMS = {"dimensional", "nondimensional"}
-_CONTROL_MODES = {"pid", "fuzzy_pid", "uncontrolled", "external_spool"}
-_VALVE_MODELS = {"second_order", "static", "transfer_function"}
-
-_THERMAL_FIELDS = {
-    "t_in",
-    "t_ref",
-    "miu0",
-    "beta",
-    "k_lub",
-    "cp_lub",
-    "max_delta_t",
-    "heat_partition",
-    "relax",
-    "miu_update",
-    "miu_update_max_ratio",
-    "heat_partition_steps",
-    "iter_method",
-    "tol",
-    "max_iter",
-    "adaptive_damp",
-    "miu_min",
-    "miu_max",
-    "coupling",
-    "t_supply",
-    "axial_side_bc",
-    "axial_side_t",
-    "supg",
-    "delta_t_scale",
-    "beta_nondim",
-    "t_ref_nondim",
-    "transient_enabled",
-    "thermal_newton_max_iter",
-    "thermal_newton_tol",
-    "thermal_newton_damp",
-    "thermal_newton_min_damp",
-    "thermal_newton_line_search",
-}
+_BEARING_KINDS = set(BEARING_DOCUMENT_FIELDS["kind"].choices)
+_BEARING_FAMILIES = set(BEARING_SPEC_FIELDS["family"].choices)
+_UNIT_SYSTEMS = set(BEARING_SPEC_FIELDS["unit_system"].choices)
+_CONTROL_MODES = set(CONTROL_FIELDS["mode"].choices)
+_VALVE_MODELS = set(SECOND_ORDER_VALVE_FIELDS["model"].choices)
+_THERMAL_FIELDS = set(THERMAL_CONFIG_FIELDS)
 
 
 def _freeze(value: Any) -> Any:
@@ -338,12 +313,7 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
     if model == "second_order":
         _reject_unknown(
             valve,
-            {
-                "model",
-                "natural_frequency_hz",
-                "damping_ratio",
-                "delay",
-            },
+            set(SECOND_ORDER_VALVE_FIELDS),
             "spec.valve",
         )
         for field in ("natural_frequency_hz", "damping_ratio"):
@@ -357,7 +327,7 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
     elif model == "transfer_function":
         _reject_unknown(
             valve,
-            {"model", "numerator", "denominator"},
+            set(TRANSFER_FUNCTION_VALVE_FIELDS),
             "spec.valve",
         )
         for field in ("numerator", "denominator"):
@@ -378,23 +348,12 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
                 "spec.valve transfer function must be proper"
             )
     else:
-        _reject_unknown(valve, {"model"}, "spec.valve")
+        _reject_unknown(valve, set(STATIC_VALVE_FIELDS), "spec.valve")
 
     control = _require_mapping(spec.get("control"), "spec.control")
     _reject_unknown(
         control,
-        {
-            "mode",
-            "gains",
-            "frequency_hz",
-            "sensor_angles_deg",
-            "error_range",
-            "delta_error_range",
-            "kp_range",
-            "ki_range",
-            "kd_range",
-            "rule_path",
-        },
+        set(CONTROL_FIELDS),
         "spec.control",
     )
     mode = control.get("mode")
@@ -408,7 +367,7 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
         gains_mapping = _require_mapping(gains, "spec.control.gains")
         _reject_unknown(
             gains_mapping,
-            {"kp", "ki", "kd", "feedforward"},
+            set(PID_GAIN_FIELDS),
             "spec.control.gains",
         )
     elif gains is not None:
@@ -430,23 +389,14 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
             "spec.restrictors.positions must contain at least one position"
         )
     unit_system = str(spec["unit_system"])
-    allowed = {
-        "positions",
-        "supply_pressure",
-        "tank_pressure",
-        "flow_coefficient",
-        "orifice_diameter",
-        "orifice_length",
-        "valve_area",
-        "discharge_coefficient",
-        "flow_projection",
-    }
-    if unit_system == "nondimensional":
-        allowed |= {
-            "base_flow_coefficient",
-            "spool_flow_coefficient",
-            "pressure_flow_coefficient",
-        }
+    allowed = (
+        applicable_field_names(
+            ACTIVE_RESTRICTOR_FIELDS,
+            "active_lubricated:dimensional",
+        )
+        if unit_system == "dimensional"
+        else set(ACTIVE_RESTRICTOR_FIELDS)
+    )
     _reject_unknown(restrictors, allowed, "spec.restrictors")
     flow_projection = restrictors.get("flow_projection", "nearest_node")
     if flow_projection not in FLOW_PROJECTION_MODES:
@@ -466,7 +416,7 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
     tank = _require_mapping(spec.get("tank"), "spec.tank")
     _reject_unknown(
         tank,
-        {"x_range", "z_range", "depth_ratio"},
+        set(TANK_FIELDS),
         "spec.tank",
     )
 
@@ -476,7 +426,7 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
     )
     _reject_unknown(
         transforms,
-        {"displacement_to_control", "velocity_to_control"},
+        set(TRANSFORM_FIELDS),
         "spec.transforms",
     )
 
@@ -487,13 +437,7 @@ def _validate_liquid_restrictors(value: Any) -> None:
     restrictors = _require_mapping(value, "spec.restrictors")
     _reject_unknown(
         restrictors,
-        {
-            "positions",
-            "radius",
-            "flow_coefficient",
-            "pressure",
-            "discharge_coefficient",
-        },
+        set(LIQUID_RESTRICTOR_FIELDS),
         "spec.restrictors",
     )
     if ("radius" in restrictors) == ("flow_coefficient" in restrictors):
@@ -536,25 +480,7 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
                 "spec.node must be a nonnegative integer or null"
             ) from exc
 
-    common = {"family", "unit_system", "time_step", "node"}
-    if family == "active_lubricated":
-        allowed = common | {
-            "film",
-            "restrictors",
-            "tank",
-            "valve",
-            "control",
-            "thermal",
-            "transforms",
-        }
-    elif family == "liquid_film":
-        allowed = common | {"film", "restrictors", "thermal"}
-    elif family == "gas_film":
-        allowed = common | {"film"}
-    elif family == "multi_pad":
-        allowed = common | {"pads"}
-    else:
-        allowed = common | {"model_package", "runtime"}
+    allowed = applicable_field_names(BEARING_SPEC_FIELDS, family)
     _reject_unknown(spec, allowed, "spec")
 
     if family in {"active_lubricated", "liquid_film", "gas_film"}:
@@ -616,7 +542,7 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
         )
         _reject_unknown(
             package,
-            {"path", "use_augment"},
+            set(MODEL_PACKAGE_FIELDS),
             "spec.model_package",
         )
         if not isinstance(package.get("path"), str) or not package["path"]:
@@ -638,7 +564,7 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
         runtime = _require_mapping(spec.get("runtime", {}), "spec.runtime")
         _reject_unknown(
             runtime,
-            {"parameters", "spool_mode", "spool"},
+            set(SURROGATE_RUNTIME_FIELDS),
             "spec.runtime",
         )
         _require_mapping(runtime.get("parameters", {}), "spec.runtime.parameters")
@@ -714,19 +640,32 @@ class BearingConfig:
 
     @property
     def family(self) -> str:
-        """Return the bearing family discriminator."""
+        """Return the validated bearing-family discriminator.
+
+        The value is one of ``liquid_film``, ``active_lubricated``,
+        ``gas_film``, ``multi_pad``, or ``surrogate``.
+        """
 
         return str(self.spec["family"])
 
     @property
     def unit_system(self) -> str:
-        """Return dimensional or nondimensional."""
+        """Return the validated bearing input/output unit-system name.
+
+        The result is ``dimensional`` or ``nondimensional`` and matches the
+        interpretation applied to displacements, velocities, forces, and fields.
+        """
 
         return str(self.spec["unit_system"])
 
     @property
     def control_mode(self) -> str | None:
-        """Return the active-bearing control mode, if applicable."""
+        """Return the user-owned control mode when the family exposes one.
+
+        Active lubricated bearings return their configured PID, fuzzy PID,
+        uncontrolled, or external-spool mode. A surrogate requiring external spool
+        input returns ``external_spool``; other families return ``None``.
+        """
 
         if self.family == "surrogate":
             runtime = self.spec.get("runtime", {})
@@ -741,7 +680,12 @@ class BearingConfig:
         return str(control["mode"])
 
     def to_dict(self) -> dict[str, Any]:
-        """Return a caller-owned strict 0.4 document."""
+        """Return a caller-owned strict ALB 0.4 bearing document.
+
+        The returned mapping contains ``schema_version``, ``kind='bearing'``, and a
+        deeply mutable copy of ``spec``. Mutating it does not alter this immutable
+        configuration; pass the changed data to :class:`BearingConfig` to revalidate.
+        """
 
         return {
             "schema_version": SCHEMA_VERSION,
@@ -860,7 +804,7 @@ def _load_bearing_document(
     payload = _read_json5(resolved)
     _reject_unknown(
         payload,
-        {"schema_version", "kind", "includes", "spec"},
+        set(BEARING_DOCUMENT_FIELDS),
         "document",
     )
     if payload.get("schema_version") != SCHEMA_VERSION:

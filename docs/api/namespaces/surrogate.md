@@ -4,27 +4,252 @@
 
 > **高级 API。** 创建、检查和加载已部署 ALBNN 模型包。
 
+- 显式导出数：`3`
+- 源码合同摘要：`sha256:99c1f25c78e88141`
+- 对应规则：中文语义元数据必须与源码参数、公开成员和英文 docstring 同步通过生成门禁。
+
 ## 安装
 
-```powershell
-E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[surrogate]"
+```bash
+python -m pip install "re-alb[surrogate]"
 ```
 
 ## 导入
 
 ```python
-from ALB.surrogate import create_model_package, open_model_package, load_albnn_package
+from ALB.surrogate import create_model_package, load_albnn_package, open_model_package
 ```
 
-## 显式导出
+## 显式导出总览
 
-| 符号 | 用途 |
-| --- | --- |
-| `create_model_package` | 从已验证模型资产创建可部署 package。 |
-| `open_model_package` | 检查 package manifest、scaler 和资源边界。 |
-| `load_albnn_package` | 加载 package 并创建供 Bearing facade 使用的代理模型。 |
+| 符号 | 类别 | 用途 | 源码 |
+| --- | --- | --- | --- |
+| `create_model_package` | 函数 | 从可信 checkpoint、NPZ scaler 和 metadata 创建固定角色且带摘要的 0.4 package。 | `ALB/surrogate/package.py:119` |
+| `load_albnn_package` | 函数 | 在完整摘要校验后，以 CPU、安全 Torch weights-only 和 NPZ 路径构建 ALBNN 推理对象。 | `ALB/surrogate/package.py:202` |
+| `open_model_package` | 函数 | 不加载网络地校验 package schema、精确 artifact 角色、路径、metadata 和 SHA-256。 | `ALB/surrogate/package.py:39` |
 
 !!! warning "高级接口边界"
-    本页只记录 namespace 显式导出的符号。其实现模块、私有 helper 和可导入的内部类型不因此成为稳定用户 API。
+    本页只记录 namespace 显式导出的符号及其源码声明的公开成员。实现模块、私有 helper 和其他可导入类型不因此成为稳定用户 API。
+
+## 示例
+
+<a id="example-create-package"></a>
+### 创建 ALBNN 0.4 package
+
+训练侧传入可信 checkpoint、两个拟合 scaler 和部署 metadata。
+
+```python
+from ALB.surrogate import create_model_package
+
+package = create_model_package(
+    "model_package",
+    checkpoint="checkpoint.pt",
+    input_scaler=input_scaler,
+    output_scaler=output_scaler,
+    metadata={"input_cols": ["x"], "output_cols": ["fx", "fy"]},
+)
+```
+
+<a id="example-load-package"></a>
+### 加载模型包用于推理
+
+加载前重复执行完整 package 校验，并用安全 Torch/NPZ 路径构建 ALBNN。
+
+```python
+from ALB.surrogate import load_albnn_package
+
+model = load_albnn_package(
+    "model_package",
+    use_augment=None,
+    runtime_parameters={"clearance": 8e-5},
+)
+```
+
+<a id="example-open-package"></a>
+### 只检查模型包
+
+该入口校验 manifest、角色、路径、metadata schema 和所有 SHA-256，不加载 Torch 网络。
+
+```python
+from ALB.surrogate import open_model_package
+
+package = open_model_package("model_package")
+print(package.manifest["schema"])
+```
+
+## 详细接口
+
+### `ALB.surrogate.create_model_package(path: Path | str, *, checkpoint: Path | str, input_scaler: object, output_scaler: object, metadata: Mapping[str, Any]) -> ModelPackage`
+
+从可信 checkpoint、NPZ scaler 和 metadata 创建固定角色且带摘要的 0.4 package。
+
+- 类别：`function`
+- 源码：`ALB/surrogate/package.py:119`
+- 返回标注：`ModelPackage`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `path` | 目标目录；必须不存在或为空，不覆盖已有内容。 |
+| `checkpoint` | 存在的可信 Torch checkpoint 路径。 |
+| `input_scaler` | write_scaler 支持的已拟合输入 scaler。 |
+| `output_scaler` | write_scaler 支持的已拟合输出 scaler。 |
+| `metadata` | 输入/输出列、feature set 等部署 metadata mapping。 |
+
+输出：完成再次校验的 ModelPackage。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `FileExistsError` | 目标目录非空。 |
+| `FileNotFoundError` | checkpoint 不存在。 |
+| `ValueError` | metadata schema 冲突或 scaler 不能按安全格式保存。 |
+
+示例：[创建 ALBNN 0.4 package](#example-create-package)。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Create one deployable package from trusted training artifacts.
+
+    Parameters
+    ----------
+    path
+        Destination directory. It may be absent or empty, but existing content is
+        never overwritten.
+    checkpoint
+        Existing trusted Torch checkpoint copied to ``weights.pt``.
+    input_scaler, output_scaler
+        Fitted scaler objects accepted by ``write_scaler`` and serialized as NPZ.
+    metadata
+        Deployment metadata. Schema ``alb.surrogate-metadata.v0.4`` is inserted;
+        a conflicting explicit schema is rejected.
+
+    Returns
+    -------
+    ModelPackage
+        Newly written package after a complete digest-validation pass.
+
+    Raises
+    ------
+    FileExistsError
+        If the destination directory contains files.
+    FileNotFoundError
+        If ``checkpoint`` does not exist.
+    ValueError
+        If metadata conflicts with the 0.4 contract or a scaler is invalid.
+    ```
+
+### `ALB.surrogate.load_albnn_package(path: Path | str, *, use_augment: bool | None = None, runtime_parameters: Mapping[str, Any] | None = None) -> Any`
+
+在完整摘要校验后，以 CPU、安全 Torch weights-only 和 NPZ 路径构建 ALBNN 推理对象。
+
+- 类别：`function`
+- 源码：`ALB/surrogate/package.py:202`
+- 返回标注：`Any`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `path` | 通过 open_model_package 校验的 package 目录。 |
+| `use_augment` | 可选运行时覆盖；None 保留 metadata 中的值。 |
+| `runtime_parameters` | 作为属性暴露给推理 config 的可选 mapping。 |
+
+输出：可交给 surrogate bearing runtime 的已初始化 ALBNN 对象。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `FileNotFoundError` | package 或 artifact 缺失。 |
+| `ValueError` | 摘要、schema、model_type、checkpoint 或 scaler 无效。 |
+| `ImportError` | 未安装 surrogate extra（含 Torch）。 |
+
+示例：[加载模型包用于推理](#example-load-package)。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Load a digest-validated ALBNN package for CPU inference.
+
+    Parameters
+    ----------
+    path
+        Package directory accepted by ``open_model_package``.
+    use_augment
+        Optional runtime override for metadata ``use_augment``. ``None`` preserves
+        the packaged value.
+    runtime_parameters
+        Optional mapping exposed as attributes on the inference runtime config.
+
+    Returns
+    -------
+    Any
+        Initialized ``ALBNN`` inference object accepted by the surrogate bearing
+        runtime.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the package is incomplete.
+    ValueError
+        If digests, schemas, model type, checkpoint structure, or scalers are
+        invalid.
+    ImportError
+        If the ``surrogate`` extra, including Torch, is not installed.
+    ```
+
+### `ALB.surrogate.open_model_package(path: Path | str) -> ModelPackage`
+
+不加载网络地校验 package schema、精确 artifact 角色、路径、metadata 和 SHA-256。
+
+- 类别：`function`
+- 源码：`ALB/surrogate/package.py:39`
+- 返回标注：`ModelPackage`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `path` | 包含 manifest.json 的 package 目录。 |
+
+输出：解析为绝对路径并带已验证 manifest 的 ModelPackage。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `FileNotFoundError` | manifest 或任一 artifact 不存在。 |
+| `ValueError` | 角色、文件名、schema、metadata 或摘要不匹配。 |
+
+示例：[只检查模型包](#example-open-package)。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Validate and describe one pickle-free ALBNN 0.4 package.
+
+    Parameters
+    ----------
+    path
+        Directory containing ``manifest.json`` and the four exact artifact roles:
+        ``weights.pt``, two NPZ scalers, and ``metadata.json``.
+
+    Returns
+    -------
+    ModelPackage
+        Resolved artifact paths plus the validated manifest mapping.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the manifest or any declared artifact is absent.
+    ValueError
+        If schemas, role names, relative file names, metadata, or SHA-256 digests
+        do not match the ALBNN 0.4 package contract.
+    ```
 
 返回[公开接口边界](../../site/concepts/public-api-policy.md)。

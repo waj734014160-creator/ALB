@@ -152,11 +152,11 @@ SHA-256 摘要必须完整匹配。旧 package 与 pickle scaler 只能在升级
 
 ## 安装与验证
 
-```powershell
-E:/Anaconda2023/envs/ALB/python.exe -m pip install -e ".[all]"
-E:/Anaconda2023/envs/ALB/python.exe -m pytest -q
-E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
-E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py --check
+```bash
+python -m pip install -e ".[all]"
+python -m pytest -q
+python tools/validation/run_layered_mypy.py
+python tools/docs/generate_public_api_reference.py --check
 ```
 
 0.4.0 发布功能以 `tools/validation/release_feature_manifest_0_4.json` 和

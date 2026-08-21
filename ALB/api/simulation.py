@@ -32,6 +32,17 @@ from ALB.dynamics.coupling_runtime import (
     PostCommitRecordingError,
 )
 
+from ._config_fields import (
+    GRAVITY_LOAD_FIELDS,
+    SIMULATION_DOCUMENT_FIELDS,
+    SIMULATION_HISTORY_FIELDS,
+    SIMULATION_MOUNT_FIELDS,
+    SIMULATION_ROTOR_FIELDS,
+    SIMULATION_SPEC_FIELDS,
+    SIMULATION_TIME_GRID_FIELDS,
+    STATIC_LOAD_FIELDS,
+    UNBALANCE_LOAD_FIELDS,
+)
 from .config import (
     SCHEMA_VERSION,
     BearingConfig,
@@ -63,7 +74,7 @@ def _normalize_load(value: Any, index: int) -> Mapping[str, Any]:
     load = _require_mapping(value, path)
     load_type = load.get("type")
     if load_type == "static":
-        _reject_unknown(load, {"type", "node", "force"}, path)
+        _reject_unknown(load, set(STATIC_LOAD_FIELDS), path)
         static_node = _require_integer(
             load.get("node"),
             f"{path}.node",
@@ -85,7 +96,7 @@ def _normalize_load(value: Any, index: int) -> Mapping[str, Any]:
             "force": force,
         }
     elif load_type == "gravity":
-        _reject_unknown(load, {"type", "acceleration"}, path)
+        _reject_unknown(load, set(GRAVITY_LOAD_FIELDS), path)
         normalized = {
             "type": "gravity",
             "acceleration": _finite_float(
@@ -94,16 +105,7 @@ def _normalize_load(value: Any, index: int) -> Mapping[str, Any]:
             ),
         }
     elif load_type == "unbalance":
-        allowed = {
-            "type",
-            "node",
-            "phase",
-            "t_max",
-            "m",
-            "freq",
-            "e",
-            "no_step",
-        }
+        allowed = set(UNBALANCE_LOAD_FIELDS)
         _reject_unknown(load, allowed, path)
         raw_node = load.get("node")
         if isinstance(raw_node, Sequence) and not isinstance(
@@ -397,13 +399,26 @@ class RotorBearingSimulation:
 
     @property
     def config(self) -> SimulationConfig:
-        """Return immutable simulation inputs."""
+        """Return the immutable topology, loads, and history policy.
+
+        Runtime-owned rotor, adapters, and dependencies remain the same objects;
+        declarative mappings and sequences were copied and frozen at validation.
+        """
 
         return self._config
 
     @property
     def latest_result(self) -> SimulationResult:
-        """Return the latest complete or partial committed history."""
+        """Return the latest complete or partial committed simulation history.
+
+        A failed run may publish a partial result containing every safely retained
+        committed step. Access before a successful or failed run raises.
+
+        Raises
+        ------
+        RuntimeError
+            If :meth:`run` has not produced any result boundary.
+        """
 
         if self._last_result is None:
             raise RuntimeError("no simulation result is available")
@@ -949,7 +964,7 @@ def _load_simulation_document(
     payload = _read_json5(resolved)
     _reject_unknown(
         payload,
-        {"schema_version", "kind", "includes", "spec"},
+        set(SIMULATION_DOCUMENT_FIELDS),
         "document",
     )
     if payload.get("schema_version") != SCHEMA_VERSION:
@@ -989,7 +1004,38 @@ def _load_simulation_document(
 
 
 def load_simulation_config(path: str | Path) -> SimulationConfig:
-    """Load and build one strict 0.4 simulation document."""
+    """Load and materialize one strict UTF-8 ALB 0.4 simulation document.
+
+    Parameters
+    ----------
+    path
+        Top-level JSON5 file with ``schema_version='0.4.0'`` and
+        ``kind='simulation'``. Relative ``simulation_profile`` includes, the
+        ROSS Excel rotor, mounted bearing documents, and an optional disk-history
+        directory must remain below the outer document directory.
+
+    Returns
+    -------
+    SimulationConfig
+        Fully validated immutable programmatic configuration containing a
+        dimensional ``RossRotor``, bearing mounts, loads, and history policy.
+
+    Raises
+    ------
+    ConfigurationError
+        If the document/include graph, resource containment, fields, values,
+        rotor, mounts, time grid, loads, or history policy is invalid.
+    ImportError
+        If JSON5, ROSS, or another required optional dependency is unavailable.
+    FileNotFoundError
+        If a declared rotor or bearing resource is absent in a downstream loader.
+
+    Notes
+    -----
+    File configuration intentionally cannot serialize adapters, spool providers,
+    recorders, or observers. Construct :class:`SimulationConfig` directly when
+    those advanced runtime objects are required.
+    """
 
     source = Path(path).resolve()
     spec = _load_simulation_document(
@@ -1001,13 +1047,13 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
     )
     _reject_unknown(
         spec,
-        {"rotor", "time_grid", "mounts", "loads", "history"},
+        set(SIMULATION_SPEC_FIELDS),
         "spec",
     )
     rotor_spec = _require_mapping(spec.get("rotor"), "spec.rotor")
     _reject_unknown(
         rotor_spec,
-        {"model", "path", "frequency_hz", "alpha", "beta"},
+        set(SIMULATION_ROTOR_FIELDS),
         "spec.rotor",
     )
     if rotor_spec.get("model") != "ross_excel":
@@ -1023,7 +1069,11 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
             "rotor resource path escapes the outer document directory"
         ) from exc
     time_grid = _require_mapping(spec.get("time_grid"), "spec.time_grid")
-    _reject_unknown(time_grid, {"time_step", "steps"}, "spec.time_grid")
+    _reject_unknown(
+        time_grid,
+        set(SIMULATION_TIME_GRID_FIELDS),
+        "spec.time_grid",
+    )
     time_step = _positive_float(
         time_grid.get("time_step"),
         "spec.time_grid.time_step",
@@ -1055,7 +1105,11 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
     mounts = []
     for index, raw_mount in enumerate(mounts_raw):
         mount = _require_mapping(raw_mount, f"spec.mounts[{index}]")
-        _reject_unknown(mount, {"bearing", "node"}, f"spec.mounts[{index}]")
+        _reject_unknown(
+            mount,
+            set(SIMULATION_MOUNT_FIELDS),
+            f"spec.mounts[{index}]",
+        )
         bearing_path = mount.get("bearing")
         if not isinstance(bearing_path, str) or not bearing_path:
             raise ConfigurationError(
@@ -1074,7 +1128,7 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
     history_raw = _require_mapping(spec.get("history", {}), "spec.history")
     _reject_unknown(
         history_raw,
-        {"mode", "fields", "downsample", "capacity", "directory"},
+        set(SIMULATION_HISTORY_FIELDS),
         "spec.history",
     )
     raw_history_directory = history_raw.get("directory")
@@ -1143,13 +1197,48 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
 
 
 def build_simulation(config: SimulationConfig) -> RotorBearingSimulation:
-    """Build a ready simulation from immutable programmatic inputs."""
+    """Build a fresh one-shot simulation from immutable programmatic inputs.
+
+    Parameters
+    ----------
+    config
+        Validated :class:`SimulationConfig` owning rotor, mounts, fixed time grid,
+        loads, history policy, and optional coupling dependencies.
+
+    Returns
+    -------
+    RotorBearingSimulation
+        Ready one-shot simulation; no physical step has run yet.
+
+    Raises
+    ------
+    TypeError
+        If ``config`` is not :class:`SimulationConfig`.
+    ConfigurationError
+        If runtime materialization detects an inconsistent bearing boundary.
+    """
 
     return RotorBearingSimulation(config)
 
 
 def simulation_from_file(path: str | Path) -> RotorBearingSimulation:
-    """Load one strict JSON5 simulation and build it."""
+    """Load one strict simulation JSON5 document and build a fresh runtime.
+
+    Parameters
+    ----------
+    path
+        File accepted by :func:`load_simulation_config`.
+
+    Returns
+    -------
+    RotorBearingSimulation
+        Ready one-shot simulation constructed from the resolved resources.
+
+    Raises
+    ------
+    ConfigurationError, ImportError, FileNotFoundError
+        Propagated from configuration loading and optional resource construction.
+    """
 
     return build_simulation(load_simulation_config(path))
 

@@ -1,0 +1,24 @@
+{
+  schema_version: "0.4.0",
+  kind: "bearing",
+  includes: [],
+  spec: {
+    family: "surrogate",
+    unit_system: "dimensional",
+    time_step: 1e-4,
+    node: null,
+    model_package: {
+      // Replace with a validated package created by create_model_package().
+      path: "models/albnn_package",
+      use_augment: false,
+    },
+    runtime: {
+      parameters: {
+        clearance: 8e-5,
+        radius: 0.04,
+      },
+      spool_mode: "fixed",
+      spool: [0.0, 0.0],
+    },
+  },
+}

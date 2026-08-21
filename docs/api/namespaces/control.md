@@ -4,10 +4,14 @@
 
 > **高级 API。** 控制器、阀和自适应阻尼策略的高级显式入口。
 
+- 显式导出数：`4`
+- 源码合同摘要：`sha256:c53926d1c61fab68`
+- 对应规则：中文语义元数据必须与源码参数、公开成员和英文 docstring 同步通过生成门禁。
+
 ## 安装
 
-```powershell
-E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[control]"
+```bash
+python -m pip install "re-alb[control]"
 ```
 
 ## 导入
@@ -16,16 +20,574 @@ E:/Anaconda2023/envs/ALB/python.exe -m pip install "re-alb[control]"
 from ALB.control import ControllerBlock, ValveBlock, AdaptiveDampConfig, AdaptiveDampController
 ```
 
-## 显式导出
+## 显式导出总览
 
-| 符号 | 用途 |
-| --- | --- |
-| `ControllerBlock` | 把满足控制器协议的实现绑定为可组合控制 block。 |
-| `ValveBlock` | 把阀模型绑定为严格输入输出 block。 |
-| `AdaptiveDampConfig` | 声明数值迭代自适应阻尼参数。 |
-| `AdaptiveDampController` | 根据残差变化调整数值阻尼。 |
+| 符号 | 类别 | 用途 | 源码 |
+| --- | --- | --- | --- |
+| `ControllerBlock` | 类 | 把满足 ControllerProtocol 的原生控制器绑定到 ALB 的严格命令生命周期。 | `ALB/control/blocks.py:37` |
+| `ValveBlock` | 类 | 把满足 ServoValveProtocol 的阀模型绑定到严格评估生命周期。 | `ALB/control/blocks.py:90` |
+| `AdaptiveDampConfig` | 类 | 声明按残差改善/恶化趋势增长或缩小标量松弛因子的规则。 | `ALB/core/numerics/damping.py:10` |
+| `AdaptiveDampController` | 类 | 记录残差趋势并给出下一次迭代使用的有界松弛因子。 | `ALB/core/numerics/damping.py:107` |
 
 !!! warning "高级接口边界"
-    本页只记录 namespace 显式导出的符号。其实现模块、私有 helper 和可导入的内部类型不因此成为稳定用户 API。
+    本页只记录 namespace 显式导出的符号及其源码声明的公开成员。实现模块、私有 helper 和其他可导入类型不因此成为稳定用户 API。
+
+## 示例
+
+<a id="example-controller-block"></a>
+### 绑定控制器 block
+
+控制器对象必须满足 ControllerProtocol；省略号表示由应用提供的实现。
+
+```python
+from ALB.control import ControllerBlock
+
+controller = ...  # ControllerProtocol implementation
+block = ControllerBlock(controller, unit_system="dimensional")
+```
+
+<a id="example-valve-block"></a>
+### 绑定伺服阀 block
+
+阀对象必须满足 ServoValveProtocol，block 的输入输出单位制保持一致。
+
+```python
+from ALB.control import ValveBlock
+
+valve = ...  # ServoValveProtocol implementation
+block = ValveBlock(valve, unit_system="dimensional")
+```
+
+<a id="example-adaptive-damp"></a>
+### 按残差趋势调节松弛因子
+
+控制器返回下一次迭代使用的松弛值，并在 history 中保留动作记录。
+
+```python
+from ALB.control import AdaptiveDampConfig, AdaptiveDampController
+
+config = AdaptiveDampConfig(enabled=True, min_value=0.05)
+damping = AdaptiveDampController(0.8, config)
+for residual in (1.0, 0.7, 0.45):
+    next_value = damping.update(residual)
+```
+
+## 详细接口
+
+### `ALB.control.ControllerBlock(controller: Any, unit_system: UnitSystem | str) -> None`
+
+把满足 ControllerProtocol 的原生控制器绑定到 ALB 的严格命令生命周期。
+
+- 类别：`class`
+- 源码：`ALB/control/blocks.py:37`
+- 返回标注：`ControllerBlock`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `controller` | 满足 ControllerProtocol 的控制器；每次计算依次调用 input、evaluate 和 output。 |
+| `unit_system` | block 接受并写入 ControlOutput 的 UnitSystem 或等价字符串。 |
+
+输出：构造并返回 ControllerBlock；命令值通过继承的 output() 端口读取。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError` | unit_system 不能转换为 UnitSystem。 |
+
+示例：[绑定控制器 block](#example-controller-block)。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Bind one controller implementation to the strict command lifecycle.
+
+    Parameters
+    ----------
+    controller
+        Object satisfying ``ControllerProtocol``. Each command evaluation calls
+        its native ``input``, ``evaluate``, and ``output`` methods in order.
+    unit_system
+        Unit system accepted by this block. Every ``ControlInput`` must use the
+        same value, and each published ``ControlOutput`` retains it.
+
+    Raises
+    ------
+    ValueError
+        If ``unit_system`` cannot be coerced to ``UnitSystem``.
+    ```
+
+公开成员：
+
+#### `ControllerBlock.compute_command() -> None`
+
+消费已经锁存的 ControlInput，执行一次控制律并发布 ControlOutput。
+
+- 类别：`method`
+- 源码：`ALB/control/blocks.py:67`
+- 返回标注：`None`
+
+输入：
+
+无。
+
+输出：无直接返回值；结果保存在 block 的输出端口。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `RuntimeError` | 尚未锁存新的输入，或生命周期顺序非法。 |
+| `TypeError` | 包装对象不再满足 ControllerProtocol。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Evaluate the latched input and publish one ``ControlOutput``.
+
+    Returns
+    -------
+    None
+        The command is exposed through the inherited ``output()`` port.
+
+    Raises
+    ------
+    RuntimeError
+        If no new ``ControlInput`` has been latched.
+    TypeError
+        If the wrapped object no longer satisfies ``ControllerProtocol``.
+    ```
+
+### `ALB.control.ValveBlock(valve: Any, unit_system: UnitSystem | str) -> None`
+
+把满足 ServoValveProtocol 的阀模型绑定到严格评估生命周期。
+
+- 类别：`class`
+- 源码：`ALB/control/blocks.py:90`
+- 返回标注：`ValveBlock`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `valve` | 满足 ServoValveProtocol 的阀模型。 |
+| `unit_system` | ValveInput 与 ValveOutput 共用的单位制。 |
+
+输出：构造并返回 ValveBlock；阀芯输出通过继承的 output() 端口读取。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError` | unit_system 不能转换为 UnitSystem。 |
+
+示例：[绑定伺服阀 block](#example-valve-block)。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Bind one servovalve implementation to the strict evaluation lifecycle.
+
+    Parameters
+    ----------
+    valve
+        Object satisfying ``ServoValveProtocol``. Evaluation calls its native
+        ``input``, ``evaluate``, and ``output`` methods in order.
+    unit_system
+        Unit system accepted by this block and published on ``ValveOutput``.
+
+    Raises
+    ------
+    ValueError
+        If ``unit_system`` cannot be coerced to ``UnitSystem``.
+    ```
+
+公开成员：
+
+#### `ValveBlock.evaluate() -> None`
+
+消费已经锁存的 ValveInput，执行阀模型并发布 ValveOutput。
+
+- 类别：`method`
+- 源码：`ALB/control/blocks.py:119`
+- 返回标注：`None`
+
+输入：
+
+无。
+
+输出：无直接返回值；阀芯结果保存在 block 的输出端口。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `RuntimeError` | 输入或生命周期状态不满足评估前置条件。 |
+| `TypeError` | 包装对象不再满足 ServoValveProtocol。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Evaluate the latched command and publish one ``ValveOutput``.
+
+    Returns
+    -------
+    None
+        The spool value is exposed through the inherited ``output()`` port.
+
+    Raises
+    ------
+    RuntimeError
+        If no new ``ValveInput`` has been latched.
+    TypeError
+        If the wrapped object no longer satisfies ``ServoValveProtocol``.
+    ```
+
+### `ALB.control.AdaptiveDampConfig(enabled: bool = False, min_value: float = 0.02, max_value: Optional[float] = None, shrink_factor: float = 0.5, growth_factor: float = 1.15, improve_ratio: float = 0.85, worsen_ratio: float = 1.05, improve_patience: int = 2)`
+
+声明按残差改善/恶化趋势增长或缩小标量松弛因子的规则。
+
+- 类别：`class`
+- 源码：`ALB/core/numerics/damping.py:10`
+- 返回标注：`AdaptiveDampConfig`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `enabled` | 是否启用自适应更新；false 时始终保持初值。 |
+| `min_value` | 松弛因子正下限。 |
+| `max_value` | 可选上限；None 表示使用控制器初值。 |
+| `shrink_factor` | 残差恶化或非有限时乘用的 (0, 1] 因子。 |
+| `growth_factor` | 持续改善后乘用的 >= 1 因子。 |
+| `improve_ratio` | 判定改善的当前/前次残差比阈值。 |
+| `worsen_ratio` | 判定恶化的当前/前次残差比阈值。 |
+| `improve_patience` | 增长前要求的连续改善次数。 |
+
+输出：不可变规则数据对象；字段同时构成 AdaptiveDampController 的边界。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ValueError` | 上下限、缩放因子、比值或耐心次数超出允许范围。 |
+
+示例：[按残差趋势调节松弛因子](#example-adaptive-damp)。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Configure residual-trend based scalar relaxation control.
+
+    Parameters
+    ----------
+    enabled
+        Enable adaptive updates. Disabled controllers retain their initial value.
+    min_value
+        Positive lower bound for the relaxation value.
+    max_value
+        Optional upper bound. ``None`` uses the controller's initial value.
+    shrink_factor
+        Factor in ``(0, 1]`` applied when the residual worsens or is nonfinite.
+    growth_factor
+        Factor greater than or equal to one applied after sustained improvement.
+    improve_ratio
+        Current-to-previous residual ratio counted as an improvement.
+    worsen_ratio
+        Current-to-previous residual ratio counted as deterioration.
+    improve_patience
+        Consecutive improvements required before growth.
+    ```
+
+公开数据字段：
+
+| 字段 | 说明 |
+| --- | --- |
+| `enabled` | 是否启用自适应更新；false 时始终保持初值。 |
+| `min_value` | 松弛因子正下限。 |
+| `max_value` | 可选上限；None 表示使用控制器初值。 |
+| `shrink_factor` | 残差恶化或非有限时乘用的 (0, 1] 因子。 |
+| `growth_factor` | 持续改善后乘用的 >= 1 因子。 |
+| `improve_ratio` | 判定改善的当前/前次残差比阈值。 |
+| `worsen_ratio` | 判定恶化的当前/前次残差比阈值。 |
+| `improve_patience` | 增长前要求的连续改善次数。 |
+
+公开成员：
+
+#### `AdaptiveDampConfig.from_dict(data)`
+
+把 None、现有配置或普通 mapping 规范化为 AdaptiveDampConfig。
+
+- 类别：`method`
+- 源码：`ALB/core/numerics/damping.py:59`
+- 返回标注：`未标注`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `data` | None、AdaptiveDampConfig 或字段 mapping；mapping 中未知键被忽略。 |
+
+输出：None、原对象或新构造的 AdaptiveDampConfig。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `TypeError` | data 类型不受支持。 |
+| `ValueError` | 字段值违反配置约束。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Normalize a mapping, existing config, or ``None``.
+
+    Parameters
+    ----------
+    data
+        ``AdaptiveDampConfig``, plain mapping, or ``None``. Unknown mapping
+        keys are ignored for compatibility with larger solver mappings.
+
+    Returns
+    -------
+    AdaptiveDampConfig or None
+        The existing or newly constructed immutable contract value.
+
+    Raises
+    ------
+    TypeError
+        If ``data`` has an unsupported type.
+    ValueError
+        If a supplied field violates the dataclass constraints.
+    ```
+
+#### `AdaptiveDampConfig.to_dict()`
+
+复制全部 dataclass 字段为调用方可修改的普通字典。
+
+- 类别：`method`
+- 源码：`ALB/core/numerics/damping.py:91`
+- 返回标注：`未标注`
+
+输入：
+
+无。
+
+输出：包含八个配置字段的 dict。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return a caller-owned mapping containing every configuration field.
+
+    The mapping is detached from this immutable dataclass and can be edited or
+    serialized before a later :meth:`from_dict` normalization.
+    ```
+
+### `ALB.control.AdaptiveDampController(initial_value: float, config = None)`
+
+记录残差趋势并给出下一次迭代使用的有界松弛因子。
+
+- 类别：`class`
+- 源码：`ALB/core/numerics/damping.py:107`
+- 返回标注：`AdaptiveDampController`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `initial_value` | 初始松弛因子，也是缺省 max_value 和 reset 基准。 |
+| `config` | AdaptiveDampConfig、兼容 mapping 或 None。 |
+
+输出：有状态 AdaptiveDampController；每次启用的 update 都向 history 添加审计记录。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `TypeError` | config 不能规范化为支持的类型。 |
+| `ValueError` | config 字段违反约束。 |
+
+示例：[按残差趋势调节松弛因子](#example-adaptive-damp)。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Update one scalar relaxation value from residual trends.
+
+    Parameters
+    ----------
+    initial_value
+        Relaxation value used initially and after ``reset()`` unless replaced.
+    config
+        ``AdaptiveDampConfig``, compatible mapping, or ``None``. ``None`` leaves
+        adaptive control disabled and preserves ``initial_value``.
+
+    Notes
+    -----
+    Every enabled update appends an audit record to ``history`` containing the
+    residual, value before and after the update, and the selected action.
+    ```
+
+公开成员：
+
+#### `AdaptiveDampController.enabled() -> bool`
+
+报告残差驱动更新是否启用。
+
+- 类别：`property`
+- 源码：`ALB/core/numerics/damping.py:133`
+- 返回标注：`bool`
+
+输入：
+
+无。
+
+输出：bool 开关。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return whether residual-driven updates are enabled.
+
+    This is false when no adaptive configuration was supplied or when its
+    ``enabled`` field is false.
+    ```
+
+#### `AdaptiveDampController.value() -> float`
+
+读取下一次求解器迭代应使用的当前松弛值。
+
+- 类别：`property`
+- 源码：`ALB/core/numerics/damping.py:143`
+- 返回标注：`float`
+
+输入：
+
+无。
+
+输出：float 当前值。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return the relaxation value for the next solver iteration.
+
+    The value starts at ``initial_value`` and changes only through enabled
+    :meth:`update` calls or :meth:`reset`.
+    ```
+
+#### `AdaptiveDampController.max_value() -> float`
+
+读取配置上限或由初值形成的有效上限。
+
+- 类别：`property`
+- 源码：`ALB/core/numerics/damping.py:153`
+- 返回标注：`float`
+
+输入：
+
+无。
+
+输出：float 有效上限。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return the effective upper relaxation bound.
+
+    An omitted configured bound falls back to the controller's initial value.
+    ```
+
+#### `AdaptiveDampController.min_value() -> float`
+
+读取不超过有效上限的下界。
+
+- 类别：`property`
+- 源码：`ALB/core/numerics/damping.py:164`
+- 返回标注：`float`
+
+输入：
+
+无。
+
+输出：float 有效下限。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Return the effective lower relaxation bound.
+
+    The configured minimum is clipped to the effective upper bound; a disabled
+    controller therefore returns its initial value for both bounds.
+    ```
+
+#### `AdaptiveDampController.reset(initial_value: Optional[float] = None)`
+
+清空残差和动作历史，并可替换后续复位所用初值。
+
+- 类别：`method`
+- 源码：`ALB/core/numerics/damping.py:175`
+- 返回标注：`未标注`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `initial_value` | 可选新初值；None 保留原初值。 |
+
+输出：None；原对象就地复位。
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Clear residual history and optionally replace the initial value.
+
+    Parameters
+    ----------
+    initial_value
+        New finite scalar initial value, or ``None`` to reuse the existing
+        initial value.
+
+    Returns
+    -------
+    None
+        The controller is reset in place and ``history`` becomes empty.
+    ```
+
+#### `AdaptiveDampController.update(error) -> float`
+
+记录一个残差，根据阈值选择 shrink、grow 或 hold。
+
+- 类别：`method`
+- 源码：`ALB/core/numerics/damping.py:197`
+- 返回标注：`float`
+
+输入：
+
+| 名称 | 说明 |
+| --- | --- |
+| `error` | 可转换为 float 的残差；NaN/Inf 会触发 shrink 并重置比较基线。 |
+
+输出：float 下一次迭代使用的松弛值。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `TypeError/ValueError` | error 不能转换为 float。 |
+
+??? note "源码 docstring（英文原文）"
+    ```text
+    Record one residual and return the next relaxation value.
+
+    Parameters
+    ----------
+    error
+        Residual convertible to ``float``. Nonfinite values trigger an
+        immediate shrink and clear the comparison baseline.
+
+    Returns
+    -------
+    float
+        Relaxation value to use for the next solver iteration.
+    ```
 
 返回[公开接口边界](../../site/concepts/public-api-policy.md)。

@@ -35,7 +35,22 @@ def run_valve_step(valve: Any, time: float, command: Any) -> Any:
 
 
 class ControllerBlock(CommandComputingBlock[ControlInput, ControlOutput]):
-    """Adapt a numerical control law to the strict command port lifecycle."""
+    """Bind one controller implementation to the strict command lifecycle.
+
+    Parameters
+    ----------
+    controller
+        Object satisfying ``ControllerProtocol``. Each command evaluation calls
+        its native ``input``, ``evaluate``, and ``output`` methods in order.
+    unit_system
+        Unit system accepted by this block. Every ``ControlInput`` must use the
+        same value, and each published ``ControlOutput`` retains it.
+
+    Raises
+    ------
+    ValueError
+        If ``unit_system`` cannot be coerced to ``UnitSystem``.
+    """
 
     def __init__(self, controller: Any, unit_system: UnitSystem | str) -> None:
         super().__init__()
@@ -50,6 +65,21 @@ class ControllerBlock(CommandComputingBlock[ControlInput, ControlOutput]):
         return dto
 
     def compute_command(self) -> None:
+        """Evaluate the latched input and publish one ``ControlOutput``.
+
+        Returns
+        -------
+        None
+            The command is exposed through the inherited ``output()`` port.
+
+        Raises
+        ------
+        RuntimeError
+            If no new ``ControlInput`` has been latched.
+        TypeError
+            If the wrapped object no longer satisfies ``ControllerProtocol``.
+        """
+
         dto = self._require_input()
         command = run_controller_step(self._controller, dto.time, dto.error)
         self._publish_output(
@@ -58,7 +88,21 @@ class ControllerBlock(CommandComputingBlock[ControlInput, ControlOutput]):
 
 
 class ValveBlock(EvaluatingBlock[ValveInput, ValveOutput]):
-    """Adapt a servovalve model to the strict evaluation port lifecycle."""
+    """Bind one servovalve implementation to the strict evaluation lifecycle.
+
+    Parameters
+    ----------
+    valve
+        Object satisfying ``ServoValveProtocol``. Evaluation calls its native
+        ``input``, ``evaluate``, and ``output`` methods in order.
+    unit_system
+        Unit system accepted by this block and published on ``ValveOutput``.
+
+    Raises
+    ------
+    ValueError
+        If ``unit_system`` cannot be coerced to ``UnitSystem``.
+    """
 
     def __init__(self, valve: Any, unit_system: UnitSystem | str) -> None:
         super().__init__()
@@ -73,6 +117,21 @@ class ValveBlock(EvaluatingBlock[ValveInput, ValveOutput]):
         return dto
 
     def evaluate(self) -> None:
+        """Evaluate the latched command and publish one ``ValveOutput``.
+
+        Returns
+        -------
+        None
+            The spool value is exposed through the inherited ``output()`` port.
+
+        Raises
+        ------
+        RuntimeError
+            If no new ``ValveInput`` has been latched.
+        TypeError
+            If the wrapped object no longer satisfies ``ServoValveProtocol``.
+        """
+
         dto = self._require_input()
         spool = run_valve_step(self._valve, dto.time, dto.command)
         self._publish_output(ValveOutput(spool, dto.time, self.unit_system))

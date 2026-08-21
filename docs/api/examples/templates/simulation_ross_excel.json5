@@ -1,0 +1,47 @@
+{
+  schema_version: "0.4.0",
+  kind: "simulation",
+  includes: [],
+  spec: {
+    rotor: {
+      model: "ross_excel",
+      // Replace with a real ROSS Excel model below this document directory.
+      path: "resources/rotor.xlsx",
+      frequency_hz: 50.0,
+      alpha: 0.0,
+      beta: 0.0,
+    },
+    time_grid: {
+      time_step: 1e-4,
+      steps: 1000,
+    },
+    mounts: [
+      // Replace with real ALB 0.4 bearing documents.
+      {bearing: "bearings/left.json5", node: 0},
+      {bearing: "bearings/right.json5", node: 4},
+    ],
+    loads: [
+      {type: "gravity", acceleration: 9.80665},
+      {type: "static", node: 2, force: [0.0, -100.0]},
+      {
+        type: "unbalance",
+        node: 2,
+        phase: 0.0,
+        t_max: 1.0,
+        m: 0.0,
+        freq: 50.0,
+        e: 0.0,
+        no_step: false,
+      },
+    ],
+    history: {
+      mode: "memory",
+      fields: [
+        "rotor_displacement",
+        "rotor_velocity",
+        "bearing_force",
+      ],
+      downsample: 1,
+    },
+  },
+}

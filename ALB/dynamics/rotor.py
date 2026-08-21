@@ -320,7 +320,29 @@ class SingleRotor(BaseSimpleModel):
 
 
 class RossRotor:
-    """ROSS rotor wrapper with explicit load, advance, and state-read phases."""
+    """Wrap one ROSS rotor with ALB's explicit runtime lifecycle.
+
+    Parameters
+    ----------
+    rotor
+        Constructed ``ross.Rotor`` instance. Four- and six-DOF node layouts are
+        mapped through ``RotorDofLayout``.
+    speed
+        Rotor angular speed passed to ROSS in rad/s.
+    dt
+        Positive dimensional integration step in seconds. Simulation configs
+        require this value to equal ``SimulationConfig.time_step``.
+    discrete
+        Use ROSS's discrete model when true; otherwise build the exact
+        first-order-hold matrices used by the continuous wrapper.
+
+    Notes
+    -----
+    Load input, ``advance()``, and state output are separate phases. A caller
+    must latch exactly one load before each advance; output methods never perform
+    hidden propagation. The wrapper always reports ``unit_system`` as
+    ``"dimensional"``.
+    """
 
     unit_system = "dimensional"
 
@@ -378,13 +400,20 @@ class RossRotor:
 
     @property
     def dt(self) -> float:
-        """Return the immutable integration time step in seconds."""
+        """Return the immutable integration time step in seconds.
+
+        Every subsequently latched input time must advance by this exact interval
+        within the runtime tolerance.
+        """
 
         return float(self._dt)
 
     def continuesys(self):
-        """
-        Discretize continuous model and obtain Ad, Bd0, Bd1.
+        """Discretize the ROSS continuous model for first-order held loads.
+
+        The method computes and stores ``Ad``, previous/current load operators,
+        and output matrices for the configured ``dt``. It returns ``None`` and is
+        normally selected by the constructor when ``discrete`` is false.
         """
         A, B, C, D = map(
             np.asarray, (self._sys.A, self._sys.B, self._sys.C, self._sys.D)
@@ -412,8 +441,11 @@ class RossRotor:
         self._d = D
 
     def discretesys(self):
-        """
-        Use built-in discrete model from ROSS.
+        """Select the ROSS built-in zero-order-held discrete model.
+
+        The method discretizes at ``dt`` and stores its state/input/output
+        matrices. It returns ``None`` and is normally selected by the constructor
+        when ``discrete`` is true.
         """
         self._sys = self._sys.to_discrete(self._dt)
         self._a = self._sys.A
@@ -459,8 +491,13 @@ class RossRotor:
         self._lifecycle.latch()
 
     def input_force2node(self, t, force, node, x0=None, **kwargs):
-        """
-        Input per-node 2D forces and map them to global DOFs.
+        """Validate and latch two-axis nodal forces for the next advance.
+
+        ``force`` has one ``[Fx, Fy]`` pair in N per entry of ``node``; the ROSS
+        DOF layout maps these pairs into a global load vector. ``t`` must follow
+        ``dt``. Optional ``x0`` replaces the state and ``force0`` supplies the
+        previous-step loads used by continuous interpolation. The method returns
+        ``None`` and refuses a second input before the current one is advanced.
         """
         self._lifecycle.require_input_slot()
         if self._dof_layout is None:
@@ -495,7 +532,12 @@ class RossRotor:
         self._lifecycle.latch()
 
     def input_load(self, value: RotorLoadInput) -> None:
-        """Latch a validated dimensional nodal-load DTO."""
+        """Latch one validated dimensional nodal-load DTO.
+
+        ``value`` supplies time, current/previous ``[Fx, Fy]`` loads in N, and node
+        links. Nondimensional loads are rejected. The method delegates to
+        :meth:`input_force2node` and does not advance the state.
+        """
 
         if not isinstance(value, RotorLoadInput):
             raise TypeError("rotor load must be RotorLoadInput")
@@ -533,7 +575,11 @@ class RossRotor:
 
     @property
     def lifecycle_state(self) -> LifecycleState:
-        """Return the shared rotor runtime state without advancing."""
+        """Return the shared rotor runtime state without advancing.
+
+        Callers can inspect whether input is available, evaluation is active, or
+        output is readable while leaving all state and histories unchanged.
+        """
 
         return self._lifecycle.state
 
@@ -592,7 +638,12 @@ class RossRotor:
         return self._xk1
 
     def advance(self):
-        """Advance exactly once from the currently latched force input."""
+        """Advance exactly once from the currently latched force input.
+
+        The returned NumPy vector is the next internal state. A successful advance
+        commits state/output history and makes output readable; lifecycle errors or
+        propagation failures do not publish a completed step.
+        """
 
         with self._lifecycle.evaluation():
             result = self._propagate()
@@ -601,7 +652,13 @@ class RossRotor:
         return result
 
     def current_state(self, node=None):
-        """Read the current rotor state without advancing the model."""
+        """Read the committed rotor state without advancing the model.
+
+        With ``node=None``, return a caller-owned copy of the complete state
+        vector. Otherwise return ``{'uxy', 'uxyt'}`` arrays of shape ``(nodes, 2)``
+        for displacement in m and velocity in m/s. Node extraction requires a
+        four- or six-DOF ROSS layout and readable lifecycle output.
+        """
 
         self._lifecycle.require_output()
         ndof = self._rotor.ndof
@@ -639,13 +696,21 @@ class RossRotor:
             return {"uxy": uxy, "uxyt": uxyt}
 
     def output(self, node=None):
-        """Read the completed current state without hidden propagation."""
+        """Return completed state output without hidden propagation.
+
+        This is the runtime-facing alias for :meth:`current_state`; ``node`` and
+        the returned full-state or ``uxy``/``uxyt`` shapes have identical meaning.
+        """
 
         return self.current_state(node)
 
     @property
     def dof_layout(self) -> RotorDofLayout:
-        """Return the immutable ROSS-derived node DOF layout."""
+        """Return the immutable ROSS-derived node DOF layout.
+
+        Rotors whose ``number_dof`` is not four or six have no supported public
+        nodal x/y mapping and raise ``ValueError`` on access.
+        """
 
         if self._dof_layout is None:
             raise ValueError("rotor does not expose a four- or six-DOF layout")
@@ -656,8 +721,11 @@ class RossRotor:
         self._xouts.append(copy.deepcopy(self._xout))
 
     def results(self):
-        """
-        Package simulation history as `ross.TimeResponseResults`.
+        """Return committed history as a ROSS ``TimeResponseResults`` object.
+
+        Time, output, and state histories include only successfully committed
+        advances. Reading requires lifecycle output to be available and does not
+        mutate the runtime.
         """
         self._lifecycle.require_output()
         return build_time_response_results(
@@ -665,8 +733,11 @@ class RossRotor:
         )
 
     def result_uxy(self, node):
-        """
-        Extract displacement history (x, y) for a given node.
+        """Return committed x/y displacement history for one rotor node.
+
+        The result is a NumPy array whose first axis follows committed times and
+        whose two columns are x/y displacement in m. A four- or six-DOF layout and
+        readable lifecycle output are required.
         """
         if self._dof_layout is None:
             raise ValueError("result_uxy requires a four- or six-DOF layout")
@@ -676,11 +747,29 @@ class RossRotor:
         )
 
     def plot_rotor(self, **kwargs):
+        """Return the underlying ROSS rotor geometry plot.
+
+        Parameters
+        ----------
+        **kwargs
+            Keyword arguments forwarded unchanged to ``ross.Rotor.plot_rotor``.
+
+        Returns
+        -------
+        object
+            Plot object returned by the installed ROSS version.
+        """
+
         return self._rotor.plot_rotor(**kwargs)
 
     def save(self, tofile=True, path=None, name=None, *args, **kwargs):
-        """
-        Wrap current results into `SaveTreeNode` and optionally save to disk.
+        """Package committed rotor results and optionally persist them.
+
+        ``path`` and ``name`` default to ``rotor_result`` and ``rotor``. Set
+        ``tofile=False`` to build the ``SaveTreeNode`` without writing; an optional
+        ``writer`` keyword customizes persistence. The result includes times,
+        states, outputs, the ROSS response, and rotor metadata, and requires
+        readable lifecycle output.
         """
         if path is None:
             path = "rotor_result"

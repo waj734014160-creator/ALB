@@ -41,9 +41,12 @@ def test_public_site_build_contains_primary_user_routes(site_root: Path) -> None
         "site/getting-started/first-bearing/index.html",
         "api/public_api_reference/index.html",
         "api/bearing_config_reference/index.html",
+        "api/simulation_config_reference/index.html",
         "api/namespaces/control/index.html",
         "api/namespaces/dynamics/index.html",
         "api/namespaces/surrogate/index.html",
+        "api/examples/templates/simulation_ross_excel.json5",
+        "api/examples/templates/surrogate_bearing.json5",
     )
 
     assert all((site_root / path).is_file() for path in expected)
@@ -60,6 +63,29 @@ def test_public_site_build_contains_primary_user_routes(site_root: Path) -> None
         'href="https://waj734014160-creator.github.io/ALB/'
         'api/public_api_reference/"' in api_reference
     )
+    assert "源码 docstring（英文原文）" in api_reference
+    assert "Bearing.calculate" in api_reference
+    assert "输出：" in api_reference
+
+    simulation_reference = (
+        site_root / "api/simulation_config_reference/index.html"
+    ).read_text(encoding="utf-8")
+    assert "ross_excel" in simulation_reference
+    assert "steps + 1" in simulation_reference
+    assert "disk_stream" in simulation_reference
+
+    for namespace, marker in {
+        "control": "ControllerBlock",
+        "dynamics": "RossRotor",
+        "surrogate": "load_albnn_package",
+    }.items():
+        page = (site_root / f"api/namespaces/{namespace}/index.html").read_text(
+            encoding="utf-8"
+        )
+        assert marker in page
+        assert "源码 docstring（英文原文）" in page
+        assert "输入：" in page
+        assert "输出：" in page
 
 
 def test_public_site_excludes_machine_evidence(site_root: Path) -> None:
@@ -68,6 +94,27 @@ def test_public_site_excludes_machine_evidence(site_root: Path) -> None:
     }
 
     assert json_paths == {"search/search_index.json"}
+
+
+def test_public_site_contains_no_local_absolute_paths(site_root: Path) -> None:
+    public_text = "\n".join(
+        path.read_text(encoding="utf-8") for path in site_root.rglob("*.html")
+    )
+    public_text += (site_root / "search/search_index.json").read_text(
+        encoding="utf-8"
+    )
+
+    for forbidden in (
+        "C:\\Users\\",
+        "C:/Users/",
+        "E:\\Anaconda",
+        "E:/Anaconda",
+        "F:\\BaiduSyncdisk",
+        "F:/BaiduSyncdisk",
+        "G:\\ALB_PROJECTS",
+        "G:/ALB_PROJECTS",
+    ):
+        assert forbidden not in public_text
 
 
 def test_public_search_index_excludes_operational_content(site_root: Path) -> None:
@@ -109,3 +156,6 @@ def test_public_search_index_supports_chinese_and_api_terms(site_root: Path) -> 
     assert "第一个轴承计算" in searchable_text
     assert "BearingConfig" in searchable_text
     assert "dynamic_coefficients" in searchable_text
+    assert "仿真配置参考" in searchable_text
+    assert "源码 docstring（英文原文）" in searchable_text
+    assert "disk_stream" in searchable_text
