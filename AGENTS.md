@@ -2,8 +2,6 @@
 
 本文件保存 coding agent 在本仓库工作时需要遵守的稳定项目级指令。
 
-## 思考时间
-Spend time on thinking; you do not need to use the commentary channel to report progress to me.
 
 ## 环境
 
@@ -28,16 +26,6 @@ Spend time on thinking; you do not need to use the commentary channel to report 
 - fallback 读取的文件不要直接写回原编码；若需要修改，应先明确转换为 UTF-8，再按 UTF-8 写入。
 - agent 面向机器或长期规则的输出尽量使用 ASCII 标点，避免智能引号、特殊破折号等易被 Windows 编码链路污染的字符。
 
-## Agent 调度
-
-- 除非用户明确给定 agent 数量，否则执行任务时最多创建两个子 agent。
-- 小型修复、单文件审查、简单测试排错优先由主 agent 直接完成；需要并行审计时，默认使用一到两个子 agent 后由主 agent 复核和集成。
-- 新对话涉及当前项目状态或长任务状态时，可以用 1 个 explorer 做只读状态摘要。
-- 大规模重构、跨文件影响分析、文档/历史检索时，可以用 1-2 个 explorer 并行分工。
-- 简单任务不启用子 agent。
-- explorer 输出只作为压缩后的导航层，关键事实在执行前由主 agent 抽查验证。
-- 启用子 agent 时按任务复杂度选择模型：轻量、边界清晰、可快速验证的代码检查或小修复使用 `GPT-5.3-Codex-Spark`；中等复杂度的多文件审计、局部重构、常规训练/远程流程诊断使用 `GPT-5.4`；高风险或高复杂度任务，如核心训练框架重构、远程长任务控制面修改、数值/物理一致性审计、跨项目集成和最终仲裁，使用 `GPT-5.5`。
-- 主 agent 在派发任务前应明确子 agent 的范围、预期输出和是否允许改文件；除非用户指定模型，否则优先按上一条规则选择，不为简单任务默认升级到更高模型。
 
 ## 文档语言
 
