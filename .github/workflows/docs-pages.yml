@@ -37,7 +37,7 @@ jobs:
           cache-dependency-path: pyproject.toml
 
       - name: Install documentation dependencies
-        run: python -m pip install ".[docs,test,film]"
+        run: python -m pip install ".[docs,test,film,control]"
 
       - name: Check generated references
         run: |
