@@ -24,6 +24,7 @@ film = [
 control = [
     "control>=0.10",
     "matplotlib>=3.7",
+    "networkx>=3.0",
     "scikit-fuzzy>=0.4",
 ]
 dynamics = [
@@ -38,6 +39,7 @@ surrogate = [
 all = [
     "control>=0.10",
     "matplotlib>=3.7",
+    "networkx>=3.0",
     "ross-rotordynamics>=1.4",
     "scikit-fem>=11",
     "scikit-fuzzy>=0.4",
