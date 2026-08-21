@@ -47,6 +47,10 @@
   包根直接发现；当前同样不是固定发布候选。
 - 0.4.5 在测试树归并提交 `7308f54` 后创建；修改前伺服阀数值参考固定于
   `2ecb97e`，目标是把主动轴承公开阀配置收敛为二阶 Hz 参数和任意传递函数。
+- 公共用户指南与 API Reference 已从私有 ALB 源仓库发布到
+  <https://waj734014160-creator.github.io/ALB/>。当前线上内容对应源提交
+  `e8a7821aa0ecc3e7b76f33ef67fd9f13cca86ef1`，静态站点保存在公开 Pages 仓库的
+  `ALB/` 子目录。
 
 ## 已完成的实现边界
 
@@ -191,6 +195,17 @@
   `71 passed`；完整 pytest 为
   `492 passed, 13 skipped, 10 subtests passed`。配置参考和公共 API 参考生成检查均
   通过，缺省主动线性化与无量纲热 runtime 仍通过既有逐元素精确参考。
+- 公共文档发布工作流
+  [32473313401](https://github.com/waj734014160-creator/ALB/actions/runs/32473313401)
+  在源提交 `e8a7821aa0ecc3e7b76f33ef67fd9f13cca86ef1` 上通过三类生成参考检查、
+  `19 passed` 文档/API 合同测试、严格 MkDocs 构建和跨仓库发布。Python 3.10
+  全新临时环境安装 `.[docs,test,film,control]` 后同一测试组也为 `19 passed`；
+  `control` extra 已显式包含 `networkx>=3.0`，避免依赖已安装环境掩盖运行需求。
+  公开仓库提交为
+  [a801388](https://github.com/waj734014160-creator/waj734014160-creator.github.io/commit/a8013889945dbb3133c91d5cf792e01524d455a7)，
+  Pages API 状态为 `built`、HTTPS 已强制且公开可见。站点首页、根 API、配置字段、
+  Control/Dynamics/Surrogate 六个路由以及代表性 CSS、SVG 资源均实测返回 HTTP 200，
+  页面 canonical URL 均保留 `/ALB/` 前缀。
 
 ## 当前风险与边界
 
@@ -230,6 +245,7 @@
 
 ## 稳定入口
 
+- 公共用户指南与 API Reference：<https://waj734014160-creator.github.io/ALB/>
 - 用户手册：`docs/alb_albnn_quickstart.md`
 - 架构：`docs/interface_architecture.md`
 - 发布计划：`docs/next_interface_development_plan.md`
