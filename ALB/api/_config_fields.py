@@ -908,6 +908,13 @@ THERMAL_FIELDS: dict[str, ConfigField] = {
 }
 
 MODEL_PACKAGE_FIELDS: dict[str, ConfigField] = {
+    "c4_blend_ratio": _field(
+        "1", "C4 boundary blend half-width as a ratio of the 90-degree quadrant; "
+        "0.15 = 15 % of a quadrant = 13.5 deg half-width. Null means 0.15 when "
+        "symmetry resolves to c4; zero preserves the historical mapping.",
+        value_type="number or null", default=None,
+        constraint="0 <= value < 0.5; only with C4 symmetry",
+    ),
     "path": _field(
         "relative directory", "ALBNN package directory below the outer document.",
         value_type="string", required=True,

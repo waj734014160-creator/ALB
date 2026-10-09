@@ -460,6 +460,7 @@ def _build_runtime(config: BearingConfig) -> object:
                 use_augment=package.get("use_augment"),
                 runtime_parameters=_plain(runtime.get("parameters", {})),
                 symmetry="package" if symmetry is None else str(symmetry),
+                c4_blend_ratio=package.get("c4_blend_ratio"),
             )
             external = runtime.get("spool_mode", "fixed") == "external"
             return SurrogateBearingRuntime(

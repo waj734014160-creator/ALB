@@ -14,6 +14,8 @@
       // null follows metadata inference_symmetry; use "c4" for packages
       // trained only on ex, ey >= 0 (for example M35/M42).
       symmetry: null,
+      // null uses 0.15 (15% of a quadrant = 13.5 deg half-width); 0 preserves the plain mapping.
+      c4_blend_ratio: null,
     },
     runtime: {
       parameters: {

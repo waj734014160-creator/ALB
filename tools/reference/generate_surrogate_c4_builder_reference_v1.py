@@ -299,7 +299,7 @@ def wrapper_forces(
     """Evaluate ``ALBNNC4Canonical`` with the runtime's call sequence."""
 
     model = ALBNNC4Canonical(
-        load_albnn_package(package, runtime_parameters=dict(parameters))
+        load_albnn_package(package, runtime_parameters=dict(parameters)), blend_ratio=0
     )
     nodim = unit_system == "nondimensional"
     if nodim:

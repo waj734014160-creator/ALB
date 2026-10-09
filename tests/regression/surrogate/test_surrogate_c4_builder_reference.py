@@ -132,7 +132,7 @@ def test_c4_builder_matches_frozen_wrapper_reference(
         query,
         SYNTHETIC_PARAMETERS,
         unit_system=unit_system,
-        model_package_extra={"symmetry": "c4"},
+        model_package_extra={"symmetry": "c4", "c4_blend_ratio": 0},
     )
     np.testing.assert_array_equal(
         forces, arrays[f"synthetic_quadrant_c4_wrapper_{tag}"]
@@ -193,7 +193,7 @@ def test_real_quadrant_packages_resolve_symmetry_exactly(reference, name) -> Non
             query,
             REAL_PARAMETERS,
             unit_system="dimensional",
-            model_package_extra={"symmetry": "c4"},
+            model_package_extra={"symmetry": "c4", "c4_blend_ratio": 0},
         ),
         arrays[f"{name}_c4_wrapper_dim"],
     )

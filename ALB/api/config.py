@@ -569,6 +569,15 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
             raise ConfigurationError(
                 "spec.model_package.symmetry must be 'none', 'c4', or null"
             )
+        blend_ratio = package.get("c4_blend_ratio")
+        if blend_ratio is not None:
+            blend_ratio = _finite_float(blend_ratio, "spec.model_package.c4_blend_ratio")
+            if not 0 <= blend_ratio < 0.5:
+                raise ConfigurationError(
+                    "spec.model_package.c4_blend_ratio requires 0 <= value < 0.5"
+                )
+            if symmetry == "none":
+                raise ConfigurationError("c4_blend_ratio requires C4 symmetry")
         runtime = _require_mapping(spec.get("runtime", {}), "spec.runtime")
         _reject_unknown(
             runtime,

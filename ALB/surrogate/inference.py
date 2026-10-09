@@ -1,4 +1,4 @@
-﻿# coding: utf-8
+# coding: utf-8
 """Neural-network surrogates and scaler contracts for ALB force models.
 
 This module intentionally sits inside the stable ``ALB`` package because
@@ -59,6 +59,7 @@ ALBNN_POLAR_DOT_INPUT_COLS = ["e_dot_v", "e_dot_s", "s_dot_v"]
 # Vector-valued input pairs that must rotate together when a C4-symmetric model
 # is trained only in the ``ex >= 0, ey >= 0`` canonical quadrant.
 ALBNN_C4_VECTOR_PAIRS = (("ex", "ey"), ("vx", "vy"), ("sx", "sy"))
+C4_DEFAULT_BLEND_RATIO = 0.15
 
 # Positive scalar columns that can safely receive logarithmic companions.
 ALBNN_LOG_INPUT_COLS = {"lambda_value", "lr", "cq0", "cq1", "cq2"}
@@ -826,10 +827,25 @@ class ALBNNC4Canonical:
     ``ey >= 0`` because a four-pad bearing can be rotated by 90-degree steps.
     This wrapper maps caller inputs to that quadrant, evaluates the underlying
     model, and rotates the cartesian force back to the caller frame.
+
+    The angular half-width is ``blend_ratio * pi / 2``, a fraction of the
+    90-degree quadrant. Both adjacent rotations are mixed within this band
+    using the C2 quintic step ``t**3 * (10 - 15*t + 6*t**2)``, where ``t`` runs
+    from zero to one across the band. The default 0.15 is 15 percent of a
+    quadrant, a 13.5-degree half-width. Zero reproduces the historical mapping
+    bit-for-bit; outside the bands the historical prediction is unchanged.
     """
 
-    def __init__(self, base_model):
-        """Wrap an already-loaded ALBNN-compatible model."""
+    def __init__(self, base_model, blend_ratio: float = C4_DEFAULT_BLEND_RATIO):
+        """Wrap a model with a finite quadrant blend ratio in ``[0, 0.5)``."""
+        if (
+            isinstance(blend_ratio, (bool, np.bool_))
+            or not isinstance(blend_ratio, (int, float, np.integer, np.floating))
+            or not np.isfinite(blend_ratio)
+            or not 0 <= blend_ratio < 0.5
+        ):
+            raise ValueError("blend_ratio must be a finite number with 0 <= value < 0.5")
+        self.blend_ratio = float(blend_ratio)
         self.base_model = base_model
         self.model = getattr(base_model, "model", None)
         self.scaler_X = getattr(base_model, "scaler_X", None)
@@ -878,16 +894,59 @@ class ALBNNC4Canonical:
         self._x = self.base_model._x.copy()
 
     def predict_nondim(self, x):
-        """Predict nondimensional force with C4 canonicalization."""
+        """Predict C4 force, blending adjacent rotations near each half-axis.
+
+        Scalars remain unchanged and all present ``(e, v, s)`` pairs rotate
+        together. Only in-band rows need a second network evaluation.
+        """
         if not hasattr(self.base_model, "_base_frame"):
             raise TypeError("C4 canonical inference requires an ALBNN-style base model")
         frame = self.base_model._base_frame(x)
         canonical, steps = c4_canonicalize_albnn_frame(frame)
-        force_canonical = self.base_model.predict_nondim(canonical)
-        return c4_restore_albnn_force(force_canonical, steps)
+        if self.blend_ratio == 0.0:
+            force_canonical = self.base_model.predict_nondim(canonical)
+            return c4_restore_albnn_force(force_canonical, steps)
+
+        theta = np.mod(
+            np.arctan2(frame["ey"].to_numpy(dtype=float), frame["ex"].to_numpy(dtype=float)),
+            2.0 * np.pi,
+        )
+        boundary = np.mod(np.rint(theta / (np.pi / 2.0)).astype(np.int64), 4)
+        phi = np.mod(theta - boundary * (np.pi / 2.0) + np.pi, 2.0 * np.pi) - np.pi
+        delta = self.blend_ratio * (np.pi / 2.0)
+        in_band = np.abs(phi) < delta
+        if not np.any(in_band):
+            force_canonical = self.base_model.predict_nondim(canonical)
+            return c4_restore_albnn_force(force_canonical, steps)
+
+        positions = np.flatnonzero(in_band)
+        right = boundary[in_band]
+        left = np.mod(right - 1, 4)
+        band_frame = frame.iloc[positions]
+        secondary = band_frame.copy()
+        # Use a fixed right/left evaluation order across an axis, including its
+        # historical quadrant tie. This also avoids swapping float32 batch rows.
+        steps[in_band] = right
+        for x_col, y_col in ALBNN_C4_VECTOR_PAIRS:
+            if {x_col, y_col} <= set(frame.columns):
+                pair_x = band_frame[x_col].to_numpy(dtype=float)
+                pair_y = band_frame[y_col].to_numpy(dtype=float)
+                right_x, right_y = _c4_rotate_pair_to_canonical(pair_x, pair_y, right)
+                canonical.iloc[positions, canonical.columns.get_loc(x_col)] = right_x
+                canonical.iloc[positions, canonical.columns.get_loc(y_col)] = right_y
+                secondary[x_col], secondary[y_col] = _c4_rotate_pair_to_canonical(pair_x, pair_y, left)
+        force = c4_restore_albnn_force(self.base_model.predict_nondim(canonical), steps)
+        force_left = c4_restore_albnn_force(self.base_model.predict_nondim(secondary), left)
+        t = np.clip((phi[in_band] + delta) / (2.0 * delta), 0.0, 1.0)
+        sigma = (t**3 * (10.0 - 15.0 * t + 6.0 * t**2))[:, None]
+        force[in_band] = (1.0 - sigma) * force_left + sigma * force[in_band]
+        return force
 
     def transform_inputs(self, x) -> np.ndarray:
-        """Return canonicalized network inputs for distance-based analysis."""
+        """Return plain canonical inputs for distance-based analysis.
+
+        Boundary blending affects predictions only, not this transformation.
+        """
 
         if not hasattr(self.base_model, "_base_frame"):
             raise TypeError(

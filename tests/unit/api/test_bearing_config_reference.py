@@ -44,7 +44,7 @@ def test_all_bearing_field_groups_have_complete_source_metadata() -> None:
     surface = field_surface(BEARING_FIELD_GROUPS)
 
     assert len(surface) == 17
-    assert sum(map(len, surface.values())) == 187
+    assert sum(map(len, surface.values())) == 188
     for fields in surface.values():
         for field in fields.values():
             assert field["native_name"]
@@ -118,6 +118,13 @@ def test_surrogate_symmetry_field_documents_c4_contract() -> None:
     reference = OUTPUT_PATH.read_text(encoding="utf-8")
     assert "## 代理模型 `model_package`" in reference
     assert "ALBNNC4Canonical" in reference
+    assert "c4_blend_ratio" in reference
+    blend = MODEL_PACKAGE_FIELDS["c4_blend_ratio"]
+    assert blend.unit == "1"
+    assert blend.default is None
+    assert blend.value_type == "number or null"
+    assert "0.15 = 15 % of a quadrant = 13.5 deg half-width" in blend.description
+    assert blend.constraint == "0 <= value < 0.5; only with C4 symmetry"
 
 
 def test_gas_metadata_matches_public_configuration_constraints() -> None:

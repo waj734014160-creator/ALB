@@ -156,7 +156,7 @@ def test_albnn_c4_wrapper_matches_manual_rotation_for_vector_pairs():
         input_cols=ALBNN_BASE_INPUT_COLS,
         use_augment=False,
     )
-    wrapped = ALBNNC4Canonical(base)
+    wrapped = ALBNNC4Canonical(base, blend_ratio=0)
 
     canonical, steps = c4_canonicalize_albnn_frame(frame)
     manual = c4_restore_albnn_force(base.predict_nondim(canonical), steps)

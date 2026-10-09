@@ -310,6 +310,7 @@ def load_albnn_package(
     use_augment: bool | None = None,
     runtime_parameters: Mapping[str, Any] | None = None,
     symmetry: str = "none",
+    c4_blend_ratio: float | None = None,
 ) -> Any:
     """Load a digest-validated ALBNN package for CPU inference.
 
@@ -330,6 +331,12 @@ def load_albnn_package(
         ``inference_symmetry`` declaration; an undeclared package resolves to
         ``"none"`` unless its input scaler records fitted ``ex`` and ``ey``
         minima ``>= 0``, which is rejected so the caller chooses explicitly.
+    c4_blend_ratio
+        C4 blend half-width as a ratio of the 90-degree quadrant, finite and
+        in ``[0, 0.5)``. ``None`` uses ``C4_DEFAULT_BLEND_RATIO`` (0.15) when
+        symmetry resolves to C4: 15 percent of a quadrant, or 13.5 degrees.
+        Zero reproduces the historical canonical mapping. A non-null value
+        requires resolved C4 symmetry.
 
     Returns
     -------
@@ -345,7 +352,8 @@ def load_albnn_package(
         If digests, schemas, model type, checkpoint structure, scalers, or the
         symmetry declaration are invalid; if C4 is requested for an input
         contract containing rotation-dependent derived columns; or if
-        ``symmetry="package"`` meets an undeclared quadrant-I-only package.
+        ``symmetry="package"`` meets an undeclared quadrant-I-only package;
+        or if ``c4_blend_ratio`` is invalid or supplied without C4 symmetry.
     ImportError
         If the ``surrogate`` extra, including Torch, is not installed.
     """
@@ -357,7 +365,7 @@ def load_albnn_package(
     package = open_model_package(path)
     import torch
 
-    from .inference import ALBNN, ALBNNC4Canonical
+    from .inference import ALBNN, ALBNNC4Canonical, C4_DEFAULT_BLEND_RATIO
     from .networks import net_from_checkpoint
     from .scaler_io import load_scaler
 
@@ -384,6 +392,8 @@ def load_albnn_package(
             )
         else:
             resolved = "none"
+    if resolved == "none" and c4_blend_ratio is not None:
+        raise ValueError("c4_blend_ratio requires C4 symmetry")
     if resolved == "c4":
         unsafe = sorted(
             set(metadata.get("input_cols") or ()) - _C4_SAFE_INPUT_COLS
@@ -418,7 +428,10 @@ def load_albnn_package(
         target_output=metadata.get("target_output", "cartesian"),
     )
     if resolved == "c4":
-        return ALBNNC4Canonical(model)
+        return ALBNNC4Canonical(
+            model,
+            blend_ratio=C4_DEFAULT_BLEND_RATIO if c4_blend_ratio is None else c4_blend_ratio,
+        )
     return model
 
 

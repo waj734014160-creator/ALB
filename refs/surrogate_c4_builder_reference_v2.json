@@ -1,0 +1,93 @@
+{
+  "arrays": {
+    "m42_c4_blend_builder_dim": {
+      "dtype": "float64",
+      "shape": [
+        32,
+        2
+      ]
+    },
+    "m42_c4_blend_builder_nondim": {
+      "dtype": "float64",
+      "shape": [
+        32,
+        2
+      ]
+    },
+    "query_eccentricity": {
+      "dtype": "float64",
+      "shape": [
+        32,
+        2
+      ]
+    },
+    "query_spool": {
+      "dtype": "float64",
+      "shape": [
+        32,
+        2
+      ]
+    },
+    "query_velocity_nondim": {
+      "dtype": "float64",
+      "shape": [
+        32,
+        2
+      ]
+    }
+  },
+  "baseline_commit": "c8a5d803283aa1b0aacea5dac3ba1ab6e6cb8eeb",
+  "baseline_note": "Executed in a temporary copy of codex/alb-0.4.5 because repository subdirectory writes were denied; source digests identify the exact ratio-based implementation.",
+  "blend_ratio": 0.15,
+  "environment": {
+    "numpy": "1.24.3",
+    "python": "3.10.17",
+    "torch": "2.11.0+cu128"
+  },
+  "generated_at_utc": "2026-10-09T21:44:16.556399+00:00",
+  "npz_sha256": "8fcc0dc78202fec91920141de963546e9a704af859db26c5357e535b66edef27",
+  "package": {
+    "available": true,
+    "manifest_sha256": "906a9148ebd8b83dec72e12ec6b81174607891ebfbd602299c48d8b7d4c8e0c9",
+    "relative_path": "SURROGATE_TRAIN/models/M0042_no_supply_quasisteady_20261006/model_package"
+  },
+  "parameters": {
+    "beta_nondim": 0.10837155963302753,
+    "c": 0.00012,
+    "cq0": 1.3457122291523556,
+    "cq1": 0.20818792014191256,
+    "cq2": 0.009778479703566049,
+    "freq": 50.0,
+    "l": 0.06,
+    "lambda_value": 0.3281842325625051,
+    "lr": 0.75,
+    "ps": 7000000.0,
+    "r": 0.04,
+    "vf": 1.0
+  },
+  "purpose": "Default smooth C4 builder forces for M0042.",
+  "query": {
+    "offsets_deg": [
+      -25,
+      -13.5,
+      -5,
+      0,
+      5,
+      13.5,
+      25,
+      45
+    ],
+    "rows": 32,
+    "spool_mode": "external",
+    "time": 0.0
+  },
+  "schema": "alb.surrogate-c4-builder-reference.v2",
+  "source_sha256": {
+    "ALB/api/_config_fields.py": "680fd7be057e2fd5edc48a634d6fab0329629e7e83d346f79557ba27480ec548",
+    "ALB/api/building.py": "82625f94c8e37f301027a63c24cb0b3abe9ea8b80d88a13e7d9980d78679becc",
+    "ALB/api/config.py": "0a3968d25e3d67f49cab95a3187f8bd0a83fd3bf8928fb9dd780a963211b1e5e",
+    "ALB/surrogate/inference.py": "7e2d326941b6da6684732535cbd7df333b7b32865f5de5d1107c9c2e6dc3bca3",
+    "ALB/surrogate/package.py": "6fb30bdb1f480bf67c0413408bfdfcc6cf34a4550fbeb7cf89b9f381d9adb77a",
+    "tools/reference/generate_surrogate_c4_builder_reference_v2.py": "b3c65b650b8da6e46b3df97f68de95515c9731ea6de9ad1465c95ad345a67d77"
+  }
+}

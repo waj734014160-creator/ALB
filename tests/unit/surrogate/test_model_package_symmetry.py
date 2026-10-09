@@ -156,6 +156,7 @@ def test_loader_default_returns_bare_network_unchanged(tmp_path) -> None:
     assert type(model) is ALBNN
     wrapped = load_albnn_package(root, runtime_parameters=PARAMETERS, symmetry="c4")
     assert isinstance(wrapped, ALBNNC4Canonical)
+    assert wrapped.blend_ratio == 0.15
     with pytest.raises(ValueError, match="fitted only on ex >= 0"):
         load_albnn_package(root, symmetry="package")
     with pytest.raises(ValueError, match="symmetry must be one of"):
@@ -191,9 +192,9 @@ def test_config_rejects_unknown_symmetry(tmp_path, value) -> None:
 
 def test_declared_package_builds_c4_without_config_field(tmp_path) -> None:
     root = _package(tmp_path, metadata={"inference_symmetry": "c4"})
-    bearing = ALB.build_bearing(_config(root.parent, {}, spool=(0.2, -0.1)))
+    bearing = ALB.build_bearing(_config(root.parent, {"c4_blend_ratio": 0}, spool=(0.2, -0.1)))
     reference = ALBNNC4Canonical(
-        load_albnn_package(root, runtime_parameters=PARAMETERS)
+        load_albnn_package(root, runtime_parameters=PARAMETERS), blend_ratio=0
     )
     reference.input((-0.3, -0.2), (0.05, 0.02), (0.2, -0.1))
     result = bearing.calculate(
@@ -205,10 +206,10 @@ def test_declared_package_builds_c4_without_config_field(tmp_path) -> None:
 def test_fixed_spool_is_rotated_with_c4(tmp_path) -> None:
     root = _package(tmp_path)
     bearing = ALB.build_bearing(
-        _config(root.parent, {"symmetry": "c4"}, spool=(0.25, -0.4))
+        _config(root.parent, {"symmetry": "c4", "c4_blend_ratio": 0}, spool=(0.25, -0.4))
     )
     reference = ALBNNC4Canonical(
-        load_albnn_package(root, runtime_parameters=PARAMETERS)
+        load_albnn_package(root, runtime_parameters=PARAMETERS), blend_ratio=0
     )
     for e, v in (((0.1, -0.5), (0.0, 0.0)), ((-0.2, 0.3), (0.03, -0.04))):
         bearing.reset()
@@ -220,7 +221,7 @@ def test_fixed_spool_is_rotated_with_c4(tmp_path) -> None:
 def test_c4_bearing_is_exactly_quarter_turn_equivariant(tmp_path) -> None:
     root = _package(tmp_path)
     bearing = ALB.build_bearing(
-        _config(root.parent, {"symmetry": "c4"}, spool_mode="external")
+        _config(root.parent, {"symmetry": "c4", "c4_blend_ratio": 0}, spool_mode="external")
     )
     turn = np.array([[0.0, -1.0], [1.0, 0.0]])
     e = np.array([0.3, 0.2])
@@ -235,3 +236,44 @@ def test_c4_bearing_is_exactly_quarter_turn_equivariant(tmp_path) -> None:
             displacement=rot @ e, velocity=rot @ v, time=0.0, spool=rot @ s
         ).force
         np.testing.assert_array_equal(force, rot @ base)
+
+
+@pytest.mark.parametrize("symmetry", ["c4", "package"])
+@pytest.mark.parametrize("blend_ratio", [None, 0, 0.125])
+def test_loader_resolves_blend_width(tmp_path, symmetry, blend_ratio) -> None:
+    root = _package(tmp_path, metadata={"inference_symmetry": "c4"})
+    model = load_albnn_package(root, symmetry=symmetry, c4_blend_ratio=blend_ratio)
+    assert model.blend_ratio == (0.15 if blend_ratio is None else blend_ratio)
+    # Exercise builder pass-through at an in-band point.
+    bearing = ALB.build_bearing(_config(
+        root.parent, {"symmetry": None if symmetry == "package" else symmetry,
+                      "c4_blend_ratio": blend_ratio}, spool=(0.25, -0.4)
+    ))
+    reference = load_albnn_package(
+        root, symmetry=symmetry, c4_blend_ratio=blend_ratio, runtime_parameters=PARAMETERS
+    )
+    reference.input((0.4, 0.01), (0.03, -0.02), (0.25, -0.4))
+    actual = bearing.calculate(displacement=(0.4, 0.01), velocity=(0.03, -0.02), time=0.0)
+    np.testing.assert_array_equal(actual.force, reference.output().reshape(-1))
+
+
+@pytest.mark.parametrize("symmetry", ["none", "package"])
+def test_loader_rejects_blend_without_resolved_c4(tmp_path, symmetry) -> None:
+    root = _package(tmp_path, quadrant=False)
+    with pytest.raises(ValueError, match="c4_blend_ratio requires C4 symmetry"):
+        load_albnn_package(root, symmetry=symmetry, c4_blend_ratio=0)
+    # An omitted symmetry is resolved by the loader at build time.
+    if symmetry == "package":
+        with pytest.raises(ALB.BuildError, match="c4_blend_ratio requires C4 symmetry"):
+            ALB.build_bearing(_config(root.parent, {"c4_blend_ratio": 0}))
+
+
+@pytest.mark.parametrize("value", [-0.01, 0.5, 1.0, float("nan"), float("inf"), True, False, "0.15"])
+def test_config_rejects_invalid_c4_blend_width(tmp_path, value) -> None:
+    with pytest.raises(ALB.ConfigurationError, match="c4_blend_ratio"):
+        _config(tmp_path, {"symmetry": "c4", "c4_blend_ratio": value})
+
+
+def test_config_rejects_blend_with_explicit_none(tmp_path) -> None:
+    with pytest.raises(ALB.ConfigurationError, match="c4_blend_ratio requires C4 symmetry"):
+        _config(tmp_path, {"symmetry": "none", "c4_blend_ratio": 0})
