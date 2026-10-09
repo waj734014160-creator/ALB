@@ -451,10 +451,15 @@ def _build_runtime(config: BearingConfig) -> object:
                 raise BuildError(
                     "surrogate package path escapes the document directory"
                 ) from exc
+            # An omitted/null symmetry follows the package declaration; the
+            # loader rejects undeclared quadrant-I-only packages instead of
+            # silently extrapolating outside the trained quadrant.
+            symmetry = package.get("symmetry")
             model = load_albnn_package(
                 package_path,
                 use_augment=package.get("use_augment"),
                 runtime_parameters=_plain(runtime.get("parameters", {})),
+                symmetry="package" if symmetry is None else str(symmetry),
             )
             external = runtime.get("spool_mode", "fixed") == "external"
             return SurrogateBearingRuntime(

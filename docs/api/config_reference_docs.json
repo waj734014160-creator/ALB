@@ -16,7 +16,7 @@
     "control_pid_gains": {"title": "PID gains", "summary": "PID 比例、积分、微分与前馈增益。"},
     "transforms": {"title": "主动 transforms", "summary": "物理位移/速度到控制器输入的显式变换矩阵。"},
     "thermal": {"title": "thermal", "summary": "稳态或瞬态热黏耦合、边界条件、黏度更新与 Newton 参数。"},
-    "model_package": {"title": "代理 model_package", "summary": "ALBNN 0.4 模型包的受限相对路径和增强覆盖。"},
+    "model_package": {"title": "代理 model_package", "summary": "ALBNN 0.4 模型包的受限相对路径、增强覆盖和推理对称性。"},
     "surrogate_runtime": {"title": "代理 runtime", "summary": "推理参数、固定阀芯或外部阀芯输入模式。"}
   },
   "simulation": {

@@ -1387,7 +1387,12 @@ def _nondim_supg_load_form(v, w):
 
 
 class SkfemThermalModelNondim(SkfemThermalModel):
-    """Steady thermal model assembled in nondimensional coordinates and fields."""
+    """Thermal model assembled in nondimensional coordinates and fields.
+
+    The maintained ``solve`` path supports steady and implicit-Euler transient
+    systems. The compatibility-only segregated quasi-Newton path remains steady
+    and is planned for removal in a later release.
+    """
 
     @staticmethod
     def _apply_nondim_orifice_sources(
@@ -1606,10 +1611,18 @@ class SkfemThermalModelNondim(SkfemThermalModel):
         miu0: Optional[float] = None,
         t_ref: Optional[float] = None,
     ) -> Dict[str, np.ndarray]:
-        """Solve the fixed-pressure nondimensional thermal equation by Newton iteration."""
+        """Solve the compatibility-only steady thermal quasi-Newton system.
+
+        This path is less stable than the maintained direct iteration and is
+        planned for removal in a later release. It remains callable for existing
+        configurations without a runtime deprecation warning, but it must not gain
+        new capabilities such as transient storage.
+        """
         if transient:
             raise NotImplementedError(
-                "The nondimensional thermal solver currently supports steady solves only."
+                "The compatibility-only nondimensional segregated Newton thermal "
+                "subsolver supports steady solves only; use iter_method='direct' "
+                "for transient solves."
             )
         if mesh_data is None:
             mesh_data = self.build_mesh(model)
@@ -3185,6 +3198,12 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         initial_temperature: Optional[np.ndarray] = None,
         **kwargs,
     ):
+        """Run the compatibility-only segregated thermal quasi-Newton path.
+
+        New configurations should use ``iter_method='direct'``. This path is
+        retained without a runtime warning until a later versioned removal.
+        """
+
         model = self.bearing.main_model
         n_nodes = len(model.nodes)
         if initial_miu_field is None or np.asarray(initial_miu_field).size != n_nodes:

@@ -1,13 +1,6 @@
 # ALB 轴承配置字段参考
 
-## 文档角色
-
-- 角色：面向普通用户的轴承配置字段、单位、缺省值和用途说明。
-- 目的：让用户不必阅读内部 `HydConfig`、`GasConfig` 或装配代码即可编写 `BearingConfig` 和 JSON5。
-- 允许更新：公开配置字段、单位、缺省值、约束和结果字段。
-- 禁止更新：内部临时变量、单次运行状态和未进入公开配置的实验参数。
-- 更新时机：`ALB/api/_config_fields.py`、原生配置缺省值或公开装配规则发生变化时。
-- 事实来源：`ALB/api/_config_fields.py`、`ALB/api/config.py`、`ALB/api/building.py` 和 `ALB/config/` 中的原生配置类。
+参考来源：`ALB/api/_config_fields.py`、`ALB/api/config.py`、`ALB/api/building.py` 和 `ALB/config/` 中的原生配置类。
 
 配置可以直接传给 `ALB.BearingConfig(spec)`，也可以放在严格 0.4 JSON5
 文档的 `spec` 节点下。字段名采用完整英文，不使用内部求解器的 `e`、`c`、
@@ -26,7 +19,7 @@
 | `restrictors` | 映射或 `null` | 液膜可选、主动必填 | 液膜节流孔或主动轴承节流器。 |
 | `thermal` | 映射或 `null` | 液膜/主动可选 | 热黏耦合参数；`null` 表示关闭热模型。 |
 | `pads` | 列表 | 多瓦必填 | 子瓦配置或相对配置文件路径；至少包含一个子瓦。 |
-| `model_package` | 映射 | 代理模型必填 | ALBNN 模型包路径和数据增强开关。 |
+| `model_package` | 映射 | 代理模型必填 | ALBNN 模型包路径、数据增强开关和推理对称性。 |
 | `runtime` | 映射 | 代理模型可选 | 代理模型运行参数、固定阀芯或外部阀芯模式。 |
 
 ## 量纲液膜 `film`
@@ -220,19 +213,46 @@
 | `delta_t_scale` | °C | `null` | 无量纲温升尺度。 |
 | `beta_nondim` | 1 | `null` | 无量纲黏温系数。 |
 | `t_ref_nondim` | 1 | `null` | 无量纲参考温度。 |
-| `transient_enabled` | 布尔 | `false` | 是否启用热瞬态项。 |
-| `iter_method` | 字符串 | `"direct"` | 热方程迭代方法。 |
-| `thermal_newton_max_iter` | 次 | `30` | 热 Newton 最大次数。 |
-| `thermal_newton_tol` | 1 | `null` | 热 Newton 容差；未给出时使用热模型默认关系。 |
-| `thermal_newton_damp` | 1 | `1.0` | 热 Newton 初始阻尼。 |
-| `thermal_newton_min_damp` | 1 | `0.001` | 热 Newton 线搜索最小阻尼。 |
-| `thermal_newton_line_search` | 布尔 | `false` | 是否启用热 Newton 线搜索。 |
+| `transient_enabled` | 布尔 | `false` | 是否启用热瞬态项；仅允许配合 `direct`。 |
+| `iter_method` | 字符串 | `"direct"` | 热方程迭代方法；新配置应使用 `direct`。`newton` 和 `direct_then_newton` 仅为兼容保留，并计划在后续版本移除。 |
+| `thermal_newton_max_iter` | 次 | `30` | 计划移除的准 Newton 路径最大次数。 |
+| `thermal_newton_tol` | 1 | `null` | 计划移除的准 Newton 路径残差容差；未给出时使用 `tol`。 |
+| `thermal_newton_damp` | 1 | `1.0` | 计划移除的准 Newton 路径初始阻尼。 |
+| `thermal_newton_min_damp` | 1 | `0.001` | 计划移除的准 Newton 线搜索最小阻尼。 |
+| `thermal_newton_line_search` | 布尔 | `false` | 是否为计划移除的准 Newton 路径启用残差递减线搜索。 |
 | `miu_update` | 字符串 | `"linear"` | 黏度更新方式。 |
 | `miu_update_max_ratio` | 1 | `null` | 单次黏度更新的最大比例。 |
 | `heat_partition_steps` | 元组 | `null` | 分阶段热分配比例。 |
 
+!!! warning "热 Newton 路径计划废弃"
+    实际求解中，分离式准 Newton 路径的稳定性不及默认 `direct`。因此
+    `newton` 与可能进入同一 fallback 的 `direct_then_newton` 只为现有配置保留，
+    当前版本不发运行时弃用警告，但计划在后续版本通过明确迁移后移除。不要在新配置
+    中使用这两个值；瞬态热求解继续只使用 `direct`。
+
 `thermal.dt` 和内部 `args_nodim` 不属于公开字段：装配器分别从顶层
 `time_step` 和 `unit_system` 唯一推导，用户不应重复填写。
+
+## 代理模型 `model_package`
+
+`use_augment` 只控制 sqrt(|x|) 特征增强，不处理坐标对称性。四瓦主动润滑
+ALBNN（如 M35、M42）只在 `ex >= 0, ey >= 0` 象限采样训练，必须借助 C4
+对称覆盖全平面；`symmetry` 决定是否这样做：
+
+- `"c4"`：用 `ALBNNC4Canonical` 把偏心、速度和阀芯三组向量按同一个 90° 整数倍
+  旋入第一象限，标量特征不变，推理后把 `fx, fy` 旋回调用坐标系。C4 只适用于
+  四瓦、阀芯指令轴随瓦旋转的对称轴承；输入契约含 `sin_theta` 等随旋转变化的
+  派生列时拒绝构建。
+- `"none"`：直接使用原网络，与引入该字段前的构建器逐位一致；第一象限训练包
+  在其他象限属于外推。
+- 省略或 `null`：按 package `metadata.json` 的 `inference_symmetry` 声明解析，
+  可写 `"none"`、`"c4"` 或历史映射 `{"name": "c4_canonical_quadrant", ...}`。
+  未声明时，若输入 scaler 记录的 `ex`、`ey` 拟合最小值都不小于 0（第一象限
+  训练），构建以 `BuildError` 失败并要求显式选择；其他未声明包保持原网络行为。
+
+显式 `symmetry` 覆盖 package 声明，与 `use_augment` 覆盖 metadata 的规则一致。
+当前 M35/M42 package 没有声明且 manifest 锁定 metadata 摘要，因此配置中应写
+`symmetry: "c4"`。
 
 ## 结果单位
 

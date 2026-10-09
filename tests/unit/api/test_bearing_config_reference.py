@@ -10,7 +10,9 @@ from ALB.api._config_fields import (
     GAS_FILM_FIELDS,
     GAS_FILM_OVERRIDE_FIELDS,
     GAS_ONLY_FILM_FIELDS,
+    MODEL_PACKAGE_FIELDS,
     NONDIMENSIONAL_FILM_FIELDS,
+    THERMAL_FIELDS,
     native_name_map,
 )
 from tools.docs._config_reference import field_surface, validate_groups
@@ -42,7 +44,7 @@ def test_all_bearing_field_groups_have_complete_source_metadata() -> None:
     surface = field_surface(BEARING_FIELD_GROUPS)
 
     assert len(surface) == 17
-    assert sum(map(len, surface.values())) == 186
+    assert sum(map(len, surface.values())) == 187
     for fields in surface.values():
         for field in fields.values():
             assert field["native_name"]
@@ -83,6 +85,39 @@ def test_generated_bearing_reference_explains_conditional_contracts() -> None:
     assert "film.supply_pressure for dimensional; 1.0 for nondimensional" in reference
     assert "flow_coefficient when provided; otherwise 1.0" in reference
     assert "50.0 for pid; 5.0 for fuzzy_pid" in reference
+
+
+def test_thermal_newton_modes_are_marked_for_later_removal() -> None:
+    method = THERMAL_FIELDS["iter_method"]
+    assert method.default == "direct"
+    assert method.choices == ("direct", "newton", "direct_then_newton")
+    assert "planned for removal" in method.description
+    assert "compatibility-only" in method.constraint
+
+    for name in (
+        "thermal_newton_max_iter",
+        "thermal_newton_tol",
+        "thermal_newton_damp",
+        "thermal_newton_min_damp",
+        "thermal_newton_line_search",
+    ):
+        assert "quasi-Newton" in THERMAL_FIELDS[name].description
+
+    reference = OUTPUT_PATH.read_text(encoding="utf-8")
+    assert "热 Newton 路径计划废弃" in reference
+    assert "当前版本不发运行时弃用警告" in reference
+    assert "newton and direct_then_newton are compatibility-only; use direct" in reference
+
+
+def test_surrogate_symmetry_field_documents_c4_contract() -> None:
+    symmetry = MODEL_PACKAGE_FIELDS["symmetry"]
+    assert symmetry.default is None
+    assert symmetry.choices == ("none", "c4")
+    assert "inference_symmetry" in symmetry.description
+
+    reference = OUTPUT_PATH.read_text(encoding="utf-8")
+    assert "## 代理模型 `model_package`" in reference
+    assert "ALBNNC4Canonical" in reference
 
 
 def test_gas_metadata_matches_public_configuration_constraints() -> None:

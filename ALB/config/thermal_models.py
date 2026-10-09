@@ -79,17 +79,23 @@ class ThermalConfig(ConfigData):
     dt: Optional[float] = None
     """Transient time step, seconds."""
     iter_method: str = "direct"
-    """Thermal nonlinear iteration method: direct, newton, or direct_then_newton."""
+    """Thermal nonlinear iteration method.
+
+    ``direct`` is the recommended and maintained path. ``newton`` and
+    ``direct_then_newton`` remain accepted without a runtime deprecation warning
+    for compatibility, but their less-stable quasi-Newton path is planned for
+    removal in a later release.
+    """
     thermal_newton_max_iter: int = 30
-    """Maximum Newton iterations for one segregated thermal subsolve."""
+    """Compatibility-only quasi-Newton iteration limit."""
     thermal_newton_tol: Optional[float] = None
-    """Newton residual tolerance; defaults to ``tol`` when omitted."""
+    """Compatibility-only quasi-Newton residual tolerance; defaults to ``tol``."""
     thermal_newton_damp: float = 1.0
-    """Initial damping factor for thermal Newton updates."""
+    """Compatibility-only quasi-Newton initial damping factor."""
     thermal_newton_min_damp: float = 1e-3
-    """Smallest damping factor allowed by the Newton line search."""
+    """Compatibility-only quasi-Newton minimum line-search damping factor."""
     thermal_newton_line_search: bool = False
-    """Enable residual-decreasing line search for thermal Newton updates."""
+    """Enable residual-decreasing line search only for planned-removal modes."""
     miu_update: str = "linear"
     """Outer thermal viscosity update method: linear or log."""
     miu_update_max_ratio: Optional[float] = None

@@ -11,6 +11,9 @@
       // Replace with a validated package created by create_model_package().
       path: "models/albnn_package",
       use_augment: false,
+      // null follows metadata inference_symmetry; use "c4" for packages
+      // trained only on ex, ey >= 0 (for example M35/M42).
+      symmetry: null,
     },
     runtime: {
       parameters: {

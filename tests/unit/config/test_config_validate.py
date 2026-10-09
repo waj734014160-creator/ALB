@@ -1,5 +1,6 @@
 # -- coding: utf-8 --
 import unittest
+import warnings
 
 import numpy as np
 
@@ -103,6 +104,23 @@ class TestThermalConfigValidation(unittest.TestCase):
             with self.subTest(method=method):
                 with self.assertRaisesRegex(ValueError, "require iter_method='direct'"):
                     ThermalConfig(transient_enabled=True, iter_method=method)
+
+    def test_planned_newton_removal_does_not_warn_or_change_choices(self):
+        self.assertEqual(ThermalConfig().iter_method, "direct")
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            configs = [
+                ThermalConfig(iter_method=method)
+                for method in ("newton", "direct_then_newton")
+            ]
+
+        self.assertEqual(
+            [config.iter_method for config in configs],
+            ["newton", "direct_then_newton"],
+        )
+        self.assertFalse(
+            any(issubclass(item.category, DeprecationWarning) for item in caught)
+        )
 
     def test_removed_thermal_fields_are_rejected(self):
         with self.assertRaises(TypeError):

@@ -657,7 +657,8 @@ BEARING_SPEC_FIELDS: dict[str, ConfigField] = {
         constraint="at least one item; child time_step and unit_system must agree",
     ),
     "model_package": _field(
-        "mapping", "Validated ALBNN package location and augmentation override.",
+        "mapping",
+        "Validated ALBNN package location plus augmentation and symmetry overrides.",
         value_type="object", required=True, applicability=("surrogate",),
     ),
     "runtime": _field(
@@ -877,7 +878,14 @@ THERMAL_FIELDS: dict[str, ConfigField] = {
     "miu_update": _field("name", "Outer viscosity update rule.", value_type="string", default="linear", choices=("linear", "log")),
     "miu_update_max_ratio": _field("1", "Optional multiplier cap for log viscosity updates.", value_type="number or null", default=None, constraint="None or > 1"),
     "heat_partition_steps": _field("sequence", "Optional positive continuation schedule ending at heat_partition.", value_type="array[number] or null", default=None),
-    "iter_method": _field("name", "Thermal nonlinear iteration method.", value_type="string", default="direct", choices=("direct", "newton", "direct_then_newton")),
+    "iter_method": _field(
+        "name",
+        "Thermal iteration method; direct is maintained while newton modes are planned for removal.",
+        value_type="string",
+        default="direct",
+        choices=("direct", "newton", "direct_then_newton"),
+        constraint="newton and direct_then_newton are compatibility-only; use direct",
+    ),
     "tol": _field("1", "Thermal outer-iteration tolerance.", value_type="number", default=1.0e-6, constraint="> 0"),
     "max_iter": _field("count", "Thermal outer-iteration limit.", value_type="integer", default=60, constraint="> 0"),
     "adaptive_damp": _field("mapping", "Optional adaptive outer-relaxation policy.", value_type="boolean or object or null", default=None),
@@ -892,11 +900,11 @@ THERMAL_FIELDS: dict[str, ConfigField] = {
     "beta_nondim": _field("1", "Optional nondimensional viscosity-temperature coefficient.", value_type="number or null", default=None),
     "t_ref_nondim": _field("1", "Optional nondimensional reference temperature.", value_type="number or null", default=None),
     "transient_enabled": _field("bool", "Enable the thermal transient term.", value_type="boolean", default=False, constraint="requires iter_method='direct'"),
-    "thermal_newton_max_iter": _field("count", "Maximum Newton iterations per thermal subsolve.", value_type="integer", default=30, constraint="> 0"),
-    "thermal_newton_tol": _field("1", "Newton residual tolerance; falls back to tol.", value_type="number or null", default=None, constraint="None or > 0"),
-    "thermal_newton_damp": _field("1", "Initial Newton damping factor.", value_type="number", default=1.0, constraint="> 0"),
-    "thermal_newton_min_damp": _field("1", "Minimum line-search damping factor.", value_type="number", default=1.0e-3, constraint="0 < value <= thermal_newton_damp"),
-    "thermal_newton_line_search": _field("bool", "Enable residual-decreasing Newton line search.", value_type="boolean", default=False),
+    "thermal_newton_max_iter": _field("count", "Compatibility-only quasi-Newton iteration limit.", value_type="integer", default=30, constraint="> 0; used only by planned-removal newton modes"),
+    "thermal_newton_tol": _field("1", "Compatibility-only quasi-Newton residual tolerance; falls back to tol.", value_type="number or null", default=None, constraint="None or > 0; used only by planned-removal newton modes"),
+    "thermal_newton_damp": _field("1", "Compatibility-only quasi-Newton initial damping factor.", value_type="number", default=1.0, constraint="> 0; used only by planned-removal newton modes"),
+    "thermal_newton_min_damp": _field("1", "Compatibility-only quasi-Newton minimum line-search damping.", value_type="number", default=1.0e-3, constraint="0 < value <= thermal_newton_damp; used only by planned-removal newton modes"),
+    "thermal_newton_line_search": _field("bool", "Enable line search only for the planned-removal quasi-Newton modes.", value_type="boolean", default=False),
 }
 
 MODEL_PACKAGE_FIELDS: dict[str, ConfigField] = {
@@ -908,6 +916,18 @@ MODEL_PACKAGE_FIELDS: dict[str, ConfigField] = {
     "use_augment": _field(
         "bool", "Optional inference augmentation override.",
         value_type="boolean or null", default=None,
+    ),
+    "symmetry": _field(
+        "name",
+        "Inference symmetry: 'c4' maps (e, v, s) into the ex, ey >= 0 "
+        "training quadrant and rotates the force back; 'none' uses the bare "
+        "network; null follows the package metadata inference_symmetry.",
+        value_type="string or null", default=None, choices=("none", "c4"),
+        constraint=(
+            "null is rejected for an undeclared package whose input scaler "
+            "was fitted only on ex >= 0 and ey >= 0; 'c4' requires "
+            "rotation-invariant input columns"
+        ),
     ),
 }
 SURROGATE_RUNTIME_FIELDS: dict[str, ConfigField] = {

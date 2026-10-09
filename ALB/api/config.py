@@ -561,6 +561,14 @@ def _validate_spec(spec: Mapping[str, Any]) -> None:
             raise ConfigurationError(
                 "spec.model_package.use_augment must be a bool"
             )
+        symmetry = package.get("symmetry")
+        if symmetry is not None and (
+            not isinstance(symmetry, str)
+            or symmetry not in MODEL_PACKAGE_FIELDS["symmetry"].choices
+        ):
+            raise ConfigurationError(
+                "spec.model_package.symmetry must be 'none', 'c4', or null"
+            )
         runtime = _require_mapping(spec.get("runtime", {}), "spec.runtime")
         _reject_unknown(
             runtime,

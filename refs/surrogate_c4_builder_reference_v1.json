@@ -1,0 +1,242 @@
+{
+  "arrays": {
+    "m35_bare_builder_dim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "m35_c4_wrapper_dim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "m42_bare_builder_dim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "m42_c4_wrapper_dim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "query_eccentricity": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "query_spool": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "query_velocity_nondim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "synthetic_full_bare_builder_dim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "synthetic_full_bare_builder_nondim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "synthetic_full_fit_frame": {
+      "dtype": "float64",
+      "shape": [
+        2,
+        12
+      ]
+    },
+    "synthetic_layer0_bias": {
+      "dtype": "float32",
+      "shape": [
+        16
+      ]
+    },
+    "synthetic_layer0_weight": {
+      "dtype": "float32",
+      "shape": [
+        16,
+        12
+      ]
+    },
+    "synthetic_layer1_bias": {
+      "dtype": "float32",
+      "shape": [
+        16
+      ]
+    },
+    "synthetic_layer1_weight": {
+      "dtype": "float32",
+      "shape": [
+        16,
+        16
+      ]
+    },
+    "synthetic_layer2_bias": {
+      "dtype": "float32",
+      "shape": [
+        2
+      ]
+    },
+    "synthetic_layer2_weight": {
+      "dtype": "float32",
+      "shape": [
+        2,
+        16
+      ]
+    },
+    "synthetic_output_fit_frame": {
+      "dtype": "float64",
+      "shape": [
+        2,
+        2
+      ]
+    },
+    "synthetic_quadrant_bare_builder_dim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "synthetic_quadrant_bare_builder_nondim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "synthetic_quadrant_c4_wrapper_dim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "synthetic_quadrant_c4_wrapper_nondim": {
+      "dtype": "float64",
+      "shape": [
+        16,
+        2
+      ]
+    },
+    "synthetic_quadrant_fit_frame": {
+      "dtype": "float64",
+      "shape": [
+        2,
+        12
+      ]
+    }
+  },
+  "baseline_commit": "aafb9fc8e099aa8191a7a12293787ec5ed6ac6b9",
+  "baseline_note": "Working tree had unrelated uncommitted changes; source digests below identify the exact files that were executed.",
+  "cases": {
+    "real_packages": {
+      "packages": {
+        "m35": {
+          "available": true,
+          "manifest_sha256": "52ff93b74514db7fecbfbc630f69ebc49bed0e9ae93fff514e5f23bf32b554eb",
+          "relative_path": "SURROGATE_TRAIN/outputs/thermal_memory/S0012_m35_thermal_memory_32w_20260923/baseline_m35"
+        },
+        "m42": {
+          "available": true,
+          "manifest_sha256": "906a9148ebd8b83dec72e12ec6b81174607891ebfbd602299c48d8b7d4c8e0c9",
+          "relative_path": "SURROGATE_TRAIN/models/M0042_no_supply_quasisteady_20261006/model_package"
+        }
+      },
+      "parameters": {
+        "beta_nondim": 0.10837155963302753,
+        "c": 0.00012,
+        "cq0": 1.3457122291523556,
+        "cq1": 0.20818792014191256,
+        "cq2": 0.009778479703566049,
+        "freq": 50.0,
+        "l": 0.06,
+        "lambda_value": 0.3281842325625051,
+        "lr": 0.75,
+        "ps": 7000000.0,
+        "r": 0.04,
+        "vf": 1.0
+      }
+    },
+    "synthetic": {
+      "activation": "gelu",
+      "architecture": [
+        12,
+        16,
+        16,
+        2
+      ],
+      "packages": {
+        "full": "input scaler fitted on synthetic_full_fit_frame (ex, ey in [-0.85, 0.85])",
+        "quadrant": "input scaler fitted on synthetic_quadrant_fit_frame (ex, ey >= 0)"
+      },
+      "parameters": {
+        "beta_nondim": 0.108,
+        "c": 0.00012,
+        "cq0": 1.35,
+        "cq1": 0.208,
+        "cq2": 0.0098,
+        "freq": 50.0,
+        "l": 0.06,
+        "lambda_value": 0.33,
+        "lr": 0.75,
+        "ps": 7000000.0,
+        "r": 0.04,
+        "vf": 1.0
+      },
+      "scaler": "ALB.surrogate.inference.SelectiveMinMaxScaler (input and output)",
+      "seed": 20261009
+    }
+  },
+  "environment": {
+    "numpy": "1.24.3",
+    "pandas": "2.1.1",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.10.17",
+    "torch": "2.11.0+cu128"
+  },
+  "generated_at_utc": "2026-10-08T17:54:54.702488+00:00",
+  "npz_sha256": "3a58309a090aed15412ef4bdfea0849d771d4bc4e49206fe4eca4268bba8a64a",
+  "purpose": "Pre-change surrogate builder forces (bare ALBNN) and ALBNNC4Canonical forces for quadrant-I-trained packages; see tests/regression/surrogate/test_surrogate_c4_builder_reference.py.",
+  "query": {
+    "extra_rows": 8,
+    "spool_mode": "external",
+    "t03_rows": 8,
+    "t03_spool_rule": "spool = 0.3 * [[cos45, sin45], [cos135, sin135]] @ q",
+    "time": 0.0,
+    "velocity_rule": "dimensional velocity = v * c * vf * 2*pi*freq"
+  },
+  "schema": "alb.surrogate-c4-builder-reference.v1",
+  "source_sha256": {
+    "ALB/api/building.py": "556f0ea91af3c2f5aff60e01fe7de4da958cfaba2f0f07553924ccbce750d5f5",
+    "ALB/api/config.py": "76e037817d811d79d333c54ae719a898000ae8d910d315884f2ae5e0fac86a38",
+    "ALB/surrogate/inference.py": "7291e2623a7993b938369347d72a3a497342dc19a4cbc15808e1138092dc61f6",
+    "ALB/surrogate/package.py": "1dbb57deb827b3363a7d9cb764d96189dcd544262031f60308bb810eba3ffc39",
+    "ALB/surrogate/runtime.py": "5f1f3b0728779399a9f8504771944ee55f09439fbaa04bd872af616d6bff348a"
+  }
+}
