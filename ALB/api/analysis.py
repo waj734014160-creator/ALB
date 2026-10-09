@@ -1406,16 +1406,25 @@ class BearingAnalysis:
         *,
         spool: object | None = None,
     ) -> AnalysisResult:
-        """Linearize the pressure equations at one dimensional operating point.
+        """Compute equation-derived coefficients at a dimensional operating point.
 
-        This capability is verified only for dimensional ``liquid_film`` and
-        ``active_lubricated`` bearings without a thermal wrapper. The active
+        Without thermal coupling, this capability supports dimensional
+        ``liquid_film`` and ``active_lubricated`` bearings. The active
         path requires the established three-node ``CSOrifice`` topology;
         external-spool control requires an explicit two-axis ``spool`` value.
         ``excitation_frequency`` is positive in Hz. Unsupported topology,
         static nonconvergence, or derivative failure raises ``CalculationError``
         and preserves available operating-point evidence in
         ``failure_snapshot``.
+
+        Thermal active bearings use the coupled pressure/temperature/restrictor
+        analytic system on a legacy tensor grid with full viscosity coupling.
+        A strict NCP base is refined, then its cavitation active set is fixed.
+        Thermal storage follows ``thermal.transient_enabled``. Results include
+        ``stiffness`` (N/m), ``damping`` (N*s/m), complex ``spool_transfer``
+        (N/normalized spool), base states and per-pad residual diagnostics.
+        These coefficients exclude controller and servovalve dynamics. SUPG
+        tau and thermal boundary branches are frozen at the production base.
         """
 
         config = self._bearing.config
@@ -1427,28 +1436,87 @@ class BearingAnalysis:
                 "harmonic_linearize supports only verified dimensional "
                 "liquid_film and active_lubricated bearings"
             )
-        if config.spec.get("thermal") is not None:
-            raise CalculationError(
-                "harmonic_linearize does not support an enabled thermal wrapper"
-            )
+        thermal = config.spec.get("thermal") is not None
+        if thermal:
+            from ALB.systems.alb.linearization import validate_thermal_harmonic_config
+
+            try:
+                validate_thermal_harmonic_config(config.spec)
+            except ValueError as exc:
+                raise CalculationError(str(exc)) from exc
         frequency = _positive_float(
             excitation_frequency,
             "excitation_frequency",
         )
         point = _axis_pair(operating_point, "operating_point")
         spool_value = None if spool is None else _axis_pair(spool, "spool")
+        if thermal and spool_value is not None and np.any(spool_value == 0.0):
+            raise CalculationError(
+                "thermal harmonic linearization requires nonzero base spool "
+                "values away from valve switching"
+            )
         runtime = self._new_runtime()
-        force, convergence = self._run_runtime(
-            runtime,
-            displacement=point,
-            time=0.0,
-            spool=spool_value,
-            static=config.family == "active_lubricated",
-        )
+        try:
+            force, convergence = self._run_runtime(
+                runtime,
+                displacement=point,
+                time=0.0,
+                spool=spool_value,
+                static=config.family == "active_lubricated",
+            )
+        except CalculationError:
+            raise
+        except Exception as exc:
+            if not thermal:
+                raise
+            try:
+                failed_base = runtime.failure_snapshot()
+            except Exception:
+                failed_base = result_snapshot(
+                    {"operating_point": point},
+                    {"failure_phase": "production_base", "message": str(exc)},
+                )
+            raise CalculationError(
+                f"thermal harmonic production base failed: {exc}",
+                failure_snapshot=failed_base,
+            ) from exc
         if not convergence.converged:
             raise CalculationError(
                 "harmonic linearization requires a converged static point",
                 failure_snapshot=runtime.result_snapshot(),
+            )
+
+        if thermal:
+            from ALB.systems.alb.linearization import (
+                ThermalLinearizationError,
+                linearize_thermal_runtime,
+            )
+
+            base_spool = np.asarray(
+                spool_value if config.control_mode == "external_spool"
+                else [valve.xv for valve in runtime.static_sv],
+                dtype=float,
+            )
+            try:
+                thermal_values, thermal_metadata, residual, iterations = (
+                    linearize_thermal_runtime(runtime, point, frequency, base_spool)
+                )
+            except ThermalLinearizationError as exc:
+                raise CalculationError(
+                    f"thermal harmonic linearization failed: {exc}",
+                    failure_snapshot=result_snapshot(exc.values, exc.diagnostics),
+                ) from exc
+            except (ValueError, TypeError) as exc:
+                raise CalculationError(
+                    str(exc), failure_snapshot=runtime.result_snapshot(),
+                ) from exc
+            thermal_values["production_static_force"] = force
+            return AnalysisResult(
+                thermal_values, thermal_metadata,
+                convergence=ConvergenceStatus(
+                    residual=residual, converged=True, iterations=iterations,
+                    message="strict thermal base and analytic frequency equations converged",
+                ),
             )
 
         values: dict[str, Any] = {

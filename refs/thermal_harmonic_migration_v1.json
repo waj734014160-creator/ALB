@@ -1,0 +1,344 @@
+{
+  "schema": "alb.thermal-harmonic-migration-reference.v1",
+  "source_hashes": {
+    "analytic_harmonic_linearization_temp.py": "d4f9b2bafa1be3b039325f5b1cd12b9ba8d90dd7ec3812c1ab8f58b63b8bb461",
+    "cavitation_moving_boundary_harmonic.py": "0d5419fcdfa2ea15787adb17cd8f96e4ad28eda95b8ca45f3c23dc986cbb7939",
+    "thermal_inertia_cavitation_harmonic.py": "6ce0acc212aa3f2b5beada539c3d65fc374cf660116931b8cdcfe0605c4cfc6b"
+  },
+  "git_head": "aafb9fc8e099aa8191a7a12293787ec5ed6ac6b9",
+  "runtime_sources": {
+    "ALB/physics/thermal/solver.py": "08fb45c986d78b480c4477d0f1e6a462622811cf8d108493662d9cdf36d98478",
+    "ALB/physics/hydraulics/orifice.py": "120d4536a286da1185432aa96d6bcd5d0b4523776b1a56bc0ff923a990f3a8c3"
+  },
+  "python": "3.10.17",
+  "numpy": "1.24.3",
+  "scipy": "1.10.1",
+  "case": {
+    "spec": {
+      "family": "active_lubricated",
+      "unit_system": "dimensional",
+      "time_step": 0.001,
+      "node": 12,
+      "film": {
+        "eccentricity": 0.0,
+        "attitude_angle_deg": 0.0,
+        "rotation_frequency_hz": 50.0,
+        "arc_angle_deg": 80.0,
+        "axial_length_ratio": 2.0,
+        "circumferential_elements": 59,
+        "axial_elements": 39,
+        "viscosity": 0.0195,
+        "clearance": 0.00012,
+        "radius": 0.04,
+        "length": 0.06,
+        "supply_pressure": 7000000.0,
+        "density": 872.0,
+        "reynolds_boundary": true,
+        "continuous_boundary": false,
+        "ambient_pressure": 0.0,
+        "solver_tolerance": 1e-06,
+        "max_iterations": 100,
+        "relaxation": 0.8,
+        "vibration_enabled": false,
+        "whirl_ratio": 1.0,
+        "solver": "skfem_newton",
+        "save_pressure": false,
+        "save_thickness": false,
+        "gauss_relaxation": 1.2,
+        "gauss_points": 50,
+        "gauss_tolerance": 0.0001,
+        "pad_bias_deg": 45.0
+      },
+      "restrictors": {
+        "positions": [
+          [
+            0.5,
+            0.25
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.5,
+            0.75
+          ]
+        ],
+        "supply_pressure": 7000000.0,
+        "tank_pressure": 0.0,
+        "orifice_diameter": 0.002,
+        "orifice_length": 0.02,
+        "valve_area": 1.22e-06,
+        "discharge_coefficient": 0.6
+      },
+      "tank": {
+        "x_range": [
+          0.49,
+          0.51
+        ],
+        "z_range": [
+          0.2,
+          0.8
+        ],
+        "depth_ratio": 2.0
+      },
+      "valve": {
+        "model": "static"
+      },
+      "control": {
+        "mode": "external_spool"
+      },
+      "thermal": {
+        "t_in": 20.0,
+        "t_ref": null,
+        "miu0": null,
+        "beta": 0.03,
+        "k_lub": 0.0,
+        "cp_lub": 2000.0,
+        "max_delta_t": 80.0,
+        "heat_partition": 0.9,
+        "relax": 0.5,
+        "miu_update": "log",
+        "miu_update_max_ratio": 1.2,
+        "heat_partition_steps": [
+          0.2,
+          0.4,
+          0.6,
+          0.8,
+          0.9
+        ],
+        "iter_method": "direct",
+        "tol": 0.0001,
+        "max_iter": 100,
+        "miu_min": 0.0001,
+        "miu_max": 1.0,
+        "coupling": "full",
+        "t_supply": null,
+        "axial_side_bc": "inflow_fixed",
+        "axial_side_t": null,
+        "supg": true,
+        "transient_enabled": true
+      },
+      "transforms": {
+        "displacement_to_control": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0
+          ]
+        ],
+        "velocity_to_control": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ]
+      }
+    },
+    "operating_point": [
+      1e-05,
+      -6e-05
+    ],
+    "spool": [
+      -0.08838834764831843,
+      -0.12374368670764582
+    ],
+    "frequencies_hz": [
+      25.0,
+      50.0,
+      100.0
+    ]
+  },
+  "pad_audits": [
+    {
+      "converged": true,
+      "final_merit_l2": 7.757379967158042e-16,
+      "iterations": 3,
+      "history": [
+        {
+          "iteration": 0,
+          "merit_l2": 1.314792569927349e-05,
+          "pressurized_nodes": 2204,
+          "classification_switches": 0
+        },
+        {
+          "iteration": 1,
+          "merit_l2": 6.699449993094029e-11,
+          "pressurized_nodes": 2204,
+          "classification_switches": 0
+        },
+        {
+          "iteration": 2,
+          "merit_l2": 7.757379967158042e-16,
+          "pressurized_nodes": 2204,
+          "classification_switches": 0
+        }
+      ],
+      "boundary_nodes": 196,
+      "pressurized_nodes": 2204,
+      "cavitated_nodes": 0,
+      "weakly_active_nodes": 0,
+      "minimum_pressure": 2.592592927706946e-05,
+      "minimum_reynolds_slack": -2.706168622523819e-16,
+      "p_tolerance": 1.0767616890860024e-12,
+      "r_tolerance": 1e-13,
+      "complementarity_scale": 10000.0,
+      "equality_residual_l2": 3.947942733307149e-17,
+      "residual_25": 3.4476090731674326e-13,
+      "residual_50": 2.7445503726919115e-13,
+      "residual_100": 3.936987282034085e-13
+    },
+    {
+      "converged": true,
+      "final_merit_l2": 2.7642232553255652e-15,
+      "iterations": 7,
+      "history": [
+        {
+          "iteration": 0,
+          "merit_l2": 0.004765180215133938,
+          "pressurized_nodes": 1559,
+          "classification_switches": 27
+        },
+        {
+          "iteration": 1,
+          "merit_l2": 0.0005226483255619029,
+          "pressurized_nodes": 1586,
+          "classification_switches": 25
+        },
+        {
+          "iteration": 2,
+          "merit_l2": 0.00023723446344827188,
+          "pressurized_nodes": 1601,
+          "classification_switches": 12
+        },
+        {
+          "iteration": 3,
+          "merit_l2": 9.068387432135059e-05,
+          "pressurized_nodes": 1613,
+          "classification_switches": 7
+        },
+        {
+          "iteration": 4,
+          "merit_l2": 1.2457110691032215e-05,
+          "pressurized_nodes": 1620,
+          "classification_switches": 4
+        },
+        {
+          "iteration": 5,
+          "merit_l2": 2.0931547303323428e-11,
+          "pressurized_nodes": 1624,
+          "classification_switches": 0
+        },
+        {
+          "iteration": 6,
+          "merit_l2": 2.7642232553255652e-15,
+          "pressurized_nodes": 1624,
+          "classification_switches": 0
+        }
+      ],
+      "boundary_nodes": 196,
+      "pressurized_nodes": 1624,
+      "cavitated_nodes": 580,
+      "weakly_active_nodes": 0,
+      "minimum_pressure": 0.0,
+      "minimum_reynolds_slack": -8.187894806610529e-16,
+      "p_tolerance": 8.087731227475956e-12,
+      "r_tolerance": 1e-13,
+      "complementarity_scale": 416.40400058587585,
+      "equality_residual_l2": 1.206785667644471e-16,
+      "residual_25": 1.0900713657037483e-12,
+      "residual_50": 8.872642023305906e-13,
+      "residual_100": 8.602711079047996e-13
+    },
+    {
+      "converged": true,
+      "final_merit_l2": 1.0626148664095469e-16,
+      "iterations": 3,
+      "history": [
+        {
+          "iteration": 0,
+          "merit_l2": 0.00020680013363129555,
+          "pressurized_nodes": 336,
+          "classification_switches": 2
+        },
+        {
+          "iteration": 1,
+          "merit_l2": 2.287970594046528e-08,
+          "pressurized_nodes": 338,
+          "classification_switches": 0
+        },
+        {
+          "iteration": 2,
+          "merit_l2": 1.0626148664095469e-16,
+          "pressurized_nodes": 338,
+          "classification_switches": 0
+        }
+      ],
+      "boundary_nodes": 196,
+      "pressurized_nodes": 338,
+      "cavitated_nodes": 1866,
+      "weakly_active_nodes": 0,
+      "minimum_pressure": -1.0730574176499647e-27,
+      "minimum_reynolds_slack": -2.7755575615628914e-17,
+      "p_tolerance": 2.426029409068576e-13,
+      "r_tolerance": 4.0522465936115843e-13,
+      "complementarity_scale": 0.5986875065533377,
+      "equality_residual_l2": 6.653712387198359e-17,
+      "residual_25": 7.57662672838549e-15,
+      "residual_50": 7.775861280550514e-15,
+      "residual_100": 8.048594399275772e-15
+    },
+    {
+      "converged": true,
+      "final_merit_l2": 2.6453992023693308e-12,
+      "iterations": 4,
+      "history": [
+        {
+          "iteration": 0,
+          "merit_l2": 0.0028324279021795583,
+          "pressurized_nodes": 2204,
+          "classification_switches": 0
+        },
+        {
+          "iteration": 1,
+          "merit_l2": 6.0696902110878887e-05,
+          "pressurized_nodes": 2204,
+          "classification_switches": 0
+        },
+        {
+          "iteration": 2,
+          "merit_l2": 1.2861178858867134e-07,
+          "pressurized_nodes": 2204,
+          "classification_switches": 0
+        },
+        {
+          "iteration": 3,
+          "merit_l2": 2.6453992023693308e-12,
+          "pressurized_nodes": 2204,
+          "classification_switches": 0
+        }
+      ],
+      "boundary_nodes": 196,
+      "pressurized_nodes": 2204,
+      "cavitated_nodes": 0,
+      "weakly_active_nodes": 0,
+      "minimum_pressure": 0.0007254732570946036,
+      "minimum_reynolds_slack": -3.6464581354422876e-13,
+      "p_tolerance": 1.3997187181679011e-11,
+      "r_tolerance": 1e-13,
+      "complementarity_scale": 10000.0,
+      "equality_residual_l2": 2.570853988083924e-12,
+      "residual_25": 9.287192172127053e-13,
+      "residual_50": 7.313658448633097e-13,
+      "residual_100": 1.1522467715190019e-12
+    }
+  ],
+  "npz_sha256": "03870223954350801291a297618a0cff443bf5c6d4ae2fb1e230038e413bf8d9"
+}
