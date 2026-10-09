@@ -23,8 +23,8 @@
     },
     "harmonic_linearization": {
       "title": "方程导数谐波线性化",
-      "description": "该入口只支持包概览中声明的量纲液膜和已验证主动润滑拓扑。",
-      "code": "import ALB\n\nbearing = ALB.bearing_from_file(\"configs/harmonic_supported_alb.json5\")\nlinearized = bearing.analysis.harmonic_linearize(\n    operating_point=(0.0, 0.0),\n    excitation_frequency=50.0,\n)\nK = linearized.values[\"stiffness\"]\nC = linearized.values[\"damping\"]\nprint(K.shape, C.shape)"
+      "description": "量纲液膜与主动润滑轴承使用方程导数；四瓦主动轴承还支持完整热耦合及配置控制的热惯性。示例配置位于仓库 tools/analysis。",
+      "code": "import ALB\n\nbearing = ALB.bearing_from_file(\"tools/analysis/thermal_harmonic_example.json5\")\nlinearized = bearing.analysis.harmonic_linearize(\n    operating_point=(10e-6, -60e-6),\n    excitation_frequency=50.0,\n    spool=(-0.08838834764831843, -0.12374368670764582),\n)\nK = linearized.values[\"stiffness\"]\nC = linearized.values[\"damping\"]\nG = linearized.values[\"spool_transfer\"]\nprint(K.shape, C.shape, G.shape)"
     },
     "simulation_from_file": {
       "title": "从 JSON5 运行转子-轴承仿真",
@@ -228,17 +228,17 @@
           ]
         },
         "harmonic_linearize": {
-          "summary": "在指定工作点通过压力方程导数计算谐波刚度与阻尼。",
-          "returns": "返回 AnalysisResult，包含 stiffness、damping 和工作点诊断。",
+          "summary": "在指定工作点通过压力导数或压力、温度、节流器耦合解析方程计算谐波系数。",
+          "returns": "返回 AnalysisResult，包含 stiffness、damping 和工作点诊断；热耦合路径还返回复 spool_transfer、严格基态及逐瓦残差。",
           "parameters": {
             "operating_point": "二维量纲位移工作点。",
             "excitation_frequency": "线性化激励频率，单位 Hz。",
-            "spool": "受支持主动润滑拓扑的可选二维阀芯工作点。"
+            "spool": "external_spool 配置必须提供的归一化二维基准阀芯；内部控制配置不传此参数。"
           },
           "raises": [
             {
               "type": "CalculationError",
-              "when": "轴承家族、单位制或节流拓扑不在已验证支持域内。"
+              "when": "轴承、网格、热耦合或边界不受支持，或基态/频域方程未收敛、基态不满足严格互补条件；数值失败保留 failure_snapshot。"
             }
           ]
         }
