@@ -5,7 +5,7 @@
 > **高级 API。** 创建、检查和加载已部署 ALBNN 模型包。
 
 - 显式导出数：`3`
-- 源码合同摘要：`sha256:99c1f25c78e88141`
+- 源码合同摘要：`sha256:bd99d118e72ea3df`
 - 对应规则：中文语义元数据必须与源码参数、公开成员和英文 docstring 同步通过生成门禁。
 
 ## 安装
@@ -24,9 +24,9 @@ from ALB.surrogate import create_model_package, load_albnn_package, open_model_p
 
 | 符号 | 类别 | 用途 | 源码 |
 | --- | --- | --- | --- |
-| `create_model_package` | 函数 | 从可信 checkpoint、NPZ scaler 和 metadata 创建固定角色且带摘要的 0.4 package。 | `ALB/surrogate/package.py:119` |
-| `load_albnn_package` | 函数 | 在完整摘要校验后，以 CPU、安全 Torch weights-only 和 NPZ 路径构建 ALBNN 推理对象。 | `ALB/surrogate/package.py:202` |
-| `open_model_package` | 函数 | 不加载网络地校验 package schema、精确 artifact 角色、路径、metadata 和 SHA-256。 | `ALB/surrogate/package.py:39` |
+| `create_model_package` | 函数 | 从可信 checkpoint、NPZ scaler 和 metadata 创建固定角色且带摘要的 0.4 package。 | `ALB/surrogate/package.py:218` |
+| `load_albnn_package` | 函数 | 在完整摘要校验后，以 CPU、安全 Torch weights-only 和 NPZ 路径构建 ALBNN 推理对象。 | `ALB/surrogate/package.py:307` |
+| `open_model_package` | 函数 | 不加载网络地校验 package schema、精确 artifact 角色、路径、metadata 和 SHA-256。 | `ALB/surrogate/package.py:138` |
 
 !!! warning "高级接口边界"
     本页只记录 namespace 显式导出的符号及其源码声明的公开成员。实现模块、私有 helper 和其他可导入类型不因此成为稳定用户 API。
@@ -84,7 +84,7 @@ print(package.manifest["schema"])
 从可信 checkpoint、NPZ scaler 和 metadata 创建固定角色且带摘要的 0.4 package。
 
 - 类别：`function`
-- 源码：`ALB/surrogate/package.py:119`
+- 源码：`ALB/surrogate/package.py:218`
 - 返回标注：`ModelPackage`
 
 输入：
@@ -125,7 +125,11 @@ print(package.manifest["schema"])
         Fitted scaler objects accepted by ``write_scaler`` and serialized as NPZ.
     metadata
         Deployment metadata. Schema ``alb.surrogate-metadata.v0.4`` is inserted;
-        a conflicting explicit schema is rejected.
+        a conflicting explicit schema is rejected. An optional
+        ``inference_symmetry`` declaration (``"none"``, ``"c4"``, or the
+        historical ``{"name": "c4_canonical_quadrant", ...}`` mapping) is
+        validated here so packages trained only on ``ex, ey >= 0`` can declare
+        C4 canonical-quadrant inference.
 
     Returns
     -------
@@ -139,15 +143,16 @@ print(package.manifest["schema"])
     FileNotFoundError
         If ``checkpoint`` does not exist.
     ValueError
-        If metadata conflicts with the 0.4 contract or a scaler is invalid.
+        If metadata conflicts with the 0.4 contract, declares an unsupported
+        inference symmetry, or a scaler is invalid.
     ```
 
-### `ALB.surrogate.load_albnn_package(path: Path | str, *, use_augment: bool | None = None, runtime_parameters: Mapping[str, Any] | None = None) -> Any`
+### `ALB.surrogate.load_albnn_package(path: Path | str, *, use_augment: bool | None = None, runtime_parameters: Mapping[str, Any] | None = None, symmetry: str = 'none', c4_blend_ratio: float | None = None) -> Any`
 
 在完整摘要校验后，以 CPU、安全 Torch weights-only 和 NPZ 路径构建 ALBNN 推理对象。
 
 - 类别：`function`
-- 源码：`ALB/surrogate/package.py:202`
+- 源码：`ALB/surrogate/package.py:307`
 - 返回标注：`Any`
 
 输入：
@@ -157,8 +162,10 @@ print(package.manifest["schema"])
 | `path` | 通过 open_model_package 校验的 package 目录。 |
 | `use_augment` | 可选运行时覆盖；None 保留 metadata 中的值。 |
 | `runtime_parameters` | 作为属性暴露给推理 config 的可选 mapping。 |
+| `symmetry` | 推理对称性。默认 "none" 返回原样 ALBNN；"c4" 用 ALBNNC4Canonical 把 (e, v, s) 旋入 ex, ey >= 0 训练象限并把力旋回；"package" 按 metadata inference_symmetry 解析，未声明且输入 scaler 记录的 ex、ey 拟合最小值均 >= 0 时报错，要求显式选择。 |
+| `c4_blend_ratio` | C4 混合半宽占 90° 象限的比例，范围 [0, 0.5)；None 使用 0.15，即 15% 象限角和 13.5° 半宽；0 保留历史映射；非空值要求解析为 C4。 |
 
-输出：可交给 surrogate bearing runtime 的已初始化 ALBNN 对象。
+输出：可交给 surrogate bearing runtime 的已初始化 ALBNN 对象；symmetry 解析为 C4 时返回 ALBNNC4Canonical。
 
 
 可能异常：
@@ -166,7 +173,7 @@ print(package.manifest["schema"])
 | 类型 | 触发条件 |
 | --- | --- |
 | `FileNotFoundError` | package 或 artifact 缺失。 |
-| `ValueError` | 摘要、schema、model_type、checkpoint 或 scaler 无效。 |
+| `ValueError` | 摘要、schema、model_type、checkpoint、scaler 或 inference_symmetry 声明无效；C4 遇到随旋转变化的派生输入列；symmetry="package" 遇到未声明的第一象限训练包。 |
 | `ImportError` | 未安装 surrogate extra（含 Torch）。 |
 
 示例：[加载模型包用于推理](#example-load-package)。
@@ -184,20 +191,37 @@ print(package.manifest["schema"])
         the packaged value.
     runtime_parameters
         Optional mapping exposed as attributes on the inference runtime config.
+    symmetry
+        Inference symmetry. ``"none"`` (default) returns the bare ``ALBNN``
+        network exactly as stored. ``"c4"`` wraps it in ``ALBNNC4Canonical``,
+        which rotates ``(e, v, s)`` into the ``ex, ey >= 0`` training quadrant
+        and rotates the force back. ``"package"`` follows the metadata
+        ``inference_symmetry`` declaration; an undeclared package resolves to
+        ``"none"`` unless its input scaler records fitted ``ex`` and ``ey``
+        minima ``>= 0``, which is rejected so the caller chooses explicitly.
+    c4_blend_ratio
+        C4 blend half-width as a ratio of the 90-degree quadrant, finite and
+        in ``[0, 0.5)``. ``None`` uses ``C4_DEFAULT_BLEND_RATIO`` (0.15) when
+        symmetry resolves to C4: 15 percent of a quadrant, or 13.5 degrees.
+        Zero reproduces the historical canonical mapping. A non-null value
+        requires resolved C4 symmetry.
 
     Returns
     -------
     Any
-        Initialized ``ALBNN`` inference object accepted by the surrogate bearing
-        runtime.
+        Initialized ``ALBNN`` (or ``ALBNNC4Canonical``) inference object
+        accepted by the surrogate bearing runtime.
 
     Raises
     ------
     FileNotFoundError
         If the package is incomplete.
     ValueError
-        If digests, schemas, model type, checkpoint structure, or scalers are
-        invalid.
+        If digests, schemas, model type, checkpoint structure, scalers, or the
+        symmetry declaration are invalid; if C4 is requested for an input
+        contract containing rotation-dependent derived columns; or if
+        ``symmetry="package"`` meets an undeclared quadrant-I-only package;
+        or if ``c4_blend_ratio`` is invalid or supplied without C4 symmetry.
     ImportError
         If the ``surrogate`` extra, including Torch, is not installed.
     ```
@@ -207,7 +231,7 @@ print(package.manifest["schema"])
 不加载网络地校验 package schema、精确 artifact 角色、路径、metadata 和 SHA-256。
 
 - 类别：`function`
-- 源码：`ALB/surrogate/package.py:39`
+- 源码：`ALB/surrogate/package.py:138`
 - 返回标注：`ModelPackage`
 
 输入：

@@ -364,12 +364,14 @@
           "parameters": {
             "path": "通过 open_model_package 校验的 package 目录。",
             "use_augment": "可选运行时覆盖；None 保留 metadata 中的值。",
-            "runtime_parameters": "作为属性暴露给推理 config 的可选 mapping。"
+            "runtime_parameters": "作为属性暴露给推理 config 的可选 mapping。",
+            "c4_blend_ratio": "C4 混合半宽占 90° 象限的比例，范围 [0, 0.5)；None 使用 0.15，即 15% 象限角和 13.5° 半宽；0 保留历史映射；非空值要求解析为 C4。",
+            "symmetry": "推理对称性。默认 \"none\" 返回原样 ALBNN；\"c4\" 用 ALBNNC4Canonical 把 (e, v, s) 旋入 ex, ey >= 0 训练象限并把力旋回；\"package\" 按 metadata inference_symmetry 解析，未声明且输入 scaler 记录的 ex、ey 拟合最小值均 >= 0 时报错，要求显式选择。"
           },
-          "returns": "可交给 surrogate bearing runtime 的已初始化 ALBNN 对象。",
+          "returns": "可交给 surrogate bearing runtime 的已初始化 ALBNN 对象；symmetry 解析为 C4 时返回 ALBNNC4Canonical。",
           "raises": [
             {"type": "FileNotFoundError", "when": "package 或 artifact 缺失。"},
-            {"type": "ValueError", "when": "摘要、schema、model_type、checkpoint 或 scaler 无效。"},
+            {"type": "ValueError", "when": "摘要、schema、model_type、checkpoint、scaler 或 inference_symmetry 声明无效；C4 遇到随旋转变化的派生输入列；symmetry=\"package\" 遇到未声明的第一象限训练包。"},
             {"type": "ImportError", "when": "未安装 surrogate extra（含 Torch）。"}
           ],
           "examples": ["load-package"],
