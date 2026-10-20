@@ -566,6 +566,16 @@ class _BearingTrial:
             self.mode = "probe"
         elif checkpointable:
             self.mode = "checkpoint"
+            try:
+                # Composite runtimes (multi-pad, active bearings) delegate to
+                # their children; create one token now so an unsupported
+                # child is rejected at reset rather than at the first step.
+                bearing.checkpoint()
+            except TypeError as exc:
+                raise TypeError(
+                    f"{type(bearing).__name__} cannot checkpoint its state "
+                    f"({exc}); use the staggered integrator"
+                ) from exc
         else:
             raise TypeError(
                 f"{type(bearing).__name__} can neither evaluate force without "
@@ -1017,9 +1027,11 @@ class PredictorCorrectorCouplingIntegrator:
                 f"{iterations} trial(s) at time {time!r}; final residual "
                 f"{final_residual:.6g} N"
             )
+            # Count the step before a possible raise so failure metadata
+            # reports the non-converged step that ended the run.
+            self.nonconverged_steps += 1
             if options.on_nonconvergence == "raise":
                 raise CouplingIterationError(message)
-            self.nonconverged_steps += 1
             if not self._warned:
                 self._warned = True
                 warnings.warn(
@@ -1052,6 +1064,10 @@ class PredictorCorrectorCouplingIntegrator:
 
         steps = self.steps
         counts = sorted(self.iteration_histogram.items())
+        # Steps whose interface iteration finished: the committed steps plus,
+        # under on_nonconvergence="raise", the non-converged step that ended
+        # the run. The iteration statistics are taken over these steps.
+        iterated_steps = sum(int(number) for _, number in counts)
         ratio_count = self._ratio_count
         omega_range = (
             self._accelerator.omega_range()
@@ -1067,7 +1083,11 @@ class PredictorCorrectorCouplingIntegrator:
             "commits": self.commits,
             "commit_evaluations": self.commits * bearings,
             "iterations_per_step": {
-                "mean": (self.trial_iterations / steps) if steps else 0.0,
+                "mean": (
+                    (self.trial_iterations / iterated_steps)
+                    if iterated_steps
+                    else 0.0
+                ),
                 "max": max((count for count, _ in counts), default=0),
                 # ((trials, steps), ...) sorted by the number of trials.
                 "histogram": tuple(

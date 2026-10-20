@@ -436,3 +436,71 @@ def test_multi_pad_rejects_children_without_checkpoint() -> None:
     composite = MultiPad(child)
     with pytest.raises(TypeError, match="checkpoint"):
         composite.checkpoint()
+
+
+def test_checkpoint_restores_nested_mappings_in_place() -> None:
+    """Dictionaries of history lists and arrays are restored recursively."""
+
+    from collections import defaultdict
+
+    class Component:
+        pass
+
+    component = Component()
+    history: dict[str, list[Any]] = {"t": [0.0], "x": [np.zeros(2)]}
+    component._history = history
+    component.arrays = {"state": np.ones(3)}
+    component.channels = defaultdict(list)
+    component.channels["u"].append(1.0)
+    cyclic: dict[str, Any] = {}
+    cyclic["self"] = cyclic
+    component.cyclic = cyclic
+    time_list = history["t"]
+    token = RuntimeCheckpoint(component, [component])
+    for _ in range(2):
+        # Mutate like a controller trial, then roll back; tokens are reusable.
+        history["t"].append(1.0)
+        history["x"].append(np.ones(2))
+        history["extra"] = [2.0]
+        component.arrays["state"][0] = 5.0
+        component.channels["u"].append(2.0)
+        component.channels["v"].append(3.0)
+        cyclic["key"] = 1
+        token.restore(component)
+        assert component._history is history
+        assert history["t"] is time_list
+        assert sorted(history) == ["t", "x"]
+        assert history["t"] == [0.0]
+        assert len(history["x"]) == 1
+        np.testing.assert_array_equal(component.arrays["state"], np.ones(3))
+        assert type(component.channels) is defaultdict
+        assert dict(component.channels) == {"u": [1.0]}
+        assert list(cyclic) == ["self"] and cyclic["self"] is cyclic
+
+
+def test_active_bearing_delegates_to_a_checkpointable_controller() -> None:
+    runtime = _build("active_pid")
+    controller = runtime._controller
+    calls: list[str] = []
+
+    def checkpoint() -> RuntimeCheckpoint:
+        calls.append("checkpoint")
+        return RuntimeCheckpoint(controller, [controller, controller._lifecycle])
+
+    def restore(token: object) -> None:
+        calls.append("restore")
+        assert isinstance(token, RuntimeCheckpoint)
+        token.restore(controller)
+
+    controller.checkpoint = checkpoint
+    controller.restore = restore
+    twin = _build("active_pid")
+    for item in (runtime, twin):
+        item.step(_dto(item, 0))
+    token = runtime.checkpoint()
+    runtime.step(_dto(runtime, 1, scale=1.7))
+    runtime.restore(token)
+    assert calls == ["checkpoint", "restore"]
+    runtime.step(_dto(runtime, 1))
+    twin.step(_dto(twin, 1))
+    _assert_same_result(runtime.result_snapshot(), twin.result_snapshot())

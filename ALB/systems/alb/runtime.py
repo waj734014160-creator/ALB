@@ -712,7 +712,11 @@ class ALB:
           switch, latest force/output/result/convergence (and the direct
           spool of external-spool variants);
         * the controller: integral and derivative memory, committed error,
-          latest command, lifecycle, and its result log;
+          latest command, lifecycle, and its result log (including
+          dictionaries of history lists); a controller that implements
+          ``checkpoint()``/``restore()`` itself is delegated to instead, so
+          custom controllers with nested state objects can define their own
+          token;
         * every dynamic and static servovalve: lifecycle, spool, and the
           state-space model states, first-order-hold input memory, and
           time/input/output histories;
@@ -726,14 +730,19 @@ class ALB:
         """
 
         components: list[Any] = [self, self._lifecycle]
+        children = []
         controller = self._controller
         if controller is not None:
-            components.extend(
-                [controller, getattr(controller, "_lifecycle", None)]
-            )
+            if callable(getattr(controller, "checkpoint", None)) and callable(
+                getattr(controller, "restore", None)
+            ):
+                children.append((controller, controller.checkpoint()))
+            else:
+                components.extend(
+                    [controller, getattr(controller, "_lifecycle", None)]
+                )
         for valve in (*self._servovalves, *(self.static_sv or ())):
             components.extend(self._valve_components(valve))
-        children = []
         for pad in self._pads:
             checkpoint = getattr(pad, "checkpoint", None)
             if not callable(checkpoint):

@@ -394,7 +394,14 @@ def test_nonconvergence_raise_seals_a_simulation_failure() -> None:
     coupling = snapshot.values["coupling_failure"]["metadata"]
     assert coupling["integrator"] == PC
     assert coupling["physical_step_committed"] is False
-    assert snapshot.metadata["predictor_corrector_diagnostics"]["steps"] == 0
+    diagnostics = snapshot.metadata["predictor_corrector_diagnostics"]
+    assert diagnostics["steps"] == 0
+    # The step that ended the run is counted as non-converged, and the
+    # iteration statistics include it.
+    assert diagnostics["nonconverged_steps"] == 1
+    assert diagnostics["trial_iterations"] == 1
+    assert tuple(diagnostics["iterations_per_step"]["histogram"]) == ((1, 1),)
+    assert diagnostics["iterations_per_step"]["mean"] == 1.0
 
 
 def test_trial_failure_restores_the_thermal_bearing_and_seals_the_step(

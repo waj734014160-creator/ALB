@@ -12,10 +12,15 @@ Capture rules
 A component snapshot records the attribute dictionary (and ``__slots__``) of
 one object. Values are stored as follows:
 
-* ``dict``, ``list``, and ``set`` keep the original container object plus a
-  shallow copy of its content. Restoring writes the content back *in place*,
-  so containers shared by reference with other objects (for example a film
-  model ``args`` dictionary shared with its elements) stay consistent.
+* ``dict``, ``list``, and ``set`` (including subclasses) keep the original
+  container object plus a copy of its content. Restoring writes the content
+  back *in place*, so containers shared by reference with other objects (for
+  example a film model ``args`` dictionary shared with its elements) stay
+  consistent. Dictionary values are captured recursively with these same
+  rules, so a mapping of append-only channel histories (for example a
+  controller ``_history`` dictionary of lists) or of arrays is restored in
+  place as well; a dictionary that contains itself is kept by reference at
+  the repeated level.
 * ``numpy.ndarray`` keeps the original array plus a copy; writeable arrays are
   refilled in place on restore.
 * ``pandas.DataFrame`` is copied; restore assigns a fresh copy (frames are
@@ -25,9 +30,9 @@ one object. Values are stored as follows:
   reference and reassigned on restore. Such references are never copied,
   so checkpoints do not duplicate meshes or FEM assemblies.
 
-Items inside captured containers are kept by reference. This assumes that
-runtime code replaces container items instead of mutating them in place,
-which holds for the histories and caches captured by ALB runtimes.
+Items inside captured lists and sets are kept by reference. This assumes
+that runtime code appends or replaces list items instead of mutating them in
+place, which holds for the histories and caches captured by ALB runtimes.
 
 Attributes created after the checkpoint are removed on restore. A token can
 be restored any number of times; each restore starts from the captured
@@ -46,18 +51,33 @@ import pandas as pd
 _MISSING = object()
 
 
-def _capture_value(value: Any) -> tuple[str, Any, Any]:
-    """Return ``(kind, original, saved)`` for one attribute value."""
+def _capture_value(
+    value: Any,
+    _active: frozenset[int] = frozenset(),
+) -> tuple[str, Any, Any]:
+    """Return ``(kind, original, saved)`` for one attribute value.
+
+    ``_active`` holds the ids of the dictionaries being captured on the
+    current recursion path; a dictionary met again inside itself is kept by
+    reference so cyclic mappings terminate.
+    """
 
     if isinstance(value, np.ndarray):
         return ("ndarray", value, value.copy())
     if isinstance(value, pd.DataFrame):
         return ("frame", None, value.copy())
-    if type(value) is dict:
-        return ("dict", value, dict(value))
-    if type(value) is list:
+    if isinstance(value, dict):
+        if id(value) in _active:
+            return ("ref", value, None)
+        nested = _active | {id(value)}
+        return (
+            "dict",
+            value,
+            {key: _capture_value(item, nested) for key, item in value.items()},
+        )
+    if isinstance(value, list):
         return ("list", value, list(value))
-    if type(value) is set:
+    if isinstance(value, set):
         return ("set", value, set(value))
     return ("ref", value, None)
 
@@ -77,8 +97,13 @@ def _restored_value(kind: str, original: Any, saved: Any) -> Any:
     if kind == "frame":
         return saved.copy()
     if kind == "dict":
+        # Restore nested containers in place first, then refill the mapping
+        # with the captured keys and (restored) values.
+        restored = {
+            key: _restored_value(*captured) for key, captured in saved.items()
+        }
         original.clear()
-        original.update(saved)
+        original.update(restored)
         return original
     if kind == "list":
         original[:] = saved

@@ -699,6 +699,23 @@ def test_runtime_without_probe_or_checkpoint_is_rejected() -> None:
         _run(Opaque(linear_law(1.0e4, 10.0)), time_step=1.0e-3, end_time=1.0e-3)
 
 
+def test_multi_pad_child_without_checkpoint_is_rejected_at_reset() -> None:
+    from ALB.physics.bearing.solver import MultiPad
+
+    class Opaque(AnalyticBearing):
+        probe_force = None  # type: ignore[assignment]
+
+    rotor = RossRotor(SinglePlant(), speed=1.0, dt=1.0e-3)
+    runtime = _RotorBearingStepRuntime(
+        rotor,
+        TimeIterDt(1.0e-3, 1),
+        CoupledBearingBinding(MultiPad(Opaque(linear_law(1.0e4, 10.0))), node_link=0),
+        integrator=PC,
+    )
+    with pytest.raises(TypeError, match="staggered"):
+        runtime._reset_for_owner()
+
+
 def test_integrator_arguments_are_validated() -> None:
     rotor = RossRotor(SinglePlant(), speed=1.0, dt=1.0e-3)
     binding = CoupledBearingBinding(_hardening(), node_link=0)
