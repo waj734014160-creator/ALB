@@ -543,6 +543,29 @@ class SimulationConfig:
     configuration tree must agree with that bearing-local value. Topology and
     load declarations are frozen; the supplied rotor, adapters, and optional
     runtime dependencies remain owner-managed runtime objects.
+
+    Controller sampling (0.4.6, ADR-0009): an active bearing may declare
+    ``control.control_period`` ``Ts``. Its controller then runs every
+    ``m = Ts / time_step`` steps and holds its command, while rotor, mounts,
+    valves, and thermal models keep the shared ``time_step``. When
+    ``time_step`` does not divide ``Ts`` (relative tolerance ``1e-9``), ``Ts``
+    is kept and the step becomes ``Ts / ceil(Ts / time_step)`` (``Ts`` when
+    ``time_step > Ts``); ``steps`` is recomputed from the requested end time
+    and rounded up to whole control periods, every bearing configuration is
+    retimed, the same rotor object is retimed in place, and
+    ``ALB.TimeStepAdjustedWarning`` is emitted. After validation
+    ``time_step``, ``steps``, ``rotor`` and ``mounts`` hold the effective
+    values; ``time_step_adjustment`` records the request and
+    ``control_periods`` lists each declared period with its ``m``.
+
+    ``integrator`` selects ``"staggered"`` (default, bearing force lagged by
+    one step, unchanged 0.4.5 path) or ``"ros2"`` (two-stage Rosenbrock-W
+    with synchronous bearing forces, configured by ``ros2``, an
+    ``ALB.dynamics.Ros2Options``). ROS2 requires a continuous ``RossRotor``
+    and bearings whose force is side-effect free; thermal bearings are
+    rejected. ``initial_rotor_state`` optionally replaces the zero initial
+    rotor state with a complete ROSS state vector, for example a static
+    equilibrium.
     """
 
     rotor: RotorProtocol
