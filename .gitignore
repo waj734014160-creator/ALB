@@ -32,6 +32,10 @@ paper_config/email.json5
 
 # Local Codex state and manual LQG experiments.
 /.codex/
+/.codex_tmp/
+/.tmp/
+/.claude/worktrees/
+/tools/dev_docs_portal/
 /tools/manual/control/LQG/albnn_rotor0_lqg_small_signal.py
 /tools/manual/control/LQG/output/
 

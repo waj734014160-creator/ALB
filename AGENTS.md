@@ -1,78 +1,56 @@
 # ALB_MAIN 代理指令
 
-本文件保存 coding agent 在本仓库工作时需要遵守的稳定项目级指令。
+## 环境与路径
 
+以当前活动 Git worktree 的仓库根目录为工作目标。
 
-## 环境
+| 项目 | 路径 |
+| --- | --- |
+| Python | `E:/Anaconda2023/envs/ALB/python.exe` |
+| PowerShell 7 | `C:/Program Files/PowerShell/7/pwsh.exe` |
+| 包代码 | `ALB/` |
+| 测试 | `tests/` |
+| 工具 | `tools/` |
+| 行为参考 | `refs/` |
+| 项目记录 | `docs/current_state.md` |
+| 包概览与架构 | `docs/alb_package_overview.md`、`docs/interface_architecture.md` |
+| API 说明与生成入口 | `docs/api/README.md` |
+| 文件与运行路径说明 | `docs/file_classification.md`、`docs/run_index.md` |
+| 文档路径索引 | `docs/daily_maintenance/daily_doc_update_index.md` |
+| 远程操作说明 | `docs/remote_workstation_connection.md` |
+| 训练项目运行记录 | `../SURROGATE_TRAIN/docs/current_runtime_status.md` |
+| ALBNN 训练说明与历史记录 | `../SURROGATE_TRAIN/docs/albnn_training_brief.md`、`../SURROGATE_TRAIN/docs/albnn_training_log.md` |
+| ALBNN 数据任务入口 | `../SURROGATE_TRAIN/task/task_albnn_data.py` |
+| 论文工作区与约束 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/`、该目录的 `AGENTS.md` |
+| 论文任务记录 | `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md` |
 
-- Python：`E:/Anaconda2023/envs/ALB/python.exe`
-- Shell：PowerShell 7（`pwsh`，本机路径通常为 `C:/Program Files/PowerShell/7/pwsh.exe`）。
-- PowerShell 命令默认面向 PowerShell 7；跨旧 runner、远程 `cmd` 包装或 Task Scheduler 命令时仍优先使用 `;` 保持兼容，除非确认调用环境支持 `&&`。
-- 仓库根目录：当前目录，即 `G:/ALB_PROJECTS` 下的 `ALB_MAIN`。
+## 任务与文件约束
 
-## 代码约定
+- 咨询、解释、扫描、审查和方案请求默认只读。动作型请求授权完成指定范围内的必要修改。
+- 已有明确授权不重复确认。未涵盖的破坏性删除、重要资产覆盖、外部发布或权限变化，先说明范围并确认。
+- 仿真参数的含义、单位或取值不明确时，直接询问用户，确认后再执行依赖这些参数的计算；已有明确约定的参数不重复确认。
+- 保留与任务无关的用户改动，不使用 `git reset --hard` 处理混合工作树。
+- 在文件所属项目落地修改。兄弟项目 import 本包，不复制 `ALB/` 实现；论文计算脚本、日志、绘图数据和图件放在论文工作区。
+- 新建或迁移文件沿用目标任务的命名与目录结构。小型任务优先复用已有脚本、CLI、配置和命令。
+- 原始 CSV、JSON、日志、模型、pickle、图件与冻结参考不因文档精简而删除或归档；资产操作按明确授权执行。
+- 递归清理前解析并核验绝对目标路径处于指定范围。
 
-- 不要修改源码，除非满足以下任一条件：用户明确要求代码变更，或用户请求不修改代码就无法完成。
-- 对小型或轻量请求，优先复用现有脚本、CLI、配置和已记录命令，再考虑新增代码。
-- 所有代码注释必须使用英文。
-- 新脚本至少要包含简短英文注释，说明主流程、假设和不明显步骤。
-- package/module 代码必须为 public API、重要数据契约和非平凡逻辑提供完整、可维护的 docstring 和注释。
+## 代码、编码与验证约束
 
+- Windows、远程工作站或 Task Scheduler 流程需要 PowerShell 时使用 PowerShell 7 (`pwsh`)。
+- 有依赖关系的命令仅在前一步成功后继续；兼容旧 shell 时检查退出码。`;` 只表示顺序执行，不作为成功条件。
+- 源码注释、docstring、实现说明、嵌入源码的 CLI help 和生成脚本注释使用英文。注释说明主流程、假设和非显然步骤。
+- public API、重要数据契约和非平凡逻辑保留可维护的 docstring 与注释。
+- 文本按 UTF-8 读取，写入 UTF-8 无 BOM。明确的 legacy 文件需要 GBK/CP936 fallback 时报告使用情况，修改前明确转换编码，不静默写回旧编码。
+- 机器消费的配置、命令和协议文本优先使用 ASCII 标点；人类说明默认使用中文，正常中文正文可使用中文标点。
+- 验证范围随实际改动确定。数值或行为修改遵循已确认的参考与验收要求；文档检查不代替数值验证。
+- 历史测试结果标明适用版本或提交，机器报告记录真实执行结果。
+- 公开接口变化时修正实际受影响的说明和引用。
 
-## 编码策略
+## ALBNN 与远程操作约束
 
-- 本项目所有文本文件默认使用 UTF-8 读取和写入，包括中文文档、Markdown、Python、TOML、JSON/JSON5、YAML、PowerShell 和 shell 脚本。
-- 读取旧文件时，如果 UTF-8 解码失败，可以对明确的 legacy 文件临时 fallback 到 GBK/CP936，但必须在报告中说明；不要静默按 GBK/CP936 处理。
-- fallback 读取的文件不要直接写回原编码；若需要修改，应先明确转换为 UTF-8，再按 UTF-8 写入。
-- agent 面向机器或长期规则的输出尽量使用 ASCII 标点，避免智能引号、特殊破折号等易被 Windows 编码链路污染的字符。
-
-
-## 文档语言
-
-- 面向人类用户阅读的规定类、概览类、维护类、审计类和操作手册类文档应使用中文。包括但不限于 `docs/alb_package_overview.md`、`docs/daily_summary_log.md`、`docs/file_classification.md`、`docs/project_overview.md`、`docs/remote_workstation_connection.md`、`docs/run_index.md`，以及兄弟项目中的同类维护文档。
-- `docs/current_state.md` 是 ALB_MAIN 当前状况的首要入口，也必须使用中文维护。
-- 源码中的代码注释、docstring、实现说明、嵌入源码的 CLI help 文本和生成脚本注释必须保持英文，以兼容编码和工具链。
-- 当维护类人类可读文档已经部分使用英文时，后续编辑应把被触及段落转向中文，而不是继续增加英文规则正文。
-
-## ALB 包定位
-
-修改 package module 或 public interface 前，先阅读 `docs/alb_package_overview.md`。该文档总结 `ALB/` 模块图、`ALB/__init__.py` 的受限顶层契约，以及 systems、config、physics、control、dynamics、surrogate、infrastructure 和 workflows 等显式 namespace 的公共接口组。
-
-新增 public API 时，同时更新模块 docstring/comment 和包概览。可复用数值代码应保留在 `ALB_MAIN/ALB`；`SURROGATE_TRAIN` 等兄弟项目应 import 这里的 ALB 包代码，不要复制。
-
-## 文档角色边界
-
-维护项目文档前，先阅读 `docs/daily_maintenance/daily_doc_update_index.md`。它是集中式文档角色索引。然后阅读目标文档本地的 `文档角色` 区块，只编辑该角色允许的内容。
-
-如果集中索引和目标文档冲突，停止并报告冲突。ALB_MAIN 当前开发阶段、已确认基线、验证状态、风险和近期下一步属于 `docs/current_state.md`；SURROGATE_TRAIN 实时运行状态属于 `../SURROGATE_TRAIN/docs/current_runtime_status.md`；每日耐久 ALBNN 历史属于 `../SURROGATE_TRAIN/docs/albnn_training_log.md`；稳定远程机制属于 `docs/remote_workstation_connection.md`。
-
-`docs/current_state.md` 是可随当前事实重写的项目状态入口，不是完整历史日志。只在 ALB_MAIN 的开发阶段、工作重点、验证结论、风险或下一步发生实质变化时更新；旧状态应压缩为结论，不持续堆叠时间线。不得把兄弟项目的训练 tick、远程 PID、loss、ETA 或论文任务进度写入其中。
-
-## Run 与当前状态定位
-
-使用 `docs/run_index.md` 获取工作区级 run 编号和路径规则。新对话涉及 ALB_MAIN 当前项目状态、正在进行的包重构或后续迁移时，先读取 `docs/current_state.md`，再按其中的证据指针检查实际 Git、测试和代码状态。广泛搜索其它项目文件前，先使用拥有项目的 current-status 文档作为 agent 面向活跃工作的首要定位入口。对 SURROGATE_TRAIN 来说，该文件是 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。对论文任务和 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/task` 下的活跃计算来说，该文件是 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/docs/current_task_status.md`。
-
-活跃 run 区块应保持足够结构化，能够定位 config、outputs、相关日志指针、远程任务名、最新进度、当前问题和下一步。日志不通过单一全局布局统一管理；详细原始证据保留在 artifacts 中，已完成 run 的耐久历史属于对应的时间顺序 log。
-
-## 文件、路径与命名约束
-
-- `AGENTS.md` 保存稳定代理执行规则；`docs/current_state.md` 保存 ALB_MAIN 当前项目状态；`docs/file_classification.md` 保存文件归属和清理策略；`docs/run_index.md` 保存 run 编号、路径族和 current-status 归属。涉及文件管理时先查这些文档，不要只凭当前打开目录判断。
-- 新建、迁移或复制文件前，先检查目标任务已有命名方式和目录结构。除非用户明确要求重构目录，不要把数据、脚本、日志、note、图件平铺混放在同一目录。
-- `ALB_MAIN` 仓库只放稳定包代码、项目文档、回归参考、测试和工程验证资产。论文任务的计算脚本、任务日志和绘图数据默认不放入 `ALB_MAIN`。
-- `F:/BaiduSyncdisk/博士论文/PAPER_WORK` 的论文任务脚本、远程配置、图目录、数据目录和自查表规则由 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` 维护；进入该工作区前先读该文件。
-- 清理或压缩文档时，只压缩叙事和过时状态；`.csv`、`.json`、`.log`、`.pth`、`.pkl` 等原始证据不因文档整理而删除，删除或归档必须另行确认。
-
-## ALBNN / 热采样
-
-热 ALBNN 采样和远程训练细节位于 `../SURROGATE_TRAIN/docs/albnn_training_brief.md`；详细日期历史位于 `../SURROGATE_TRAIN/docs/albnn_training_log.md`。当前模型使用 12 个 base inputs，输出 `fx, fy`；做训练相关判断前，重新阅读 brief 和 live 的 `SURROGATE_TRAIN/task/task_albnn_data.py`。
-
-## 远程计算机连接
-
-远程工作站可通过 LAN 或 ZeroTier 上的 SSH 访问。详细连接检查、路径和长任务启动说明维护在 `docs/remote_workstation_connection.md`。
-
-论文远程计算脚本和配置的当前入口位于 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote`；通用 ALB 远程实现维护在 `ALB.infrastructure.remote`，ALBNN 专用 queue/start/status 实现维护在 `ALB.surrogate.training.remote`，兼容 wrapper 规则见 `docs/remote_workstation_connection.md`。
-
-启动远程 ALBNN training 时，默认启动 monitoring。优先使用 JSON queue wrapper，因为它会监督活跃任务，并把 status/log tails 同步到配置的输出路径；如果直接用 start wrapper 启动任务，应立即启动对应 queue monitor。
-两台远程计算工作站默认使用 PowerShell 7，且 `C:/Program Files/PowerShell/7` 已加入 Machine/User PATH。SSH encoded command 和交互短命令可调用 `pwsh`；Task Scheduler runner 默认优先使用 `C:/Program Files/PowerShell/7/pwsh.exe` 绝对路径，以避免服务环境或 WindowsApps alias 差异。
-
-不要把密码、私钥、恢复码或 API key 写入本文件。它们应存放在 OS credential manager、SSH agent 或其他本地 secret store 中。
+- ALBNN 输入输出形状以当前数据、配置和实现为准。
+- 远程端点、任务名和 wrapper 路径以实际配置为准。
+- 远程 ALBNN training 默认同时启动 monitoring，优先复用现有受监督 queue 流程。
+- 活跃 run 保留可定位的配置、输出、日志和远程任务名。
+- 密码、私钥、恢复码和 API key 不写入仓库、日志、命令参数或回复；使用 OS credential manager、SSH agent 或本地 secret store。

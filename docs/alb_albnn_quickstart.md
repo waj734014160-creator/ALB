@@ -1,13 +1,6 @@
 # ALB 0.4 与 ALBNN 快速使用手册
 
-## 文档角色
-
-- 角色：稳定用户操作手册。
-- 目的：说明 0.4 轴承、分析、仿真和 ALBNN package 的推荐用法。
-- 允许更新：稳定 API、最小示例、输入输出契约和排错提示。
-- 禁止更新：训练实时进度、PID、单次日志和临时实验结论。
-- 更新时机：构建 API、配置或推荐流程变化时。
-- 事实来源：`ALB/__init__.py`、`ALB/api/`、`ALB/surrogate/package.py`。
+参考来源：`ALB/__init__.py`、`ALB/api/`、`ALB/surrogate/package.py`。
 
 ## 安装检查
 
@@ -221,6 +214,12 @@ metadata.json
 
 运行时严格校验 schema、artifact role、metadata 和 SHA-256，并以
 `weights_only=True` 加载权重。0.3/v0.2 package 和 pickle scaler 不受支持。
+
+只在 `ex >= 0, ey >= 0` 象限训练的 package（如 M35、M42）需在
+`model_package` 中写 `symmetry: "c4"`，由 `ALBNNC4Canonical` 把偏心、速度和
+阀芯向量旋入训练象限并旋回力；`"none"` 保留原网络。省略时按 metadata
+`inference_symmetry` 解析，未声明且输入 scaler 只覆盖第一象限的 package 会以
+`BuildError` 拒绝构建。
 
 ## 常见错误
 

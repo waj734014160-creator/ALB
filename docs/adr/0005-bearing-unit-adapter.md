@@ -1,12 +1,8 @@
 # ADR-0005：Bearing 单位适配器与尺度元数据
 
-## 文档角色
-
-- 角色：dimensional/nondimensional bearing 接入和结果尺度的架构决策。
 - 状态：Accepted，第四轮审查批准并补充 P2 metadata 字段语义。
-- 允许更新：尺度值对象、转换方向、阀芯规则、残差和元数据要求。
-- 禁止更新：根据数值大小猜测单位、只乘单一比例或在没有参考时定义新的物理尺度。
-- 相关文档：`docs/next_interface_development_plan.md`、`docs/interface_architecture.md`。
+单位换算使用显式单位、完整尺度和已有物理参考，不根据数值大小猜测单位。
+相关文件：`docs/migrations/0.4.0.md`、`docs/interface_architecture.md`。
 
 ## 背景
 

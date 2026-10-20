@@ -18,6 +18,7 @@ ALBNN 代理轴承通过与物理轴承一致的 `BearingConfig -> Bearing -> Be
   model_package: {
     path: "models/current_package",
     use_augment: true,
+    symmetry: "c4",
   },
   runtime: {
     spool_mode: "fixed",
@@ -28,6 +29,10 @@ ALBNN 代理轴承通过与物理轴承一致的 `BearingConfig -> Bearing -> Be
 ```
 
 `model_package.path` 必须是相对于配置文档目录的安全路径，不允许绝对路径或 `..` 逃逸。
+
+## 推理对称性
+
+只在 `ex >= 0, ey >= 0` 象限训练的四瓦模型包（如 M35、M42）需要 `symmetry: "c4"`：偏心、速度和阀芯向量一起旋入训练象限，推理后再把力旋回。`symmetry: "none"` 使用原网络。省略该字段时按模型包 metadata 的 `inference_symmetry` 声明执行；未声明但输入 scaler 显示只在第一象限拟合的模型包会在构建时报错，要求显式选择。`use_augment` 只控制特征增强，与对称性无关。
 
 ## spool 模式
 

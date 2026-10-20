@@ -1,22 +1,15 @@
 # ALB 架构决策记录索引
 
-## 文档角色
-
-- 角色：ALB_MAIN 架构决策及候选决策索引。
-- 目的：记录会约束多个实现阶段、公共接口或验收语义的 Accepted/Proposed 决策，避免在生产代码迁移期间重复解释或产生相互冲突的局部方案。
-- 允许更新：ADR 状态、决策、理由、影响范围、替代方案和后续修订关系。
-- 禁止更新：把未实施设计写成当前 API、单次测试日志、外部项目实时状态、机器验收正文和源码实现细节流水。
-- 更新时机：新增跨模块架构决定、原决定被替代或实现事实要求修订决定时。
-- 事实来源 / 相关文档：
+相关文件：
   `docs/daily_maintenance/daily_doc_update_index.md`、
   `docs/current_state.md`、
-  `docs/next_interface_development_plan.md`、
+  `docs/migrations/0.4.0.md`、
   `docs/interface_architecture.md`。
 
 ## 状态定义
 
 - `Accepted`：已经作为后续实现约束采用，但不表示相关源码已经实现。
-- `Proposed`：方向和候选契约已经形成，但仍有待独立复审；不得据此开始相关生产实现。
+- `Proposed`：方向和候选契约已形成，尚未作为正式决策采用；是否实施由本次用户授权和实际任务范围确定。
 - `Superseded`：已被后续 ADR 明确替代；旧文档保留用于追溯。
 - `Deprecated`：决定仍能解释现有兼容行为，但不再用于新增实现。
 

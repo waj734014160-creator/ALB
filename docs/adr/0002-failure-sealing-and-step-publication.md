@@ -1,12 +1,8 @@
 # ADR-0002：失败封锁与物理步骤发布
 
-## 文档角色
-
-- 角色：mutable 数值组件失败语义和物理步骤发布顺序的架构决策。
 - 状态：Accepted，第三轮审查批准。
-- 允许更新：执行阶段、失败状态、正常结果发布、ledger 提交和重试规则。
-- 禁止更新：宣称 mutable film、thermal 或 rotor 已具有未实现的状态回滚能力。
-- 相关文档：`docs/next_interface_development_plan.md`、`docs/adr/0003-result-recorder-and-idempotency.md`。
+状态回滚以实际实现为准；未实现的 mutable film、thermal 或 rotor 回滚能力不作为已有能力。
+相关文件：`docs/migrations/0.4.0.md`、`docs/adr/0003-result-recorder-and-idempotency.md`。
 
 ## 背景
 

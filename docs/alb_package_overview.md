@@ -1,13 +1,6 @@
 # ALB 0.4 包概览
 
-## 文档角色
-
-- 角色：稳定包概览。
-- 目的：说明 `ALB` 的公共 API、模块归属和安装制品边界。
-- 允许更新：公共 API、模块归属和包边界。
-- 禁止更新：实验运行状态、训练进度和单次验收日志。
-- 更新时机：公共 API、模块归属或 wheel 边界变化时。
-- 事实来源：`ALB/__init__.py`、`ALB/api/`、`pyproject.toml`。
+参考来源：`ALB/__init__.py`、`ALB/api/`、`pyproject.toml`。
 
 ## 包定位
 
@@ -119,8 +112,10 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 
 0.4.1 的静平衡保留专用阻尼 Newton、冻结 Jacobian 和固定刚度回退算法；
 动态系数由同一旋转椭圆自动生成正反涡动并使用复数识别；谐波线性化使用压力
-方程导数与节流耦合，不再以轨迹最小二乘拟合代替。谐波接口当前只支持已有
-数值参考的量纲液膜和三节点 CSOrifice 主动润滑轴承。可倾瓦轴承不属于
+方程导数与节流耦合，不再以轨迹最小二乘拟合代替。谐波接口支持已有
+数值参考的量纲液膜和三节点 CSOrifice 主动润滑轴承。2026-10-08 工作树新增
+四瓦主动轴承的热耦合解析工具，按配置计入热容量并返回复阀芯传递矩阵；
+网格、边界及基态要求见[分析工作流](site/guides/analysis.md)。可倾瓦轴承不属于
 0.4.1 安装包能力。
 
 0.4.2 不改变上述算法。动态系数入口只接受可表示目标频率的均匀 FFT 网格和
@@ -149,6 +144,30 @@ flush/fsync 和原子替换发布快照及 manifest。每个
 `weights_only=True` 加载，输入/输出 scaler 为 NPZ，manifest、metadata 和
 SHA-256 摘要必须完整匹配。旧 package 与 pickle scaler 只能在升级前由
 `tools/migrations/` 中不安装的工具显式转换。
+
+只在 `ex, ey >= 0` 象限训练的 package 通过 `model_package.symmetry: "c4"`
+或 metadata `inference_symmetry` 声明，由 `ALBNNC4Canonical` 覆盖全平面；
+未声明但输入 scaler 只覆盖第一象限的 package 拒绝构建，规则见
+[轴承配置字段参考](api/bearing_config_reference.md)。
+
+`ALB.surrogate.ThermalMemoryMLP` 提供独立的热记忆预测接口：冻结稳态
+ALBNN，按实际秒数更新四组固定旋转坐标下的共享记忆，并叠加在平衡记忆
+状态下严格为零的力修正。可选 `static_correction=True` 另加当前工况修正，
+用于修正稳态基线偏差；默认关闭，开启后不再要求平衡力严格等于原基线。
+`initialize()`、`reset()`、`predict_step()` 和
+`predict_sequence()` 显式接收或返回状态，不隐式提交调用者状态。
+`load_thermal_memory_package()` 与 `save_thermal_memory_package()` 使用
+`albnn_thermal_memory_mlp` 模型类型；该类型尚未接入 `Bearing` 或完整转子
+仿真 runtime。接口与单位约束见[热记忆代理说明](thermal_memory_surrogate.md)。
+训练组件支持同输入、同初场的有/无热惯性配对标签，分别监督当前工况修正与
+记忆力差；配对监督只用于训练组，验证与测试仍按物理组隔离。
+
+`ALB.surrogate.thermal_residual_lstm.ThermalResidualLSTM` 提供另一种独立实验接口：
+冻结 M35，由 LSTM 状态与当前工况共同驱动一个总残差读出层，不强制拆分稳态
+误差与热记忆力。支持时间间隔输入，以及额外 cell 衰减的 Time-aware LSTM 变体。
+其显式状态为 `[batch,4,2,hidden_size]`，时间单位为秒；独立保存/加载函数使用
+`albnn_unified_residual_lstm` 模型类型。该模型未接入稳态代理加载器或 `Bearing`。
+具体初始化、消融含义与步长限制见[热记忆代理说明](thermal_memory_surrogate.md)。
 
 ## 安装与验证
 

@@ -26,10 +26,6 @@ DEFAULT_JSON = (
     REPOSITORY_ROOT
     / "docs/migrations/0.2.0_surrogate_train_post_migration_audit.json"
 )
-DEFAULT_MARKDOWN = (
-    REPOSITORY_ROOT
-    / "docs/migrations/0.2.0_surrogate_train_post_migration_audit.md"
-)
 
 FLAT_MODULES = frozenset(
     {
@@ -369,11 +365,10 @@ def _markdown(audit: dict[str, Any]) -> str:
         [
             "# SURROGATE_TRAIN 的 ALB 0.2 迁移后审计",
             "",
-            "## 文档角色",
+            "## 审计范围",
             "",
-            "本文是 `0.2.0_external_consumer_audit.*` 的迁移后证据，不覆盖只读 v1 快照。",
-            "它记录 SURROGATE_TRAIN 独立分支中的消费者迁移、package 校验和剩余边界；",
-            "不保存实时训练 PID、loss、ETA，也不修改 PAPER_WORK。",
+            "本文记录 SURROGATE_TRAIN 独立分支中的消费者迁移、package 校验和剩余边界。",
+            "原始只读 v1 快照见 `0.2.0_external_consumer_audit.json`。",
             "",
             "## 结论",
             "",
@@ -403,20 +398,25 @@ def _markdown(audit: dict[str, Any]) -> str:
 
 
 def main() -> None:
-    """Write JSON and Markdown post-migration evidence to explicit paths."""
+    """Write JSON evidence and an explicitly requested Markdown export."""
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--json-output", type=Path, default=DEFAULT_JSON)
-    parser.add_argument("--markdown-output", type=Path, default=DEFAULT_MARKDOWN)
+    parser.add_argument(
+        "--markdown-output",
+        type=Path,
+        help="Optional Markdown export path; omitted by default.",
+    )
     args = parser.parse_args()
 
     audit = build_audit()
     args.json_output.write_text(
         json.dumps(audit, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
-    args.markdown_output.write_text(_markdown(audit), encoding="utf-8")
     print(args.json_output)
-    print(args.markdown_output)
+    if args.markdown_output is not None:
+        args.markdown_output.write_text(_markdown(audit), encoding="utf-8")
+        print(args.markdown_output)
 
 
 if __name__ == "__main__":

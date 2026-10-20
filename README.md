@@ -51,7 +51,9 @@ API 参考由 `ALB.__all__`、真实运行时签名和中文语义元数据生�
 E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py
 ```
 
-## 首读文档
+验证范围按实际改动选择；完整文档生成与检查入口见 [API 文档维护说明](docs/api/README.md)。
+
+## 按任务阅读的文档
 
 - `docs/current_state.md`：当前开发阶段、验证结论、风险和下一步。
 - `docs/project_overview.md`：项目边界、目录职责和稳定工作流入口。
@@ -59,7 +61,7 @@ E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py
 - `docs/adr/README.md`：公共接口和数值算法决策。
 - `docs/file_classification.md`：文件归属、生成物和清理约束。
 - `docs/remote_workstation_connection.md`：远程工作站稳定机制。
-- `docs/migrations/0.2.0.md`、`0.4.0.md` 至 `0.4.3.md`：历史和当前迁移说明。
+- 迁移说明：[0.2.0](docs/migrations/0.2.0.md)、[0.4.0](docs/migrations/0.4.0.md)、[0.4.1](docs/migrations/0.4.1.md)、[0.4.2](docs/migrations/0.4.2.md)、[0.4.3](docs/migrations/0.4.3.md)、[0.4.4](docs/migrations/0.4.4.md)、[0.4.5](docs/migrations/0.4.5.md)。
 
-`SURROGATE_TRAIN` 与 `PAPER_WORK` 是独立项目。本仓库不保存它们的实时训练或
-论文任务状态，也不应复制它们的任务脚本和运行产物。
+`SURROGATE_TRAIN` 与 `PAPER_WORK` 是独立项目。训练和论文任务记录可分别从
+各工作区的 `docs/` 查找；任务脚本与运行产物保留在所属项目。

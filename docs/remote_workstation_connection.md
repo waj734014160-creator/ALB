@@ -1,18 +1,11 @@
 # 远程工作站连接与操作手册
 
-## 文档角色
-
-- 角色：稳定远程操作手册。
-- 目的：保存可复用的远程连接、Task Scheduler、SSH、runner 和 monitor 机制。
-- 允许更新：连接事实、稳定命令模式、wrapper 归属、凭据处理规则和可复用远程操作经验。
-- 禁止更新：当前任务进度、PID、最新 loss、活跃 ETA 和单次 run 指标。
-- 更新节奏：远程机制、路径、wrapper 或凭据处理规则变化时更新。
-- 事实来源 / 相关文档：
+相关文件：
   `docs/daily_maintenance/daily_doc_update_index.md`,
   `../SURROGATE_TRAIN/docs/current_runtime_status.md`,
   `../SURROGATE_TRAIN/docs/albnn_training_brief.md`。
 
-本文只保存稳定、非密钥的连接事实和经过验证的远程工作流。实时任务名、PID、ETA、当前模型名和日志尾部不写入本文，应放在 `../SURROGATE_TRAIN/docs/current_runtime_status.md`。
+本文介绍远程连接和可复用工作流。当前任务名、PID、进度和日志路径可从 `../SURROGATE_TRAIN/docs/current_runtime_status.md` 查找。
 
 ## 远程端点
 
@@ -105,7 +98,7 @@ E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_query_a
 E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_monitor_job.py --task-name <task> --process-match <needle>
 ```
 
-通用稳定实现维护在 `ALB.infrastructure.remote`：`job`、`monitor` 和 `transport`；ALBNN 专用 `queue`、`start` 和 `status` 维护在 `ALB.surrogate.training.remote`。`SURROGATE_TRAIN/run/remote` 下的脚本是外部项目兼容入口，迁移前只按 `docs/migrations/0.2.0_external_consumer_audit.md` 做只读审计。
+通用稳定实现维护在 `ALB.infrastructure.remote`：`job`、`monitor` 和 `transport`；ALBNN 专用 `queue`、`start` 和 `status` 维护在 `ALB.surrogate.training.remote`。`SURROGATE_TRAIN/run/remote` 下的脚本归训练项目所有，默认只读检查；用户明确授权修改 wrapper 时，按训练项目规则在其目录内实施。`docs/migrations/0.2.0_external_consumer_audit.json` 只记录历史迁移快照，不限制后续已授权工作。
 
 论文远程计算的本地入口已迁移到外部论文工作区：
 
@@ -114,7 +107,7 @@ E:/Anaconda2023/envs/ALB/python.exe F:/BaiduSyncdisk/博士论文/PAPER_WORK/run
 E:/Anaconda2023/envs/ALB/python.exe F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote/remote_job.py launch --config F:/BaiduSyncdisk/博士论文/PAPER_WORK/run/remote/configs/<paper-job>.json
 ```
 
-论文任务文件归属规则由 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` 维护；通用远程实现由 `ALB.infrastructure.remote` 提供，ALBNN 队列实现由 `ALB.surrogate.training.remote` 提供。旧 `SURROGATE_TRAIN/run/remote` paper 副本仅作为外部历史兼容入口，不在 ALB_MAIN 重构中修改。
+论文任务文件归属规则由 `F:/BaiduSyncdisk/博士论文/PAPER_WORK/AGENTS.md` 维护；通用远程实现由 `ALB.infrastructure.remote` 提供，ALBNN 队列实现由 `ALB.surrogate.training.remote` 提供。论文 wrapper 以 PAPER_WORK 的当前入口为准；旧 paper 副本不自动纳入 ALB_MAIN 修改范围，跨项目变更按用户授权和所属项目规则执行。
 
 新建非训练远程任务时，优先使用配置驱动的通用 wrapper：
 
@@ -170,7 +163,7 @@ E:/Anaconda2023/envs/ALB/python.exe ../SURROGATE_TRAIN/run/remote/remote_monitor
 活跃远程 ALBNN 工作流指针：
 
 - 实时状态缓冲区：`../SURROGATE_TRAIN/docs/current_runtime_status.md`
-- ALBNN 首读稳定说明：`../SURROGATE_TRAIN/docs/albnn_training_brief.md`
+- ALBNN 训练说明：`../SURROGATE_TRAIN/docs/albnn_training_brief.md`
 
 不要在本文保存活跃任务名、PID、ETA、queue root 或当前模型名。实时状态写入 `current_runtime_status.md`，日期历史写入 `albnn_training_log.md`。
 

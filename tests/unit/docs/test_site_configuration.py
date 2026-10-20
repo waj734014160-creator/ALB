@@ -47,7 +47,6 @@ def test_public_site_excludes_operational_and_evidence_documents() -> None:
 
     assert {
         "current_state.md",
-        "daily_summary_log.md",
         "daily_maintenance/",
         "remote_workstation_connection.md",
         "run_index.md",

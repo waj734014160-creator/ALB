@@ -1,12 +1,8 @@
 # ADR-0003：结果 recorder、幂等性与失败恢复
 
-## 文档角色
-
-- 角色：显式结果历史记录协议的架构决策。
 - 状态：Accepted，第四轮审查批准并补充 P2 精确化约束。
-- 允许更新：run/session、记录键、receipt、顺序、重复调用、pending record 和恢复语义。
-- 禁止更新：把 recorder 当作物理时步提交者、磁盘 writer 或隐式组件历史。
-- 相关文档：`docs/next_interface_development_plan.md`、`docs/adr/0002-failure-sealing-and-step-publication.md`。
+`recorder` 负责结果记录，不承担物理时步提交、磁盘 writer 或隐式组件历史。
+相关文件：`docs/migrations/0.4.0.md`、`docs/adr/0002-failure-sealing-and-step-publication.md`。
 
 ## 背景
 

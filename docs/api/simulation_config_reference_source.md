@@ -1,13 +1,6 @@
 # ALB 仿真配置字段参考
 
-## 文档角色
-
-- 角色：面向普通用户的 rotor-bearing simulation JSON5 结构、字段、资源边界和程序化入口说明。
-- 目的：让用户明确区分文件配置能表达的内容、`SimulationConfig` 的高级运行时对象，以及每个输入和输出的单位与生命周期。
-- 允许更新：公开 simulation 文档结构、资源路径规则、载荷、历史策略和结果合同。
-- 禁止更新：内部耦合 helper、远程运行状态、本机绝对路径和未进入稳定入口的 ROSS 细节。
-- 更新时机：`ALB/api/simulation.py` 或 `ALB/api/_config_fields.py` 的公开合同变化时。
-- 事实来源：`ALB/api/simulation.py`、`ALB/api/_config_fields.py` 和 `ALB.dynamics` 显式导出的高级类型。
+参考来源：`ALB/api/simulation.py`、`ALB/api/_config_fields.py` 和 `ALB.dynamics` 显式导出的高级类型。
 
 ## 两种构造方式
 

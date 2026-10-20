@@ -1,26 +1,19 @@
 # ALB_PROJECTS 运行索引
 
-## 文档角色
-
-- 角色：ALB_PROJECTS 全局运行编号与路径规则索引。
-- 目的：定义项目级 run number、run ID 格式、主要路径族，以及当前状态文档的归属。
-- 允许更新：运行编号规则、项目前缀映射、run ID 格式、规范路径指针、归档指针规则，以及帮助定位当前状态文档的简短说明。
-- 禁止更新：原始日志、详细进度尾部、完整指标报告、清理操作、破坏性归档决策。
-- 更新时机：运行编号规则、项目前缀、当前状态归属、路径族或归档指针规则发生变化时。
-- 事实来源 / 相关文档：
+相关文件：
   `docs/daily_maintenance/daily_doc_update_index.md`,
   `docs/current_state.md`,
   `docs/file_classification.md`,
   `../SURROGATE_TRAIN/docs/file_classification.md`,
   `../SURROGATE_TRAIN/docs/current_runtime_status.md`。
 
-本文档是 `G:/ALB_PROJECTS` 工作区的全局运行规则索引。它不是实时监控日志，也不应复制原始证据。当前活跃运行的状态、路径、进度和下一步操作归属于对应项目的结构化 current-status 文档；对于 `SURROGATE_TRAIN`，当前入口是：
+本文列出 `G:/ALB_PROJECTS` 工作区的运行编号和路径。`SURROGATE_TRAIN` 的任务状态、输出路径和进度记录可从以下文件查找：
 
 ```text
 ../SURROGATE_TRAIN/docs/current_runtime_status.md
 ```
 
-`ALB_MAIN/docs/current_state.md` 记录 ALB_MAIN 当前开发阶段、包级工作重点、已确认验证、风险和近期下一步。它不是 run locator，也不替代 `SURROGATE_TRAIN` 的实时运行状态文档。
+`ALB_MAIN/docs/current_state.md` 提供 ALB_MAIN 的开发记录、验证、风险和下一步信息。
 
 ## 运行编号规则
 
@@ -92,7 +85,7 @@ outputs/archive/<run_id>/   # 仅在确认归档后使用
 
 `outputs/<domain>/<run_id>/` 用于 CSV、JSON metadata、图、摘要和其它结果 artifact。
 
-日志不再由本文档统一管理，也不要求迁移到统一的 `logs/` 目录。日志应保留在 launcher、queue wrapper、remote runner 或 run output bundle 实际写入的位置。current-status 块只需要记录当前诊断所需的日志指针。
+日志路径以 launcher、queue wrapper、remote runner 或 run output bundle 的实际输出为准，可在任务记录中附上诊断所需的日志指针。
 
 `outputs/archive/<run_id>/` 只在任务完成且用户确认该运行已不活跃或已废弃后使用。对于 active、running、stopped、failed-but-not-archived 的运行，不要在活跃 locator 块中写入未来归档路径，除非归档已经真实存在。
 

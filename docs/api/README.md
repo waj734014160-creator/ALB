@@ -1,13 +1,6 @@
 # ALB 自动 API 文档
 
-## 文档角色
-
-- 角色：稳定公开 API 文档入口和自动跟踪机制说明。
-- 目的：说明 API 文档的覆盖范围、阅读入口、生成方式和一致性门禁。
-- 允许更新：公开 API 文档范围、生成流程、元数据规则、验证命令和阅读入口。
-- 禁止更新：实时运行状态、单次实验结果、未导出的内部实现和手工复制的接口清单。
-- 更新时机：公开 API 策略、生成器、元数据格式或验证入口变化时。
-- 事实来源：`ALB.__all__`、高级 namespace 的显式导出、`ALB/api/_config_fields.py`、
+参考来源：`ALB.__all__`、高级 namespace 的显式导出、`ALB/api/_config_fields.py`、
   四类文档生成器、`docs/api/public_api_docs.json`、
   `docs/api/namespace_reference_docs.json`、`docs/api/config_reference_docs.json` 和生成后的公开参考。
 
@@ -100,4 +93,4 @@ E:/Anaconda2023/envs/ALB/python.exe -m mkdocs build --strict
 3. 运行四类生成器，重建根 API、轴承配置、仿真配置和高级 namespace 参考。
 4. 运行四条 `--check`、目标 pytest、示例 smoke 和 `mkdocs build --strict`。
 
-不要手工修改生成参考；下一次生成会覆盖手工内容。
+下一次生成会覆盖生成参考中的手工内容。需要保留的说明可写入对应 source Markdown 或语义元数据。

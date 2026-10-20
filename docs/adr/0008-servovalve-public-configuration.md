@@ -1,12 +1,7 @@
 # ADR-0008：伺服阀公开配置收敛为二阶、静态与传递函数
 
-## 文档角色
-
-- 角色：0.4.5 伺服阀公共配置、内部构建和数值保留边界的架构决策。
 - 状态：Accepted。
-- 允许更新：模型判别字段、输入参数、迁移规则和验收边界。
-- 禁止更新：单次测试日志、外部实时状态和未经验证的数值结论。
-- 相关文档：`docs/adr/0006-alb-0-4-no-legacy-friendly-api.md`、
+相关文件：`docs/adr/0006-alb-0-4-no-legacy-friendly-api.md`、
   `docs/adr/0007-preserve-validated-numerical-algorithms.md`、
   `docs/migrations/0.4.5.md`。
 

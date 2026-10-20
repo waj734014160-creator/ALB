@@ -130,7 +130,6 @@ def test_public_search_index_excludes_operational_content(site_root: Path) -> No
 
     forbidden_locations = (
         "current_state/",
-        "daily_summary_log/",
         "daily_maintenance/",
         "remote_workstation_connection/",
         "run_index/",
@@ -141,7 +140,6 @@ def test_public_search_index_excludes_operational_content(site_root: Path) -> No
     )
     assert "远程工作站连接与操作手册" not in searchable_text
     assert "ALB_MAIN 当前状态" not in searchable_text
-    assert "每日总结记录" not in searchable_text
 
 
 def test_public_search_index_supports_chinese_and_api_terms(site_root: Path) -> None:

@@ -39,7 +39,6 @@ nav:
 
 exclude_docs: |
   current_state.md
-  daily_summary_log.md
   daily_maintenance/
   remote_workstation_connection.md
   run_index.md
@@ -50,7 +49,6 @@ exclude_docs: |
   alb_albnn_quickstart.md
   file_classification.md
   interface_architecture.md
-  next_interface_development_plan.md
   project_overview.md
   api/README.md
   migrations/0.2.0*.md

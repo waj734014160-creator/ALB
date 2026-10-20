@@ -1,12 +1,6 @@
 # ALB 压力-流量-温度耦合仿真完整推导
 
-## 文档角色
-
-- 角色：ALB 液体油膜压力、供油流量、温度与黏度耦合的稳定公式和实现参考。
-- 目的：从薄膜润滑基本方程出发，完整推导当前程序实际使用的膜厚、速度分布、面内流量、Reynolds 方程、孔口流量、油膜能量方程、无量纲形式、有限元弱式和耦合迭代。
-- 允许更新：控制方程、无量纲尺度、边界条件、离散形式、求解流程、实现映射和明确的模型边界。
-- 禁止更新：实时运行状态、单次 run 指标、PID、ETA、训练进度和原始日志。
-- 事实来源：`ALB/physics/film/solver.py`、`ALB/physics/thermal/solver.py`、`ALB/physics/thermal/scales.py`、`ALB/physics/hydraulics/orifice.py`、`ALB/physics/bearing/solver.py`、`ALB/config/film_models.py` 和 `ALB/config/thermal_models.py`。
+参考来源：`ALB/physics/film/solver.py`、`ALB/physics/thermal/solver.py`、`ALB/physics/thermal/scales.py`、`ALB/physics/hydraulics/orifice.py`、`ALB/physics/bearing/solver.py`、`ALB/config/film_models.py` 和 `ALB/config/thermal_models.py`。
 - 相关推导：频域热惯性、固定空化活动集以及 `K(γ)`、`C(γ)`、`G_{x_v}(γ)` 的推导见 `docs/formula/alb_harmonic_linearization.md`。
 
 本文以当前代码为权威实现依据。连续方程、离散方程和程序近似分别说明，避免把物理模型、数值稳定项和经验后处理公式混为一体。
@@ -1258,7 +1252,20 @@ $$
    <\texttt{tol}.
    $$
 
-10. 收敛后用最终黏度场再执行一次压力求解和一次温度求解，形成输出。
+10. 步长判据满足后，用最终黏度场再执行一次压力与温度求解，核对未松弛的固定点残差
+
+    $$
+    r_\mu=\frac{\max_i|\mu_{\mathrm{target},i}-\mu_i|}{\max_i|\mu_i|}
+    <\texttt{tol}.
+    $$
+
+    若不满足，使用剩余迭代预算继续求解，防止小松弛或对数更新限步导致假收敛。
+    自适应松弛也使用未松弛的残差趋势。
+11. 最终成功还要求压力收敛，且返回温度的能量方程残差
+    $\|KT-f\|_\infty/\max(\|KT\|_\infty,\|f\|_\infty,10^{-30})$
+    小于 `tol`。温度裁剪仍用于保护中间迭代，但裁剪后违反能量方程的固定点不得报告成功。
+    每瓦结果的 `metadata.thermal_diagnostics` 保存最终残差、裁剪节点数、原始温度极值、
+    失败原因及迭代残差历史。
 
 ### 11.2 `full` 与 `half` 耦合
 
@@ -1285,7 +1292,7 @@ $$
 
 当前瞬态热求解只允许 `iter_method="direct"`。
 
-### 11.4 显式热 Newton 路径的边界
+### 11.4 计划废弃的分离式准 Newton 路径
 
 `iter_method="newton"` 在固定压力场下对 $\mu(T)$、$q(T)$ 和 $\Phi(T)$ 形成温度残差切线，但当前实现：
 
@@ -1294,7 +1301,10 @@ $$
 3. 未加入 SUPG 残差中 $q(T)$ 和 $\Phi(T)$ 的完整导数；
 4. 不支持瞬态温度项。
 
-因此该路径应称为分离式准 Newton，而不是完整单体 Newton。默认 `direct` 路径不使用这套不完整切线。
+因此该路径是分离式准 Newton，而不是完整单体 Newton。实际求解中其稳定性不及
+默认 `direct`，不再作为新配置的推荐或后续能力扩展方向。`newton` 与可能回退到
+同一路径的 `direct_then_newton` 在当前版本仅为兼容保留，不发运行时弃用警告，
+计划在后续版本通过明确迁移后移除；`direct` 是继续维护的热耦合路径。
 
 ---
 

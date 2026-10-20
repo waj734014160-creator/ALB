@@ -1,13 +1,8 @@
 # ADR-0006：ALB 0.4 无 Legacy 与友好 API
 
-## 文档角色
-
-- 角色：0.4 公共 API、配置、运行时和兼容边界的架构决策。
 - 状态：Accepted。
-- 允许更新：0.4 公共契约、删除边界、结果语义和发布条件。
-- 禁止更新：单次测试日志、外部实时状态和机器验收正文。
-- 相关文档：`docs/interface_architecture.md`、
-  `docs/next_interface_development_plan.md`、`docs/migrations/0.4.0.md`。
+相关文件：`docs/interface_architecture.md`、
+  `docs/migrations/0.4.0.md`。
 
 ## 背景
 

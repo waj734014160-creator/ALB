@@ -1,13 +1,18 @@
 # ALB 压力-温度-节流器谐波线性化推导与数值计算
 
-## 文档角色
+相关文件：`docs/formula/thermal_model.md`、`docs/formula/symbol_conventions.md`、`ALB/physics/thermal/solver.py`、`ALB/physics/thermal/scales.py`、`ALB/physics/hydraulics/orifice.py` 和当前方程级解析验证结果。
 
-- 角色：稳定公式、离散线性化和数值计算参考。
-- 目的：给出 ALB 压力、温度、节流器耦合控制方程的解析谐波线性化，以及 `K(γ)`、`C(γ)` 和复数 `G_{x_v}(γ)` 的数值计算过程。
-- 允许更新：控制方程、解析一阶展开、固定活动集规则、频域矩阵、量纲换算、稳定数值结果和实现映射。
-- 禁止更新：实时任务状态、训练进度、PID、ETA、临时日志堆叠和移动空化边界描述函数。
-- 更新节奏：控制方程、线性化定义、涡动频率比定义、数值工作点或正式系数变化时更新。
-- 事实来源 / 相关文档：`docs/formula/thermal_model.md`、`docs/formula/symbol_conventions.md`、`ALB/physics/thermal/solver.py`、`ALB/physics/thermal/scales.py`、`ALB/physics/hydraulics/orifice.py` 和当前方程级解析验证结果。
+2026-10-09 实现更新：完整系数计算已接入 `bearing.analysis.harmonic_linearize()`，
+用法和当前适用范围见[分析工作流](../site/guides/analysis.md)。原临时脚本的热源
+节点查找把局部归一化孔位当作全局膜坐标，本次按生产 `flow_info` 的实际孔位修正。
+本页第 7、9 节和内置 50 Hz JSON 保留历史算例结果，不代表修正后的新工具输出。
+修正前后冻结数组分别见 `refs/thermal_harmonic_migration_v1.*` 与
+`refs/thermal_harmonic_projection_v1.*`；源码哈希、配置和环境均在对应 JSON 中。
+在该冻结算例的 50 Hz 处，修正后相对旧参考的 K、C、G 矩阵 Frobenius 范数差
+分别为 1.3873%、1.5438%、2.0673%。新实现与独立修正原脚本生成的各瓦基态、
+活动集和传递矩阵逐项一致，汇总系数仅有浮点求和次序差异。
+本轮 59 项相关测试和最终 wheel 隔离计算通过，证据见
+`outputs/thermal_harmonic_integration_20261008/verification.json`。
 
 ## 1. 范围与最终口径
 
@@ -1250,6 +1255,11 @@ $$
 
 ### 10.1 与当前代码的关系
 
+- `ALB/physics/thermal/_harmonic_equations.py`：压力、温度、节流器残差及解析导数块，包含实际孔位投影。
+- `ALB/physics/thermal/_harmonic_base.py`：严格互补基态重求及活动集确定。
+- `ALB/systems/alb/linearization.py`：频域装配、热容量、六列输入求解和 K/C/G 换算。
+- `ALB/api/analysis.py::BearingAnalysis.harmonic_linearize`：公开入口及失败快照。
+- `tools/analysis/run_harmonic_linearization.py`：配置驱动的系数计算命令行入口。
 - `ALB/physics/thermal/solver.py`：热残差、热容量、SUPG、供油冷源和温黏耦合的事实来源。
 - `ALB/physics/thermal/scales.py`：参考尺度和无量纲参数的事实来源。
 - `ALB/physics/hydraulics/orifice.py`：`CSOrifice` 残差和阀芯输入契约的事实来源。
@@ -1261,9 +1271,11 @@ $$
 
 正式线性化的可复用实现应继续保留在 `ALB_MAIN/ALB`；诊断脚本只能作为验证入口，不能成为第二套物理公式来源。
 
-### 10.2 标准轴承包装和转子耦合
+### 10.2 历史固定系数包装和转子耦合
 
-公共工厂
+以下为 2026-07-20 固定系数包装的历史接口记录。`alb_harmonic_linear` 已不在
+当前公开 namespace 导出；当前系数计算使用第 10.1 节的公开分析入口。
+历史工厂示例为：
 
 ```python
 from ALB.systems.alb import alb_harmonic_linear

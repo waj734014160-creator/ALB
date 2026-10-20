@@ -1,6 +1,10 @@
 # 物理符号命名约定
 
-本文档记录 ALB 中物理量的统一命名规则，后续新增模型、配置和结果字段应遵守这些约定。
+参考来源：`ALB/physics/thermal/scales.py`、`ALB/physics/hydraulics/orifice.py`、
+  `ALB/physics/thermal/solver.py` 和 `docs/api/bearing_config_reference.md`。
+
+本文约定物理符号和内部数值模型字段。根公开 JSON5 的语义名称与单位以
+[轴承配置参考](../api/bearing_config_reference.md)为准，不按内部简称改写公开配置。
 
 ## 基本规则
 
@@ -26,7 +30,7 @@
 
 - `HydConfig` 使用 `miu` 作为黏度输入。
 - `film_args_trans`、`FilmModel`、`NewtonFilm`、`SkfemNewtonFilm` 使用 `miu` 作为构造参数。
-- 模型运行参数 `model.args` 中只写入 `miu`、`miu0`、`lambda`、`lambda0`。
+- `model.args` 中的黏度与 Reynolds 速度系数字段使用 `miu`、`miu0`、`lambda`、`lambda0`，不再写入对应旧别名。
 - 热耦合冻结基准时只同步 `miu0` 与 `lambda0`，不再写入 `u_ref` 或 `vx_ref`。
 
 ## Orifice 信息接口
@@ -41,10 +45,16 @@
 - `flow_info` 返回字典，包含三类信息：
   - `structure`: 供油孔结构参数，如位置、供油压力、流量系数、几何参数。
   - `flow_params`: 每个条目明确包含 `position_nondim`、`position_dim`、
-    `q_nondim`、`q_vol` 和同一个 `qw`。
+    `q_nondim`、`q_vol` 和同一个 `qw`，并携带适用的 `flow_projection`。
   - `flow`: 有量纲兼容三元组列表 `(x_dim, z_dim, q_vol)`；无量纲热核不得消费该字段。
-- 无量纲热核只接收 `(position_nondim, q_nondim)`，并按
-  `K[j,j] += q_nondim`、`f[j] += q_nondim*T_supply_nondim` 装配点源。
+- 无量纲热核使用无量纲孔位、`q_nondim` 与 `flow_projection`。
+  对正向供油，缺省 `nearest_node` 按 `K[j,j] += q_nondim`、
+  `f[j] += q_nondim*T_supply_nondim` 装配。
+- `element_shape` 使用孔位形函数行向量 `W_i`，按
+  `K += q_nondim * W_i.T @ W_i`、
+  `f += q_nondim * T_supply_nondim * W_i.T` 装配；权重和为 1，高阶权重可为负。
+  两种模式均为集中点源。公式、实现和验证范围见
+  [压力-温度一致性说明](pressure_temperature_consistency_review.md)。
 - 热结果字段 `q_orifice_total_nondim` 表示无量纲总流量，
   `q_orifice_total_vol` 和兼容字段 `q_orifice_total` 均表示 m$^3$/s。
 

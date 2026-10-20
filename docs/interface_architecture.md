@@ -1,13 +1,6 @@
 # ALB 0.4 模块分类与接口架构
 
-## 文档角色
-
-- 角色：稳定模块边界与接口协议说明。
-- 目的：定义 0.4 的依赖方向、用户 facade、领域协议、单位制、提交和无兼容边界。
-- 允许更新：模块分类、接口契约、依赖规则、单位制规则和稳定验证入口。
-- 禁止更新：实时状态、单次指标、训练进度和临时日志。
-- 更新时机：公共接口、模块边界或验证入口变化时。
-- 事实来源：`ALB/api/`、`ALB/contracts/`、`ALB/dynamics/`、
+参考来源：`ALB/api/`、`ALB/contracts/`、`ALB/dynamics/`、
   `tests/validation/test_import_boundaries.py`。
 
 ## 核心原则
@@ -82,6 +75,10 @@ hook 或创建新 runtime。失败状态是终止性的；failure snapshot 不�
 在每次评估前复位静态伺服阀；`external_spool` 不在此入口中隐式推断；
 `dynamic_coefficients()` 从一个 `EllipseTrajectory` 生成独立正反涡动并调用
 复数识别；`harmonic_linearize()` 直接计算压力方程导数和已验证的节流耦合。
+热耦合路径由 `systems/alb/linearization.py` 组织独立基态求解，解析方程及
+严格互补基态位于 `physics/thermal/_harmonic_equations.py` 和
+`_harmonic_base.py`。它按热惯性开关求解复频域系统，公开 K/C/G 和失败证据。
+热源位置从当前 `flow_info` 取得；不依赖临时诊断脚本或内置固定频率系数。
 空间方向使用 `orientation_rad`，时间相位使用 `phase`，两者不可混用。任何
 内层或轨迹样本不收敛时均不发布分析结果。动态系数的时间网格必须均匀并使目标
 频率命中非 DC FFT bin；正反涡动复位移矩阵必须有限、满秩且条件数受限。精确
@@ -169,8 +166,9 @@ preflight → mutable execute → immutable candidate
 ```powershell
 E:/Anaconda2023/envs/ALB/python.exe -m pytest -q
 E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
-E:/Anaconda2023/envs/ALB/python.exe -m tools.validation.run_release_acceptance_0_4_2 --candidate HEAD
 ```
+
+以上是开发验证入口，应按改动范围选用。版本化验收工具必须与候选版本匹配，不能将 0.4.2 工具直接用于当前 0.4.5 HEAD。
 
 发布验收必须从固定 SHA 建立 detached worktree，连续构建两个相同 wheel，
 审计 wheel 内容、隔离安装并执行主仓库及声明外部消费者 smoke。

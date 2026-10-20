@@ -1,12 +1,7 @@
 # ADR-0001：0.3.0 公共版本、自动初始化与 builder
 
-## 文档角色
-
-- 角色：下一阶段公共接口版本、初始化和构建语义的架构决策。
 - 状态：Superseded；0.3 决定已由 ADR-0006 的 0.4 无兼容接口替代。
-- 允许更新：目标版本、`step()` 语义、初始化所有权、builder 类型、配置封装、诊断出口和兼容周期。
-- 禁止更新：把目标接口写成当前 0.2.0 已实现能力、单次测试结果或外部项目状态。
-- 相关文档：`docs/next_interface_development_plan.md`、`docs/interface_architecture.md`。
+相关文件：`docs/migrations/0.4.0.md`、`docs/interface_architecture.md`。
 
 ## 背景
 

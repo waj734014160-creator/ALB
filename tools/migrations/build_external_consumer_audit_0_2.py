@@ -14,7 +14,6 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SURROGATE_ROOT = REPOSITORY_ROOT.parent / "SURROGATE_TRAIN"
 PAPER_ROOT = Path("F:/BaiduSyncdisk/博士论文/PAPER_WORK")
 DEFAULT_JSON = REPOSITORY_ROOT / "docs/migrations/0.2.0_external_consumer_audit.json"
-DEFAULT_MARKDOWN = REPOSITORY_ROOT / "docs/migrations/0.2.0_external_consumer_audit.md"
 
 SURROGATE_FILES = [
     ("direct", "run/analysis/check_s0008_dimensional_cross_validation.py"),
@@ -253,10 +252,9 @@ def _markdown(audit: dict[str, Any]) -> str:
     lines = [
         "# ALB_MAIN 0.2.0 外部调用只读迁移审计",
         "",
-        "## 文档角色",
+        "## 审计范围",
         "",
-        "本文记录 0.2.0 破坏式 API 对 declared 外部消费者的只读快照。本文不修改、"
-        "不提交 `SURROGATE_TRAIN` 或 `PAPER_WORK` 文件，也不记录它们的实时任务状态。",
+        "本文记录 0.2.0 破坏式 API 对 declared 外部消费者的只读快照与迁移路径。该次快照中的外部文件未修改。",
         "",
         "## 结论",
         "",
@@ -302,19 +300,26 @@ def _markdown(audit: dict[str, Any]) -> str:
 
 
 def main() -> int:
+    """Write JSON evidence and an explicitly requested Markdown export."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json-output", type=Path, default=DEFAULT_JSON)
-    parser.add_argument("--markdown-output", type=Path, default=DEFAULT_MARKDOWN)
+    parser.add_argument(
+        "--markdown-output",
+        type=Path,
+        help="Optional Markdown export path; omitted by default.",
+    )
     args = parser.parse_args()
     audit = build_audit()
     json_output = args.json_output.resolve()
-    markdown_output = args.markdown_output.resolve()
     json_output.parent.mkdir(parents=True, exist_ok=True)
-    markdown_output.parent.mkdir(parents=True, exist_ok=True)
     json_output.write_text(
         json.dumps(audit, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
-    markdown_output.write_text(_markdown(audit), encoding="utf-8")
+    if args.markdown_output is not None:
+        markdown_output = args.markdown_output.resolve()
+        markdown_output.parent.mkdir(parents=True, exist_ok=True)
+        markdown_output.write_text(_markdown(audit), encoding="utf-8")
     return 0
 
 

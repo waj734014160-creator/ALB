@@ -1,10 +1,6 @@
 # 压力-温度耦合一致性检查
 
-## 1. 文档角色与检查范围
-
-- 角色：当前压力-温度耦合实现的代码证据审查。
-- 允许更新：活动调用链、量纲契约、离散方程、已知边界和回归证据。
-- 禁止更新：实验运行状态、训练进度和外部论文任务配置。
+## 1. 检查范围
 
 本次检查以 `ThermalHydroBearing` / `NodimThermalHydroBearing` 的活动路径为准，
 不再把历史有量纲温度求解器或已停用的 `h_eff` 分支当作当前实现依据。
@@ -15,8 +11,13 @@
 - `ALB/physics/hydraulics/orifice.py`
 - `ALB/physics/thermal/solver.py`
 - `ALB/config/film.py` 与 `ALB/config/thermal.py`
-- `tests/regression/bearing/test_nodim_alb_equivalence.py`
-- 热模型与孔口契约的邻近单元测试
+- `tests/unit/physics/test_supply_flow_projection.py`: 原生投影、压力 RHS/Jacobian 和两种热源装配的焓守恒。
+- `tests/regression/test_supply_flow_element_shape_reference.py`: 修改前形函数投影场的冻结参考回归。
+- `tests/regression/test_supply_flow_projection_end_to_end.py`: 无量纲热供油工况与阀芯线性化的端到端检查。
+
+这些文件提供各自范围的证据，不等同于完整有量纲/无量纲双侧热包装器验收。
+历史等价性测试的迁移记录可在 `docs/migrations/0.2.0_test_map.json` 追溯；
+该历史记录不表示原测试仍在当前树中。下文第 7 节是验证判据，不是本次执行结果。
 
 ## 2. 当前活动调用链
 
@@ -92,13 +93,29 @@ $$
 
 `flow_info()` 明确提供 `position_nondim`、`position_dim`、`q_nondim`、
 `q_vol` 和同一个 `qw`。旧 `flow=(x_dim,z_dim,q_vol)` 仅用于有量纲兼容输出。
-无量纲热核只消费无量纲位置和 `q_nondim`，点源装配为
+无量纲热核消费无量纲位置、`q_nondim` 和 `flow_projection`。输入项缺省投影
+保持 `nearest_node`；正向供油 `q_nondim > 0` 的装配分两种情况:
 
-$$
+- `nearest_node`: 选取最近节点 `j`，只更新该节点的对角项与载荷:
+
+$
 K_{jj}\mathrel{+}=q_{n,i},
 \qquad
 f_j\mathrel{+}=q_{n,i}\bar T_{\mathrm{supply}}.
-$$
+$
+
+- `element_shape`: 用真实孔位的 P1/P2/Q1/Q2 形函数构造行向量 `W_i`，
+  压力插值为 `p_h = W_i p`，热混合项使用同一孔位投影:
+
+$
+K\mathrel{+}=q_{n,i}W_i^{\mathsf T}W_i,
+\qquad
+f\mathrel{+}=q_{n,i}\bar T_{\mathrm{supply}}W_i^{\mathsf T}.
+$
+
+形函数权重和为 1，保证总混合系数与供油焓源守恒；高阶权重不要求逐项非负。
+两种方式均为集中点源，`element_shape` 不代表有限面积供油孔。
+当前热供油混合项跳过非正流量，不能把上述表达式解释为全部流出边界条件。
 
 结果中的 `q_orifice_total_nondim` 表示无量纲总流量；
 `q_orifice_total_vol` 与兼容字段 `q_orifice_total` 均表示 m³/s。
@@ -106,8 +123,10 @@ $$
 ## 6. 求解配置与状态提交
 
 - `coupling` 统一转为小写，只接受 `full` 或 `half`。
-- `transient_enabled=True` 当前只允许 `iter_method="direct"`；瞬态 Newton
-  尚未实现，非法组合在配置阶段报错。
+- `transient_enabled=True` 当前只允许 `iter_method="direct"`；瞬态状态项已由
+  `direct` 路径实现。
+- `newton` 与可能进入同一 fallback 的 `direct_then_newton` 稳定性不及 `direct`，
+  当前仅为兼容保留且不发运行时弃用警告，计划在后续版本移除。
 - `flow_rate_factor` 仅为 deprecated/no-op 兼容字段，只允许 `1.0`。
 - 稳态初始化或瞬态步未收敛时抛出明确错误，不更新 `_temperature_prev`；
   只有收敛结果才能成为下一步历史温度。
@@ -123,5 +142,6 @@ $$
 5. 任意 `lambda0`、有量纲 `miu0` 覆盖、非零 `k_lub`、非法配置和失败状态不提交。
 6. 已有无孔 JSON/NPZ reference 保持不变；错误的旧含孔结果不建立新基线。
 
-本轮不处理“孔口先求解、随后才包装热模型”时缓存节点的重绑定，也不实现瞬态 Newton。
-这两项属于明确边界，不应通过静默回退掩盖。
+本轮不处理“孔口先求解、随后才包装热模型”时缓存节点的重绑定，也不扩展计划
+废弃的准 Newton 路径。这些边界不应通过静默回退掩盖；未来移除 `newton` 和
+`direct_then_newton` 必须通过版本化迁移完成。

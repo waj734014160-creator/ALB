@@ -1,12 +1,8 @@
 # ADR-0004：Observer 与 failure snapshot
 
-## 文档角色
-
-- 角色：步骤观察、异常隔离和失败诊断数据的架构决策。
 - 状态：Accepted，第三轮审查批准。
-- 允许更新：事件 DTO、调用顺序、observer 异常策略、共享快照和 failure snapshot 字段。
-- 禁止更新：让 observer 参与数值正确性、ledger 提交或物理回滚。
-- 相关文档：`docs/next_interface_development_plan.md`、`docs/adr/0002-failure-sealing-and-step-publication.md`。
+`observer` 不参与数值正确性、ledger 提交或物理回滚。
+相关文件：`docs/migrations/0.4.0.md`、`docs/adr/0002-failure-sealing-and-step-publication.md`。
 
 ## 背景
 

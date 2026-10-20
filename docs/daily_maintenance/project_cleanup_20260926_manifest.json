@@ -1,0 +1,2002 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-26",
+  "head": "aafb9fc8e099aa8191a7a12293787ec5ed6ac6b9",
+  "summary": {
+    "completed_actions": 533,
+    "deleted_bytes": 3389224264,
+    "regenerated_bytecode_files": 72,
+    "regenerated_bytecode_bytes": 488120,
+    "net_removed_bytes": 3388736144,
+    "moved_bytes": 278888457,
+    "moved_files": 187,
+    "protected_source_files_verified": 575,
+    "protected_evidence_files_verified": 1845,
+    "pytest_collection_before": 631,
+    "pytest_collection_after": 631,
+    "pytest_collection_equal": true,
+    "pytest_collection_sha256": "892ce9b5859de8305de02545d8458730ed6e6025dedca320516ae74333843cfe",
+    "empty_directories_removed_after_actions": [
+      "tests/user"
+    ]
+  },
+  "actions": [
+    {
+      "action": "delete_cache",
+      "source": "outputs/.mypy_fourth_review",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 19,
+      "bytes": 44093888
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/.mypy_fourth_review_contracts",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 19,
+      "bytes": 17736035
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_0_4_2_initial",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 19,
+      "bytes": 44421568
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_0_4_2_initial2",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 89154213
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_0_4_2_pre_review",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 89158309
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_0_4_2_review1",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 89158309
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_0_4_2_review2",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 89158309
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_0_4_2_review2_full",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 89158309
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_0_4_2_update",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 89158309
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_adr_coupling",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 18034917
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_adr_review_candidate",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 88543909
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_adr_review_candidate2",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 88543909
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_adr_review_check",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 88773285
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_adr_review_final",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 88773285
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_adr_review_fixed",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 88543909
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_adr_review_fixed_update",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 88543909
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_adr_review_post_acceptance",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 88543909
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_adr_review_update",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 37,
+      "bytes": 88543909
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_all",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44036325
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_all2",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44036325
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_all3",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44036325
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_config",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 2080997
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_control",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 19,
+      "bytes": 18235759
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_layout",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 19,
+      "bytes": 17703267
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_phase1",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 19,
+      "bytes": 11161870
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_phase1_files",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 6095077
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_phase2",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 19,
+      "bytes": 17785187
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_results",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 17715429
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_runtime",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 19,
+      "bytes": 17785187
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_p2_strict",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 19,
+      "bytes": 43848128
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_rotor",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 17916133
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_cache_rotor2",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 17912037
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 364,
+      "bytes": 816842064
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_diag",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44196069
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_diag2",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44196069
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_diag3",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44196069
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_diag4",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44175589
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_diag5",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44175589
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_probe",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44187877
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_probe2",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44187877
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_probe3",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44187877
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_probe_current",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44736741
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_probe_current2",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44736741
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_probe_current3",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44732645
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/mypy_layered_cache_probe_current4",
+      "reason": "Regenerable mypy database cache; no active mypy process found.",
+      "file_count": 18,
+      "bytes": 44732645
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/fifth_review_file_mypy_cache",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 11272462
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/fifth_review_mypy_cache",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17736035
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache_27044_39fdcb3a",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache_30104_379f4dcc",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache_47720_eb390def",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache_51600_b6c5a610",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache_52900_5187d803",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache_55256_9b58bcae",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache_56512_34d14a32",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache_72660_4cb7c77e",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache_second_review",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/mypy_cache_third_review",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/sixth_contracts_core_mypy_cache",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17617251
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/sixth_runtime_mypy_cache",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 19,
+      "bytes": 17568099
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/sixth_runtime_mypy_cache2",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 18,
+      "bytes": 2064613
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/release_acceptance/sixth_runtime_mypy_cache3",
+      "reason": "Mypy cache inside historical acceptance output; reports remain in place.",
+      "file_count": 18,
+      "bytes": 2064613
+    },
+    {
+      "action": "delete_cache",
+      "source": "build",
+      "reason": "Regenerable build, site, or historical isolated installation; release evidence is retained.",
+      "file_count": 148,
+      "bytes": 1443295
+    },
+    {
+      "action": "delete_cache",
+      "source": "site",
+      "reason": "Regenerable build, site, or historical isolated installation; release evidence is retained.",
+      "file_count": 77,
+      "bytes": 4148406
+    },
+    {
+      "action": "delete_cache",
+      "source": ".tmp",
+      "reason": "Regenerable build, site, or historical isolated installation; release evidence is retained.",
+      "file_count": 0,
+      "bytes": 0
+    },
+    {
+      "action": "delete_cache",
+      "source": ".codex_tmp",
+      "reason": "Regenerable build, site, or historical isolated installation; release evidence is retained.",
+      "file_count": 0,
+      "bytes": 0
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/review2_final_isolated/venv",
+      "reason": "Regenerable build, site, or historical isolated installation; release evidence is retained.",
+      "file_count": 1775,
+      "bytes": 21767272
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/wheel_smoke/devtools_365676a",
+      "reason": "Regenerable build, site, or historical isolated installation; release evidence is retained.",
+      "file_count": 2610,
+      "bytes": 54330051
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/wheel_smoke/installed_4d30324",
+      "reason": "Regenerable build, site, or historical isolated installation; release evidence is retained.",
+      "file_count": 243,
+      "bytes": 2369697
+    },
+    {
+      "action": "delete_cache",
+      "source": "outputs/wheel_smoke/wheel_install_release_365676a",
+      "reason": "Regenerable build, site, or historical isolated installation; release evidence is retained.",
+      "file_count": 211,
+      "bytes": 2185889
+    },
+    {
+      "action": "delete_file",
+      "source": "tools/manual/gomoku_game.py",
+      "reason": "User explicitly requested deletion; recoverable from the recorded Git HEAD.",
+      "file_count": 1,
+      "bytes": 6032,
+      "files": [
+        {
+          "path": "tools/manual/gomoku_game.py",
+          "bytes": 6032,
+          "sha256": "2b41e14237827dfbd39259933bb84a854b656e46c82c7f972ff955ba38cc20c4"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tools/manual/plot_test.py",
+      "reason": "Historical plotting demonstration, outside supported workflows.",
+      "destination": "tools/manual/archive/plot_test.py",
+      "file_count": 1,
+      "bytes": 347,
+      "files": [
+        {
+          "path": "tools/manual/plot_test.py",
+          "bytes": 347,
+          "sha256": "69ba721ff1712cf3dd4472b26a20f81585305eca0caa27bcebb5f4be48b60e7c"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tools/manual/alb_gui_app.py",
+      "reason": "Historical entry point imports a GUI source module no longer present in this repository.",
+      "destination": "tools/manual/archive/alb_gui_app.py",
+      "file_count": 1,
+      "bytes": 159,
+      "files": [
+        {
+          "path": "tools/manual/alb_gui_app.py",
+          "bytes": 159,
+          "sha256": "8f260334f8442deec81395d568e65fb47956e27c2c0f9c019dd0fafbd8f97b69"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tests/user/m35_training_10_sample_refactored_alb_validation.ipynb",
+      "reason": "Interactive manual notebook, not a pytest test; contents remain byte-identical.",
+      "destination": "tools/manual/notebooks/m35_training_10_sample_refactored_alb_validation.ipynb",
+      "file_count": 1,
+      "bytes": 68869,
+      "files": [
+        {
+          "path": "tests/user/m35_training_10_sample_refactored_alb_validation.ipynb",
+          "bytes": 68869,
+          "sha256": "ccc84e32a8e330957baed660dab4779d414fcbee6f240b367b532b567d477f44"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tests/user/test.ipynb",
+      "reason": "Interactive manual notebook, not a pytest test; contents remain byte-identical.",
+      "destination": "tools/manual/notebooks/bearing_config_exploration.ipynb",
+      "file_count": 1,
+      "bytes": 7405,
+      "files": [
+        {
+          "path": "tests/user/test.ipynb",
+          "bytes": 7405,
+          "sha256": "84c8cbf43afd62c7fe7487f6a9f70f4c6149aaa9fb96965b2d2317df89d86bf1"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "scripts/__pycache__",
+      "reason": "Preserve orphan bytecode from retired scripts instead of deleting the only local copy.",
+      "destination": "outputs/archive/project_cleanup_20260926/legacy_bytecode/scripts/__pycache__",
+      "file_count": 14,
+      "bytes": 153822,
+      "files": [
+        {
+          "path": "scripts/__pycache__/__init__.cpython-310.pyc",
+          "bytes": 199,
+          "sha256": "98c4f1c632d19953a0536c76aac372b69fe0749ac7a0e1c328bb185421aba919"
+        },
+        {
+          "path": "scripts/__pycache__/__init__.cpython-310.pyc.1390135129136",
+          "bytes": 199,
+          "sha256": "98c4f1c632d19953a0536c76aac372b69fe0749ac7a0e1c328bb185421aba919"
+        },
+        {
+          "path": "scripts/__pycache__/__init__.cpython-310.pyc.2437596820528",
+          "bytes": 199,
+          "sha256": "98c4f1c632d19953a0536c76aac372b69fe0749ac7a0e1c328bb185421aba919"
+        },
+        {
+          "path": "scripts/__pycache__/__init__.cpython-310.pyc.2536071345200",
+          "bytes": 199,
+          "sha256": "98c4f1c632d19953a0536c76aac372b69fe0749ac7a0e1c328bb185421aba919"
+        },
+        {
+          "path": "scripts/__pycache__/run_registry.cpython-310.pyc",
+          "bytes": 17696,
+          "sha256": "00096ff03f8e9deb694b78c09150cd379ce68f40f692a039ca12b827a5ea93a8"
+        },
+        {
+          "path": "scripts/__pycache__/run_registry.cpython-310.pyc.1390135129392",
+          "bytes": 14940,
+          "sha256": "ba66dda11b205d2cb0c588e732c7cb866f7c663dc6cf2d749e2652f672dbf744"
+        },
+        {
+          "path": "scripts/__pycache__/run_registry.cpython-310.pyc.1765861028528",
+          "bytes": 15085,
+          "sha256": "e3f24cf0dbc4818abf010eb55e6dc18657a09beb0fb7d98140d49d2fc3af7631"
+        },
+        {
+          "path": "scripts/__pycache__/run_registry.cpython-310.pyc.2013634146992",
+          "bytes": 15085,
+          "sha256": "e3f24cf0dbc4818abf010eb55e6dc18657a09beb0fb7d98140d49d2fc3af7631"
+        },
+        {
+          "path": "scripts/__pycache__/run_registry.cpython-310.pyc.2355380630704",
+          "bytes": 15085,
+          "sha256": "45e19291c3de879e54f72eea399077ae9b9b53527daf621f45acba4911079af3"
+        },
+        {
+          "path": "scripts/__pycache__/run_registry.cpython-310.pyc.2433011675824",
+          "bytes": 15085,
+          "sha256": "e3f24cf0dbc4818abf010eb55e6dc18657a09beb0fb7d98140d49d2fc3af7631"
+        },
+        {
+          "path": "scripts/__pycache__/run_registry.cpython-310.pyc.2437596820784",
+          "bytes": 14940,
+          "sha256": "ba66dda11b205d2cb0c588e732c7cb866f7c663dc6cf2d749e2652f672dbf744"
+        },
+        {
+          "path": "scripts/__pycache__/run_registry.cpython-310.pyc.2488510723248",
+          "bytes": 15085,
+          "sha256": "45e19291c3de879e54f72eea399077ae9b9b53527daf621f45acba4911079af3"
+        },
+        {
+          "path": "scripts/__pycache__/run_registry.cpython-310.pyc.2536071345456",
+          "bytes": 14940,
+          "sha256": "ba66dda11b205d2cb0c588e732c7cb866f7c663dc6cf2d749e2652f672dbf744"
+        },
+        {
+          "path": "scripts/__pycache__/run_registry.cpython-310.pyc.2691140433072",
+          "bytes": 15085,
+          "sha256": "45e19291c3de879e54f72eea399077ae9b9b53527daf621f45acba4911079af3"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tools/manual/alb_gui",
+      "reason": "Preserve orphan bytecode from retired scripts instead of deleting the only local copy.",
+      "destination": "outputs/archive/project_cleanup_20260926/legacy_bytecode/tools/manual/alb_gui",
+      "file_count": 7,
+      "bytes": 49548,
+      "files": [
+        {
+          "path": "tools/manual/alb_gui/__pycache__/__init__.cpython-310.pyc",
+          "bytes": 498,
+          "sha256": "2f1149bca549cc4c38f4d01dfbe885fcb7c236094d6025074d11b375a2598c4a"
+        },
+        {
+          "path": "tools/manual/alb_gui/__pycache__/__main__.cpython-310.pyc",
+          "bytes": 273,
+          "sha256": "63a6b84c868c785bc54364fb99f8531dab74910f32b7aa26aea5da7ebb4acc01"
+        },
+        {
+          "path": "tools/manual/alb_gui/__pycache__/backend.cpython-310.pyc",
+          "bytes": 6564,
+          "sha256": "a4732f3e69ebcb05336fe995358d181b6ea76336c14c8a9a9e120c4057367715"
+        },
+        {
+          "path": "tools/manual/alb_gui/__pycache__/config_io.cpython-310.pyc",
+          "bytes": 11374,
+          "sha256": "da32086cba70c81d9c8a909cf8bd4c1949061dbcf50b074f41baacdba4b9202c"
+        },
+        {
+          "path": "tools/manual/alb_gui/__pycache__/fields.cpython-310.pyc",
+          "bytes": 4953,
+          "sha256": "528fbbdecf618a052ef2535dfdae3c5012ac1761e7da13089781fa1cd2e83de5"
+        },
+        {
+          "path": "tools/manual/alb_gui/__pycache__/window.cpython-310.pyc",
+          "bytes": 24752,
+          "sha256": "5b666489a7413bc5efa391ef7a099ed4183ae8592c56ad510cbe0f7c6c23ad7a"
+        },
+        {
+          "path": "tools/manual/alb_gui/pyinstaller/__pycache__/pyi_rth_alb_gui_dll_path.cpython-310.pyc",
+          "bytes": 1134,
+          "sha256": "c60950b5913af1aac58db275f58b2171426bf760cc83c89571ef1fb03a37daa5"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tools/manual/couple",
+      "reason": "Preserve orphan bytecode from retired scripts instead of deleting the only local copy.",
+      "destination": "outputs/archive/project_cleanup_20260926/legacy_bytecode/tools/manual/couple",
+      "file_count": 1,
+      "bytes": 2004,
+      "files": [
+        {
+          "path": "tools/manual/couple/__pycache__/test_add_gravity.cpython-310.pyc",
+          "bytes": 2004,
+          "sha256": "dbfe9e73d98c87e2b922feada601aa384f3656c74fa7b078a69744e3495da0c4"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tools/manual/experiments",
+      "reason": "Preserve orphan bytecode from retired scripts instead of deleting the only local copy.",
+      "destination": "outputs/archive/project_cleanup_20260926/legacy_bytecode/tools/manual/experiments",
+      "file_count": 2,
+      "bytes": 3866,
+      "files": [
+        {
+          "path": "tools/manual/experiments/run_legacy/__pycache__/test_env.cpython-310.pyc",
+          "bytes": 1045,
+          "sha256": "7be76ca08b3ac7b90f6f789df843257ed37c9f38622ef740390e028278f1cd62"
+        },
+        {
+          "path": "tools/manual/experiments/run_legacy/__pycache__/test_ross_rotor.cpython-310.pyc",
+          "bytes": 2821,
+          "sha256": "4c920f777f55315e680301fd9e1909eeb6e43fc775d2879cbf1266d42e8c9cf0"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "dist/ALB_GUI.7z",
+      "reason": "Preserve the historical GUI distribution with its SHA-256.",
+      "destination": "outputs/archive/project_cleanup_20260926/distribution/ALB_GUI.7z",
+      "file_count": 1,
+      "bytes": 229310560,
+      "files": [
+        {
+          "path": "dist/ALB_GUI.7z",
+          "bytes": 229310560,
+          "sha256": "a3294fb82a6d8d22ff0399c4043ecce190778e8a96d9c5586af9d0cf2539e496"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/minimal_alb_single_step.ipynb",
+      "reason": "Completed local task bundle; retain raw results, sources and provenance.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/minimal_alb_single_step.ipynb",
+      "file_count": 1,
+      "bytes": 6583,
+      "files": [
+        {
+          "path": "tmp/minimal_alb_single_step.ipynb",
+          "bytes": 6583,
+          "sha256": "e6d41be837533deb569e6d65e874413d140e165e9b70072d6b1b11c85ca6c274"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/pdfs",
+      "reason": "Completed local task bundle; retain raw results, sources and provenance.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/pdfs",
+      "file_count": 20,
+      "bytes": 10354955,
+      "files": [
+        {
+          "path": "tmp/pdfs/sharma2003/page11_fig6a_crop.png",
+          "bytes": 48692,
+          "sha256": "d51a4463f8bbe5ab641b7b3bf5a8228506f7d672dd10ff20d89c0f1b19ec94f2"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/page11_fig6a_curves_zoom.png",
+          "bytes": 190224,
+          "sha256": "980a485abea3b6210338a1d4a328ee8ee1bb76510c2b75f9310c531b583596de"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/page12_fig7a_crop.png",
+          "bytes": 56806,
+          "sha256": "dd6a71dcddb7ba48cf6d54805aea0e4f52e04d1d6c23d851f4ff2f53400bb33a"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_02.png",
+          "bytes": 429469,
+          "sha256": "6ee27db56ed7a3d2d000e56d8fddd2e28db4836cc26ff1bea93baebabe611841"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_03.png",
+          "bytes": 340653,
+          "sha256": "7312705ba8792e9bf0770063458cf668b7e26e301848de55db4ed021d2acefaa"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_05.png",
+          "bytes": 620324,
+          "sha256": "4af95c95a97b8fc23110e99f8f683ebf476223cc5f364837b2e6781680b76fbc"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_06.png",
+          "bytes": 780953,
+          "sha256": "b21f8e1a1df6f288d57e2eccdef2d71a20b3d5b596c5f51ac387476eac3a0b67"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_07.png",
+          "bytes": 736290,
+          "sha256": "e3fababe97b80dcb73cbb40a02d8a0cdc7b145d9592f5604b9e538e100cf1711"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_09.png",
+          "bytes": 1244295,
+          "sha256": "a6b926d47ad8aa6feb0eba1164ac108250bf6147961eb13f03d8b8ea94a069ec"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_10.png",
+          "bytes": 542896,
+          "sha256": "6b61ce530e38d1bdb0d87a55f269abc7c3086695321780ddde4006a1539d2caf"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_11.png",
+          "bytes": 431052,
+          "sha256": "e7b17b6f4117baa5c43bd1350a505356cc3ee072c01e308633db2cdf8b1a6abe"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_12.png",
+          "bytes": 408993,
+          "sha256": "8df4d7376e63b0ef26f91a9db2af2062765196154fd3c0da0d64ea07987a3045"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_12_fitz.png",
+          "bytes": 638329,
+          "sha256": "4938e1edb20f969fa4ce3068ef72093da52618105819c0e89d6226fc86eeacaa"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_13.png",
+          "bytes": 487760,
+          "sha256": "07d9f82cdb82df24a3f3ce3adb87e14812693de1236a3a83665b153a9f46a224"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_14.png",
+          "bytes": 427363,
+          "sha256": "cde676ce52569ac4a31a996ede0a3a67bfb57f69d0d2e92e9afd484b510816a3"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_15.png",
+          "bytes": 952234,
+          "sha256": "9a4812ec12c675fef0c64889bb6161ffd24bec84f8d5a42360042a076884a6f2"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_16.png",
+          "bytes": 406327,
+          "sha256": "a8132fb13d484cb708c30b116202c3d4cdf607ac067c7e6a1765101a258e443a"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_17.png",
+          "bytes": 540215,
+          "sha256": "0007bd6912572888a8b3c67cd86a88944b02435a4dbb26983076a8481af04246"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/rendered_pages/page_18.png",
+          "bytes": 988617,
+          "sha256": "56d136fcd216749d3a8d332fa61aa83742b156d0dbda430fc61fff8219c7e8e4"
+        },
+        {
+          "path": "tmp/pdfs/sharma2003/sharma2003_layout.txt",
+          "bytes": 83463,
+          "sha256": "9f03a4f7205ee8978da32680495a7d07483111ee8e9f4edc8dee5981724638af"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/pytest-mesh-independence-20260814a",
+      "reason": "Completed local task bundle; retain raw results, sources and provenance.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/pytest-mesh-independence-20260814a",
+      "file_count": 0,
+      "bytes": 0,
+      "files": []
+    },
+    {
+      "action": "move",
+      "source": "tmp/resume_review_20260821",
+      "reason": "Completed local task bundle; retain raw results, sources and provenance.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/resume_review_20260821",
+      "file_count": 4,
+      "bytes": 1867833,
+      "files": [
+        {
+          "path": "tmp/resume_review_20260821/page-1.png",
+          "bytes": 489623,
+          "sha256": "dd7d28ad6eacc90d27254c41447ba11474a5cddf99d4c2351735da6e3db08aa7"
+        },
+        {
+          "path": "tmp/resume_review_20260821/page-2.png",
+          "bytes": 531557,
+          "sha256": "1361160d96699c50b62187898103aa0e277cc2f23fecc6cd513feb7078c7a9d6"
+        },
+        {
+          "path": "tmp/resume_review_20260821/resume_source_converted.docx",
+          "bytes": 372499,
+          "sha256": "c7b0a7b10c0d81fb835938d95612135a69181454bfe09b6bce7fed0be78d53d1"
+        },
+        {
+          "path": "tmp/resume_review_20260821/resume_source_rendered.pdf",
+          "bytes": 474154,
+          "sha256": "edad020da7c7c39aab120c2346c858e121a5718ada1652bbecfc0e6f7387857d"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/servo_valve_flow_estimation",
+      "reason": "Completed local task bundle; retain raw results, sources and provenance.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/servo_valve_flow_estimation",
+      "file_count": 5,
+      "bytes": 960992,
+      "files": [
+        {
+          "path": "tmp/servo_valve_flow_estimation/build_flow_estimation.py",
+          "bytes": 14583,
+          "sha256": "814b34da54c9e6a370577425c4325a3b074750092368c6202905e2951cbedce0"
+        },
+        {
+          "path": "tmp/servo_valve_flow_estimation/rendered/page-1.png",
+          "bytes": 336867,
+          "sha256": "7c870942d2154df5bca13ec1d18de66be151ab895cce39b11244a4def6b8c989"
+        },
+        {
+          "path": "tmp/servo_valve_flow_estimation/rendered/page-2.png",
+          "bytes": 331559,
+          "sha256": "2b0feed504ec5413092efdf56029880ec397d6d24828b0c8a8801c44dbfae88e"
+        },
+        {
+          "path": "tmp/servo_valve_flow_estimation/rendered/伺服阀流量估算_论文格式.pdf",
+          "bytes": 237442,
+          "sha256": "0d91a38d49adc5e8755df27586b3ad6e841461ba936320836fa5bb1f50f49cea"
+        },
+        {
+          "path": "tmp/servo_valve_flow_estimation/伺服阀流量估算_论文格式.docx",
+          "bytes": 40541,
+          "sha256": "70e36b5aa0e4ee311cf7b530c2d3229c7093b630259c55a99d49f7568e7c2cde"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/servo_valve_selection_report",
+      "reason": "Completed local task bundle; retain raw results, sources and provenance.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/servo_valve_selection_report",
+      "file_count": 35,
+      "bytes": 11119789,
+      "files": [
+        {
+          "path": "tmp/servo_valve_selection_report/assets/catalog_flow.png",
+          "bytes": 105147,
+          "sha256": "ad4e84b3c4ad72090b8c1e334a57d4f1c77b6b99bc414f5df9031ff2086d75a9"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/assets/catalog_hydraulic.png",
+          "bytes": 123201,
+          "sha256": "2d150f9fb785a0fdbced459de2777dab677f3a75af9b7d996d0f0e3673262d9a"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/assets/catalog_ordering.png",
+          "bytes": 38468,
+          "sha256": "9de7f48dc30e48fa8d76987ced91b236216fca34a0c673424a1c158b681ace29"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/assets/catalog_response.png",
+          "bytes": 50034,
+          "sha256": "f2143624f32105ef7746600eb4fc227eeccc8ef69851be1849ac966915caea5e"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/assets/pressure_cloud.png",
+          "bytes": 115814,
+          "sha256": "0c2a96d56a31926a1302c15e7dc1db7a92ed0d8f3b74de7f14c660b03f277dfd"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/build_report.py",
+          "bytes": 46185,
+          "sha256": "aa7390252a61cdddc49c0de5e1f6c5c8de2d66571a7287c52edd1d8912e899c1"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/catalog_pages/page_14-14.png",
+          "bytes": 188663,
+          "sha256": "7845e1616f8c13bad09095ce559af7a3b8fcaae5bd91467f03277ffeb3f442ae"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/catalog_pages/page_19-19.png",
+          "bytes": 290174,
+          "sha256": "3cf1209f7b7a66f31c5418a421e305307ef2e304d45c6604b2a4b9e49f3fb443"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/catalog_pages/page_3-03.png",
+          "bytes": 340946,
+          "sha256": "1d463d05596f723932eb7612599d3b596ea249eea2717760d5a5f693a815529c"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/catalog_pages/page_6-06.png",
+          "bytes": 330383,
+          "sha256": "9274f438d7c39d58c478e484a3651ce4fb1687332bdd1b13145fb66d34b87333"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/catalog_pages/page_9-09.png",
+          "bytes": 176489,
+          "sha256": "a3d6b23fc10ffaa415b2a869fe74a0206012e8481ed9c387078d4ccf81157343"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/G761_4Lmin高频响伺服阀选型报告.docx",
+          "bytes": 456050,
+          "sha256": "6fa7ef4a10560c249c84d5dc23f0f9a86501ba33f8a05504b0a7c93b28a0e2ad"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/contact_sheet.png",
+          "bytes": 986726,
+          "sha256": "a3b5aaee9b1745dcb54a2448b98756a8c95d86b6c24c4fe4adafb2669701b49f"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/contact_sheet_final.png",
+          "bytes": 1029278,
+          "sha256": "03a4e5fd72449b193b888b8c94b5a6313cce10bbae41412f6a7fe4c0be602d7e"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/G761_4Lmin高频响伺服阀选型报告.pdf",
+          "bytes": 923163,
+          "sha256": "2b134087ceec8ad500e7b68341f0f86e87352f21af2a3e92c7736e4e1394ef57"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/page-1.png",
+          "bytes": 137626,
+          "sha256": "2f818d7018f88a597876043a0da9b2c75cb69ddb0139b1e4f51486fa055b0f7d"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/page-2.png",
+          "bytes": 215143,
+          "sha256": "ca8bb89d85f350965fb9471009b4af49e670e85274fe3a0152a90002162c28b2"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/page-3.png",
+          "bytes": 228327,
+          "sha256": "45a1ad8f409491b56254801788ce35ff0f029eff3fc537bd711b8d7ed7dd7c6f"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/page-4.png",
+          "bytes": 193983,
+          "sha256": "ca96d005cc4a37d157d3cc403c1ef70759da10a2106d7448f66a414b145180d9"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/page-5.png",
+          "bytes": 220328,
+          "sha256": "99fb331c386acf96f85020c0aacfdf3afb8da734aa9feaad2773b4573d8f213d"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/page-6.png",
+          "bytes": 232616,
+          "sha256": "b7edc531c8c1cb621f3543d8ef408abcc0b759420f12969d9636b40200e9b9be"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/page-7.png",
+          "bytes": 217399,
+          "sha256": "ec73037e519443da49d2580a9b91595a5cc80acfc9dcfb0a80b13bb1a8ea42a0"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/page-8.png",
+          "bytes": 206583,
+          "sha256": "54c35e1df00f296c42339a2c6f2ea1ec48242a71a4d4aeb88dd2ced255af94ad"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered/page-9.png",
+          "bytes": 243765,
+          "sha256": "a9a84f0249d23cd465bb2f4ca894e585868097992ba130a95da716513acdf01e"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/contact_sheet_final.png",
+          "bytes": 1210864,
+          "sha256": "c2dacec5dd1c9e2d5d7f994e48a4380fb62fe2cfd3249b56bf5c9380e9b298cd"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/G761_4Lmin高频响伺服阀选型报告.pdf",
+          "bytes": 716856,
+          "sha256": "4e469b8d9a9f5bac960549700d12c81fdec23d29c34abf98e751ad666e6c9dcc"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/page-1.png",
+          "bytes": 150548,
+          "sha256": "04182b24af7c1dc7593684b0e089581c28ab2ea83e8cf9dbc043a4f37b90b78d"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/page-2.png",
+          "bytes": 252698,
+          "sha256": "49bb70452ae20f4404a91021e2ab94334bc76e5acb6ec1a189f48609141f3701"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/page-3.png",
+          "bytes": 247808,
+          "sha256": "64913bb153cb08b4875345ba657355ffbd27a6f7d47591f7518bc0864bd3ebe7"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/page-4.png",
+          "bytes": 219523,
+          "sha256": "abefb7776b3d6c943c5a1038f5ac25ee307df78787e97548bb048ed1a11d8b69"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/page-5.png",
+          "bytes": 233178,
+          "sha256": "74145c3e7dc941f274f2f453f9478cab3816a58d84dc0ebf6d408a881bb5b587"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/page-6.png",
+          "bytes": 246233,
+          "sha256": "3fda1d94bf43d5069e7ae9c39bd68a7f5a8515c4172f110f118174452bee13b4"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/page-7.png",
+          "bytes": 242195,
+          "sha256": "f89215d54cbf316a5e7657a1f2b6d6bac89b3df50a5675ca95ae50579543dc3d"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/page-8.png",
+          "bytes": 235651,
+          "sha256": "b8642cef75a41f27ab9ec1e537cefd4cae0bf8af06269b09087f9b68ab5d793e"
+        },
+        {
+          "path": "tmp/servo_valve_selection_report/rendered_font_revision/page-9.png",
+          "bytes": 267744,
+          "sha256": "11df383176e31713ba48f45e756e478ace33cf2e15a35e404918799264126fb6"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/static_equilibrium_120mm_3500N",
+      "reason": "Completed local task bundle; retain raw results, sources and provenance.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/static_equilibrium_120mm_3500N",
+      "file_count": 27,
+      "bytes": 10576027,
+      "files": [
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/__pycache__/run_case.cpython-310.pyc",
+          "bytes": 18892,
+          "sha256": "20bbdd0bf3c2c69cbb9dc5a3b484935919d6027b2d89c091e6ea6e36b8eb9f0c"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/build_pressure_cloud_notebook.py",
+          "bytes": 16712,
+          "sha256": "36cd261c3dcb1f863253eb80b4317858fd84988ce32cccf89fdbacbc577fc378"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/estimate_active_force.py",
+          "bytes": 3139,
+          "sha256": "151c32517754fb0c764fcb10ef9ccc7d2b47aed008323f94bca9f1277b932cc3"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/pressure_cloud_figure/datas/equilibrium_fields.npz",
+          "bytes": 199496,
+          "sha256": "c3004a94f7f2af258e01813b0682b90b762e9368c6d0f343879bb7d319072fc5"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/pressure_cloud_figure/datas/equilibrium_summary.json",
+          "bytes": 5639,
+          "sha256": "350ab4813b819e5ef2da076f20a9046a8e9166d739cf73e31ff9184f973e9b49"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/pressure_cloud_figure/figures/静平衡四瓦压力云图.pdf",
+          "bytes": 53339,
+          "sha256": "cfb13202b8065947650e5f14b2ded716459edcbcbbac0f637bc7ac0d7e3eff8d"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/pressure_cloud_figure/figures/静平衡四瓦压力云图.tif",
+          "bytes": 9195054,
+          "sha256": "0124d01b08196f184215c62c6d0785bbd51bf154f0af0391e7a0c6234c364945"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/pressure_cloud_figure/figures/静平衡四瓦压力云图_preview.png",
+          "bytes": 115814,
+          "sha256": "0c2a96d56a31926a1302c15e7dc1db7a92ed0d8f3b74de7f14c660b03f277dfd"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/pressure_cloud_figure/figures/静平衡四瓦压力云图_readback_preview.png",
+          "bytes": 104911,
+          "sha256": "ac96b3e676fbd97f08b672568e99c97973f1fdc7fa3bce1206d611b550a6f4e2"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/pressure_cloud_figure/figures/静平衡四瓦压力云图_审计.json",
+          "bytes": 4549,
+          "sha256": "a3483ea9c41744477dffdc2cb7d47d583e2f00191d71a7ca02f8a45601e357ef"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/pressure_cloud_figure/template_reference_preview.png",
+          "bytes": 160489,
+          "sha256": "e4e4f3697e1b65e879aed9402beb7d943fa4edd1e6e9ffbe5431677bf88c15e1"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/pressure_cloud_figure/静平衡四瓦压力云图.ipynb",
+          "bytes": 430131,
+          "sha256": "c8e9bcfd653d2fd54e5910f6cfdf2bb30a1ea194aaf21d0dc810cadd12c51be6"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/equilibrium_evaluations.csv",
+          "bytes": 457,
+          "sha256": "dd858b075221b79bcb8506cc86009e3fbd93c8715ae9710788418bae6563b537"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/equilibrium_fields.npz",
+          "bytes": 199496,
+          "sha256": "c3004a94f7f2af258e01813b0682b90b762e9368c6d0f343879bb7d319072fc5"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/equilibrium_summary.json",
+          "bytes": 5639,
+          "sha256": "350ab4813b819e5ef2da076f20a9046a8e9166d739cf73e31ff9184f973e9b49"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/manifest.json",
+          "bytes": 1919,
+          "sha256": "1c159195dd2e210534afad3e14bdc20f6611d02dc30637f3fbb80433eb9ea3e8"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/orifice_flow_details.csv",
+          "bytes": 2698,
+          "sha256": "f91b4b36b516f816757449db7b6318dc2a3c0b5296b30cc631b55fa08c19e7f7"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/pad_flow_summary.csv",
+          "bytes": 1412,
+          "sha256": "46baa789610b06fe310786eea541aa56ed131ee247c2359944e23250ffc523e0"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/paper_config_source_alb12.json5",
+          "bytes": 91,
+          "sha256": "54efb4ae48dbd419f159fee5976860b749191e6bf1996dadee935dddb00a06c5"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/paper_config_source_share.json5",
+          "bytes": 2389,
+          "sha256": "499c0014ff5b7277aef24873e5f17fdc8d14adefb41af1844d0f6865969d8915"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/README.md",
+          "bytes": 2297,
+          "sha256": "268f2be5d8fa945da526b68b531fdf4ff54f53c3cfb9ae51a2dd6528f9bced50"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/resolved_case_config.json",
+          "bytes": 3351,
+          "sha256": "686f052eed86f09351cfedb5ea8277e6b47d1386efcbd34829ccf7bf9cee9d81"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/result_summary.csv",
+          "bytes": 2091,
+          "sha256": "32a7ad495d447bd7e16ceb2c0b4f6a18c2b548cac736ebfc33edc94d9f1ebffc"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/results/run_case.py",
+          "bytes": 22801,
+          "sha256": "8452f70964950532103fe800c38a0e0bc5bbeedc901f6e4aa4eeca10833fb4c1"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/run.stderr.log",
+          "bytes": 420,
+          "sha256": "3673ad79a72ad3b34fd15f0d596535e436e63731db4b67773b4f1972ad32d508"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/run.stdout.log",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "tmp/static_equilibrium_120mm_3500N/run_case.py",
+          "bytes": 22801,
+          "sha256": "8452f70964950532103fe800c38a0e0bc5bbeedc901f6e4aa4eeca10833fb4c1"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/__pycache__",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/__pycache__",
+      "file_count": 3,
+      "bytes": 204536,
+      "files": [
+        {
+          "path": "tmp/sharma_task/__pycache__/sharma_comparison.cpython-310.pyc",
+          "bytes": 63196,
+          "sha256": "1fc18a8fac7e8255f8e74c0aa9e6028efd55d8a8d5889716303a855019a76474"
+        },
+        {
+          "path": "tmp/sharma_task/__pycache__/sharma_hp07_single_grid.cpython-310.pyc",
+          "bytes": 67706,
+          "sha256": "cacf75de4bb5ccfcd11b63fee412a3919597f8930b095429e51b306920393fda"
+        },
+        {
+          "path": "tmp/sharma_task/__pycache__/sharma_hp1_single_grid.cpython-310.pyc",
+          "bytes": 73634,
+          "sha256": "a69820b2de061a620b604af6cdb266a8e78020bae60c2d886237c2255ee84b92"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/build_sharma_qbar_curve_notebook.py",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/build_sharma_qbar_curve_notebook.py",
+      "file_count": 1,
+      "bytes": 19017,
+      "files": [
+        {
+          "path": "tmp/sharma_task/build_sharma_qbar_curve_notebook.py",
+          "bytes": 19017,
+          "sha256": "61568eeb31a7fd419d218ca982230f616086cdf832b219857425f8bdc380a092"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/build_sharma_temperature_curve_notebook.py",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/build_sharma_temperature_curve_notebook.py",
+      "file_count": 1,
+      "bytes": 22332,
+      "files": [
+        {
+          "path": "tmp/sharma_task/build_sharma_temperature_curve_notebook.py",
+          "bytes": 22332,
+          "sha256": "3ed38b9f6484ac615016bdcdcec5d10d2942db022477a42057bfee08682d0cf1"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/current_task_status.md",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/current_task_status.md",
+      "file_count": 1,
+      "bytes": 16355,
+      "files": [
+        {
+          "path": "tmp/sharma_task/current_task_status.md",
+          "bytes": 16355,
+          "sha256": "ef6bfbfc29f507f3e645f0fd8bc17732661b1b5d99269ed92900a9d68c4d8c33"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/current_task_status_hp07.md",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/current_task_status_hp07.md",
+      "file_count": 1,
+      "bytes": 12599,
+      "files": [
+        {
+          "path": "tmp/sharma_task/current_task_status_hp07.md",
+          "bytes": 12599,
+          "sha256": "98bc9122e1b10570b440cf2b376b1c49314a899515bf418dfb88c23d54df9f91"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/current_task_status_hp1.md",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/current_task_status_hp1.md",
+      "file_count": 1,
+      "bytes": 13159,
+      "files": [
+        {
+          "path": "tmp/sharma_task/current_task_status_hp1.md",
+          "bytes": 13159,
+          "sha256": "0326a7ff259ae0a069a71baa65c4aefc88a97c43e81a7bbc50c9a4a2e195d144"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/diagnose_sharma_heat_partition_flow_same_state.py",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/diagnose_sharma_heat_partition_flow_same_state.py",
+      "file_count": 1,
+      "bytes": 10151,
+      "files": [
+        {
+          "path": "tmp/sharma_task/diagnose_sharma_heat_partition_flow_same_state.py",
+          "bytes": 10151,
+          "sha256": "4c7b804798efac2b4b7775252d40a45bb081bb740cd675e31c3e9c8cc3189b19"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/fig6a_s1_zoom.png",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/fig6a_s1_zoom.png",
+      "file_count": 1,
+      "bytes": 32979,
+      "files": [
+        {
+          "path": "tmp/sharma_task/fig6a_s1_zoom.png",
+          "bytes": 32979,
+          "sha256": "0d0f23c9c34be3ca0c0c9140df183eac808112134957bd075949e5e4a33be649"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/fixed_paper_eccentricity_partition_flow",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/fixed_paper_eccentricity_partition_flow",
+      "file_count": 4,
+      "bytes": 135741,
+      "files": [
+        {
+          "path": "tmp/sharma_task/fixed_paper_eccentricity_partition_flow/fixed_eccentricity_flow_comparison.csv",
+          "bytes": 7131,
+          "sha256": "701d7082e81477e4d34c06dd8c25171030e5330cf7864b594cf978201623241e"
+        },
+        {
+          "path": "tmp/sharma_task/fixed_paper_eccentricity_partition_flow/fixed_eccentricity_flow_comparison.partial.csv",
+          "bytes": 7131,
+          "sha256": "701d7082e81477e4d34c06dd8c25171030e5330cf7864b594cf978201623241e"
+        },
+        {
+          "path": "tmp/sharma_task/fixed_paper_eccentricity_partition_flow/model_assumptions.json",
+          "bytes": 580,
+          "sha256": "de0c54c834a70bad9f82c3c458a1d0446f238a681ac4161c02168a17de0aff2f"
+        },
+        {
+          "path": "tmp/sharma_task/fixed_paper_eccentricity_partition_flow/orifice_flows.csv",
+          "bytes": 120899,
+          "sha256": "8a3a102fb2d0d26ac61d767e4d53ddbd55fabd4e6b4f2030f941856f70139844"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/hp1_对比结论.md",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/hp1_对比结论.md",
+      "file_count": 1,
+      "bytes": 2830,
+      "files": [
+        {
+          "path": "tmp/sharma_task/hp1_对比结论.md",
+          "bytes": 2830,
+          "sha256": "70034a7f7ba4267c70703413bd1e861fe6d56405e13421c5177acdefa5f1ed76"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/local_output",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/local_output",
+      "file_count": 30,
+      "bytes": 13058050,
+      "files": [
+        {
+          "path": "tmp/sharma_task/local_output/case_mapping.csv",
+          "bytes": 3765,
+          "sha256": "b088043d7a4bbce4c6aead76e8021e24c2288db803fb2d833d7bd31f4bc9bfc8"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/digitization/figure7a_digitization_overlay.png",
+          "bytes": 143692,
+          "sha256": "ea9f9bf73b607afb44285504e169a84f69ce274f7d76129df7d81422a2108e4f"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_02.png",
+          "bytes": 439661,
+          "sha256": "5b289ab6b75426d1a980b00a4ab47857c22a4a6c982937b3fb8566b93b020077"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_03.png",
+          "bytes": 338063,
+          "sha256": "63332c4e1a6754c2b7ea1a2b622d83b8fb4a93941a98d60af660b6c53f150681"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_05.png",
+          "bytes": 1171009,
+          "sha256": "a45213683a9fa12da0f54b75e8b793f51a420e2a92ba6c95bd04646bd9df3b51"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_06.png",
+          "bytes": 846649,
+          "sha256": "73b63560aac98a6278b1f4ee4e5509d5e8415d2ee7d134138fbafcb6b7844351"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_07.png",
+          "bytes": 776934,
+          "sha256": "3a7005fe3502b63b900c10a479e51811940b8e5805d2b74ea0ad07d114e89a18"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_08.png",
+          "bytes": 910850,
+          "sha256": "40c82ad4faf7f1ed6ce7a19f33cfddb075d9cd6b1d8db2c48dccf04ed6ebbc31"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_09.png",
+          "bytes": 1223720,
+          "sha256": "5845981518d58e75e282a079eae3c8041d4e6a4ef27db70759d20a05521598a9"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_10.png",
+          "bytes": 752190,
+          "sha256": "3dd2c1abf0097717487c252c65e431f872997651deb45bb77746b4c9716d4a99"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_11.png",
+          "bytes": 644646,
+          "sha256": "7b494be7abc37581f87eb2e105227bd734d8872ccb1d073738352fe7f02b6d33"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_12.png",
+          "bytes": 638329,
+          "sha256": "4938e1edb20f969fa4ce3068ef72093da52618105819c0e89d6226fc86eeacaa"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_13.png",
+          "bytes": 709597,
+          "sha256": "a0c25ebc516c694771f40d132f35eea80af3c92be02bf65ba92f499dbc28c4fb"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_14.png",
+          "bytes": 658508,
+          "sha256": "0a6eb834b672762d3f10dea8517f97942dc5769d187f1cf9ed7ab005b3a77ac5"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_15.png",
+          "bytes": 1049283,
+          "sha256": "5845ede4b04a9abb16e91d3c376d62bb4c739fe07e559193230bc96794eb3c23"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_16.png",
+          "bytes": 510849,
+          "sha256": "e63ec6bc28b6cf1daef2de00926d8bf576a17e4cb2323e7ba20ee8039845a9be"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_17.png",
+          "bytes": 729017,
+          "sha256": "5181beae96b13e4190792df9ca7e4bf8af06a21a91d1ce2278918bb6bdba00f8"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/rendered_pages/page_18.png",
+          "bytes": 861710,
+          "sha256": "01da1c0dc57edea249c61b747924a7100c0aa139dae56a577dbbff218ea37a32"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_literature/sharma2003_full_text.txt",
+          "bytes": 54131,
+          "sha256": "e474ff0206c03766fbc8c9ee2bb3d939bee8132089aee3c2df95e41272e91817"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_simulation/cache/equilibrium_smoke_60x16_isothermal.json",
+          "bytes": 871,
+          "sha256": "c61723ab43c2e4ab81ca974749edc64ff6b37e38f8bbb489464ef0520d344659"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_simulation/cache/equilibrium_smoke_60x16_thermal.json",
+          "bytes": 872,
+          "sha256": "f73986f61856dc9b6e423667462df6eb836c7473cc68c06b5ed527bd57aead9b"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_simulation/fields/S3/60x16/isothermal_load_balanced.csv",
+          "bytes": 168508,
+          "sha256": "314f45ae955a13047ff28c13b91627776f1ea4eb965fc6e858c1dc1f26a8a6fb"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_simulation/fields/S3/60x16/isothermal_same_thermal_state.csv",
+          "bytes": 168545,
+          "sha256": "578c3850065fefa724e01672769859aa1e53dfdeeccb0ad1c1f276b0714ff189"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_simulation/fields/S3/60x16/thermal_load_balanced.csv",
+          "bytes": 209976,
+          "sha256": "31df9d9258fd7da68054434596cdf19c88add34d6e02db6c62dfcf4c1d28a9a0"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_simulation/smoke_orifice_flows.csv",
+          "bytes": 17978,
+          "sha256": "e7a921a0858b7e4f3a2958e6c28fa98de3b37f93422d246801682dc6998dccef"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/datas_simulation/smoke_test.json",
+          "bytes": 10429,
+          "sha256": "e8c650df39b462f91c5a4932d578741a13ee3c1e41e7111eebef3c4fea85a454"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/digitized_reference_curves.csv",
+          "bytes": 3889,
+          "sha256": "9dcf5ec8239266953635154e8eea933e8d6a809180e4033935d4c72ef5b6fe8d"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/literature_parameters.csv",
+          "bytes": 7092,
+          "sha256": "0f0ef3c4ff033b2093f1875bdb96b5fb2fadc10178990ae795550ed286944daa"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/model_assumptions.json",
+          "bytes": 2605,
+          "sha256": "df548e3dfea3b718c8e531ae543c31deaef1f89fe58f9397d6359dfb66cf08e5"
+        },
+        {
+          "path": "tmp/sharma_task/local_output/source_inventory.json",
+          "bytes": 4682,
+          "sha256": "84c6a86ff54c8ec2624cf2268d2b3749b0d125923044d2831bfc43a84dfd101d"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/page11_fig6a_crop.png",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/page11_fig6a_crop.png",
+      "file_count": 1,
+      "bytes": 123683,
+      "files": [
+        {
+          "path": "tmp/sharma_task/page11_fig6a_crop.png",
+          "bytes": 123683,
+          "sha256": "5d13cbb7ede15d070e86405b1398de11605da0140cc552f46c24e49f4e262bef"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/probe_sharma_thermal_repeated_calls.py",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/probe_sharma_thermal_repeated_calls.py",
+      "file_count": 1,
+      "bytes": 2542,
+      "files": [
+        {
+          "path": "tmp/sharma_task/probe_sharma_thermal_repeated_calls.py",
+          "bytes": 2542,
+          "sha256": "e3c829021aa1d2b82d34b2907716caf69cab9559c5f57439887daf4c5221a937"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/sharma_comparison.py",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/sharma_comparison.py",
+      "file_count": 1,
+      "bytes": 86313,
+      "files": [
+        {
+          "path": "tmp/sharma_task/sharma_comparison.py",
+          "bytes": 86313,
+          "sha256": "0ca8830384db10df80433518e618ba4d268683462a1d49944c9e87ad422172ea"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/sharma_hp07_single_grid.py",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/sharma_hp07_single_grid.py",
+      "file_count": 1,
+      "bytes": 92539,
+      "files": [
+        {
+          "path": "tmp/sharma_task/sharma_hp07_single_grid.py",
+          "bytes": 92539,
+          "sha256": "44bded98303a7135e4012932aa80c6bbbd8944d2e40c41b4e92a90d2a753bfa5"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/sharma_hp1_single_grid.py",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/sharma_hp1_single_grid.py",
+      "file_count": 1,
+      "bytes": 102146,
+      "files": [
+        {
+          "path": "tmp/sharma_task/sharma_hp1_single_grid.py",
+          "bytes": 102146,
+          "sha256": "cda1a3a303d8ac93c74a445cb5054af5dc8dfd068a92e96c14bd72365511b294"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/Sharma最大油膜温升热分配系数对比曲线.ipynb",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/Sharma最大油膜温升热分配系数对比曲线.ipynb",
+      "file_count": 1,
+      "bytes": 28786,
+      "files": [
+        {
+          "path": "tmp/sharma_task/Sharma最大油膜温升热分配系数对比曲线.ipynb",
+          "bytes": 28786,
+          "sha256": "6e80cd50a38c50b35143959c70651c9758caa59ea28b61323f4cb9025a560899"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/Sharma最大油膜温升热分配系数校准对比曲线.ipynb",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/Sharma最大油膜温升热分配系数校准对比曲线.ipynb",
+      "file_count": 1,
+      "bytes": 195436,
+      "files": [
+        {
+          "path": "tmp/sharma_task/Sharma最大油膜温升热分配系数校准对比曲线.ipynb",
+          "bytes": 195436,
+          "sha256": "63a9202e444650c103577f107b1c9ae432738e1a43569e7e6871a3b0071be7e0"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/Sharma温升目标热分配系数反标.py",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/Sharma温升目标热分配系数反标.py",
+      "file_count": 1,
+      "bytes": 19948,
+      "files": [
+        {
+          "path": "tmp/sharma_task/Sharma温升目标热分配系数反标.py",
+          "bytes": 19948,
+          "sha256": "8f9fa412a2c0f3b9a605b09c21780d16ffce5bae9d9ab65cdb2c628a3ff731ca"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/Sharma热Qbar热分配系数对比曲线.ipynb",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/Sharma热Qbar热分配系数对比曲线.ipynb",
+      "file_count": 1,
+      "bytes": 24275,
+      "files": [
+        {
+          "path": "tmp/sharma_task/Sharma热Qbar热分配系数对比曲线.ipynb",
+          "bytes": 24275,
+          "sha256": "44dacf0c1037c9fac7ffa987699248836ef959dd2070735e267c39fae0fd89ea"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/staging",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/staging",
+      "file_count": 11,
+      "bytes": 198235,
+      "files": [
+        {
+          "path": "tmp/sharma_task/staging/__pycache__/Sharma固定偏心率热分配系数流量复核.cpython-310.pyc",
+          "bytes": 14451,
+          "sha256": "c13680a2e87abb651be1c184888cd42ba7c2bddb8cef9ff61d5849de050553a7"
+        },
+        {
+          "path": "tmp/sharma_task/staging/current_task_status.md",
+          "bytes": 19016,
+          "sha256": "4e455f8e0d55d347fedae41be27406cc919187d88234f1c198780d709c9b202b"
+        },
+        {
+          "path": "tmp/sharma_task/staging/fixed_eccentricity_result/fixed_eccentricity_flow_comparison.csv",
+          "bytes": 7131,
+          "sha256": "701d7082e81477e4d34c06dd8c25171030e5330cf7864b594cf978201623241e"
+        },
+        {
+          "path": "tmp/sharma_task/staging/fixed_eccentricity_result/fixed_eccentricity_flow_comparison.partial.csv",
+          "bytes": 7131,
+          "sha256": "701d7082e81477e4d34c06dd8c25171030e5330cf7864b594cf978201623241e"
+        },
+        {
+          "path": "tmp/sharma_task/staging/fixed_eccentricity_result/fixed_eccentricity_sources.csv",
+          "bytes": 1327,
+          "sha256": "a7ef58669929598876e771f2aa20694e40c1fb5a13455e35c3ce04312044033c"
+        },
+        {
+          "path": "tmp/sharma_task/staging/fixed_eccentricity_result/flow_sensitivity_summary.csv",
+          "bytes": 2526,
+          "sha256": "b3f8c7166e472e80181e476a77ea96f3b27819a894a32f5d057a01c1dda3e1de"
+        },
+        {
+          "path": "tmp/sharma_task/staging/fixed_eccentricity_result/model_assumptions.json",
+          "bytes": 741,
+          "sha256": "9032e2b217f37dda446da24efbaa617b0cba23208942449411c966d877547521"
+        },
+        {
+          "path": "tmp/sharma_task/staging/fixed_eccentricity_result/orifice_flows.csv",
+          "bytes": 120899,
+          "sha256": "8a3a102fb2d0d26ac61d767e4d53ddbd55fabd4e6b4f2030f941856f70139844"
+        },
+        {
+          "path": "tmp/sharma_task/staging/fixed_eccentricity_result/result_summary.json",
+          "bytes": 1855,
+          "sha256": "0ee7ff6258e81e9469d6606007fe51ae45c7da0d5a15928333e6eff894b72230"
+        },
+        {
+          "path": "tmp/sharma_task/staging/fixed_eccentricity_result/固定偏心率流量复核结论.md",
+          "bytes": 1772,
+          "sha256": "dc95c67654ed343d07b6c075f2fc6bc7c0bbf04844bbbf80362462447c5ff9d4"
+        },
+        {
+          "path": "tmp/sharma_task/staging/Sharma固定偏心率热分配系数流量复核.py",
+          "bytes": 21386,
+          "sha256": "69749b55fbadd0db0538d3848dc410c21fb09cb0d344cd532ca68d06f14bed64"
+        }
+      ]
+    },
+    {
+      "action": "move",
+      "source": "tmp/sharma_task/对比结论.md",
+      "reason": "Completed Sharma staging asset; external numba cache path remains available.",
+      "destination": "outputs/archive/project_cleanup_20260926/local_tasks/tmp/sharma_task/对比结论.md",
+      "file_count": 1,
+      "bytes": 4046,
+      "files": [
+        {
+          "path": "tmp/sharma_task/对比结论.md",
+          "bytes": 4046,
+          "sha256": "ab998eead0e64fa27681d501e3504b2727aec2bf4810cf23772e481a6035e6f9"
+        }
+      ]
+    },
+    {
+      "action": "delete_regenerable_bytecode",
+      "files": 424,
+      "bytes": 3186700,
+      "scope": "ALB, tests and tools; only bytecode with corresponding source; nested repositories excluded"
+    }
+  ],
+  "retained_in_place": [
+    "refs",
+    "docs/migrations",
+    "tools/manual/control/LQG/output",
+    "dist",
+    "outputs/.devtools",
+    "outputs/release_acceptance",
+    ".cache",
+    ".claude/worktrees/agent-a1b62da69368a6789",
+    "outputs/reference_worktree_93dd63d",
+    "tools/dev_docs_portal",
+    "tmp/sharma_task/numba_cache"
+  ],
+  "access_limited_directories": [
+    {
+      "path": "outputs/.pytest_tmp",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\.pytest_tmp' is denied."
+    },
+    {
+      "path": "outputs/pytest_post_s0011_lambda",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\pytest_post_s0011_lambda' is denied."
+    },
+    {
+      "path": "outputs/pytest_tmp/alb_prerequisites",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\pytest_tmp\\alb_prerequisites' is denied."
+    },
+    {
+      "path": "outputs/pytest_tmp/external_training",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\pytest_tmp\\external_training' is denied."
+    },
+    {
+      "path": "outputs/pytest_tmp/input_transform_api",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\pytest_tmp\\input_transform_api' is denied."
+    },
+    {
+      "path": "outputs/pytest_tmp/real_model_migration/m35-x719mfs9",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\pytest_tmp\\real_model_migration\\m35-x719mfs9' is denied."
+    },
+    {
+      "path": "outputs/pytest_tmp/real_model_migration/packages-aq11wdhe",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\pytest_tmp\\real_model_migration\\packages-aq11wdhe' is denied."
+    },
+    {
+      "path": "outputs/pytest_tmp/surrogate_migration",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\pytest_tmp\\surrogate_migration' is denied."
+    },
+    {
+      "path": "outputs/release_acceptance/final_focused_tmp",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\final_focused_tmp' is denied."
+    },
+    {
+      "path": "outputs/release_acceptance/pytest_tmp_30104_379f4dcc",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\pytest_tmp_30104_379f4dcc' is denied."
+    },
+    {
+      "path": "outputs/release_acceptance/pytest_tmp_47720_eb390def",
+      "readable": false,
+      "reason": "Access to the path 'G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\pytest_tmp_47720_eb390def' is denied."
+    }
+  ],
+  "other_deferred": [
+    {
+      "path": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\final_focused_tmp",
+      "reason": "[WinError 5] 拒绝访问。: 'G:\\\\ALB_PROJECTS\\\\ALB_MAIN\\\\outputs\\\\release_acceptance\\\\final_focused_tmp'"
+    },
+    {
+      "path": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\pytest_tmp_30104_379f4dcc",
+      "reason": "[WinError 5] 拒绝访问。: 'G:\\\\ALB_PROJECTS\\\\ALB_MAIN\\\\outputs\\\\release_acceptance\\\\pytest_tmp_30104_379f4dcc'"
+    },
+    {
+      "path": "G:\\ALB_PROJECTS\\ALB_MAIN\\outputs\\release_acceptance\\pytest_tmp_47720_eb390def",
+      "reason": "[WinError 5] 拒绝访问。: 'G:\\\\ALB_PROJECTS\\\\ALB_MAIN\\\\outputs\\\\release_acceptance\\\\pytest_tmp_47720_eb390def'"
+    },
+    {
+      "path": "dist/re_alb-0.2.0-py3-none-any.whl",
+      "reason": "[Errno 13] Permission denied: 'G:\\\\ALB_PROJECTS\\\\ALB_MAIN\\\\dist\\\\re_alb-0.2.0-py3-none-any.whl'"
+    }
+  ],
+  "checks": {
+    "status": "completed_with_existing_import_layer_failure",
+    "pytest_collection": {
+      "before_exit_code": 0,
+      "after_exit_code": 0
+    },
+    "targeted_pytest": {
+      "exit_code": 1,
+      "failed": 1,
+      "passed": 14,
+      "failed_node": "tests/validation/test_import_boundaries.py::test_production_imports_obey_namespace_layers",
+      "violation": "ALB.surrogate.training.thermal_memory_training -> ALB.dynamics.identification",
+      "preexisting_source_evidence": [
+        {
+          "path": "ALB/surrogate/training/thermal_memory_training.py",
+          "sha256": "b25ea4686f775ec4993cf37c09c519f9c4d4b4461f2f0dc42edc00d43b78095f",
+          "unchanged_from_pre_cleanup": true
+        },
+        {
+          "path": "tests/validation/test_import_boundaries.py",
+          "sha256": "d20ed153e09c1666fc0501aa152a9d73a15616fd5a1531df41eb993d43ba99b5",
+          "unchanged_from_pre_cleanup": true
+        }
+      ],
+      "warning": "Unknown config option: cache_dir (cacheprovider is disabled in the existing configuration)",
+      "log": "outputs/maintenance/project_cleanup_20260926/pytest_targeted.log"
+    },
+    "mkdocs_strict": {
+      "exit_code": 0,
+      "site": "outputs/maintenance/project_cleanup_20260926/site_validation"
+    },
+    "notebooks": [
+      {
+        "path": "tools/manual/notebooks/bearing_config_exploration.ipynb",
+        "cells": 6,
+        "valid": true
+      },
+      {
+        "path": "tools/manual/notebooks/m35_training_10_sample_refactored_alb_validation.ipynb",
+        "cells": 11,
+        "valid": true
+      }
+    ],
+    "documentation": {
+      "utf8_without_bom": true,
+      "checked_documents": [
+        "docs/file_classification.md",
+        "docs/project_overview.md",
+        "docs/current_state.md",
+        "docs/daily_summary_log.md",
+        "docs/daily_maintenance/daily_doc_update_index.md",
+        "docs/daily_maintenance/project_cleanup_20260926.md",
+        "tools/README.md",
+        "tools/manual/archive/README.md"
+      ],
+      "broken_links": []
+    },
+    "git_diff_check": {
+      "exit_code": 0
+    },
+    "numerical_regression_run": false,
+    "external_project_files_modified": false
+  },
+  "local_evidence": "outputs/maintenance/project_cleanup_20260926/",
+  "baseline_manifest_sha256": "939adc81bb38e83182bcd01ef711f44cd9c65c86faffd33762f77e523e672f7e"
+}
