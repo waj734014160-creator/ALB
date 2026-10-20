@@ -306,6 +306,9 @@ class ALB:
         if static:
             sv = self.static_sv
             self._initialize_children()
+            # The controller was just reset; restart the sampling phase.
+            self._control_counter = 0
+            self._held_command = None
         else:
             sv = self._servovalves
         for num, servovalve in enumerate(sv):
@@ -622,10 +625,11 @@ class ALB:
     ) -> np.ndarray:
         """Return the pad force for an explicit spool opening.
 
-        The spool is published to the restrictors through each valve's
-        direct-spool port (no valve dynamics are advanced) and every pad is
+        The limited spool is written to the restrictor inputs connected to
+        each valve (the valves themselves are not touched) and every pad is
         evaluated through its side-effect-free ``probe_force``. Lifecycle and
-        result snapshots of this runtime are unchanged.
+        result snapshots of this runtime are unchanged; when an integrator
+        owns the valve states (ROS2), this runtime publishes no output.
         """
 
         self._require_ready("probing force")
@@ -636,8 +640,14 @@ class ALB:
         values = np.asarray(spool, dtype=float).reshape(-1)
         if values.shape != (len(self._servovalves),):
             raise ValueError("spool must contain one value per servovalve")
-        for servovalve, value in zip(self._servovalves, values):
-            servovalve.set_spool(value)
+        if not np.all(np.isfinite(values)):
+            raise ValueError("spool must contain finite values")
+        limited = np.asarray(limit_signal(values), dtype=float)
+        for servovalve, value in zip(self._servovalves, limited):
+            # Feed the restrictors directly: the valve lifecycle, published
+            # spool, and dynamic state stay untouched.
+            for orifice in servovalve.simple_models:
+                orifice.input(float(value))
         return self._probe_pads(dto)
 
     def _probe_pads(self, dto: BearingInput) -> np.ndarray:
@@ -796,6 +806,9 @@ class NodimALB(ALB):
         if static:
             sv = self.static_sv
             self._initialize_children()
+            # The controller was just reset; restart the sampling phase.
+            self._control_counter = 0
+            self._held_command = None
         else:
             sv = self._servovalves
         for num, servovalve in enumerate(sv):
