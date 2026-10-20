@@ -36,7 +36,7 @@
 | `tests/regression/api/test_coupling_staggered_pre_0_4_7_reference.py` | 上述 5 例精确相等。 |
 | `tools/reference/generate_predictor_corrector_0_4_7_reference.py`、`refs/predictor_corrector_0_4_7_reference_v1.json/.npz` | 由完成后的实现（`a1eb59b`）生成的新行为参考：液膜 iterate、液膜 PECE、瞬态热液膜、采样主动 PID（`Ts = 3.5h`，IQN-ILS）、外部阀芯（held）、记忆解析轴承、硬化解析轴承（IQN-ILS）。 |
 | `tests/regression/dynamics/test_predictor_corrector_0_4_7_reference.py` | 新行为参考 7 例精确相等（数组与诊断元数据）。 |
-| `tests/unit/physics/test_bearing_checkpoint_0_4_7.py` | 存档/回退契约（80 项）：18 个族/替身（含开启压力/膜厚保存历史的液膜、`control_period` 为 3 步的主动 PID）× {协议实现、3 次试算后回退与孪生对象逐位相同、A4 式序列每步插 2 次试算（20 步，见第 3 节第 14 条）、失败试算后回退的生命周期}，以及令牌绑定、热包装不转发、`LinearSpoolProvider` 回退与 20 步孪生比较、多瓦子瓦缺协议拒绝、液膜失败试算回退、嵌套字典（历史列表字典、`defaultdict`、自引用字典）原地恢复、控制器自带协议时的委托。 |
+| `tests/unit/physics/test_bearing_checkpoint_0_4_7.py` | 存档/回退契约（80 项）：18 个族/替身（含开启压力/膜厚保存历史的液膜、`control_period` 为 3 步的主动 PID）× {协议实现、3 次试算后回退与孪生对象逐位相同、A4 式 20 步序列每步插 2 次试算（输入幅值见第 3 节第 14 条）、失败试算后回退的生命周期}，以及令牌绑定、热包装不转发、`LinearSpoolProvider` 回退与 20 步孪生比较、多瓦子瓦缺协议拒绝、液膜失败试算回退、嵌套字典（历史列表字典、`defaultdict`、自引用字典）原地恢复、控制器自带协议时的委托。 |
 | `tests/unit/dynamics/test_predictor_corrector_0_4_7.py` | 积分器核心（48 项）：选项校验、Aitken 两步得不动点、IQN-ILS 迭代次数 ≤ 维数 + 2、线性轴承对矩阵指数精确解（误差比约 4，staggered 约 2）、硬化轴承自收敛并与 ROS2/staggered 收敛到同一解、记忆轴承（ROS2 拒绝）、采样主动轴承控制器计数、刚性算例、求值计数、两个轴承的 Jacobi 试算与计数、不收敛 warn（与 PECE 逐位相同，即提交最后一次迭代）/raise（封存、运行时失效、诊断计入失败步）、试算失败回退与计数、非有限值、多瓦子瓦缺协议在 reset 时拒绝、离散转子、`_propagate_trial` 与 `_propagate` 逐位一致。 |
 | `tests/unit/api/test_predictor_corrector_simulation_0_4_7.py` | 公开 API 层（30 项）：真实小网格瞬态热液膜运行与诊断字段、选项与拓扑校验（含路径）、文件配置解析、控制周期组合、默认/ROS2 元数据键集合不变、`write()`、失败封存与 `partial_result`、主动/外部阀芯/多瓦、带热主动 PID 与带热外部阀芯（可存档 provider）。 |
 | `tests/_support/dynamics/memory_bearings.py`（新） | `MemoryAnalyticBearing`（刚度向偏心相关平衡值一阶松弛，指数衰减 + 输入梯形二阶推进，只在提交时更新，`probe_force=None`）和 `SampledActiveAnalyticBearing`（采样控制器 + 一阶阀，阀输入可选一阶保持或零阶保持）。 |
@@ -178,7 +178,7 @@ Aitken 收敛到的 ω 与最优值 `1/(1+ρ)`（0.67、0.33、0.17）一致；�
 11. **IQN-ILS 细节。** `iqn_reuse_steps > 0` 时，前几步的列只在本步 `k >= 1` 时并入最小二乘（`k = 0` 仍用 `omega` 松弛），与任务公式的 `k = 0` 行一致；最小二乘最多保留界面维数个最新列；所有列都被丢弃时退回 `omega` 松弛。列丢弃阈值按任务公式取 `1e-10 ‖r^k‖`；代码评审指出该阈值随残差趋零，收敛末段可能保留近似相关的列，可改为相对 `max|R_ii|` 的阈值。本次按任务公式实现，未改。
 12. **警告与异常的位置。** `CouplingIterationWarning` 定义在 `ALB/dynamics/predictor_corrector.py`，由 `ALB.api.errors` 再导出为根符号（与 `TimeStepAdjustedWarning` 不同，后者定义在 `ALB.api.errors`），以免 `ALB.dynamics` 依赖 `ALB.api`。`CouplingIterationError`、`CouplingTrialError` 不进入公开 API，`run()` 把它们包装为 `SimulationError`。
 13. **参考生成脚本依赖测试替身。** `tools/reference/generate_predictor_corrector_0_4_7_reference.py` 从 `tests/_support` 导入解析转子与记忆轴承，并复用 0.4.6 ROS2 生成脚本中的解析对象，以保证参考与单元测试使用同一模型。
-14. **A4 测试步数。** 契约测试中 A4 式序列对 17 个族/替身为 20 步；`nondimensional_external_spool_thermal` 为 4 步，因为该小网格无量纲瞬态热模型在不插入任何试算时也在第 5 个输入处热迭代不收敛（模型自身的问题，与存档无关）。
+14. **A4 测试输入幅值。** 契约测试中 A4 式序列对全部 18 个族/替身均为 20 步；`nondimensional_external_spool_thermal` 使用 0.4 倍输入幅值，因为原幅值下该小网格无量纲瞬态热模型在不插入任何试算时也在第 6 个输入（步序号 5）热迭代不收敛，属模型自身问题，与存档无关。
 15. **分层 mypy。** 未改动发布门禁基线 `tools/validation/mypy_layer_baseline_0_4.json`（在 0.4.6 起点已过期）；本次的精确增量见第 5.4 节。
 16. **发布动作。** 未打 tag，未写发布验收记录，未修改 `.github/workflows/`。是否把 0.4.7 分支纳入文档自动发布、是否做正式发布验收，由用户决定。
 17. **存档代价随运行长度增长。** 通用组件快照复制追加式历史（阀的 `ts`/`u`/`yout`/`xout`、控制器结果表、液膜结果表、节流器记录、可选保存历史），单次存档/回退为 O(已提交步数)。本次保持“完整复制”以确保逐位契约，未做按长度截断的优化（需要逐类确认哪些历史只追加）。若长时程运行中成为瓶颈，可作为后续优化立项。

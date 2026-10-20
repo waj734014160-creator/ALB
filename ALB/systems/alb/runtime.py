@@ -733,10 +733,11 @@ class ALB:
         children = []
         controller = self._controller
         if controller is not None:
-            if callable(getattr(controller, "checkpoint", None)) and callable(
+            controller_checkpoint = getattr(controller, "checkpoint", None)
+            if callable(controller_checkpoint) and callable(
                 getattr(controller, "restore", None)
             ):
-                children.append((controller, controller.checkpoint()))
+                children.append((controller, controller_checkpoint()))
             else:
                 components.extend(
                     [controller, getattr(controller, "_lifecycle", None)]

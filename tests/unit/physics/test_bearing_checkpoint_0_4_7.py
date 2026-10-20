@@ -220,10 +220,7 @@ FAMILIES: dict[str, tuple[Callable[[], Any], int]] = {
     ),
     "nondimensional_external_spool_thermal": (
         _config_runtime(_nondimensional_active_spec("external_spool", thermal=True)),
-        # This small nondimensional transient thermal model stops converging
-        # at the fifth input of ``_dto`` even without any trial, so its A4
-        # sequence covers the first four steps.
-        4,
+        20,
     ),
     "multi_pad_children": (_config_runtime(multi_pad_spec()), 20),
     "gas_film": (_config_runtime(_gas_spec()), 20),
@@ -246,6 +243,12 @@ FAMILIES: dict[str, tuple[Callable[[], Any], int]] = {
         20,
     ),
 }
+
+
+# Input amplitude of the A4 sequence per family (1 unless listed). At full
+# amplitude the small nondimensional transient thermal model stops converging
+# at step index 5 even without trials; 0.4 keeps all 20 steps convergent.
+A4_INPUT_SCALE = {"nondimensional_external_spool_thermal": 0.4}
 
 
 def _ready(runtime: Any) -> Any:
@@ -336,17 +339,18 @@ def test_three_trials_then_restore_equal_an_undisturbed_twin(name: str) -> None:
 @pytest.mark.parametrize("name", tuple(FAMILIES))
 def test_two_trials_per_step_keep_the_committed_sequence(name: str) -> None:
     steps = FAMILIES[name][1]
+    base = A4_INPUT_SCALE.get(name, 1.0)
     disturbed, twin = _build(name), _build(name)
     for step in range(steps):
         if step > 0:
             token = disturbed.checkpoint()
             for scale in (1.3, 0.7):
                 try:
-                    disturbed.step(_dto(disturbed, step, scale))
+                    disturbed.step(_dto(disturbed, step, base * scale))
                 finally:
                     disturbed.restore(token)
-        disturbed_output = disturbed.step(_dto(disturbed, step))
-        twin_output = twin.step(_dto(twin, step))
+        disturbed_output = disturbed.step(_dto(disturbed, step, base))
+        twin_output = twin.step(_dto(twin, step, base))
         np.testing.assert_array_equal(
             disturbed_output.force,
             twin_output.force,
