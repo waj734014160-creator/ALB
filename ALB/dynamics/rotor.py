@@ -513,17 +513,21 @@ class RossRotor:
         self._force1 = current_force
         self._state_ready = False
         self._lifecycle.latch()
+        output_matrix = np.asarray(self._c, dtype=float)
+        feedthrough = np.asarray(self._d, dtype=float)
         with self._lifecycle.evaluation():
-            self._xk1 = next_state.copy()
+            committed = next_state.copy()
             self._force0 = self._force1
+            # Same output equation as the exact discretization path.
             self._yout = np.squeeze(
-                np.dot(self._xk1, np.transpose(self._c))
-            ) + np.squeeze(np.dot(self._force1, np.transpose(self._d)))
-            self._xk0 = self._xk1
-            self._xout = self._xk0
+                np.dot(committed, np.transpose(output_matrix))
+            ) + np.squeeze(np.dot(current_force, np.transpose(feedthrough)))
+            self._xk1 = committed
+            self._xk0 = committed
+            self._xout = committed
             self._state_ready = True
             self._commit_state()
-        return self._xk1.copy()
+        return committed.copy()
 
     def continuesys(self):
         """Discretize the ROSS continuous model for first-order held loads.

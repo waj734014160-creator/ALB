@@ -145,7 +145,11 @@ class Ros2Options:
             )
 
     def to_dict(self) -> dict[str, object]:
-        """Return primitive metadata describing these options."""
+        """Return primitive metadata describing these options.
+
+        ``jacobian_state`` is reported only as ``None`` or ``"user-supplied"``;
+        the mapping is stored in ``SimulationResult.metadata["ros2_options"]``.
+        """
 
         return {
             "jacobian_refresh": self.jacobian_refresh,
@@ -597,18 +601,21 @@ class _BindingForceModel:
             else held
         )
 
+        torch_force: Any = self.torch_force
+        jacrev: Any = getattr(torch.func, "jacrev")
+
         def force(x: Any, v: Any, s: Any) -> Any:
-            return self.torch_force(x, v, s)
+            return torch_force(x, v, s)
 
         x0 = torch.as_tensor(np.asarray(local.displacement), dtype=torch.float64)
         v0 = torch.as_tensor(np.asarray(local.velocity), dtype=torch.float64)
         if spool is not None:
-            jac_x, jac_v, jac_s = torch.func.jacrev(force, argnums=(0, 1, 2))(
+            jac_x, jac_v, jac_s = jacrev(force, argnums=(0, 1, 2))(
                 x0, v0, local_spool
             )
             k_s = f_scale * jac_s.detach().cpu().numpy().reshape(2, -1)
         else:
-            jac_x, jac_v = torch.func.jacrev(
+            jac_x, jac_v = jacrev(
                 lambda x, v: force(x, v, local_spool), argnums=(0, 1)
             )(x0, v0)
             k_s = np.zeros((2, 0))
