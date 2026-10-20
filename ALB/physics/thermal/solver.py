@@ -50,6 +50,30 @@ from .scales import ThermalNondimScales
 
 _MIU_NUMERIC_FLOOR = 1e-12
 
+
+def _thermal_linear_diagnostics(matrix, rhs, raw, limited, *, scale=1.0, offset=0.0):
+    """Audit the returned temperature against the assembled energy equation.
+
+    Clipping is retained as an iteration safeguard.  A clipped fixed point is
+    not necessarily a solution of the energy equation, so report its backward
+    residual separately from the linear solver's residual.
+    """
+    raw = np.asarray(raw, dtype=float)
+    limited = np.asarray(limited, dtype=float)
+    rhs = np.asarray(rhs, dtype=float)
+    lhs = np.asarray(matrix @ limited, dtype=float)
+    denominator = max(float(np.max(np.abs(lhs))), float(np.max(np.abs(rhs))), 1e-30)
+    residual = float(np.max(np.abs(lhs - rhs)) / denominator)
+    raw_lhs = np.asarray(matrix @ raw, dtype=float)
+    raw_denominator = max(float(np.max(np.abs(raw_lhs))), float(np.max(np.abs(rhs))), 1e-30)
+    return {
+        "linear_residual": float(np.max(np.abs(raw_lhs - rhs)) / raw_denominator),
+        "energy_residual": residual if np.isfinite(residual) else float("inf"),
+        "temperature_clip_count": int(np.count_nonzero(raw != limited)),
+        "raw_temperature_min": float(offset + scale * np.min(raw)),
+        "raw_temperature_max": float(offset + scale * np.max(raw)),
+    }
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -1351,12 +1375,13 @@ class SkfemThermalModel:
             K_bc, f_bc = enforce(K, f, D=dirichlet_nodes, x=t_bc)
         else:
             K_bc, f_bc = K, f
-        t_nodal = spsolve(K_bc, f_bc)
+        t_raw = spsolve(K_bc, f_bc)
 
         # Clamp to physical range
-        t_nodal = np.clip(t_nodal, t_supply - 5.0, t_supply + self.config.max_delta_t)
+        t_nodal = np.clip(t_raw, t_supply - 5.0, t_supply + self.config.max_delta_t)
 
         return {
+            **_thermal_linear_diagnostics(K_bc, f_bc, t_raw, t_nodal),
             "temperature": t_nodal,
             "t_eff": float(np.mean(t_nodal)),
             "mesh": mesh,
@@ -2025,13 +2050,16 @@ class SkfemThermalModelNondim(SkfemThermalModel):
             K_bc, f_bc = enforce(K, f, D=dirichlet_nodes, x=t_bc)
         else:
             K_bc, f_bc = K, f
-        t_bar = spsolve(K_bc, f_bc)
+        t_bar_raw = spsolve(K_bc, f_bc)
         t_bar = np.clip(
-            t_bar, -5.0 / scales.delta_t, self.config.max_delta_t / scales.delta_t
+            t_bar_raw, -5.0 / scales.delta_t, self.config.max_delta_t / scales.delta_t
         )
         t_nodal = scales.temperature_from_nondim(t_bar, t_supply)
 
         return {
+            **_thermal_linear_diagnostics(
+                K_bc, f_bc, t_bar_raw, t_bar, scale=scales.delta_t, offset=t_supply
+            ),
             "temperature": t_nodal,
             "temperature_nondim": t_bar,
             "t_eff": float(np.mean(t_nodal)),
@@ -2998,6 +3026,7 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         newton_iterations: int = 0,
         newton_residual: float = np.nan,
         newton_line_search_steps: int = 0,
+        direct_diagnostics: Optional[dict] = None,
     ):
         model = self.bearing.main_model
         scales = thermal.get("scales")
@@ -3014,6 +3043,7 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
             "newton_iterations": int(newton_iterations),
             "newton_residual": float(newton_residual),
             "newton_line_search_steps": int(newton_line_search_steps),
+            **(direct_diagnostics or {}),
         }
 
         temperature_x, temperature_z = self._thermal_output_coordinates(
@@ -3050,6 +3080,7 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
                     "q_orifice_total_nondim", 0.0
                 ),
                 "thermal_transient": bool(transient),
+                "thermal_diagnostics": dict(direct_diagnostics or {}),
             }
         )
         if "temperature_nondim" in thermal:
@@ -3114,23 +3145,17 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         self._thermal_grid = _build_film_grid(model)
         mesh_data = self.thermal_model.build_mesh(model, self._thermal_grid)
 
-        for i in range(self.config.max_iter):
-            n_iter = i + 1
+        def evaluate_field(field):
+            """Return matched pressure and temperature at one viscosity field."""
             # Apply viscosity field to nodes and keep reference lambda fixed.
-            self._apply_miu_ratio_to_nodes(miu_field)
-            miu_mean = float(np.mean(miu_field))
+            self._apply_miu_ratio_to_nodes(field)
+            mean = float(np.mean(field))
             self._sync_reference_film_args()
-
-            # Solve hydrodynamics
-            self.bearing._solve_raw()
-
-            # Collect orifice flow data (available after hydro solve)
+            hydro_result = self.bearing._solve_raw()
             orifice_data = self._collect_orifice_info()
-
-            # Update pressure gradients only (no mesh rebuild)
             self.thermal_model.update_pressure_gradients(model, mesh_data)
-            miu_visc = self._get_thermal_viscosity(miu_field, miu_mean, mesh_data)
-            thermal = self.thermal_model.solve(
+            miu_visc = self._get_thermal_viscosity(field, mean, mesh_data)
+            thermal_result = self.thermal_model.solve(
                 model,
                 miu_visc,
                 mesh_data,
@@ -3138,41 +3163,80 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
                 temperature_prev=temperature_prev,
                 transient=transient,
             )
+            return hydro_result, thermal_result, mean
 
-            # Map temperature back to film nodes
+        def field_residual(field, target):
+            error = float(np.max(np.abs(target - field)) / max(np.max(np.abs(field)), 1e-12))
+            return error if np.isfinite(error) else float("inf")
+
+        residual_history = []
+        final_evaluated = False
+        fixed_point_converged = False
+        for i in range(self.config.max_iter):
+            n_iter = i + 1
+            hydro, thermal, miu_mean = evaluate_field(miu_field)
             _, _, miu_target = self._thermal_target_from_solution(thermal, mesh_data)
-
-            # Relax
+            defect = field_residual(miu_field, miu_target)
             relax = relax_controller.value
             miu_new, rel_err = self._relaxed_miu_update(
                 miu_field, miu_target, relax
             )
+            residual_history.append({
+                "iteration": n_iter,
+                "relax": float(relax),
+                "step_residual": float(rel_err),
+                "fixed_point_residual": defect,
+                "energy_residual": float(thermal.get("energy_residual", 0.0)),
+                "temperature_clip_count": int(thermal.get("temperature_clip_count", 0)),
+                "raw_temperature_min": float(thermal.get("raw_temperature_min", np.min(thermal["temperature"]))),
+                "raw_temperature_max": float(thermal.get("raw_temperature_max", np.max(thermal["temperature"]))),
+                "pressure_converged": bool(self.bearing.calc_is_finished()),
+            })
             miu_field = miu_new
-            relax_controller.update(rel_err)
+            # Compare undamped defects: shrinking the step must not masquerade
+            # as an improvement of the coupled equations.
+            relax_controller.update(defect)
+            final_evaluated = False
 
             if rel_err < self.config.tol:
-                converged = True
-                break
+                # Preserve the normal final solve, but verify its actual
+                # fixed-point defect before publishing success.  If a small
+                # relaxation caused an early stop, use the remaining budget.
+                hydro, thermal, miu_mean = evaluate_field(miu_field)
+                final_evaluated = True
+                _, _, target = self._thermal_target_from_solution(thermal, mesh_data)
+                if field_residual(miu_field, target) < self.config.tol:
+                    fixed_point_converged = True
+                    break
 
-        # Final solve with converged viscosity field
-        self._apply_miu_ratio_to_nodes(miu_field)
-        miu_mean = float(np.mean(miu_field))
-        self._sync_reference_film_args()
-        hydro = self.bearing._solve_raw()
-        orifice_data = self._collect_orifice_info()
-        self.thermal_model.update_pressure_gradients(model, mesh_data)
-        miu_visc = self._get_thermal_viscosity(miu_field, miu_mean, mesh_data)
-        thermal = self.thermal_model.solve(
-            model,
-            miu_visc,
-            mesh_data,
-            orifice_data,
-            temperature_prev=temperature_prev,
-            transient=transient,
-        )
-        t_film, t_film_nondim, _ = self._thermal_target_from_solution(
+        if not final_evaluated:
+            hydro, thermal, miu_mean = evaluate_field(miu_field)
+        t_film, t_film_nondim, target = self._thermal_target_from_solution(
             thermal, mesh_data
         )
+        final_defect = field_residual(miu_field, target)
+        pressure_converged = bool(self.bearing.calc_is_finished())
+        energy_residual = float(thermal.get("energy_residual", 0.0))
+        energy_converged = bool(np.isfinite(energy_residual) and energy_residual < self.config.tol)
+        converged = bool(fixed_point_converged and pressure_converged and energy_converged)
+        failure_reason = (
+            "" if converged else
+            "fixed_point_iteration_limit" if not fixed_point_converged else
+            "pressure_not_converged" if not pressure_converged else
+            "temperature_clipping_energy_residual"
+        )
+        direct_diagnostics = {
+            "fixed_point_residual": final_defect,
+            "fixed_point_converged": fixed_point_converged,
+            "energy_residual": energy_residual,
+            "energy_converged": energy_converged,
+            "pressure_converged": pressure_converged,
+            "temperature_clip_count": int(thermal.get("temperature_clip_count", 0)),
+            "raw_temperature_min": float(thermal.get("raw_temperature_min", np.min(thermal["temperature"]))),
+            "raw_temperature_max": float(thermal.get("raw_temperature_max", np.max(thermal["temperature"]))),
+            "failure_reason": failure_reason,
+            "residual_history": residual_history,
+        }
         return self._build_coupled_result(
             hydro,
             thermal,
@@ -3186,6 +3250,7 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
             n_iter=n_iter,
             transient=transient,
             solver_used=solver_used,
+            direct_diagnostics=direct_diagnostics,
         )
 
     def _solve_coupled_newton(
@@ -3407,8 +3472,22 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
                     dto.unit_system,
                 )
                 converged = bool(raw.get("thermal_converged", False))
+                thermal_diagnostics = raw.get("thermal_diagnostics", {})
+                direct_residual = max(
+                    float(thermal_diagnostics.get("fixed_point_residual", 0.0)),
+                    float(thermal_diagnostics.get("energy_residual", 0.0)),
+                )
                 self._convergence_status = (
                     ConvergenceStatus(
+                        residual=min(direct_residual, float(np.finfo(float).max)),
+                        converged=converged,
+                        iterations=int(raw.get("thermal_iterations", 0)),
+                        message=(
+                            "coupled pressure/thermal calculation finished" if converged
+                            else str(thermal_diagnostics.get("failure_reason", "did not converge"))
+                        ),
+                    )
+                    if thermal_diagnostics else ConvergenceStatus(
                         residual=0.0,
                         converged=True,
                         iterations=int(raw.get("thermal_iterations", 0)),
@@ -3448,6 +3527,7 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
                         "converged": converged,
                         "iterations": int(raw.get("thermal_iterations", 0)),
                         "transient": bool(raw.get("thermal_transient", False)),
+                        "thermal_diagnostics": thermal_diagnostics,
                         **self.bearing.main_model.discretization_metadata(),
                         "temperature_dofs": int(
                             np.asarray(raw.get("temperature"), dtype=float).size
