@@ -406,6 +406,37 @@ def test_direct_spool_provider_is_sampled_once_per_step() -> None:
     np.testing.assert_allclose(provider.samples, np.arange(11) * 1.0e-3)
 
 
+def test_continuous_spool_provider_is_a_first_order_held_input() -> None:
+    """A provider whose spool tracks the state is held over each step.
+
+    Spool providers are stateful black boxes outside the coupled state, so
+    ROS2 holds their output over a step. For a continuous spool law the
+    spool path is therefore first order; this pins the documented limit.
+    """
+
+    def final_state(time_step: float) -> np.ndarray:
+        runtime, _ = _run(
+            DirectSpoolAnalyticBearing(
+                spool_law(stiffness=3.0e4, damping=40.0, spool_gain=50.0)
+            ),
+            time_step=time_step,
+            end_time=0.1,
+            integrator="ros2",
+            spool_provider=LinearSpoolProvider(gain=500.0),
+        )
+        assert runtime._ros2.diagnostics()["direct_spool_hold"] == (
+            "zero_order_hold_per_step"
+        )
+        return runtime.rotor.current_state()
+
+    states = [final_state(step) for step in (2.5e-4, 1.25e-4, 6.25e-5, 3.125e-5)]
+    differences = [
+        np.linalg.norm(coarse - fine) for coarse, fine in zip(states, states[1:])
+    ]
+    for coarse, fine in zip(differences, differences[1:]):
+        assert 1.7 < coarse / fine < 2.7
+
+
 # ---------------------------------------------------------------------------
 # Contracts
 # ---------------------------------------------------------------------------

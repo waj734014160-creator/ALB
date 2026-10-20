@@ -940,6 +940,14 @@ class Ros2CouplingIntegrator:
             "control_steps_per_period": tuple(
                 model.control_steps for model in self.models
             ),
+            # Spool providers are stateful black boxes outside z: their output
+            # is held over each step, so the spool path is first order unless
+            # the provider command is piecewise constant on the step grid.
+            "direct_spool_hold": (
+                "zero_order_hold_per_step"
+                if any(model.kind == "direct_spool" for model in self.models)
+                else None
+            ),
             "options": self.options.to_dict(),
         }
 
