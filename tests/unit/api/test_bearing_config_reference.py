@@ -44,7 +44,7 @@ def test_all_bearing_field_groups_have_complete_source_metadata() -> None:
     surface = field_surface(BEARING_FIELD_GROUPS)
 
     assert len(surface) == 17
-    assert sum(map(len, surface.values())) == 188
+    assert sum(map(len, surface.values())) == 189
     for fields in surface.values():
         for field in fields.values():
             assert field["native_name"]

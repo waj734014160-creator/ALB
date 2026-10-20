@@ -218,6 +218,33 @@ def _validate_raises(owner: str, raw: Any) -> None:
             raise ValueError(f"{owner} contains incomplete exception metadata")
 
 
+def _validate_derived_field_notes(
+    *,
+    owner: str,
+    value: object,
+    notes: Mapping[str, Any],
+) -> None:
+    """Require notes for exactly the dataclass fields excluded from ``__init__``."""
+
+    expected: set[str] = set()
+    if inspect.isclass(value) and dataclasses.is_dataclass(value):
+        expected = {
+            field.name for field in dataclasses.fields(value) if not field.init
+        }
+    actual_raw = notes.get("fields", {})
+    if not isinstance(actual_raw, Mapping):
+        raise ValueError(f"{owner} fields must be an object")
+    if set(actual_raw) != expected:
+        raise ValueError(
+            f"{owner} derived field documentation mismatch; "
+            f"missing={sorted(expected - set(actual_raw))}, "
+            f"stale={sorted(set(actual_raw) - expected)}"
+        )
+    for name, description in actual_raw.items():
+        if not isinstance(description, str) or not description.strip():
+            raise ValueError(f"{owner}.{name} needs a field description")
+
+
 def _validate_item_notes(
     *,
     owner: str,
@@ -316,6 +343,11 @@ def _validate_notes(
                 notes=raw_symbol_notes,
                 example_ids=example_ids,
                 require_examples=True,
+            )
+            _validate_derived_field_notes(
+                owner=name,
+                value=value,
+                notes=raw_symbol_notes,
             )
             used_example_ids.update(raw_symbol_notes["examples"])
         if not inspect.isclass(value):
@@ -430,7 +462,9 @@ def _render_dataclass_fields(
     notes: Mapping[str, Any],
 ) -> str:
     rows: list[list[str]] = []
-    descriptions = notes["parameters"]
+    # Constructor fields reuse the parameter notes; derived ``init=False``
+    # fields are documented separately under ``fields``.
+    descriptions = {**notes.get("fields", {}), **notes["parameters"]}
     for field in dataclasses.fields(value):
         if field.default is not dataclasses.MISSING:
             default = repr(field.default)

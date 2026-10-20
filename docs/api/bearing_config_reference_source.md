@@ -13,7 +13,7 @@
 | --- | --- | --- | --- |
 | `family` | 字符串 | 是 | 轴承族：`liquid_film`、`active_lubricated`、`gas_film`、`multi_pad` 或 `surrogate`。 |
 | `unit_system` | 字符串 | 是 | `dimensional` 表示量纲输入输出；`nondimensional` 表示无量纲输入输出。气膜当前只支持量纲制。 |
-| `time_step` | s | 是 | 轴承局部时间步，必须为有限正数；热、阀和控制子模型使用同一时间步。 |
+| `time_step` | s | 是 | 轴承局部时间步，必须为有限正数；热、阀等物理子模型使用同一时间步。PID/模糊 PID 控制器默认每步采样，声明 `control.control_period` 时按其整数倍采样。 |
 | `node` | 非负整数或 `null` | 否 | 转子耦合节点。独立轴承计算可以为 `null`；仿真挂载节点由 `BearingMount.node` 明确给出。 |
 | `film` | 映射 | 液膜/主动/气膜必填 | 液膜或气膜的几何、物性、网格和求解参数。 |
 | `restrictors` | 映射或 `null` | 液膜可选、主动必填 | 液膜节流孔或主动轴承节流器。 |
@@ -183,6 +183,16 @@
 - `control.mode`：`pid`、`fuzzy_pid`、`uncontrolled` 或 `external_spool`。
   `pid` 模式的 `gains` 包含 `kp`、`ki`、`kd` 和 `feedforward`；
   `frequency_hz` 是控制频率；`sensor_angles_deg` 是两个传感器角度。
+- `control.control_period`：可选控制器采样周期 `Ts`，单位与 `time_step` 相同
+  （量纲轴承为 s），只用于 `pid` 和 `fuzzy_pid`，其他模式拒绝。缺省 `null`
+  表示 `Ts = time_step`，与 0.4.5 逐步更新完全一致。设置后控制器只在每
+  `m = Ts / time_step` 次求值时运行一次并保持指令，阀和液膜仍按 `time_step`
+  推进；PID/模糊 PID 内部离散化也改用 `Ts`。独立轴承要求 `Ts / time_step`
+  为整数（相对容差 `1e-9`），否则报 `ConfigurationError`；仿真中的自动步长
+  调整见[仿真配置参考](simulation_config_reference.md)。采样按求值次数计数：
+  独立调用 `Bearing.calculate()`、轨迹或动态系数网格时，只有相邻求值间隔为
+  `time_step` 时 `Ts` 才有物理意义；静平衡和谐波分析的静态求值会重置控制器
+  并重新开始采样相位。
 - 模糊 PID 的 `error_range`、`delta_error_range`、`kp_range`、`ki_range`、
   `kd_range` 和 `rule_path` 分别定义输入/输出范围及规则文件。
 - `transforms.displacement_to_control` 与 `velocity_to_control` 是从物理输入到

@@ -22,7 +22,7 @@ def test_all_simulation_field_groups_have_complete_source_metadata() -> None:
     surface = field_surface(SIMULATION_FIELD_GROUPS)
 
     assert len(surface) == 9
-    assert sum(map(len, surface.values())) == 36
+    assert sum(map(len, surface.values())) == 38
     for fields in surface.values():
         for field in fields.values():
             assert field["native_name"]

@@ -36,6 +36,16 @@
       "description": "rotor 必须实现 ALB.contracts.RotorProtocol；记录器和 observer 等高级依赖从 ALB.dynamics 导入。普通算例更推荐使用 JSON5 文件入口。",
       "code": "import ALB\nfrom ALB.contracts import RotorProtocol\nfrom ALB.dynamics import CouplingRuntimeDependencies\n\nrotor = make_rotor()  # Project object implementing RotorProtocol.\nassert isinstance(rotor, RotorProtocol)\nbearing_config = ALB.load_bearing_config(\"configs/paper_alb.json5\")\nmount = ALB.BearingMount(config=bearing_config, node=0)\nhistory_policy = ALB.HistoryPolicy(\n    mode=\"ring_buffer\",\n    fields=(\"bearing_force\",),\n    capacity=200,\n)\ndependencies = CouplingRuntimeDependencies(run_id=\"case-001\")\nconfig = ALB.SimulationConfig(\n    rotor=rotor,\n    mounts=(mount,),\n    time_step=1.0e-3,\n    steps=1000,\n    history=history_policy,\n    dependencies=dependencies,\n)\nsimulation = ALB.build_simulation(config)"
     },
+    "simulation_control_period": {
+      "title": "控制器采样周期与步长调整",
+      "description": "主动轴承声明 control.control_period 后，控制器每 m = Ts / time_step 步采样一次。请求步长不能整除 Ts 时，SimulationConfig 保持 Ts，改用 h' = Ts / ceil(Ts / h)，并发出 TimeStepAdjustedWarning。",
+      "code": "import warnings\n\nimport ALB\n\n# The bearing file declares spec.control.control_period, for example 1e-3 s.\nwith warnings.catch_warnings(record=True) as caught:\n    warnings.simplefilter(\"always\", ALB.TimeStepAdjustedWarning)\n    config = ALB.load_simulation_config(\"configs/rotor_pid_period.json5\")\n\nfor item in caught:\n    if issubclass(item.category, ALB.TimeStepAdjustedWarning):\n        adjustment = item.message.adjustment\n        print(adjustment[\"requested_time_step\"], adjustment[\"time_step\"])\n        print(adjustment[\"control_steps_per_period\"], adjustment[\"steps\"])\n\n# Effective values after validation.\nprint(config.time_step, config.steps)\nprint(config.time_step_adjustment)\nfor period in config.control_periods:\n    print(period[\"path\"], period[\"control_period\"], period[\"control_steps_per_period\"])"
+    },
+    "simulation_ros2": {
+      "title": "选择 ROS2 同步耦合积分器",
+      "description": "默认 integrator=\"staggered\" 保持 0.4.5 数值路径。ROS2 需要连续时间 RossRotor 和可无副作用求力的轴承族；带热模型的轴承会被拒绝。",
+      "code": "import ALB\nfrom ALB.dynamics import Ros2Options, RossRotor\n\nross_model = ...  # Constructed ross.Rotor\nrotor = RossRotor(ross_model, speed=2.0 * 3.141592653589793 * 50.0, dt=2.0e-5)\nbearing_config = ALB.load_bearing_config(\"configs/liquid_film.json5\")\nconfig = ALB.SimulationConfig(\n    rotor=rotor,\n    mounts=(ALB.BearingMount(config=bearing_config, node=0),),\n    time_step=2.0e-5,\n    steps=5000,\n    integrator=\"ros2\",\n    ros2=Ros2Options(jacobian_refresh=\"control_period\"),\n)\nresult = ALB.build_simulation(config).run()\nprint(result.metadata[\"integrator\"], result.metadata[\"ros2_options\"])"
+    },
     "history_policy": {
       "title": "选择仿真历史保留策略",
       "description": "默认 memory 保存全部提交步；长任务可以显式降采样、环形缓存或流式写盘。",
@@ -544,20 +554,39 @@
       }
     },
     "SimulationConfig": {
-      "summary": "一次转子-轴承耦合计算的不可变拓扑、时步、载荷、历史策略和可选依赖。",
-      "returns": "构造经过 rotor 能力、节点输出和本地时步一致性校验的 SimulationConfig。",
+      "summary": "一次转子-轴承耦合计算的不可变拓扑、时步、载荷、历史策略、耦合积分器和可选依赖。",
+      "returns": "构造经过 rotor 能力、节点输出、本地时步一致性和控制周期校验的 SimulationConfig；需要调整步长时 time_step、steps、rotor 和 mounts 保存实际生效值。",
       "parameters": {
-        "rotor": "实现 RotorProtocol 且使用 dimensional 单位制的转子对象。",
+        "rotor": "实现 RotorProtocol 且使用 dimensional 单位制的转子对象；integrator=\"ros2\" 时必须是连续时间 RossRotor。控制周期迫使步长调整时，同一对象原位重新离散并重置状态。",
         "mounts": "非空或按模型允许的 BearingMount 元组，节点不得重复。",
-        "time_step": "正的全局量纲时间步，必须与 rotor.dt 一致。",
-        "steps": "非负整数推进步数；结果通常包含初始提交点。",
+        "time_step": "请求的正全局量纲时间步，必须与 rotor.dt 一致；不能整除控制周期 Ts 时改为 Ts / ceil(Ts / time_step)（大于 Ts 时取 Ts）。",
+        "steps": "请求的非负整数推进步数；步长调整时按请求结束时间重算为整数个控制周期。结果通常包含初始提交点。",
         "loads": "可选外载荷描述映射元组。",
         "history": "已提交历史的保留策略。",
-        "dependencies": "面向高级装配的可选依赖对象。"
+        "dependencies": "面向高级装配的可选依赖对象。",
+        "integrator": "耦合积分器：\"staggered\"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 \"ros2\"（两级 Rosenbrock-W，同步计算轴承力）。",
+        "ros2": "可选 ALB.dynamics.Ros2Options，只能与 integrator=\"ros2\" 同时使用；None 使用默认冻结 Jacobian 选项。",
+        "initial_rotor_state": "可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限。"
+      },
+      "raises": [
+        {
+          "type": "ConfigurationError",
+          "when": "rotor.dt 或轴承局部 time_step 与请求步长不一致、多个不同控制周期不能被同一步长整除、需要调整步长但存在文件引用的 MultiPad 子瓦、integrator 名称非法，或 ROS2 遇到带热模型/不支持的轴承族及非连续转子。"
+        },
+        {
+          "type": "TypeError",
+          "when": "ros2 不是 Ros2Options 或 None，rotor 不满足 RotorProtocol，或 history、dependencies 类型不满足契约。"
+        }
+      ],
+      "fields": {
+        "control_periods": "只读元组：每个声明的控制周期对应一个映射，包含 mount、配置路径、局部周期、全局周期和每周期步数 m。",
+        "time_step_adjustment": "只读映射或 None：步长被调整时记录请求步长、请求步数、请求结束时间、控制周期、实际步长、m、实际步数、实际结束时间和调整规则。"
       },
       "examples": [
         "simulation_programmatic",
-        "simulation_from_file"
+        "simulation_from_file",
+        "simulation_control_period",
+        "simulation_ros2"
       ],
       "members": {}
     },
@@ -606,6 +635,18 @@
           }
         }
       }
+    },
+    "TimeStepAdjustedWarning": {
+      "summary": "控制器采样周期迫使仿真步长调整时发出的 UserWarning，adjustment 属性记录请求值与实际值。",
+      "returns": "构造一个可由 warnings 模块发出或捕获的 TimeStepAdjustedWarning；它不是 ALBError，不会中断构造。",
+      "parameters": {
+        "message": "面向用户的调整说明，包含请求步长、控制周期、实际步长、每周期步数和步数变化。",
+        "adjustment": "只读调整映射（与 SimulationConfig.time_step_adjustment 相同），键为 requested_time_step、requested_steps、requested_end_time、control_period、time_step、control_steps_per_period、steps、end_time 和 rule；None 表示未附带详情。"
+      },
+      "examples": [
+        "simulation_control_period"
+      ],
+      "members": {}
     },
     "SCHEMA_VERSION": {
       "summary": "bearing 与 simulation JSON5 接受的 schema 版本字符串，独立于 re-alb 包版本。",

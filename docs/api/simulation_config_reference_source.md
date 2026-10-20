@@ -34,6 +34,49 @@
 需要重新构建。物理步提交后若 recorder、observer 或磁盘历史失败，运行不会重复该物理
 步；`SimulationError.partial_result` 和 `failure_snapshot` 保存已经提交的可审计边界。
 
+## 控制周期与步长调整
+
+主动轴承可在 `control.control_period` 声明控制器采样周期 `Ts`（轴承局部时间单位，
+经 mount 的 unit adapter 换算为全局秒）。转子、mount、`MultiPad`、阀和热模型仍共享
+同一个全局步长 `h`，只有控制器每 `m = Ts / h` 步采样一次并保持指令。程序化
+`rotor.dt` 与各轴承 `time_step` 首先必须与请求的 `time_step` 一致；之后若 `h` 不能
+整除 `Ts`（相对容差 `1e-9`），`SimulationConfig` 保持 `Ts` 不变并按下式调整：
+
+```text
+h' = Ts / ceil(Ts / h)        （h > Ts 时 h' = Ts）
+steps' = m * ceil(T / Ts)      T = steps * h，m = Ts / h'
+```
+
+调整后的结束时间满足 `T <= T' < T + Ts`，`T` 恰为 `Ts` 整数倍时不变。全部轴承配置
+按 `h'` 重新校验（引用外部文件的 `MultiPad` 子瓦无法自动改写，直接报
+`ConfigurationError`），同一个转子对象在原位重新离散并重置状态，随后发出
+`ALB.TimeStepAdjustedWarning`。构造后的 `time_step`、`steps`、`rotor` 和 `mounts`
+保存实际值；`time_step_adjustment` 记录请求值、`Ts`、`h'`、`m`、步数、结束时间和
+规则，`control_periods` 按声明列出 `mount`、配置路径、局部/全局周期和 `m`。配置了
+多个不同 `Ts` 时只允许 `h` 同时整除全部周期，不做自动调整。`HistoryPolicy` 的
+`downsample` 与 `capacity` 继续按提交索引计数，步长改变后对应的物理时间间隔随之
+改变。
+
+## 耦合积分器
+
+`time_grid.integrator` 缺省为 `"staggered"`：轴承力滞后一步、转子精确推进，结果与
+0.4.5 默认路径逐位一致。`"ros2"` 选择可选的两级 Rosenbrock-W 积分器，在两个 stage
+状态同步计算轴承力，转子状态和主动轴承阀状态组成一个耦合状态；它不替代默认算法。
+`time_grid.jacobian_refresh` 只在 `"ros2"` 下接受：`null` 冻结整个运行的 Jacobian，
+正整数 `N` 每 `N` 步刷新一次，`"control_period"` 在每个控制器采样时刻刷新。程序化
+入口用 `SimulationConfig(integrator="ros2", ros2=ALB.dynamics.Ros2Options(...))`
+设置同样的选项，并可用 `initial_rotor_state` 给出完整初始转子状态。
+
+ROS2 需要连续时间 `RossRotor`，支持无热模型的液膜、气膜、surrogate（固定或外部
+阀芯）、由这些子瓦组成的 `MultiPad`，以及无热模型的主动轴承（`pid`、`fuzzy_pid`、
+`uncontrolled` 和 `external_spool`）。带热模型的轴承在构造时以 `ConfigurationError`
+拒绝。外部 spool provider 每步在已提交状态采样一次并在该步内零阶保持。
+
+只有 `integrator="ros2"`、声明了控制周期或给出 `initial_rotor_state` 时，
+`SimulationResult.metadata` 才额外包含 `integrator`、`time_step`、`control_periods`、
+`time_step_adjustment`、`ros2_options` 和 `initial_rotor_state`；默认路径的元数据保持
+不变。完整适用边界见 [0.4.6 迁移说明](../migrations/0.4.6.md)。
+
 ## 载荷
 
 - `static` 在一个节点施加固定 `[Fx, Fy]`，单位 N。

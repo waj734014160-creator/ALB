@@ -63,6 +63,7 @@ def validate_groups(groups: Mapping[str, Mapping[str, ConfigField]]) -> None:
         "boolean",
         "integer or array[integer]",
         "integer or null",
+        "integer, 'control_period', or null",
         "integer",
         "number or null",
         "number",
