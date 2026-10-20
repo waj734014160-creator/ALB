@@ -103,4 +103,7 @@ def _json_default(value: Any) -> Any:
         return value.item()
     if isinstance(value, tuple):
         return list(value)
+    if isinstance(value, Mapping):
+        # Frozen result metadata nests read-only mappings inside sequences.
+        return dict(value)
     raise TypeError(f"value of type {type(value).__name__} is not JSON serializable")

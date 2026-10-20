@@ -76,7 +76,9 @@ class Ros2Options:
         ``None`` (default) freezes ``J`` for the whole run. A positive integer
         ``N`` recomputes ``J`` and refactorizes ``W`` at the committed state
         after every ``N`` steps. ``"control_period"`` refreshes at every
-        controller sampling instant. Refreshing never changes the order of
+        controller sampling instant of any actuated bearing; without
+        actuated bearings the control period equals the step, so it
+        refreshes after every step. Refreshing never changes the order of
         accuracy, only the stability margin and the cost.
     jacobian_state
         Optional state at which the initial ``J`` is evaluated, for example a
@@ -84,8 +86,8 @@ class Ros2Options:
         Either the complete rotor state (ROSS ``[q, dq/dt]`` ordering; the
         actuator states of active bearings are then taken as zero) or the
         complete coupled state ``[rotor state, actuator states]``. ``None``
-        uses the simulation initial state. Controller commands are the ones
-        sampled at the initial state. Packaged surrogates have a
+        uses the simulation initial state. The vector is stored as a tuple.
+        Controller commands are the ones sampled at the initial state. Packaged surrogates have a
         square-root-type stiffness singularity at the centred journal, so an
         off-centre ``jacobian_state`` gives them a better frozen ``J``.
     relative_step, displacement_step, velocity_step, spool_step
@@ -130,8 +132,12 @@ class Ros2Options:
                 raise ValueError("jacobian_state must be a nonempty vector")
             if not np.all(np.isfinite(state)):
                 raise ValueError("jacobian_state must contain finite values")
-            state.setflags(write=False)
-            object.__setattr__(self, "jacobian_state", state)
+            # A tuple keeps the frozen options comparable and hashable.
+            object.__setattr__(
+                self,
+                "jacobian_state",
+                tuple(float(value) for value in state),
+            )
         for name in (
             "relative_step",
             "displacement_step",
@@ -687,6 +693,7 @@ class Ros2CouplingIntegrator:
             offset += model.state_count
         self._slices = tuple(offsets)
         self.size = offset
+        self._actuated = any(model.kind == "actuated" for model in self.models)
         self._stepper: Ros2Stepper | None = None
         self._state: FloatArray | None = None
         self._time: float | None = None
@@ -913,7 +920,10 @@ class Ros2CouplingIntegrator:
         refresh = self.options.jacobian_refresh
         if (
             isinstance(refresh, int) and self._steps % refresh == 0
-        ) or (refresh == "control_period" and self._last_sampled):
+        ) or (
+            refresh == "control_period"
+            and (self._last_sampled or not self._actuated)
+        ):
             self._stepper.set_jacobian(self.jacobian(next_state, stage_time))
         global_force = (
             stage_load_vector + self._bearing_map @ bearing_forces.reshape(-1)

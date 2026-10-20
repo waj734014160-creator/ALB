@@ -173,8 +173,8 @@ def test_options_validation() -> None:
         Ros2Options(displacement_step=0.0)
     with pytest.raises(ValueError):
         Ros2Options(jacobian_state=[np.nan])
-    state = Ros2Options(jacobian_state=[1.0, 2.0]).jacobian_state
-    assert not state.flags.writeable
+    state = Ros2Options(jacobian_state=np.array([1.0, 2.0])).jacobian_state
+    assert state == (1.0, 2.0)
 
 
 # ---------------------------------------------------------------------------

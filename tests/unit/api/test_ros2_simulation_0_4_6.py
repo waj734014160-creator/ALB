@@ -270,6 +270,52 @@ def test_short_jacobian_state_is_rejected_at_configuration() -> None:
         )
 
 
+def test_oversized_jacobian_state_is_rejected_without_actuated_bearings() -> None:
+    rotor_states = np.asarray(ross_rotor().current_state()).size
+    with pytest.raises(ALB.ConfigurationError, match="jacobian_state"):
+        simulation_config(
+            liquid_config(),
+            steps=2,
+            integrator="ros2",
+            ros2=Ros2Options(jacobian_state=np.zeros(rotor_states + 3)),
+        )
+
+
+def test_control_period_refresh_without_actuators_refreshes_every_step() -> None:
+    config = simulation_config(
+        liquid_config(),
+        steps=4,
+        integrator="ros2",
+        ros2=Ros2Options(jacobian_refresh="control_period"),
+    )
+    simulation = ALB.build_simulation(config)
+    simulation.run()
+
+    assert simulation._coupling._ros2.diagnostics()["w_factorizations"] == 1 + 4
+
+
+def test_frozen_options_and_configs_compare_and_hash_with_states() -> None:
+    first = Ros2Options(jacobian_state=[1.0, 2.0])
+    assert first == Ros2Options(jacobian_state=np.array([1.0, 2.0]))
+    assert hash(first) == hash(Ros2Options(jacobian_state=(1.0, 2.0)))
+    rotor = ross_rotor()
+    state = np.zeros(np.asarray(rotor.current_state()).size)
+    config = ALB.SimulationConfig(
+        rotor=rotor,
+        mounts=(ALB.BearingMount(liquid_config(), 0),),
+        time_step=H,
+        steps=1,
+        initial_rotor_state=state,
+    )
+    assert config == ALB.SimulationConfig(
+        rotor=rotor,
+        mounts=config.mounts,
+        time_step=H,
+        steps=1,
+        initial_rotor_state=state,
+    )
+
+
 def test_ros2_options_must_be_ros2_options() -> None:
     with pytest.raises(TypeError, match="Ros2Options"):
         simulation_config(
@@ -399,7 +445,7 @@ def test_initial_rotor_state_is_the_committed_step_zero_state(
     )
     supplied[:] = 0.0  # The configuration holds its own frozen copy.
     stored = config.initial_rotor_state
-    assert not stored.flags.writeable
+    assert isinstance(stored, tuple)
     np.testing.assert_array_equal(stored, _initial_state())
 
     result = ALB.build_simulation(config).run()

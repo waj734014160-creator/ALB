@@ -5,7 +5,7 @@
 > **高级 API。** 转子适配、自由度布局、耦合运行依赖和可选 ROS2 积分器选项的高级入口。
 
 - 显式导出数：`4`
-- 源码合同摘要：`sha256:6b8b859ad5533d41`
+- 源码合同摘要：`sha256:94cd08e9667c92f6`
 - 对应规则：中文语义元数据必须与源码参数、公开成员和英文 docstring 同步通过生成门禁。
 
 ## 安装
@@ -207,7 +207,9 @@ x_index = layout.global_index(node=3, direction="x", total_dof=60)
         ``None`` (default) freezes ``J`` for the whole run. A positive integer
         ``N`` recomputes ``J`` and refactorizes ``W`` at the committed state
         after every ``N`` steps. ``"control_period"`` refreshes at every
-        controller sampling instant. Refreshing never changes the order of
+        controller sampling instant of any actuated bearing; without
+        actuated bearings the control period equals the step, so it
+        refreshes after every step. Refreshing never changes the order of
         accuracy, only the stability margin and the cost.
     jacobian_state
         Optional state at which the initial ``J`` is evaluated, for example a
@@ -215,8 +217,8 @@ x_index = layout.global_index(node=3, direction="x", total_dof=60)
         Either the complete rotor state (ROSS ``[q, dq/dt]`` ordering; the
         actuator states of active bearings are then taken as zero) or the
         complete coupled state ``[rotor state, actuator states]``. ``None``
-        uses the simulation initial state. Controller commands are the ones
-        sampled at the initial state. Packaged surrogates have a
+        uses the simulation initial state. The vector is stored as a tuple.
+        Controller commands are the ones sampled at the initial state. Packaged surrogates have a
         square-root-type stiffness singularity at the centred journal, so an
         off-centre ``jacobian_state`` gives them a better frozen ``J``.
     relative_step, displacement_step, velocity_step, spool_step
@@ -253,7 +255,7 @@ x_index = layout.global_index(node=3, direction="x", total_dof=60)
 返回描述这些选项的原生元数据映射。
 
 - 类别：`method`
-- 源码：`ALB/dynamics/ros2.py:147`
+- 源码：`ALB/dynamics/ros2.py:153`
 - 返回标注：`dict[str, object]`
 
 输入：

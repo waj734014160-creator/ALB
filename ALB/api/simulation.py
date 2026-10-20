@@ -340,21 +340,30 @@ def _validate_ros2_topology(
 def _validate_jacobian_state(
     rotor: RotorProtocol,
     options: Ros2Options | None,
+    mounts: Sequence[BearingMount],
 ) -> None:
-    """Reject a ROS2 Jacobian state shorter than the rotor state.
+    """Reject a ROS2 Jacobian state that cannot match the coupled state.
 
-    The exact coupled length (rotor plus actuator states) is known only after
-    the bearing runtimes are built and is checked again at run reset.
+    Without actuated (valve-driven active) bearings the coupled state is the
+    rotor state. Otherwise the actuator-state count is known only after the
+    bearing runtimes are built and is checked again at run reset.
     """
 
     if options is None or options.jacobian_state is None:
         return
     rotor_states = np.asarray(rotor.current_state(), dtype=float).size
-    supplied = int(np.asarray(options.jacobian_state).size)
-    if supplied < rotor_states:
+    supplied = len(options.jacobian_state)
+    actuated = any(
+        mount.config.family == "active_lubricated"
+        and mount.config.control_mode != "external_spool"
+        for mount in mounts
+    )
+    if supplied < rotor_states or (not actuated and supplied != rotor_states):
         raise ConfigurationError(
             "ros2.jacobian_state must contain the complete rotor state "
-            f"({rotor_states} values) or the coupled state; got {supplied}"
+            f"({rotor_states} values)"
+            + (" or the coupled state with actuator states" if actuated else "")
+            + f"; got {supplied}"
         )
 
 
@@ -379,8 +388,8 @@ def _initial_rotor_state(rotor: RotorProtocol, value: Any) -> Any:
         raise ConfigurationError(
             "initial_rotor_state must contain finite values"
         )
-    state.setflags(write=False)
-    return state
+    # A tuple keeps the frozen configuration comparable and hashable.
+    return tuple(float(value) for value in state)
 
 
 def _adjustment_message(adjustment: Mapping[str, Any]) -> str:
@@ -674,7 +683,7 @@ class SimulationConfig:
             )
         if integrator == "ros2":
             _validate_ros2_topology(rotor, mounts)
-            _validate_jacobian_state(rotor, self.ros2)
+            _validate_jacobian_state(rotor, self.ros2, mounts)
         initial_state = _initial_rotor_state(rotor, self.initial_rotor_state)
         try:
             _validate_coupled_rotor_output(
@@ -780,6 +789,13 @@ class RotorBearingSimulation:
         return self._last_result
 
     def _build_coupling(self) -> Any:
+        if float(self._config.rotor.dt) != self._config.time_step:
+            raise ConfigurationError(
+                f"rotor.dt is {self._config.rotor.dt!r} but this configuration "
+                f"was validated with time_step {self._config.time_step!r}; "
+                "another SimulationConfig retimed the shared rotor for a "
+                "control period. Use one rotor object per configuration."
+            )
         from ALB.core.time import TimeIterDt
         from ALB.dynamics.bindings import CoupledBearingBinding
         from ALB.dynamics.coupling import _RotorBearingStepRuntime

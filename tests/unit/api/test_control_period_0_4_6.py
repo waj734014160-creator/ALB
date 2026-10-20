@@ -903,3 +903,40 @@ def test_control_period_equal_to_step_reproduces_the_unset_path() -> None:
     assert NEW_METADATA_KEYS.isdisjoint(unset.metadata)
     assert NEW_METADATA_KEYS <= set(one_step.metadata)
     assert one_step.metadata["control_periods"][0]["control_steps_per_period"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Persistence and shared rotors
+# ---------------------------------------------------------------------------
+
+
+def test_control_period_result_metadata_round_trips_through_write(
+    tmp_path: Path,
+) -> None:
+    """Nested frozen control-period metadata must be JSON serializable."""
+
+    with recorded_warnings():
+        config = simulation_config(
+            pid_config(NON_INTEGER_PERIOD),
+            steps=8,
+            rotor=ross_rotor(),
+        )
+    result = ALB.build_simulation(config).run()
+
+    result.write(tmp_path / "result")
+
+    written = json.dumps(
+        [dict(item) for item in result.metadata["control_periods"]]
+    )
+    assert "control_steps_per_period" in written
+    assert any((tmp_path / "result").rglob("*.json"))
+
+
+def test_shared_rotor_retimed_by_another_config_fails_at_build() -> None:
+    rotor = ross_rotor()
+    first = simulation_config(liquid_config(), steps=2, rotor=rotor)
+    with recorded_warnings():
+        simulation_config(pid_config(NON_INTEGER_PERIOD), steps=2, rotor=rotor)
+
+    with pytest.raises(ALB.ConfigurationError, match="shared rotor"):
+        ALB.build_simulation(first)
