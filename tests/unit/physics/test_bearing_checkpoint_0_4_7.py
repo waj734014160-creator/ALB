@@ -213,6 +213,7 @@ FAMILIES: dict[str, tuple[Callable[[], Any], int]] = {
     ),
     "active_uncontrolled": (_config_runtime(active_spec({"mode": "uncontrolled"})), 20),
     "active_pid_thermal": (_config_runtime(thermal_active_spec()), 20),
+    "external_spool": (_config_runtime(external_spool_spec()), 20),
     "external_spool_thermal": (_config_runtime(_thermal_external_spool()), 20),
     "nondimensional_active_pid": (
         _config_runtime(_nondimensional_active_spec("pid", thermal=False)),
@@ -358,6 +359,61 @@ def test_two_trials_per_step_keep_the_committed_sequence(name: str) -> None:
         )
         _assert_same_result(disturbed.result_snapshot(), twin.result_snapshot())
     _assert_same_state(disturbed, twin)
+
+
+# Families the predictor-corrector trials through ``probe_force``.
+PROBE_FAMILIES = ("liquid_film", "gas_film", "surrogate_fixed_spool", "external_spool")
+
+
+@pytest.mark.parametrize("name", PROBE_FAMILIES)
+def test_probes_leave_the_committed_sequence_unchanged(name: str) -> None:
+    """Probe trials are side-effect free: 20 steps with two probes per step."""
+
+    disturbed, twin = _build(name), _build(name)
+    assert getattr(disturbed, "probe_force_supported", True)
+    for step in range(20):
+        if step > 0:
+            for scale in (1.3, 0.7):
+                disturbed.probe_force(_dto(disturbed, step, scale))
+        disturbed_output = disturbed.step(_dto(disturbed, step))
+        twin_output = twin.step(_dto(twin, step))
+        np.testing.assert_array_equal(
+            disturbed_output.force,
+            twin_output.force,
+            err_msg=f"step {step}",
+        )
+        _assert_same_result(disturbed.result_snapshot(), twin.result_snapshot())
+    _assert_same_state(disturbed, twin)
+
+
+def test_restrictor_probes_only_touch_the_restrictor_records() -> None:
+    """Probing a film with restrictors appends to the restrictor records only.
+
+    The rolling records feed the first convergence check of the next solve,
+    so they can change its stopping iteration within the solver tolerance;
+    over this sequence the committed forces stay bit for bit equal.
+    """
+
+    disturbed, twin = _build("liquid_film_restrictors"), _build("liquid_film_restrictors")
+    for step in range(20):
+        if step > 0:
+            for scale in (1.3, 0.7):
+                disturbed.probe_force(_dto(disturbed, step, scale))
+        np.testing.assert_array_equal(
+            disturbed.step(_dto(disturbed, step)).force,
+            twin.step(_dto(twin, step)).force,
+            err_msg=f"step {step}",
+        )
+    difference = fingerprint_diff(
+        state_fingerprint(disturbed),
+        state_fingerprint(twin),
+        ignore=INSTRUMENTATION,
+    )
+    assert difference
+    assert all(
+        "simple_models" in path and path.endswith(("_results", "_results[0]"))
+        for path in difference
+    )
 
 
 @pytest.mark.parametrize("name", tuple(FAMILIES))

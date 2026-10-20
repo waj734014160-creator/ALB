@@ -36,7 +36,7 @@
 | `tests/regression/api/test_coupling_staggered_pre_0_4_7_reference.py` | 上述 5 例精确相等。 |
 | `tools/reference/generate_predictor_corrector_0_4_7_reference.py`、`refs/predictor_corrector_0_4_7_reference_v1.json/.npz` | 由完成后的实现（`a1eb59b`）生成的新行为参考：液膜 iterate、液膜 PECE、瞬态热液膜、采样主动 PID（`Ts = 3.5h`，IQN-ILS）、外部阀芯（held）、记忆解析轴承、硬化解析轴承（IQN-ILS）。 |
 | `tests/regression/dynamics/test_predictor_corrector_0_4_7_reference.py` | 新行为参考 7 例精确相等（数组与诊断元数据）。 |
-| `tests/unit/physics/test_bearing_checkpoint_0_4_7.py` | 存档/回退契约（80 项）：18 个族/替身（含开启压力/膜厚保存历史的液膜、`control_period` 为 3 步的主动 PID）× {协议实现、3 次试算后回退与孪生对象逐位相同、A4 式 20 步序列每步插 2 次试算（输入幅值见第 3 节第 14 条）、失败试算后回退的生命周期}，以及令牌绑定、热包装不转发、`LinearSpoolProvider` 回退与 20 步孪生比较、多瓦子瓦缺协议拒绝、液膜失败试算回退、嵌套字典（历史列表字典、`defaultdict`、自引用字典）原地恢复、控制器自带协议时的委托。 |
+| `tests/unit/physics/test_bearing_checkpoint_0_4_7.py` | 存档/回退契约（89 项）：19 个族/替身（含开启压力/膜厚保存历史的液膜、`control_period` 为 3 步的主动 PID、无热 `ALBSV`）× {协议实现、3 次试算后回退与孪生对象逐位相同、A4 式 20 步序列每步插 2 次试算（输入幅值见第 3 节第 14 条）、失败试算后回退的生命周期}，以及令牌绑定、热包装不转发、`LinearSpoolProvider` 回退与 20 步孪生比较、多瓦子瓦缺协议拒绝、液膜失败试算回退、嵌套字典（历史列表字典、`defaultdict`、自引用字典）原地恢复、控制器自带协议时的委托；另有探测路径测试：无热液膜、气膜、固定阀芯代理、`ALBSV` 20 步每步 2 次探测与孪生对象逐位相同，带节流器液膜只有节流器记录不同。 |
 | `tests/unit/dynamics/test_predictor_corrector_0_4_7.py` | 积分器核心（48 项）：选项校验、Aitken 两步得不动点、IQN-ILS 迭代次数 ≤ 维数 + 2、线性轴承对矩阵指数精确解（误差比约 4，staggered 约 2）、硬化轴承自收敛并与 ROS2/staggered 收敛到同一解、记忆轴承（ROS2 拒绝）、采样主动轴承控制器计数、刚性算例、求值计数、两个轴承的 Jacobi 试算与计数、不收敛 warn（与 PECE 逐位相同，即提交最后一次迭代）/raise（封存、运行时失效、诊断计入失败步）、试算失败回退与计数、非有限值、多瓦子瓦缺协议在 reset 时拒绝、离散转子、`_propagate_trial` 与 `_propagate` 逐位一致。 |
 | `tests/unit/api/test_predictor_corrector_simulation_0_4_7.py` | 公开 API 层（30 项）：真实小网格瞬态热液膜运行与诊断字段、选项与拓扑校验（含路径）、文件配置解析、控制周期组合、默认/ROS2 元数据键集合不变、`write()`、失败封存与 `partial_result`、主动/外部阀芯/多瓦、带热主动 PID 与带热外部阀芯（可存档 provider）。 |
 | `tests/_support/dynamics/memory_bearings.py`（新） | `MemoryAnalyticBearing`（刚度向偏心相关平衡值一阶松弛，指数衰减 + 输入梯形二阶推进，只在提交时更新，`probe_force=None`）和 `SampledActiveAnalyticBearing`（采样控制器 + 一阶阀，阀输入可选一阶保持或零阶保持）。 |
@@ -65,11 +65,11 @@
 
 | 轴承族 / runtime | 试算方式 | 存档覆盖的状态 | 逐位契约 |
 | --- | --- | --- | --- |
-| `liquid_film` 无热（量纲/无量纲） | `probe_force` | 也实现协议（供多瓦委托）：模型参数、压力迭代、节点压力/膜厚/粘度比、膜厚模型、后处理、节流器缓冲、可选保存历史、生命周期与最新输出/结果/收敛状态 | 协议逐位满足。**探测路径**下，带液膜节流器时探测会覆盖节流器 30 行滚动缓冲，只影响下一次提交求解的停止迭代次数，差异在求解容差内（与 0.4.6 ROS2 相同，见第 3 节第 6 条） |
+| `liquid_film` 无热（量纲/无量纲） | `probe_force` | 也实现协议（供多瓦委托）：模型参数、压力迭代、节点压力/膜厚/粘度比、膜厚模型、后处理、节流器缓冲、可选保存历史、生命周期与最新输出/结果/收敛状态 | 协议逐位满足；无节流器时探测路径 20 步每步 2 次探测与不探测时逐位相同。**带液膜节流器时**探测会向节流器滚动记录追加条目，只影响下一次提交求解首轮收敛判据的停止迭代次数，差异在求解容差内；在 20 步测试中提交力仍逐位相同，只有节流器记录不同（与 0.4.6 ROS2 相同，见第 3 节第 6 条） |
 | `liquid_film` + 热（稳态、瞬态，量纲/无量纲） | 存档/回退 | `_temperature_prev`、`_last_thermal`、热网格与后处理记录、热配置；内部液膜令牌；生命周期 | 满足 |
 | `gas_film` | `probe_force` | 也实现协议：膜模型、节点场、膜厚、箔片耦合、后处理缓存、可选保存历史、生命周期与最新输出/结果/收敛状态 | 满足 |
 | `surrogate` 固定阀芯 | `probe_force` | 也实现协议：生命周期、最新输出/结果/收敛状态与待处理输入（模型本身无状态，torch 模型只保留引用） | 满足 |
-| `surrogate` 外部阀芯、`ALBSV`/`NodimALBSV`（无热） | `probe_force`（带阀芯），阀芯见下 | — | — |
+| `surrogate` 外部阀芯、`ALBSV`/`NodimALBSV`（无热） | `probe_force`（带阀芯），阀芯见下 | 也实现协议：`ALBSV`/`NodimALBSV` 继承主动轴承的存档（见下一行，另含直接阀芯）；外部阀芯代理与固定阀芯代理相同 | 满足；探测路径 20 步每步 2 次探测与不探测时逐位相同（`ALBSV`） |
 | `active_lubricated` `pid`/`fuzzy_pid`/`uncontrolled`（`ALB`/`NodimALB`，含带热瓦） | 存档/回退 | 控制器积分/差分记忆与结果记录、`_control_counter`、`_held_command`、控制开关、动态与静态伺服阀状态及一阶保持输入记忆与历史、阀连接的节流器、各瓦令牌、生命周期 | 满足 |
 | `ALBSV`/`NodimALBSV` 带热瓦 | 存档/回退 | 同上，另含直接阀芯 | 满足 |
 | `multi_pad` | 子瓦全部可探测时 `probe_force`，否则存档/回退 | 复合体生命周期与各子瓦令牌 | 满足；子瓦缺协议时以 `TypeError` 拒绝存档 |
@@ -170,7 +170,7 @@ Aitken 收敛到的 ω 与最优值 `1/(1+ρ)`（0.67、0.33、0.17）一致；�
 3. **PECE 下的迭代选项。** 选择“校验但忽略”：`mode="pece"` 时 `relaxation`、`omega`、`omega_bounds`、`iqn_reuse_steps`、`rtol`、`atol`、`max_iterations`、`on_nonconvergence` 仍校验，不起作用，`to_dict()["unused_in_pece"]` 列出这些字段，docstring 和迁移说明写明。另一方案是对非默认值报错。
 4. **存档协议命名。** `ALB.contracts.CheckpointableRuntimeProtocol`（`checkpoint()`/`restore(token)`），令牌为不透明对象，只能回退到创建它的 runtime，可重复回退。另新增只读属性 `probe_force_supported`（`MultiPad` 与主动轴承），用于报告子瓦是否都可探测。主动轴承的控制器若自身实现 `checkpoint()`/`restore()`，存档委托给控制器，否则按组件快照保存控制器属性（含历史列表字典）。
 5. **既不能探测也不能存档的 runtime。** 自定义 runtime 若既无可用 `probe_force` 也无协议，在 reset 时以 `TypeError` 拒绝（不是 `ConfigurationError`，因为在配置阶段无法看到自定义 runtime 的能力）；子瓦不支持存档的程序化复合体（多瓦、主动轴承）同样在 reset 时拒绝，而不是拖到第一步；随包族在配置阶段全部通过。ROS2 对此类 runtime 的行为不变。
-6. **做不到逐位契约的情形。** 协议本身对全部随包族逐位满足。唯一例外在探测路径：带液膜节流器的无热液膜按任务要求用 `probe_force` 试算，探测会覆盖节流器滚动缓冲，只影响下一次提交求解的停止迭代次数，差异在求解容差内（与 0.4.6 ROS2 相同）。若需要逐位，可把这类液膜改走存档路径（代价约为一次令牌复制），请确认。
+6. **做不到逐位契约的情形。** 协议本身对全部随包族逐位满足。唯一例外在探测路径：带液膜节流器的无热液膜按任务要求用 `probe_force` 试算，探测会向节流器滚动记录追加条目，只影响下一次提交求解的停止迭代次数，差异在求解容差内（与 0.4.6 ROS2 相同；20 步测试中提交力仍逐位相同）。若需要逐位，可把这类液膜改走存档路径（代价约为一次令牌复制），请确认。
 7. **未实现存档的 provider。** 与 ROS2 相同，提交时采样一次，下一步试算保持，阀芯通道一阶；诊断中记为 `spool_trials: "held_per_step"`，docstring 与迁移说明已写明。
 8. **阀指令插值。** 见第 2.2 节建议：`m > 1` 时改为采样时刻跳变的零阶保持可恢复二阶，但会改变既有控制周期数值，需单独立项。本次未改。
 9. **离散转子输出。** 预测-校正支持离散 `RossRotor`；其 `results()`/`result_uxy()` 输出与提交状态对齐，而 staggered 离散路径输出上一步状态。已写入迁移说明。
@@ -178,7 +178,7 @@ Aitken 收敛到的 ω 与最优值 `1/(1+ρ)`（0.67、0.33、0.17）一致；�
 11. **IQN-ILS 细节。** `iqn_reuse_steps > 0` 时，前几步的列只在本步 `k >= 1` 时并入最小二乘（`k = 0` 仍用 `omega` 松弛），与任务公式的 `k = 0` 行一致；最小二乘最多保留界面维数个最新列；所有列都被丢弃时退回 `omega` 松弛。列丢弃阈值按任务公式取 `1e-10 ‖r^k‖`；代码评审指出该阈值随残差趋零，收敛末段可能保留近似相关的列，可改为相对 `max|R_ii|` 的阈值。本次按任务公式实现，未改。
 12. **警告与异常的位置。** `CouplingIterationWarning` 定义在 `ALB/dynamics/predictor_corrector.py`，由 `ALB.api.errors` 再导出为根符号（与 `TimeStepAdjustedWarning` 不同，后者定义在 `ALB.api.errors`），以免 `ALB.dynamics` 依赖 `ALB.api`。`CouplingIterationError`、`CouplingTrialError` 不进入公开 API，`run()` 把它们包装为 `SimulationError`。
 13. **参考生成脚本依赖测试替身。** `tools/reference/generate_predictor_corrector_0_4_7_reference.py` 从 `tests/_support` 导入解析转子与记忆轴承，并复用 0.4.6 ROS2 生成脚本中的解析对象，以保证参考与单元测试使用同一模型。
-14. **A4 测试输入幅值。** 契约测试中 A4 式序列对全部 18 个族/替身均为 20 步；`nondimensional_external_spool_thermal` 使用 0.4 倍输入幅值，因为原幅值下该小网格无量纲瞬态热模型在不插入任何试算时也在第 6 个输入（步序号 5）热迭代不收敛，属模型自身问题，与存档无关。
+14. **A4 测试输入幅值。** 契约测试中 A4 式序列对全部 19 个族/替身均为 20 步；`nondimensional_external_spool_thermal` 使用 0.4 倍输入幅值，因为原幅值下该小网格无量纲瞬态热模型在不插入任何试算时也在第 6 个输入（步序号 5）热迭代不收敛，属模型自身问题，与存档无关。
 15. **分层 mypy。** 未改动发布门禁基线 `tools/validation/mypy_layer_baseline_0_4.json`（在 0.4.6 起点已过期）；本次的精确增量见第 5.4 节。
 16. **发布动作。** 未打 tag，未写发布验收记录，未修改 `.github/workflows/`。是否把 0.4.7 分支纳入文档自动发布、是否做正式发布验收，由用户决定。
 17. **存档代价随运行长度增长。** 通用组件快照复制追加式历史（阀的 `ts`/`u`/`yout`/`xout`、控制器结果表、液膜结果表、节流器记录、可选保存历史），单次存档/回退为 O(已提交步数)。本次保持“完整复制”以确保逐位契约，未做按长度截断的优化（需要逐类确认哪些历史只追加）。若长时程运行中成为瓶颈，可作为后续优化立项。

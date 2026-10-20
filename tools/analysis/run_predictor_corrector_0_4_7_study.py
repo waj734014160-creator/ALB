@@ -15,7 +15,14 @@ backs section 5 of ``docs/alb_0_4_7_predictor_corrector_report.md``:
   every relaxation rule and PECE;
 * ``film``: small FEM liquid film, contraction estimate and cost per step;
 * ``thermal``: small transient thermal film (checkpointed trials), cost per
-  step and iteration counts.
+  step and iteration counts;
+* ``checkpoint_cost``: time of one ``checkpoint()`` and one ``restore()``
+  after a growing number of committed steps (active PID and transient thermal
+  film runtimes of the checkpoint contract tests).
+
+The analytic sections also record ``rho_none``: the contraction factor of the
+plain interface iteration (``relaxation="none"``), estimated from successive
+residual ratios at ``h = 1.25e-4 s``.
 
 The analytic doubles come from ``tests/_support`` so the numbers match the
 unit tests. Run from the repository root::
@@ -148,6 +155,24 @@ def _pc_summary(runtime: _RotorBearingStepRuntime) -> dict[str, Any] | None:
     }
 
 
+def _rho_none(bearing: Any, time_step: float = 1.25e-4) -> dict[str, Any] | None:
+    """Contraction estimate of the plain (unrelaxed) interface iteration."""
+
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always")
+        runtime = _run(
+            bearing,
+            time_step,
+            0.1,
+            PC,
+            PredictorCorrectorOptions(relaxation="none"),
+        )
+    summary = _pc_summary(runtime)
+    if summary is not None:
+        summary["time_step"] = time_step
+    return summary
+
+
 def study_linear() -> dict[str, Any]:
     """Linear bearing: errors against the exact closed-loop solution."""
 
@@ -156,7 +181,8 @@ def study_linear() -> dict[str, Any]:
     result: dict[str, Any] = {"time_steps": steps}
     for name, (integrator, options) in SCHEMES.items():
         errors = []
-        evaluations = None
+        evaluations = []
+        summaries = []
         for time_step in steps:
             bearing = AnalyticBearing(linear_law(3.0e4, 40.0))
             runtime = _run(bearing, time_step, 0.1, integrator, options)
@@ -165,13 +191,19 @@ def study_linear() -> dict[str, Any]:
             # Lifecycle evaluations plus side-effect-free probes per step,
             # excluding the step-zero commit (and ROS2 Jacobian probes).
             probes = bearing.probes - (8 if integrator == "ros2" else 0)
-            evaluations = (bearing.evaluations - 1 + probes) / count
+            evaluations.append((bearing.evaluations - 1 + probes) / count)
+            summaries.append(_pc_summary(runtime))
         result[name] = {
             "errors": errors,
             "ratios": _ratios(errors),
+            # One entry per time step.
             "evaluations_per_step": evaluations,
-            "pc": _pc_summary(runtime),
+            "pc": summaries,
         }
+    result["rho_none"] = _rho_none(AnalyticBearing(linear_law(3.0e4, 40.0)))
+    # c h / (2 m) + k h^2 / (6 m) at h = 1.25e-4 s.
+    mass = SinglePlant().mass
+    result["rho_theory"] = 40.0 * 1.25e-4 / (2.0 * mass) + 3.0e4 * 1.25e-4**2 / (6.0 * mass)
     return result
 
 
@@ -187,13 +219,17 @@ def study_hardening() -> dict[str, Any]:
     steps = (2.5e-4, 1.25e-4, 6.25e-5)
     result: dict[str, Any] = {"time_steps": steps, "reference": "ros2 h=1.5625e-5"}
     for name, (integrator, options) in SCHEMES.items():
-        states = [_state(_run(bearing(), h, 0.1, integrator, options)) for h in steps]
+        runtimes = [_run(bearing(), h, 0.1, integrator, options) for h in steps]
+        states = [_state(runtime) for runtime in runtimes]
         differences = [float(np.linalg.norm(a - b)) for a, b in zip(states, states[1:])]
         errors = [_relative(state, reference) for state in states]
         result[name] = {
             "errors_vs_reference": errors,
             "self_convergence_ratio": differences[0] / differences[1],
+            # One entry per time step (None for staggered and ROS2).
+            "pc": [_pc_summary(runtime) for runtime in runtimes],
         }
+    result["rho_none"] = _rho_none(bearing())
     return result
 
 
@@ -217,6 +253,7 @@ def study_memory() -> dict[str, Any]:
             errors.append(_relative(_state(runtime), reference))
             summary = _pc_summary(runtime)
         result[name] = {"errors": errors, "ratios": _ratios(errors), "pc": summary}
+    result["rho_none"] = _rho_none(bearing())
     try:
         _run(bearing(), 1.0e-3, 1.0e-3, "ros2")
         result["ros2"] = "accepted"
@@ -255,6 +292,18 @@ def study_active() -> dict[str, Any]:
                     "differences": differences,
                     "ratios": _ratios(differences),
                 }
+    for label, m in (("m=1", 1), ("m>1", int(round(control_period / 1.25e-4)))):
+        result[f"rho_none/first_order/{label}"] = _rho_none(
+            SampledActiveAnalyticBearing(
+                stiffness=3.0e4,
+                damping=40.0,
+                spool_gain=200.0,
+                gain=500.0,
+                tau=5.0e-3,
+                control_steps=m,
+                valve_hold="first_order",
+            )
+        )
     return result
 
 
@@ -379,6 +428,40 @@ def study_thermal() -> dict[str, Any]:
     return result
 
 
+def study_checkpoint_cost() -> dict[str, Any]:
+    """Time checkpoint() and restore() after a growing committed history."""
+
+    from tests.unit.physics.test_bearing_checkpoint_0_4_7 import _build, _dto
+
+    marks = {"active_pid": (0, 500, 2000), "thermal_transient": (0, 200, 500)}
+    result: dict[str, Any] = {}
+    for name, steps in marks.items():
+        runtime = _build(name)
+        entries = []
+        for step in range(max(steps) + 1):
+            if step in steps:
+                start = time.perf_counter()
+                token = runtime.checkpoint()
+                captured = time.perf_counter()
+                for _ in range(3):
+                    runtime.restore(token)
+                restored = time.perf_counter()
+                runtime.step(_dto(runtime, step))
+                stepped = time.perf_counter()
+                entries.append(
+                    {
+                        "committed_steps": step,
+                        "checkpoint_ms": 1.0e3 * (captured - start),
+                        "restore_ms": 1.0e3 * (restored - captured) / 3.0,
+                        "step_ms": 1.0e3 * (stepped - restored),
+                    }
+                )
+            else:
+                runtime.step(_dto(runtime, step))
+        result[name] = entries
+    return result
+
+
 SECTIONS: dict[str, Callable[[], dict[str, Any]]] = {
     "linear": study_linear,
     "hardening": study_hardening,
@@ -387,6 +470,7 @@ SECTIONS: dict[str, Callable[[], dict[str, Any]]] = {
     "stiff": study_stiff,
     "film": study_film,
     "thermal": study_thermal,
+    "checkpoint_cost": study_checkpoint_cost,
 }
 
 
