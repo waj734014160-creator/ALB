@@ -8,6 +8,7 @@ _EXPORTS = {
         "ALB.dynamics.bindings",
         "CouplingRuntimeDependencies",
     ),
+    "Ros2Options": ("ALB.dynamics.ros2", "Ros2Options"),
     "RossRotor": ("ALB.dynamics.rotor", "RossRotor"),
     "RotorDofLayout": ("ALB.dynamics.rotor_layout", "RotorDofLayout"),
 }

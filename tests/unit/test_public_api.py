@@ -25,6 +25,7 @@ def test_package_root_exports_only_friendly_api():
         "SimulationConfig",
         "SimulationError",
         "SimulationResult",
+        "TimeStepAdjustedWarning",
         "UnitSystem",
         "__version__",
         "bearing_from_file",

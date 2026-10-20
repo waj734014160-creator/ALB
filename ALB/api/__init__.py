@@ -14,6 +14,7 @@ from .errors import (
     CalculationError,
     ConfigurationError,
     SimulationError,
+    TimeStepAdjustedWarning,
 )
 from .results import AnalysisResult, BearingResult, SimulationResult
 from .simulation import (
@@ -47,6 +48,7 @@ __all__ = [
     "SimulationError",
     "SimulationConfig",
     "SimulationResult",
+    "TimeStepAdjustedWarning",
     "bearing_from_file",
     "build_bearing",
     "build_simulation",
