@@ -11,6 +11,7 @@ from .api import (
     BuildError,
     CalculationError,
     ConfigurationError,
+    CouplingIterationWarning,
     EllipseTrajectory,
     EquilibriumOptions,
     EquilibriumSolver,
@@ -31,7 +32,7 @@ from .api import (
 from .contracts import UnitSystem
 
 
-__version__ = "0.4.6"
+__version__ = "0.4.7"
 
 __all__ = [
     "ALBError",
@@ -44,6 +45,7 @@ __all__ = [
     "BuildError",
     "CalculationError",
     "ConfigurationError",
+    "CouplingIterationWarning",
     "EllipseTrajectory",
     "EquilibriumOptions",
     "EquilibriumSolver",

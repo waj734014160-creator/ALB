@@ -13,6 +13,7 @@ from .errors import (
     BuildError,
     CalculationError,
     ConfigurationError,
+    CouplingIterationWarning,
     SimulationError,
     TimeStepAdjustedWarning,
 )
@@ -39,6 +40,7 @@ __all__ = [
     "BuildError",
     "CalculationError",
     "ConfigurationError",
+    "CouplingIterationWarning",
     "EllipseTrajectory",
     "EquilibriumOptions",
     "EquilibriumSolver",

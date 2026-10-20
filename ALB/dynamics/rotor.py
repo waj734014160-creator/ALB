@@ -492,6 +492,30 @@ class RossRotor:
             raise ValueError("node-force mapping requires a four- or six-DOF layout")
         return _nodeforce2array(self._rotor.ndof, self._dof_layout, force, node)
 
+    def _propagate_trial(self, x0, force0, force1) -> np.ndarray:
+        """Return the state one step after ``x0`` without changing the rotor.
+
+        Owner-only hook for the predictor-corrector coupled integrator (ALB
+        0.4.7). ``x0`` is a complete ROSS state and ``force0``/``force1`` are
+        the global load vectors at the start and the end of the step. The
+        formulas are those of :meth:`_propagate`: the exact first-order-hold
+        update ``x0 @ Ad + force0 @ Bd0 + force1 @ Bd1`` for the continuous
+        model (``_run_continuous``) and ``A x0 + B force1`` for the discrete
+        model (``_run_discrete``, which ignores ``force0``). Latched inputs,
+        state, histories, and lifecycle are left untouched.
+        """
+
+        state = np.asarray(x0, dtype=float)
+        current_force = np.asarray(force1, dtype=float)
+        if self._discrete:
+            return self._a.dot(state) + self._b.dot(current_force)
+        previous_force = np.asarray(force0, dtype=float)
+        return (
+            np.dot(state, self._a)
+            + np.dot(previous_force, self._Bd0)
+            + np.dot(current_force, self._Bd1)
+        )
+
     def _commit_integrated_state(self, t, state, force) -> np.ndarray:
         """Commit one state integrated by the owning coupled runtime.
 

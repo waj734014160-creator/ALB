@@ -48,8 +48,12 @@ RightHandSide = Callable[[FloatArray, float], FloatArray]
 ROS2_GAMMA = 1.0 + 1.0 / math.sqrt(2.0)
 """Diagonal coefficient ``gamma = 1 + 1/sqrt(2)`` of the L-stable ROS2 method."""
 
-INTEGRATORS = ("staggered", "ros2")
-"""Coupled-simulation integrators accepted by ``SimulationConfig``."""
+INTEGRATORS = ("staggered", "ros2", "predictor_corrector")
+"""Coupled-simulation integrators accepted by ``SimulationConfig``.
+
+``"predictor_corrector"`` (ALB 0.4.7) is implemented in
+``ALB.dynamics.predictor_corrector``.
+"""
 
 
 def ros2_stability_function(z: complex) -> complex:

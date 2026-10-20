@@ -21,8 +21,8 @@ def test_all_simulation_field_groups_have_complete_source_metadata() -> None:
     validate_groups(SIMULATION_FIELD_GROUPS)
     surface = field_surface(SIMULATION_FIELD_GROUPS)
 
-    assert len(surface) == 9
-    assert sum(map(len, surface.values())) == 38
+    assert len(surface) == 10
+    assert sum(map(len, surface.values())) == 49
     for fields in surface.values():
         for field in fields.values():
             assert field["native_name"]
@@ -40,6 +40,7 @@ def test_simulation_loader_consumes_canonical_field_groups() -> None:
         "SIMULATION_DOCUMENT_FIELDS",
         "SIMULATION_HISTORY_FIELDS",
         "SIMULATION_MOUNT_FIELDS",
+        "SIMULATION_PREDICTOR_CORRECTOR_FIELDS",
         "SIMULATION_ROTOR_FIELDS",
         "SIMULATION_SPEC_FIELDS",
         "SIMULATION_TIME_GRID_FIELDS",

@@ -988,8 +988,21 @@ SIMULATION_ROTOR_FIELDS: dict[str, ConfigField] = {
 SIMULATION_TIME_GRID_FIELDS: dict[str, ConfigField] = {
     "time_step": _field("s", "Global dimensional integration time step.", value_type="number", required=True, constraint="finite and > 0"),
     "steps": _field("count", "Advances after the initial committed state.", value_type="integer", required=True, constraint=">= 0"),
-    "integrator": _field("name", "Coupled rotor-bearing integration scheme; ros2 evaluates bearing forces synchronously and is functionally incomplete (experimental) in 0.4.6.", value_type="string", default="staggered", choices=("staggered", "ros2")),
+    "integrator": _field("name", "Coupled rotor-bearing integration scheme; ros2 evaluates bearing forces synchronously and is functionally incomplete (experimental) in 0.4.6; predictor_corrector (0.4.7) removes the force lag with derivative-free trials of black-box bearings.", value_type="string", default="staggered", choices=("staggered", "ros2", "predictor_corrector")),
     "jacobian_refresh": _field("steps or name", "ROS2 Jacobian refresh: null keeps J frozen, N refreshes every N steps, control_period refreshes at each controller sample.", value_type="integer, 'control_period', or null", default=None, constraint="only with integrator='ros2'; integer >= 1"),
+    "predictor_corrector": _field("mapping", "Predictor-corrector interface iteration options; omitted or null uses the defaults.", value_type="object or null", default=None, constraint="only with integrator='predictor_corrector'"),
+}
+SIMULATION_PREDICTOR_CORRECTOR_FIELDS: dict[str, ConfigField] = {
+    "mode": _field("name", "iterate converges the interface force; pece runs one trial and one commit per step.", value_type="string", default="iterate", choices=("iterate", "pece")),
+    "predictor": _field("name", "First interface-force guess: linear extrapolation 2 F_n - F_(n-1) or constant F_n.", value_type="string", default="linear", choices=("linear", "constant")),
+    "relaxation": _field("name", "Interface-force update between trials.", value_type="string", default="aitken", choices=("aitken", "iqn_ils", "constant", "none"), constraint="unused when mode='pece'"),
+    "omega": _field("1", "Constant relaxation factor and first Aitken/IQN-ILS factor.", value_type="number", default=0.5, constraint="finite and > 0; unused when mode='pece'"),
+    "omega_bounds": _field("1", "Aitken factor clipping range [lower, upper].", value_type="array[number, 2]", default=(0.01, 1.5), constraint="0 < lower <= upper; unused when mode='pece'"),
+    "iqn_reuse_steps": _field("count", "Previous steps whose IQN-ILS secant columns are reused.", value_type="integer", default=0, constraint=">= 0; unused when mode='pece'"),
+    "rtol": _field("1", "Relative interface tolerance against max(||F~||_inf, max(||F_n||_inf, 1 N)).", value_type="number", default=1.0e-6, constraint=">= 0, not below the bearing solver tolerance; unused when mode='pece'"),
+    "atol": _field("N", "Absolute interface tolerance in the rotor domain.", value_type="number", default=1.0e-6, constraint=">= 0; rtol and atol not both zero; unused when mode='pece'"),
+    "max_iterations": _field("count", "Maximum trials per step.", value_type="integer", default=20, constraint=">= 1; unused when mode='pece'"),
+    "on_nonconvergence": _field("name", "warn commits the last iterate and warns once per run; raise seals the step as a coupling failure.", value_type="string", default="warn", choices=("warn", "raise"), constraint="unused when mode='pece'"),
 }
 SIMULATION_MOUNT_FIELDS: dict[str, ConfigField] = {
     "bearing": _field("relative file", "Bearing JSON5 document resolved from the simulation directory.", value_type="string", required=True, constraint="nonempty relative path"),
@@ -1048,6 +1061,7 @@ SIMULATION_FIELD_GROUPS: dict[str, Mapping[str, ConfigField]] = {
     "spec": SIMULATION_SPEC_FIELDS,
     "rotor": SIMULATION_ROTOR_FIELDS,
     "time_grid": SIMULATION_TIME_GRID_FIELDS,
+    "time_grid_predictor_corrector": SIMULATION_PREDICTOR_CORRECTOR_FIELDS,
     "mount": SIMULATION_MOUNT_FIELDS,
     "load_static": STATIC_LOAD_FIELDS,
     "load_gravity": GRAVITY_LOAD_FIELDS,
@@ -1098,6 +1112,7 @@ __all__ = [
     "SIMULATION_FIELD_GROUPS",
     "SIMULATION_HISTORY_FIELDS",
     "SIMULATION_MOUNT_FIELDS",
+    "SIMULATION_PREDICTOR_CORRECTOR_FIELDS",
     "SIMULATION_ROTOR_FIELDS",
     "SIMULATION_SPEC_FIELDS",
     "SIMULATION_TIME_GRID_FIELDS",

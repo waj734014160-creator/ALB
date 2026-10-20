@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ALB.contracts import ResultBundle
+from ALB.dynamics.predictor_corrector import CouplingIterationWarning
 
 
 class ALBError(Exception):
@@ -93,6 +94,7 @@ __all__ = [
     "BuildError",
     "CalculationError",
     "ConfigurationError",
+    "CouplingIterationWarning",
     "SimulationError",
     "TimeStepAdjustedWarning",
 ]

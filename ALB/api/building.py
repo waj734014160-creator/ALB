@@ -568,6 +568,42 @@ def _ros2_support_issue(config: BearingConfig, path: str) -> str | None:
     return f"{path} family {family!r} is not supported by the ros2 integrator"
 
 
+def _predictor_corrector_support_issue(
+    config: BearingConfig,
+    path: str,
+) -> str | None:
+    """Return why a bearing tree cannot use the predictor-corrector, if any.
+
+    The predictor-corrector integrator (ALB 0.4.7) trials every bearing from
+    its committed state. Side-effect-free runtimes are probed; thermal and
+    active runtimes are checkpointed, evaluated through their normal
+    lifecycle, and restored. Every native family therefore qualifies, either
+    directly or through checkpoint delegation inside ``multi_pad``. The only
+    rejected topology is an external-spool child inside ``multi_pad``: the
+    composite passes plain bearing inputs to its children and has no spool
+    provider, so such a child cannot be evaluated by any integrator.
+    """
+
+    family = config.family
+    if family in {"liquid_film", "gas_film", "surrogate", "active_lubricated"}:
+        return None
+    if family == "multi_pad":
+        for child_path, child, _ in _multi_pad_children(config, path):
+            if child.control_mode == "external_spool":
+                return (
+                    f"{child_path} needs an external spool inside multi_pad, "
+                    "which has no spool provider"
+                )
+            issue = _predictor_corrector_support_issue(child, child_path)
+            if issue is not None:
+                return issue
+        return None
+    return (
+        f"{path} family {family!r} is not supported by the "
+        "predictor_corrector integrator"
+    )
+
+
 def _build_runtime(config: BearingConfig) -> object:
     """Build one runtime after the complete config tree has been validated."""
 

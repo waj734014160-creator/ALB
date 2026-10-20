@@ -37,6 +37,7 @@ from ALB.dynamics.coupling_runtime import (
     PostCommitObserverError,
     PostCommitRecordingError,
 )
+from ALB.dynamics.predictor_corrector import PredictorCorrectorOptions
 from ALB.dynamics.ros2 import INTEGRATORS, Ros2Options
 
 from ._config_fields import (
@@ -44,6 +45,7 @@ from ._config_fields import (
     SIMULATION_DOCUMENT_FIELDS,
     SIMULATION_HISTORY_FIELDS,
     SIMULATION_MOUNT_FIELDS,
+    SIMULATION_PREDICTOR_CORRECTOR_FIELDS,
     SIMULATION_ROTOR_FIELDS,
     SIMULATION_SPEC_FIELDS,
     SIMULATION_TIME_GRID_FIELDS,
@@ -284,12 +286,13 @@ def _local_time_step(
 def _validate_integrator(
     integrator: object,
     options: object,
+    predictor_corrector: object = None,
 ) -> str:
-    """Validate the integrator name and its optional ROS2 options."""
+    """Validate the integrator name and its optional integrator options."""
 
     if integrator not in INTEGRATORS:
         raise ConfigurationError(
-            "integrator must be 'staggered' or 'ros2'"
+            "integrator must be 'staggered', 'ros2', or 'predictor_corrector'"
         )
     if options is not None and not isinstance(options, Ros2Options):
         raise TypeError("ros2 must be Ros2Options or None")
@@ -297,7 +300,52 @@ def _validate_integrator(
         raise ConfigurationError(
             "ros2 options are accepted only with integrator='ros2'"
         )
+    if predictor_corrector is not None and not isinstance(
+        predictor_corrector,
+        PredictorCorrectorOptions,
+    ):
+        raise TypeError(
+            "predictor_corrector must be PredictorCorrectorOptions or None"
+        )
+    if predictor_corrector is not None and integrator != "predictor_corrector":
+        raise ConfigurationError(
+            "predictor_corrector options are accepted only with "
+            "integrator='predictor_corrector'"
+        )
     return str(integrator)
+
+
+def _validate_predictor_corrector_topology(
+    rotor: RotorProtocol,
+    mounts: Sequence[BearingMount],
+) -> None:
+    """Reject rotors and bearing trees the predictor-corrector cannot trial."""
+
+    from .building import _predictor_corrector_support_issue
+
+    hooks = (
+        "_propagate_trial",
+        "_node_state_indices",
+        "_node_force_vector",
+        "_commit_integrated_state",
+    )
+    missing = [name for name in hooks if not callable(getattr(rotor, name, None))]
+    if missing:
+        raise ConfigurationError(
+            "integrator='predictor_corrector' requires a rotor providing the "
+            f"owner hooks {', '.join(hooks)} (missing {', '.join(missing)}), "
+            "such as a RossRotor"
+        )
+    for index, mount in enumerate(mounts):
+        issue = _predictor_corrector_support_issue(
+            mount.config,
+            f"mounts[{index}].config",
+        )
+        if issue is not None:
+            raise ConfigurationError(
+                "integrator='predictor_corrector' cannot trial this bearing: "
+                f"{issue}. Use integrator='staggered' for this topology."
+            )
 
 
 def _validate_ros2_topology(
@@ -594,15 +642,22 @@ class SimulationConfig:
     configuration from the original request (with a fresh rotor) to keep it.
 
     ``integrator`` selects ``"staggered"`` (default, bearing force lagged by
-    one step, unchanged 0.4.5 path) or ``"ros2"`` (two-stage Rosenbrock-W
+    one step, unchanged 0.4.5 path), ``"ros2"`` (two-stage Rosenbrock-W
     with synchronous bearing forces, configured by ``ros2``, an
-    ``ALB.dynamics.Ros2Options``). ROS2 is functionally incomplete
-    (experimental) in 0.4.6, so production runs should keep the default and
-    cross-check ROS2 results. ROS2 requires a continuous ``RossRotor``
-    and bearings whose force is side-effect free; thermal bearings are
-    rejected. ``initial_rotor_state`` optionally replaces the zero initial
-    rotor state with a complete ROSS state vector, for example a static
-    equilibrium.
+    ``ALB.dynamics.Ros2Options``), or ``"predictor_corrector"`` (0.4.7,
+    configured by ``predictor_corrector``, an
+    ``ALB.dynamics.PredictorCorrectorOptions``). ROS2 is functionally
+    incomplete (experimental) in 0.4.6, so production runs should keep the
+    default and cross-check ROS2 results. ROS2 requires a continuous
+    ``RossRotor`` and bearings whose force is side-effect free; thermal
+    bearings are rejected. The predictor-corrector integrator keeps bearings
+    as black boxes: it trials them from their committed state (probe or
+    checkpoint/restore, thermal and active bearings included), iterates the
+    interface force without derivatives, and commits each bearing once per
+    step; it requires a ``RossRotor`` (continuous or discrete) and rejects
+    external-spool children inside ``multi_pad``. ``initial_rotor_state``
+    optionally replaces the zero initial rotor state with a complete ROSS
+    state vector, for example a static equilibrium.
     """
 
     rotor: RotorProtocol
@@ -615,6 +670,7 @@ class SimulationConfig:
     integrator: Literal["staggered", "ros2"] = "staggered"
     ros2: Ros2Options | None = None
     initial_rotor_state: Any = None
+    predictor_corrector: PredictorCorrectorOptions | None = None
     control_periods: tuple[Mapping[str, Any], ...] = field(
         default=(),
         init=False,
@@ -660,7 +716,11 @@ class SimulationConfig:
                 "rotor.dt must equal simulation time_step "
                 f"{time_step!r}; got {normalized_rotor_time_step!r}"
             )
-        integrator = _validate_integrator(self.integrator, self.ros2)
+        integrator = _validate_integrator(
+            self.integrator,
+            self.ros2,
+            self.predictor_corrector,
+        )
         steps = strict_nonnegative_integer(self.steps, "steps")
         from .building import _validate_runtime_time_steps
 
@@ -690,6 +750,8 @@ class SimulationConfig:
         if integrator == "ros2":
             _validate_ros2_topology(rotor, mounts)
             _validate_jacobian_state(rotor, self.ros2, mounts)
+        elif integrator == "predictor_corrector":
+            _validate_predictor_corrector_topology(rotor, mounts)
         initial_state = _initial_rotor_state(rotor, self.initial_rotor_state)
         try:
             _validate_coupled_rotor_output(
@@ -823,9 +885,14 @@ class RotorBearingSimulation:
         kwargs: dict[str, object] = {}
         if self._config.dependencies is not None:
             kwargs["dependencies"] = self._config.dependencies
-        if self._config.integrator != "staggered":
+        if self._config.integrator == "ros2":
             kwargs["integrator"] = self._config.integrator
             kwargs["ros2_options"] = self._config.ros2
+        elif self._config.integrator == "predictor_corrector":
+            kwargs["integrator"] = self._config.integrator
+            kwargs["predictor_corrector_options"] = (
+                self._config.predictor_corrector
+            )
         if self._config.initial_rotor_state is not None:
             kwargs["initial_rotor_state"] = self._config.initial_rotor_state
         coupling = _RotorBearingStepRuntime(
@@ -1144,6 +1211,7 @@ class RotorBearingSimulation:
                         coupling_failure is not None
                     ),
                     **self._time_metadata(),
+                    **self._integrator_diagnostics(),
                 },
             )
 
@@ -1292,6 +1360,45 @@ class RotorBearingSimulation:
                 if config.initial_rotor_state is None
                 else "user-supplied"
             ),
+            # Predictor-corrector keys exist only for that integrator so ROS2
+            # and control-period runs keep their 0.4.6 metadata contract.
+            **(
+                {
+                    "predictor_corrector_options": _freeze(
+                        (
+                            config.predictor_corrector
+                            or PredictorCorrectorOptions()
+                        ).to_dict()
+                    ),
+                }
+                if config.integrator == "predictor_corrector"
+                else {}
+            ),
+        }
+
+    def _integrator_diagnostics(self) -> dict[str, Any]:
+        """Return predictor-corrector run diagnostics for result metadata.
+
+        Only predictor-corrector runs publish these counters (trials,
+        commits, iterations per step, non-converged steps, final and
+        consistency residuals, Aitken factor range); every other integrator
+        returns an empty mapping.
+        """
+
+        if self._config.integrator != "predictor_corrector":
+            return {}
+        integrator = getattr(self._coupling, "_pc", None)
+        diagnostics = None if integrator is None else integrator.diagnostics()
+        if diagnostics is not None:
+            diagnostics = {
+                key: value
+                for key, value in diagnostics.items()
+                if key != "options"
+            }
+        return {
+            "predictor_corrector_diagnostics": (
+                None if diagnostics is None else _freeze(diagnostics)
+            )
         }
 
     def _to_result(
@@ -1340,6 +1447,7 @@ class RotorBearingSimulation:
                     None if stream_root is None else str(stream_root)
                 ),
                 **self._time_metadata(),
+                **self._integrator_diagnostics(),
             },
             convergence=ConvergenceStatus(
                 residual=0.0,
@@ -1495,7 +1603,8 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
     integrator = time_grid.get("integrator", "staggered")
     if integrator not in INTEGRATORS:
         raise ConfigurationError(
-            "spec.time_grid.integrator must be 'staggered' or 'ros2'"
+            "spec.time_grid.integrator must be 'staggered', 'ros2', or "
+            "'predictor_corrector'"
         )
     jacobian_refresh = time_grid.get("jacobian_refresh")
     ros2_options: Ros2Options | None = None
@@ -1511,6 +1620,10 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
         raise ConfigurationError(
             "spec.time_grid.jacobian_refresh requires integrator='ros2'"
         )
+    predictor_corrector = _predictor_corrector_options(
+        time_grid.get("predictor_corrector"),
+        integrator,
+    )
     from ALB.dynamics.rotor import rotor0
 
     rotor = rotor0(  # type: ignore[no-untyped-call]
@@ -1628,7 +1741,41 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
         history=history,
         integrator=integrator,
         ros2=ros2_options,
+        predictor_corrector=predictor_corrector,
     )
+
+
+def _predictor_corrector_options(
+    value: Any,
+    integrator: str,
+) -> PredictorCorrectorOptions | None:
+    """Parse ``spec.time_grid.predictor_corrector`` into frozen options."""
+
+    path = "spec.time_grid.predictor_corrector"
+    if value is None:
+        return None
+    if integrator != "predictor_corrector":
+        raise ConfigurationError(
+            f"{path} requires integrator='predictor_corrector'"
+        )
+    section = _require_mapping(value, path)
+    _reject_unknown(section, set(SIMULATION_PREDICTOR_CORRECTOR_FIELDS), path)
+    arguments = dict(_thaw(section))
+    if "omega_bounds" in arguments:
+        bounds = arguments["omega_bounds"]
+        if (
+            not isinstance(bounds, Sequence)
+            or isinstance(bounds, (str, bytes))
+            or len(bounds) != 2
+        ):
+            raise ConfigurationError(
+                f"{path}.omega_bounds must contain [lower, upper]"
+            )
+        arguments["omega_bounds"] = tuple(bounds)
+    try:
+        return PredictorCorrectorOptions(**arguments)
+    except (TypeError, ValueError) as exc:
+        raise ConfigurationError(f"{path} is invalid: {exc}") from exc
 
 
 def build_simulation(config: SimulationConfig) -> RotorBearingSimulation:

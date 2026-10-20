@@ -59,7 +59,7 @@ def test_namespace_pages_match_complete_explicit_source_contracts() -> None:
                 assert render_docstring_details(member.docstring) in page
                 assert f"`{member.source}:{member.line}`" in page
 
-    assert export_count == 11
+    assert export_count == 12
 
 
 def test_namespace_pages_do_not_publish_private_helpers() -> None:

@@ -39,6 +39,10 @@ from .coupling_runtime import (
 )
 from .bindings import CoupledBearingBinding, CouplingRuntimeDependencies
 from .ros2 import INTEGRATORS, Ros2CouplingIntegrator, Ros2Options
+from .predictor_corrector import (
+    PredictorCorrectorCouplingIntegrator,
+    PredictorCorrectorOptions,
+)
 from ALB.core.numerics.arrays import vertical_stack_nonempty
 from ALB.core.observers import ObserverDispatcher
 from ALB.contracts.dynamics import _validate_coupled_rotor_output
@@ -55,19 +59,39 @@ class _RotorBearingStepRuntime:
         """
         options:
             save_path:default="./rotor_bearing_couple"
-            integrator: "staggered" (default) or "ros2"
+            integrator: "staggered" (default), "ros2", or
+                "predictor_corrector"
             ros2_options: optional Ros2Options for integrator="ros2"
+            predictor_corrector_options: optional PredictorCorrectorOptions
+                for integrator="predictor_corrector"
         """
         integrator = kwargs.get("integrator", "staggered")
         if integrator not in INTEGRATORS:
-            raise ValueError("integrator must be 'staggered' or 'ros2'")
+            raise ValueError(
+                "integrator must be 'staggered', 'ros2', or "
+                "'predictor_corrector'"
+            )
         ros2_options = kwargs.get("ros2_options")
         if ros2_options is not None and not isinstance(ros2_options, Ros2Options):
             raise TypeError("ros2_options must be Ros2Options or None")
         if ros2_options is not None and integrator != "ros2":
             raise ValueError("ros2_options require integrator='ros2'")
+        pc_options = kwargs.get("predictor_corrector_options")
+        if pc_options is not None and not isinstance(
+            pc_options, PredictorCorrectorOptions
+        ):
+            raise TypeError(
+                "predictor_corrector_options must be "
+                "PredictorCorrectorOptions or None"
+            )
+        if pc_options is not None and integrator != "predictor_corrector":
+            raise ValueError(
+                "predictor_corrector_options require "
+                "integrator='predictor_corrector'"
+            )
         self._integrator = integrator
         self._ros2_options = ros2_options
+        self._pc_options = pc_options
         initial_state = kwargs.get("initial_rotor_state")
         self._initial_rotor_state = (
             None
@@ -75,6 +99,7 @@ class _RotorBearingStepRuntime:
             else np.array(initial_state, dtype=float, copy=True)
         )
         self._ros2: Ros2CouplingIntegrator | None = None
+        self._pc: PredictorCorrectorCouplingIntegrator | None = None
         self.rotor = rotor
         if any(
             not isinstance(binding, CoupledBearingBinding)
@@ -225,6 +250,15 @@ class _RotorBearingStepRuntime:
                             None
                             if self._ros2 is None
                             else self._ros2.diagnostics()
+                        ),
+                    }
+                    if self._integrator == "ros2"
+                    else {
+                        "integrator": self._integrator,
+                        "predictor_corrector": (
+                            None
+                            if self._pc is None
+                            else self._pc.diagnostics()
                         ),
                     }
                 ),
@@ -553,6 +587,8 @@ class _RotorBearingStepRuntime:
             )
             if self._integrator == "ros2":
                 self._reset_ros2(initial_time)
+            elif self._integrator == "predictor_corrector":
+                self._reset_predictor_corrector(initial_time)
             else:
                 self._forcef0 = []
                 adapter_metadata = []
@@ -664,6 +700,8 @@ class _RotorBearingStepRuntime:
             with self._runtime.evaluation():
                 if self._integrator == "ros2":
                     candidate = self._advance_ros2(context)
+                elif self._integrator == "predictor_corrector":
+                    candidate = self._advance_predictor_corrector(context)
                 else:
                     candidate = self._advance_staggered(context)
                 if self._dependencies.recorder is not None:
@@ -773,6 +811,83 @@ class _RotorBearingStepRuntime:
                 context.step_index,
                 self._ros2_commit_bearing(context, metadata_by_index),
             )
+        )
+        self.rotor._commit_integrated_state(ts, rotor_state, global_force)
+        self._rp = _validate_coupled_rotor_output(
+            self.rotor.output(self._bnode_links),
+            len(self._bnode_links),
+        )
+        self._forceu1 = vertical_stack_nonempty([load_forces])
+        self._forcef1 = np.array(bearing_forces)
+        self._adapter_metadata = self._ros2_adapter_metadata(
+            context,
+            metadata_by_index,
+        )
+        self._forcen1 = vertical_stack_nonempty((self._forceu1, self._forcef1))
+        self._forcen0 = self._forcen1
+        self._forceu0 = self._forceu1
+        self._forcef0 = self._forcef1
+        return coupling_snapshot(
+            self._rp,
+            self._forcef1,
+            self._forcen1,
+            context,
+            unit_adapters=self._adapter_metadata,
+        )
+
+    def _reset_predictor_corrector(self, initial_time: float) -> None:
+        """Build the predictor-corrector integrator and commit step zero.
+
+        Step-zero forces are committed through the same lifecycle path as the
+        staggered integrator (``_ros2_commit_bearing`` is the shared commit
+        callback, including spool-provider sampling).
+        """
+
+        load_links = np.asarray(self._fnode_links)[
+            : len(np.asarray(self._fnode_links)) - len(self._bnode_links)
+        ]
+        self._pc = PredictorCorrectorCouplingIntegrator(
+            self.rotor,
+            self.bindings,
+            self.forces,
+            load_links,
+            self._time_iter.dt,
+            self._pc_options,
+        )
+        context = StepContext(
+            0,
+            initial_time,
+            self._time_iter.dt,
+            UnitSystem.DIMENSIONAL,
+        )
+        metadata_by_index: dict[int, dict[str, object]] = {}
+        self._forcef0 = np.array(
+            self._pc.reset(
+                initial_time,
+                self._ros2_commit_bearing(context, metadata_by_index),
+            )
+        )
+        self._adapter_metadata = self._ros2_adapter_metadata(
+            context,
+            metadata_by_index,
+        )
+
+    def _advance_predictor_corrector(self, context: StepContext) -> ResultBundle:
+        """Advance one predictor-corrector step and build the step snapshot.
+
+        Bearings are trialled from their committed state (probe or
+        checkpoint/restore) until the interface force converges, then every
+        bearing is committed exactly once at the corrected rotor state.
+        """
+
+        if self._pc is None:
+            raise RuntimeError("predictor_corrector integrator is not initialized")
+        ts = context.time
+        self._ts = ts
+        metadata_by_index: dict[int, dict[str, object]] = {}
+        rotor_state, bearing_forces, load_forces, global_force = self._pc.advance(
+            context,
+            self._ros2_commit_bearing(context, metadata_by_index),
         )
         self.rotor._commit_integrated_state(ts, rotor_state, global_force)
         self._rp = _validate_coupled_rotor_output(
