@@ -6,7 +6,7 @@
 
 - 包版本：`0.4.6`
 - 公开符号数：`28`
-- 接口表面摘要：`sha256:405f3f240bac4394`
+- 接口表面摘要：`sha256:3be7c99f3811c6f2`
 - 重新生成：`python tools/docs/generate_public_api_reference.py`
 - 一致性检查：`python tools/docs/generate_public_api_reference.py --check`
 
@@ -31,7 +31,7 @@
 | `EquilibriumOptions` | 类 | 静平衡求解器的不可变参数集合，控制迭代、容差、阻尼、Jacobian 和停滞回退。 | `ALB/api/analysis.py:197` |
 | `EquilibriumSolver` | 类 | 直接接收一个已构造 Bearing，并使用既有静平衡算法求载荷平衡。 | `ALB/api/analysis.py:496` |
 | `HistoryPolicy` | 类 | 控制仿真已提交历史的字段筛选、降采样、环形缓存或磁盘流式写入。 | `ALB/api/simulation.py:185` |
-| `RotorBearingSimulation` | 类 | 拓扑不可变的一次性转子-轴承耦合仿真 facade。 | `ALB/api/simulation.py:745` |
+| `RotorBearingSimulation` | 类 | 拓扑不可变的一次性转子-轴承耦合仿真 facade。 | `ALB/api/simulation.py:749` |
 | `SCHEMA_VERSION` | 常量 | bearing 与 simulation JSON5 接受的 schema 版本字符串，独立于 re-alb 包版本。 | `-` |
 | `SimulationConfig` | 类 | 一次转子-轴承耦合计算的不可变拓扑、时步、载荷、历史策略、耦合积分器和可选依赖。 | `ALB/api/simulation.py:550` |
 | `SimulationError` | 异常 | 耦合仿真失败时抛出的稳定异常，可携带截至最后真实提交点的部分结果。 | `ALB/api/errors.py:51` |
@@ -41,10 +41,10 @@
 | `__version__` | 常量 | 当前导入的 re-alb 包版本字符串。 | `-` |
 | `bearing_from_file` | 函数 | 读取严格 0.4 JSON5 轴承文档并一步构建可计算轴承。 | `ALB/api/bearing.py:290` |
 | `build_bearing` | 函数 | 从已验证的不可变配置构建一个可直接计算的轴承 facade。 | `ALB/api/bearing.py:258` |
-| `build_simulation` | 函数 | 从已验证的仿真配置构建一次性转子-轴承仿真对象。 | `ALB/api/simulation.py:1628` |
+| `build_simulation` | 函数 | 从已验证的仿真配置构建一次性转子-轴承仿真对象。 | `ALB/api/simulation.py:1632` |
 | `load_bearing_config` | 函数 | 读取严格 UTF-8 0.4 bearing 文档，安全合并受限 include 并完成校验。 | `ALB/api/config.py:878` |
-| `load_simulation_config` | 函数 | 读取严格 0.4 simulation 文档，并解析转子、挂载轴承、时间网格、载荷和历史策略。 | `ALB/api/simulation.py:1414` |
-| `simulation_from_file` | 函数 | 读取严格 JSON5 仿真文档并一步构建一次性仿真对象。 | `ALB/api/simulation.py:1653` |
+| `load_simulation_config` | 函数 | 读取严格 0.4 simulation 文档，并解析转子、挂载轴承、时间网格、载荷和历史策略。 | `ALB/api/simulation.py:1418` |
+| `simulation_from_file` | 函数 | 读取严格 JSON5 仿真文档并一步构建一次性仿真对象。 | `ALB/api/simulation.py:1657` |
 
 ## 示例库
 
@@ -1609,7 +1609,7 @@ print(bundle.metadata["schema"], manifest)
 
 拓扑不可变的一次性转子-轴承耦合仿真 facade。
 
-源码：`ALB/api/simulation.py:745`。
+源码：`ALB/api/simulation.py:749`。
 
 输入：
 
@@ -1638,7 +1638,7 @@ print(bundle.metadata["schema"], manifest)
     ``latest_result`` only after successful completion.
     ```
 
-源码：`ALB/api/simulation.py:745`。
+源码：`ALB/api/simulation.py:749`。
 
 公开成员：
 
@@ -1646,7 +1646,7 @@ print(bundle.metadata["schema"], manifest)
 
 读取本次仿真的不可变输入和拓扑。
 
-源码：`ALB/api/simulation.py:764`。
+源码：`ALB/api/simulation.py:768`。
 
 输出：`SimulationConfig`。返回 SimulationConfig。
 
@@ -1662,7 +1662,7 @@ print(bundle.metadata["schema"], manifest)
 
 读取最近一次完整或失败前已提交的历史，不触发运行。
 
-源码：`ALB/api/simulation.py:774`。
+源码：`ALB/api/simulation.py:778`。
 
 输出：`SimulationResult`。返回 SimulationResult。
 
@@ -1690,7 +1690,7 @@ print(bundle.metadata["schema"], manifest)
 
 执行一次耦合仿真，并按 HistoryPolicy 保留真实提交快照。
 
-源码：`ALB/api/simulation.py:854`。
+源码：`ALB/api/simulation.py:858`。
 
 输入：
 
@@ -1789,7 +1789,11 @@ print(bundle.metadata["schema"], manifest)
     ``ALB.TimeStepAdjustedWarning`` is emitted. After validation
     ``time_step``, ``steps``, ``rotor`` and ``mounts`` hold the effective
     values; ``time_step_adjustment`` records the request and
-    ``control_periods`` lists each declared period with its ``m``.
+    ``control_periods`` lists each declared period with its ``m``. Because
+    the effective values already satisfy ``Ts = m * time_step``,
+    ``dataclasses.replace`` on an adjusted configuration revalidates without
+    an adjustment and drops ``time_step_adjustment``; build a new
+    configuration from the original request (with a fresh rotor) to keep it.
 
     ``integrator`` selects ``"staggered"`` (default, bearing force lagged by
     one step, unchanged 0.4.5 path) or ``"ros2"`` (two-stage Rosenbrock-W
@@ -2068,7 +2072,7 @@ print(bundle.metadata["schema"], manifest)
 
 从已验证的仿真配置构建一次性转子-轴承仿真对象。
 
-源码：`ALB/api/simulation.py:1628`。
+源码：`ALB/api/simulation.py:1632`。
 
 输入：
 
@@ -2111,7 +2115,7 @@ print(bundle.metadata["schema"], manifest)
         If runtime materialization detects an inconsistent bearing boundary.
     ```
 
-源码：`ALB/api/simulation.py:1628`。
+源码：`ALB/api/simulation.py:1632`。
 
 ### `ALB.load_bearing_config(path: 'str | Path') -> 'BearingConfig'`
 
@@ -2157,7 +2161,7 @@ print(bundle.metadata["schema"], manifest)
 
 读取严格 0.4 simulation 文档，并解析转子、挂载轴承、时间网格、载荷和历史策略。
 
-源码：`ALB/api/simulation.py:1414`。
+源码：`ALB/api/simulation.py:1418`。
 
 输入：
 
@@ -2211,13 +2215,13 @@ print(bundle.metadata["schema"], manifest)
     those advanced runtime objects are required.
     ```
 
-源码：`ALB/api/simulation.py:1414`。
+源码：`ALB/api/simulation.py:1418`。
 
 ### `ALB.simulation_from_file(path: 'str | Path') -> 'RotorBearingSimulation'`
 
 读取严格 JSON5 仿真文档并一步构建一次性仿真对象。
 
-源码：`ALB/api/simulation.py:1653`。
+源码：`ALB/api/simulation.py:1657`。
 
 输入：
 
@@ -2256,7 +2260,7 @@ print(bundle.metadata["schema"], manifest)
         Propagated from configuration loading and optional resource construction.
     ```
 
-源码：`ALB/api/simulation.py:1653`。
+源码：`ALB/api/simulation.py:1657`。
 
 ## 稳定异常
 

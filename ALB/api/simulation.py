@@ -587,7 +587,11 @@ class SimulationConfig:
     ``ALB.TimeStepAdjustedWarning`` is emitted. After validation
     ``time_step``, ``steps``, ``rotor`` and ``mounts`` hold the effective
     values; ``time_step_adjustment`` records the request and
-    ``control_periods`` lists each declared period with its ``m``.
+    ``control_periods`` lists each declared period with its ``m``. Because
+    the effective values already satisfy ``Ts = m * time_step``,
+    ``dataclasses.replace`` on an adjusted configuration revalidates without
+    an adjustment and drops ``time_step_adjustment``; build a new
+    configuration from the original request (with a fresh rotor) to keep it.
 
     ``integrator`` selects ``"staggered"`` (default, bearing force lagged by
     one step, unchanged 0.4.5 path) or ``"ros2"`` (two-stage Rosenbrock-W

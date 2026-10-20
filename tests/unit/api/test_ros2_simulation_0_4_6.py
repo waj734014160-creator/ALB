@@ -636,3 +636,49 @@ def test_ros2_stage_failure_raises_simulation_error_with_partial_result(
         snapshot.values["last_rotor_displacement"],
         partial.rotor_displacement[-1],
     )
+
+
+@pytest.mark.parametrize("family", ["liquid_film", "gas_film"])
+def test_probes_do_not_extend_saved_film_histories(family: str) -> None:
+    """Saved pressure/thickness histories contain committed solves only."""
+
+    from ALB.api.building import build_runtime
+    from ALB.contracts import BearingInput, UnitSystem
+
+    spec: dict[str, Any] = {
+        "family": family,
+        "unit_system": "dimensional",
+        "time_step": H,
+        "node": 0,
+        "film": {
+            "circumferential_elements": 5,
+            "axial_elements": 3,
+            "max_iterations": 5,
+            "solver_tolerance": 1.0e-6,
+            "eccentricity": 0.0,
+            "save_pressure": True,
+            "save_thickness": True,
+        },
+    }
+    if family == "liquid_film":
+        spec.update({"restrictors": None, "thermal": None})
+    runtime = build_runtime(ALB.BearingConfig(spec))
+    model = (
+        runtime._solver.main_model if family == "gas_film" else runtime.main_model
+    )
+
+    def sample(time: float, offset: float) -> BearingInput:
+        return BearingInput(
+            np.array([offset, -2.0 * offset]),
+            np.array([1.0e-3, 0.0]),
+            time,
+            UnitSystem.DIMENSIONAL,
+        )
+
+    runtime.step(sample(0.0, 1.0e-6))
+    committed = (len(model._save_p), len(model._save_h))
+    assert committed[0] > 0
+    for index in range(3):
+        runtime.probe_force(sample(H, 2.0e-6 * (index + 1)))
+
+    assert (len(model._save_p), len(model._save_h)) == committed

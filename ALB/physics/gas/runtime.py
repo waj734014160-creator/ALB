@@ -153,7 +153,8 @@ class GasFilmRuntime:
 
         The gas solver resets its pressure and foil state before every solve
         and takes the squeeze term from the velocity input, so the force is a
-        function of the input alone. Lifecycle and result snapshots are kept.
+        function of the input alone. Lifecycle and result snapshots are kept,
+        and optional pressure/thickness save histories are not extended.
         """
 
         if self._lifecycle.state is not LifecycleState.READY:
@@ -162,15 +163,26 @@ class GasFilmRuntime:
             raise TypeError("gas-film input must be BearingInput")
         if dto.unit_system is not UnitSystem.DIMENSIONAL:
             raise ValueError("gas-film runtime requires dimensional input")
-        self._solver.input(  # type: ignore[no-untyped-call]
-            dto.displacement,
-            dto.velocity,
-            t=dto.time,
-            nodim=False,
-        )
-        return validate_bearing_output(
-            self._solver.output(nodim=False)  # type: ignore[no-untyped-call]
-        )
+        model = self._solver.main_model
+        history_lengths = {
+            name: len(history)
+            for name in ("_save_p", "_save_h")
+            if isinstance(history := getattr(model, name, None), list)
+        }
+        try:
+            self._solver.input(  # type: ignore[no-untyped-call]
+                dto.displacement,
+                dto.velocity,
+                t=dto.time,
+                nodim=False,
+            )
+            return validate_bearing_output(
+                self._solver.output(nodim=False)  # type: ignore[no-untyped-call]
+            )
+        finally:
+            # Optional pressure/thickness histories keep committed solves only.
+            for name, length in history_lengths.items():
+                del getattr(model, name)[length:]
 
     def step(self, dto: BearingInput) -> BearingOutput:
         """Compose input, evaluate, and output."""
