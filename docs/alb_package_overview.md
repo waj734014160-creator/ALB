@@ -139,9 +139,11 @@ bearing-local 步长，构建器在物理 runtime 创建前递归检查 `MultiPa
 阀和热模型仍共享同一步长，这是 ADR-0009 对 ADR-0007 第 8 条的受限例外
 （`docs/adr/0009-controller-sampling-period-and-ros2-integrator.md`）。不写该字段时与 0.4.5 逐位一致。独立轴承要求
 `Ts` 为 `time_step` 的整数倍；`SimulationConfig` 在不能整除时保持 `Ts`，改用
-`h' = Ts / ceil(Ts / h)`，按请求结束时间重算整数个控制周期的步数，原位重新离散
-同一转子对象，并发出 `TimeStepAdjustedWarning`。实际值保存在
-`SimulationConfig.time_step_adjustment` 和 `control_periods` 中。
+`h' = Ts / ceil(Ts / h)`，按请求结束时间重算整数个控制周期的步数，先发出
+`TimeStepAdjustedWarning`，再原位重新离散同一转子对象；警告被提升为异常时转子保持
+不变。实际值保存在 `SimulationConfig.time_step_adjustment` 和 `control_periods` 中。
+被重新离散的转子若仍由另一个按原步长校验的配置持有，构建该仿真时报
+`ConfigurationError`。
 
 ## 可选 ROS2 耦合积分器（0.4.6）
 
@@ -150,8 +152,10 @@ bearing-local 步长，构建器在物理 runtime 创建前递归检查 `MultiPa
 通过无副作用 probe 同步计算轴承力；对任意 Jacobian 二阶，对精确 Jacobian L-稳定。
 Jacobian 缺省冻结，可通过 `jacobian_refresh` 按步数或控制周期刷新。主动轴承的阀
 状态并入耦合状态，控制器在 Jacobian 之外按采样周期运行。支持无热液膜、气膜、
-surrogate、由它们组成的 `MultiPad` 和无热主动轴承；带热模型的轴承以
-`ConfigurationError` 拒绝。缺省 `integrator="staggered"` 保持 0.4.5 数值路径和
+surrogate、子瓦只含无热液膜/气膜/固定阀芯 surrogate 的 `MultiPad` 和无热主动轴承；
+带热模型的轴承及含主动或外部阀芯子瓦的 `MultiPad` 以 `ConfigurationError` 拒绝。
+外部 spool provider 每步采样并在步内保持，该通道一般为一阶。缺省
+`integrator="staggered"` 保持 0.4.5 数值路径和
 结果元数据，修改前参考见 `refs/coupling_default_path_0_4_6_reference_v1.json/.npz`。
 适用边界见 [0.4.6 迁移说明](migrations/0.4.6.md)。
 

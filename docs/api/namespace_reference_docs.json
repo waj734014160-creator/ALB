@@ -197,14 +197,14 @@
         "Ros2Options": {
           "summary": "配置可选 ROS2 耦合积分器的 Jacobian 刷新策略、初始 Jacobian 求值状态和中心差分步长。",
           "parameters": {
-            "jacobian_refresh": "None（缺省）冻结整个运行的 J；正整数 N 每 N 步在已提交状态重算 J 并重新分解 W；\"control_period\" 在每个控制器采样时刻刷新。刷新只改变稳定裕度和成本，不改变二阶精度。",
-            "jacobian_state": "可选初始 J 求值状态：完整转子状态（ROSS [q, dq/dt] 顺序，主动轴承阀状态取 0）或完整耦合状态 [转子状态, 阀状态]；None 使用仿真初始状态。packaged surrogate 在轴颈居中处有平方根型刚度奇异，偏心状态可给出更好的冻结 J。",
+            "jacobian_refresh": "None（缺省）冻结整个运行的 J；正整数 N 每 N 步在已提交状态重算 J 并重新分解 W；\"control_period\" 在任一阀驱动主动轴承（pid、fuzzy_pid 或 uncontrolled）的每个控制器采样时刻刷新，没有这类轴承时（控制周期等于步长）每步刷新。刷新只改变稳定裕度和成本，不改变精度阶。",
+            "jacobian_state": "可选初始 J 求值状态：完整转子状态（ROSS [q, dq/dt] 顺序，主动轴承阀状态取 0）或完整耦合状态 [转子状态, 阀状态]；None 使用仿真初始状态，控制器指令取初始状态的采样值。保存为浮点数元组，因此选项可比较、可哈希。SimulationConfig 构造时拒绝短于转子状态的向量；没有阀驱动主动轴承时长度必须等于转子状态长度；有这类轴承时完整耦合长度在 run() 的 reset 阶段检查。packaged surrogate 在轴颈居中处有平方根型刚度奇异，偏心状态可给出更好的冻结 J。",
             "relative_step": "中心差分相对步长，缺省 1e-3；每个扰动取 max(relative_step * |value|, 对应下限)。",
             "displacement_step": "位移扰动下限，单位 m，缺省 1e-7。",
             "velocity_step": "速度扰动下限，单位 m/s，缺省 1e-4。",
             "spool_step": "归一化阀芯开度扰动下限，缺省 1e-3；在 [-1, 1] 边界处退化为单侧差分。"
           },
-          "returns": "不可变 Ros2Options，可传给 SimulationConfig.ros2；只能与 integrator=\"ros2\" 同时使用。",
+          "returns": "不可变、可比较且可哈希的 Ros2Options，可传给 SimulationConfig.ros2；只能与 integrator=\"ros2\" 同时使用。",
           "raises": [
             {"type": "ValueError", "when": "jacobian_refresh 不是 None、正整数或 \"control_period\"；jacobian_state 不是非空有限向量；差分步长不是有限正数。"},
             {"type": "TypeError", "when": "差分步长不是实数。"}

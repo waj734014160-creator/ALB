@@ -55,10 +55,16 @@ ADR-0007 第 8 条要求 simulation 的转子、mount、嵌套 `MultiPad` 及物
    取整时先从 `T / Ts` 中减去 `1e-9 * max(1, T / Ts)`，避免浮点尾差多出一个
    周期；调整后的结束时间满足 `T <= T' < T + Ts`。配置了多个不同 `Ts` 时，只接受同时
    整除全部周期的 `h`，不做自动调整。全部轴承配置按 `h'` 重建并重新校验；文件
-   引用的 `MultiPad` 子瓦无法自动改写，以 `ConfigurationError` 拒绝。同一个转子
-   对象在全部校验通过后原位重新离散并重置状态，被拒绝的配置不会修改转子。
-6. 步长调整必须可见。`SimulationConfig` 发出 `ALB.TimeStepAdjustedWarning`。它是
-   `UserWarning` 子类，不是 `ALBError`，其 `adjustment` 属性记录请求值与实际值。
+   引用的 `MultiPad` 子瓦无法自动改写，以 `ConfigurationError` 拒绝。全部校验通过
+   后先发出第 6 条的警告，再对同一个转子对象原位重新离散并重置状态；警告被提升为
+   异常时配置被拒绝且转子不变，警告前的任何拒绝也不修改转子。转子缺少 owner hook
+   `_retime_for_owner` 时在警告前拒绝；重新离散本身失败时，在警告之后报
+   `ConfigurationError`。转子被一个配置重新离散后，仍按原步长校验的另一个配置在
+   构建 `RotorBearingSimulation` 时以 `ConfigurationError` 拒绝，每个配置应使用
+   独立的转子对象。
+6. 步长调整必须可见。`SimulationConfig` 在重新离散转子之前发出
+   `ALB.TimeStepAdjustedWarning`。它是 `UserWarning` 子类，不是 `ALBError`，其
+   `adjustment` 属性记录请求值与实际值。
    `SimulationConfig.time_step_adjustment` 和 `SimulationConfig.control_periods`
    保存同样的信息，结果 metadata 也记录这些值。`HistoryPolicy` 的 `downsample`
    和 `capacity` 继续按提交索引计数，不随步长调整换算。
@@ -67,15 +73,23 @@ ADR-0007 第 8 条要求 simulation 的转子、mount、嵌套 `MultiPad` 及物
    Blom, Hundsdorfer 1999, SIAM J. Sci. Comput. 20(4):1456-1480）。方法取
    `gamma = 1 + 1/sqrt(2)`、`W = I - gamma*h*J`。它对任意 `J` 保持二阶精度，
    对精确 `J` 为 L-稳定。`J` 缺省冻结，`W` 只做一次 LU 分解。
-   `jacobian_refresh` 可取整数 `N` 或 `"control_period"`，按步数或控制采样时刻
-   刷新；刷新只改变稳定裕度和成本，不改变精度阶。
+   `jacobian_refresh` 可取整数 `N` 或 `"control_period"`：前者每 `N` 步刷新，后者
+   在任一阀驱动主动轴承（`pid`、`fuzzy_pid` 或 `uncontrolled`）的控制采样时刻
+   刷新，没有这类轴承时（`Ts` 等于步长）每步刷新。刷新只改变稳定裕度和成本，不改变
+   精度阶。`Ros2Options.jacobian_state` 和 `SimulationConfig.initial_rotor_state`
+   保存为浮点数元组，使冻结的选项和配置可以比较，`Ros2Options` 也可以哈希。
 8. ROS2 通过无副作用的 `probe_force` 在 stage 状态同步计算轴承力。主动轴承的
-   阀状态并入耦合状态，控制器在 `J` 之外每 `m` 步于已提交状态采样。外部 spool
-   provider 每步在已提交状态采样一次，并在该步内零阶保持。`J` 在 runtime 提供
-   `torch_force` 时使用自动微分，否则使用中心差分。支持范围是无热模型的液膜、
-   气膜、surrogate、由它们组成的 `MultiPad`，以及无热模型的主动轴承。热模型
-   保存温度或黏度状态，不是转子状态的无副作用函数，因此以 `ConfigurationError`
-   拒绝。
+   阀状态并入耦合状态，控制器在 `J` 之外每 `m` 步于已提交状态采样；主动轴承的
+   probe 把限幅后的阀芯开度直接写入节流器输入，不触动阀的生命周期和状态。外部
+   spool provider 是耦合状态之外的有状态黑盒，每步在已提交状态采样一次，并在该步
+   内零阶保持，因此该通道一般为一阶，只有 provider 指令在步长网格上分段常数时才
+   保持二阶。`J` 在 runtime 提供 `torch_force` 时使用自动微分，否则使用中心差分；
+   当前随包 runtime 都不提供 `torch_force`。支持范围是无热模型的液膜、气膜、
+   surrogate、子瓦只含这些无热族（surrogate 限固定阀芯）的 `MultiPad`，以及无热
+   模型的主动轴承。热模型保存温度或黏度状态，不是转子状态的无副作用函数，因此以
+   `ConfigurationError` 拒绝；热包装器也显式不提供 `probe_force`，不会转发内部等温
+   液膜的 probe。`MultiPad` 内的主动子瓦或外部阀芯子瓦没有可积分的阀状态或 spool
+   provider，同样在配置阶段拒绝。
 9. 默认路径继续由 ADR-0007 第 5 条约束。修改前已在未改动的 `df7336f` 上冻结
    staggered、每步控制和单一步长的输入、完整数组和环境元数据，回归测试要求精确
    相等。新增 metadata 键只在 ROS2、配置控制周期或显式初始转子状态时出现，默认

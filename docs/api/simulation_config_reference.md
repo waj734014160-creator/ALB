@@ -49,8 +49,12 @@ steps' = m * ceil(T / Ts)      T = steps * h，m = Ts / h'
 
 调整后的结束时间满足 `T <= T' < T + Ts`，`T` 恰为 `Ts` 整数倍时不变。全部轴承配置
 按 `h'` 重新校验（引用外部文件的 `MultiPad` 子瓦无法自动改写，直接报
-`ConfigurationError`），同一个转子对象在原位重新离散并重置状态，随后发出
-`ALB.TimeStepAdjustedWarning`。构造后的 `time_step`、`steps`、`rotor` 和 `mounts`
+`ConfigurationError`）。全部校验通过后先发出 `ALB.TimeStepAdjustedWarning`，再对
+同一个转子对象原位重新离散并重置状态；把该警告提升为异常时配置被拒绝，转子保持
+不变。转子须提供 owner hook `_retime_for_owner`（`RossRotor` 提供），重新离散失败时
+在警告之后报 `ConfigurationError`。转子被一个配置重新离散后，仍持有它、按原步长
+校验的另一个配置在构建仿真时以 `ConfigurationError` 拒绝，因此每个配置应使用独立的
+转子对象。构造后的 `time_step`、`steps`、`rotor` 和 `mounts`
 保存实际值；`time_step_adjustment` 记录请求值、`Ts`、`h'`、`m`、步数、结束时间和
 规则，`control_periods` 按声明列出 `mount`、配置路径、局部/全局周期和 `m`。配置了
 多个不同 `Ts` 时只允许 `h` 同时整除全部周期，不做自动调整。`HistoryPolicy` 的
@@ -63,22 +67,30 @@ steps' = m * ceil(T / Ts)      T = steps * h，m = Ts / h'
 0.4.5 默认路径逐位一致。`"ros2"` 选择可选的两级 Rosenbrock-W 积分器，在两个 stage
 状态同步计算轴承力，转子状态和主动轴承阀状态组成一个耦合状态；它不替代默认算法。
 `time_grid.jacobian_refresh` 只在 `"ros2"` 下接受：`null` 冻结整个运行的 Jacobian，
-正整数 `N` 每 `N` 步刷新一次，`"control_period"` 在每个控制器采样时刻刷新。程序化
-入口用 `SimulationConfig(integrator="ros2", ros2=ALB.dynamics.Ros2Options(...))`
-设置同样的选项，并可用 `initial_rotor_state` 给出完整初始转子状态。
+正整数 `N` 每 `N` 步刷新一次，`"control_period"` 在任一阀驱动主动轴承（`pid`、
+`fuzzy_pid` 或 `uncontrolled`）的每个控制器采样时刻刷新，没有这类轴承时每步刷新。
+程序化入口用
+`SimulationConfig(integrator="ros2", ros2=ALB.dynamics.Ros2Options(...))` 设置同样的
+选项及 `jacobian_state`、中心差分步长，并可用 `initial_rotor_state` 给出完整初始
+转子状态；这两个状态向量都保存为浮点数元组。`jacobian_state` 短于转子状态，或在
+没有阀驱动主动轴承时不等于转子状态长度，构造时报 `ConfigurationError`；有阀驱动
+主动轴承时完整耦合长度在 `run()` 的 reset 阶段检查。
 
 ROS2 需要连续时间 `RossRotor`，支持无热模型的液膜、气膜、surrogate（固定或外部
-阀芯）、由这些子瓦组成的 `MultiPad`，以及无热模型的主动轴承（`pid`、`fuzzy_pid`、
-`uncontrolled` 和 `external_spool`）。带热模型的轴承在构造时以 `ConfigurationError`
-拒绝。外部 spool provider 每步在已提交状态采样一次并在该步内零阶保持。staggered
+阀芯）、`MultiPad`，以及无热模型的主动轴承（`pid`、`fuzzy_pid`、`uncontrolled` 和
+`external_spool`）。`MultiPad` 子瓦只能是无热液膜、气膜或固定阀芯 surrogate；含主动
+子瓦、外部阀芯子瓦或任何层级带热模型的轴承在构造时以 `ConfigurationError` 拒绝。
+外部 spool provider 每步在已提交状态采样一次并在该步内零阶保持，因此该通道一般为
+一阶，只有 provider 指令在步长网格上分段常数时才保持二阶。staggered
 路径的控制器在 `t_k` 采样上一步提交的状态，阀输入在相邻求值间一阶保持插值；ROS2
 在 `t_k` 采样该时刻提交的状态，阀指令为零阶保持。因此同一 `Ts` 下两种积分器的受控
 响应只在 `O(h)` 意义下一致。
 
 只有 `integrator="ros2"`、声明了控制周期或给出 `initial_rotor_state` 时，
 `SimulationResult.metadata` 才额外包含 `integrator`、`time_step`、`control_periods`、
-`time_step_adjustment`、`ros2_options` 和 `initial_rotor_state`；默认路径的元数据保持
-不变。完整适用边界见 [0.4.6 迁移说明](../migrations/0.4.6.md)。
+`time_step_adjustment`、`ros2_options` 和 `initial_rotor_state`；用户状态向量只记录为
+`"user-supplied"`，默认路径的元数据保持不变。`SimulationResult.write()` 可写出这些
+嵌套只读映射。完整适用边界见 [0.4.6 迁移说明](../migrations/0.4.6.md)。
 
 ## 载荷
 

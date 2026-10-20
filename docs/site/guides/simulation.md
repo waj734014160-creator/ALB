@@ -45,15 +45,18 @@ simulation_config = ALB.SimulationConfig(
 )
 ```
 
-ROS2 支持无热液膜、气膜、surrogate、由它们组成的 `MultiPad` 和无热主动轴承；带热
-模型的轴承以 `ConfigurationError` 拒绝。`initial_rotor_state` 可对两种积分器给出
-完整初始转子状态，例如静平衡状态。
+ROS2 支持无热液膜、气膜、surrogate、子瓦只含无热液膜/气膜/固定阀芯 surrogate 的
+`MultiPad` 和无热主动轴承；带热模型的轴承，以及含主动或外部阀芯子瓦的 `MultiPad`，
+以 `ConfigurationError` 拒绝。`initial_rotor_state` 可对两种积分器给出完整初始转子
+状态，例如静平衡状态；它与 `Ros2Options.jacobian_state` 都保存为浮点数元组。
 
 主动轴承声明 `control.control_period` 时，控制器每 `m = Ts / time_step` 步采样一次。
 若 `time_step` 不能整除 `Ts`，构造 `SimulationConfig` 时步长改为
 `Ts / ceil(Ts / time_step)`，步数按请求结束时间向上取整到整数个控制周期，并发出
 `ALB.TimeStepAdjustedWarning`。构造后应读取 `simulation_config.time_step`、`steps`
-和 `time_step_adjustment` 的实际值；同一转子对象会被原位重新离散。完整边界见
+和 `time_step_adjustment` 的实际值。警告发出后，同一转子对象才被原位重新离散，因此
+把警告提升为异常时转子保持不变。被重新离散的转子不要再给其他按原步长校验的配置
+使用，否则构建仿真时报 `ConfigurationError`。完整边界见
 [0.4.6 迁移说明](../../migrations/0.4.6.md)。
 
 ## 载荷

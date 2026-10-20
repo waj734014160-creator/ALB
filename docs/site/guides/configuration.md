@@ -148,8 +148,10 @@ time_grid: {
 },
 ```
 
-ROS2 不支持带热模型的轴承，构造时会以 `ConfigurationError` 拒绝。适用范围和其他
-选项见 [0.4.6 迁移说明](../../migrations/0.4.6.md)。
+ROS2 不支持带热模型的轴承，也不支持含主动或外部阀芯子瓦的 `multi_pad`，构造时会以
+`ConfigurationError` 拒绝。`"control_period"` 在阀驱动主动轴承的每个控制器采样时刻
+刷新；没有这类轴承时每步刷新。适用范围和其他选项见
+[0.4.6 迁移说明](../../migrations/0.4.6.md)。
 
 文件中的转子 Excel、bearing 配置和 disk-stream history 路径必须位于配置文件的资源根目录内。程序化构造的 `SimulationConfig` 还可以承载 adapter、spool provider、recorder 和 observer；这些 runtime object 不能写入 JSON5。
 

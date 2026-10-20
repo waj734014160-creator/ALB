@@ -36,7 +36,7 @@
 | `SimulationConfig` | 类 | 一次转子-轴承耦合计算的不可变拓扑、时步、载荷、历史策略、耦合积分器和可选依赖。 | `ALB/api/simulation.py:550` |
 | `SimulationError` | 异常 | 耦合仿真失败时抛出的稳定异常，可携带截至最后真实提交点的部分结果。 | `ALB/api/errors.py:51` |
 | `SimulationResult` | 类 | 转子-轴承仿真中按策略保留的不可变已提交历史。 | `ALB/api/results.py:247` |
-| `TimeStepAdjustedWarning` | 异常 | 控制器采样周期迫使仿真步长调整时发出的 UserWarning，adjustment 属性记录请求值与实际值。 | `ALB/api/errors.py:70` |
+| `TimeStepAdjustedWarning` | 异常 | 控制器采样周期迫使仿真步长调整时发出的 UserWarning，adjustment 属性记录请求值与实际值。它在全部校验通过后、转子原位重新离散之前发出。 | `ALB/api/errors.py:70` |
 | `UnitSystem` | 枚举 | 所有数值积分边界使用的单位制枚举，避免量纲和无量纲值被隐式混用。 | `ALB/contracts/types.py:12` |
 | `__version__` | 常量 | 当前导入的 re-alb 包版本字符串。 | `-` |
 | `bearing_from_file` | 函数 | 读取严格 0.4 JSON5 轴承文档并一步构建可计算轴承。 | `ALB/api/bearing.py:290` |
@@ -1619,6 +1619,13 @@ print(bundle.metadata["schema"], manifest)
 
 输出：`ALB.RotorBearingSimulation`。构造可运行一次的 RotorBearingSimulation；通常通过 build_simulation() 获得。
 
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `ConfigurationError` | rotor.dt 已不等于 config.time_step：共享转子被另一个 SimulationConfig 因控制周期重新离散，应为每个配置使用独立转子对象。 |
+
 示例：[从 JSON5 运行转子-轴承仿真](#example-simulation_from_file)、[程序化装配仿真拓扑](#example-simulation_programmatic)。
 
 ??? note "源码 docstring（英文原文）"
@@ -1697,7 +1704,7 @@ print(bundle.metadata["schema"], manifest)
 | 类型 | 触发条件 |
 | --- | --- |
 | `RuntimeError` | 对同一 simulation 对象重复调用 run()。 |
-| `SimulationError` | 物理、history、recorder 或 observer 阶段失败；partial_result 可能包含已提交历史。 |
+| `SimulationError` | 物理、history、recorder 或 observer 阶段失败，包括 ROS2 stage 求力失败（Ros2StageError）和 reset 阶段 jacobian_state 与耦合状态长度不符；partial_result 可能包含已提交历史。 |
 
 ??? note "源码 docstring（英文原文）"
     ```text
@@ -1719,7 +1726,7 @@ print(bundle.metadata["schema"], manifest)
 
 | 名称 | 类型 | 必填 | 默认值 | 调用方式 | 说明 |
 | --- | --- | --- | --- | --- | --- |
-| `rotor` | `RotorProtocol` | 是 | `-` | 位置或关键字 | 实现 RotorProtocol 且使用 dimensional 单位制的转子对象；integrator="ros2" 时必须是连续时间 RossRotor。控制周期迫使步长调整时，同一对象原位重新离散并重置状态。 |
+| `rotor` | `RotorProtocol` | 是 | `-` | 位置或关键字 | 实现 RotorProtocol 且使用 dimensional 单位制的转子对象；integrator="ros2" 时必须是连续时间 RossRotor。控制周期迫使步长调整时，在发出 TimeStepAdjustedWarning 之后对同一对象原位重新离散并重置状态（需要 owner hook _retime_for_owner，RossRotor 提供）。每个配置应使用独立转子：被另一配置重新离散的共享转子会使本配置在构建仿真时报 ConfigurationError。 |
 | `mounts` | `tuple[BearingMount, ...]` | 是 | `-` | 位置或关键字 | 非空或按模型允许的 BearingMount 元组，节点不得重复。 |
 | `time_step` | `float` | 是 | `-` | 位置或关键字 | 请求的正全局量纲时间步，必须与 rotor.dt 一致；不能整除控制周期 Ts 时改为 Ts / ceil(Ts / time_step)（大于 Ts 时取 Ts）。 |
 | `steps` | `int` | 是 | `-` | 位置或关键字 | 请求的非负整数推进步数；步长调整时按请求结束时间重算为整数个控制周期。结果通常包含初始提交点。 |
@@ -1727,8 +1734,8 @@ print(bundle.metadata["schema"], manifest)
 | `history` | `HistoryPolicy` | 否 | `HistoryPolicy(mode='memory', fields=('rotor_displacement', 'rotor_velocity', 'bearing_force'), downsample=1, capacity=None, directory=None)` | 位置或关键字 | 已提交历史的保留策略。 |
 | `dependencies` | `CouplingRuntimeDependencies \| None` | 否 | `None` | 位置或关键字 | 面向高级装配的可选依赖对象。 |
 | `integrator` | `Literal['staggered', 'ros2']` | 否 | `'staggered'` | 位置或关键字 | 耦合积分器："staggered"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 "ros2"（两级 Rosenbrock-W，同步计算轴承力）。 |
-| `ros2` | `Ros2Options \| None` | 否 | `None` | 位置或关键字 | 可选 ALB.dynamics.Ros2Options，只能与 integrator="ros2" 同时使用；None 使用默认冻结 Jacobian 选项。 |
-| `initial_rotor_state` | `Any` | 否 | `None` | 位置或关键字 | 可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限。 |
+| `ros2` | `Ros2Options \| None` | 否 | `None` | 位置或关键字 | 可选 ALB.dynamics.Ros2Options，只能与 integrator="ros2" 同时使用；None 使用默认冻结 Jacobian 选项。jacobian_state 短于转子状态，或在没有阀驱动主动轴承时不等于转子状态长度，构造时拒绝；有阀驱动主动轴承时完整耦合长度在 run() 的 reset 阶段检查。 |
+| `initial_rotor_state` | `Any` | 否 | `None` | 位置或关键字 | 可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限；校验后保存为浮点数元组，配置因此可做相等比较。 |
 
 输出：`ALB.SimulationConfig`。构造经过 rotor 能力、节点输出、本地时步一致性和控制周期校验的 SimulationConfig；需要调整步长时 time_step、steps、rotor 和 mounts 保存实际生效值。
 
@@ -1737,7 +1744,7 @@ print(bundle.metadata["schema"], manifest)
 
 | 类型 | 触发条件 |
 | --- | --- |
-| `ConfigurationError` | rotor.dt 或轴承局部 time_step 与请求步长不一致、多个不同控制周期不能被同一步长整除、需要调整步长但存在文件引用的 MultiPad 子瓦、integrator 名称非法，或 ROS2 遇到带热模型/不支持的轴承族及非连续转子。 |
+| `ConfigurationError` | rotor.dt 或轴承局部 time_step 与请求步长不一致、多个不同控制周期不能被同一步长整除、需要调整步长但存在文件引用的 MultiPad 子瓦或转子缺少 _retime_for_owner、转子重新离散失败（在警告之后）、integrator 名称非法或 ros2 选项未配 integrator="ros2"、initial_rotor_state 形状不符或含非有限值，或 ROS2 遇到带热模型的轴承、含主动或外部阀芯子瓦的 MultiPad、不支持的轴承族、非连续转子及长度不符的 jacobian_state。 |
 | `TypeError` | ros2 不是 Ros2Options 或 None，rotor 不满足 RotorProtocol，或 history、dependencies 类型不满足契约。 |
 
 示例：[程序化装配仿真拓扑](#example-simulation_programmatic)、[从 JSON5 运行转子-轴承仿真](#example-simulation_from_file)、[控制器采样周期与步长调整](#example-simulation_control_period)、[选择 ROS2 同步耦合积分器](#example-simulation_ros2)。
@@ -1800,7 +1807,7 @@ print(bundle.metadata["schema"], manifest)
 
 | 字段 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `rotor` | `RotorProtocol` | `-` | 实现 RotorProtocol 且使用 dimensional 单位制的转子对象；integrator="ros2" 时必须是连续时间 RossRotor。控制周期迫使步长调整时，同一对象原位重新离散并重置状态。 |
+| `rotor` | `RotorProtocol` | `-` | 实现 RotorProtocol 且使用 dimensional 单位制的转子对象；integrator="ros2" 时必须是连续时间 RossRotor。控制周期迫使步长调整时，在发出 TimeStepAdjustedWarning 之后对同一对象原位重新离散并重置状态（需要 owner hook _retime_for_owner，RossRotor 提供）。每个配置应使用独立转子：被另一配置重新离散的共享转子会使本配置在构建仿真时报 ConfigurationError。 |
 | `mounts` | `tuple[BearingMount, ...]` | `-` | 非空或按模型允许的 BearingMount 元组，节点不得重复。 |
 | `time_step` | `float` | `-` | 请求的正全局量纲时间步，必须与 rotor.dt 一致；不能整除控制周期 Ts 时改为 Ts / ceil(Ts / time_step)（大于 Ts 时取 Ts）。 |
 | `steps` | `int` | `-` | 请求的非负整数推进步数；步长调整时按请求结束时间重算为整数个控制周期。结果通常包含初始提交点。 |
@@ -1808,8 +1815,8 @@ print(bundle.metadata["schema"], manifest)
 | `history` | `HistoryPolicy` | `HistoryPolicy(mode='memory', fields=('rotor_displacement', 'rotor_velocity', 'bearing_force'), downsample=1, capacity=None, directory=None)` | 已提交历史的保留策略。 |
 | `dependencies` | `CouplingRuntimeDependencies \| None` | `None` | 面向高级装配的可选依赖对象。 |
 | `integrator` | `Literal['staggered', 'ros2']` | `'staggered'` | 耦合积分器："staggered"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 "ros2"（两级 Rosenbrock-W，同步计算轴承力）。 |
-| `ros2` | `Ros2Options \| None` | `None` | 可选 ALB.dynamics.Ros2Options，只能与 integrator="ros2" 同时使用；None 使用默认冻结 Jacobian 选项。 |
-| `initial_rotor_state` | `Any` | `None` | 可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限。 |
+| `ros2` | `Ros2Options \| None` | `None` | 可选 ALB.dynamics.Ros2Options，只能与 integrator="ros2" 同时使用；None 使用默认冻结 Jacobian 选项。jacobian_state 短于转子状态，或在没有阀驱动主动轴承时不等于转子状态长度，构造时拒绝；有阀驱动主动轴承时完整耦合长度在 run() 的 reset 阶段检查。 |
+| `initial_rotor_state` | `Any` | `None` | 可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限；校验后保存为浮点数元组，配置因此可做相等比较。 |
 | `control_periods` | `tuple[Mapping[str, Any], ...]` | `()` | 只读元组：每个声明的控制周期对应一个映射，包含 mount、配置路径、局部周期、全局周期和每周期步数 m。 |
 | `time_step_adjustment` | `Mapping[str, Any] \| None` | `None` | 只读映射或 None：步长被调整时记录请求步长、请求步数、请求结束时间、控制周期、实际步长、m、实际步数、实际结束时间和调整规则。 |
 
@@ -1827,7 +1834,7 @@ print(bundle.metadata["schema"], manifest)
 | `rotor_displacement` | `FloatArray` | 是 | `-` | 位置或关键字 | 形状为 (n, ndof) 或策略过滤后的转子位移历史。 |
 | `rotor_velocity` | `FloatArray` | 是 | `-` | 位置或关键字 | 与 rotor_displacement 同形状的速度历史。 |
 | `bearing_force` | `FloatArray` | 是 | `-` | 位置或关键字 | 首维为 n 的挂载轴承二维力历史。 |
-| `metadata` | `Mapping[str, Any]` | 是 | `-` | 位置或关键字 | 完成状态、提交步数、history 模式等诊断。 |
+| `metadata` | `Mapping[str, Any]` | 是 | `-` | 位置或关键字 | 完成状态、提交步数、history 模式等诊断；ROS2、控制周期或 initial_rotor_state 运行另含 integrator、time_step、control_periods、time_step_adjustment、ros2_options 和 initial_rotor_state。 |
 | `convergence` | `ConvergenceStatus` | 否 | `ConvergenceStatus(residual=0.0, converged=True, iterations=None, message='')` | 位置或关键字 | 整次仿真的收敛或完成状态。 |
 
 输出：`ALB.SimulationResult`。构造 SimulationResult；普通用户通常从 RotorBearingSimulation.run() 获得。
@@ -1857,7 +1864,7 @@ print(bundle.metadata["schema"], manifest)
 | `rotor_displacement` | `FloatArray` | `-` | 形状为 (n, ndof) 或策略过滤后的转子位移历史。 |
 | `rotor_velocity` | `FloatArray` | `-` | 与 rotor_displacement 同形状的速度历史。 |
 | `bearing_force` | `FloatArray` | `-` | 首维为 n 的挂载轴承二维力历史。 |
-| `metadata` | `Mapping[str, Any]` | `-` | 完成状态、提交步数、history 模式等诊断。 |
+| `metadata` | `Mapping[str, Any]` | `-` | 完成状态、提交步数、history 模式等诊断；ROS2、控制周期或 initial_rotor_state 运行另含 integrator、time_step、control_periods、time_step_adjustment、ros2_options 和 initial_rotor_state。 |
 | `convergence` | `ConvergenceStatus` | `ConvergenceStatus(residual=0.0, converged=True, iterations=None, message='')` | 整次仿真的收敛或完成状态。 |
 
 公开成员：
@@ -1901,7 +1908,7 @@ print(bundle.metadata["schema"], manifest)
 
 #### `SimulationResult.write(path: 'str | Path') -> 'ArtifactManifest'`
 
-把仿真历史和诊断写入一个新的制品目录。
+把仿真历史和诊断写入一个新的制品目录；控制周期和 ROS2 运行的嵌套只读元数据同样序列化为 JSON。
 
 源码：`ALB/api/results.py:330`。
 
@@ -2070,6 +2077,14 @@ print(bundle.metadata["schema"], manifest)
 | `config` | `SimulationConfig` | 是 | `-` | 位置或关键字 | SimulationConfig。 |
 
 输出：`RotorBearingSimulation`。返回 RotorBearingSimulation。
+
+
+可能异常：
+
+| 类型 | 触发条件 |
+| --- | --- |
+| `TypeError` | config 不是 SimulationConfig。 |
+| `ConfigurationError` | runtime 物化发现不一致的轴承边界，或 rotor.dt 已不等于 config.time_step（共享转子被另一个 SimulationConfig 因控制周期重新离散）。 |
 
 示例：[程序化装配仿真拓扑](#example-simulation_programmatic)、[从 JSON5 运行转子-轴承仿真](#example-simulation_from_file)。
 
@@ -2382,7 +2397,7 @@ JSON5 文档、程序化配置或跨字段约束不合法时抛出的稳定异�
 
 ### `ALB.TimeStepAdjustedWarning(message: 'str', *, adjustment: 'object | None' = None) -> 'None'`
 
-控制器采样周期迫使仿真步长调整时发出的 UserWarning，adjustment 属性记录请求值与实际值。
+控制器采样周期迫使仿真步长调整时发出的 UserWarning，adjustment 属性记录请求值与实际值。它在全部校验通过后、转子原位重新离散之前发出。
 
 源码：`ALB/api/errors.py:70`。
 
@@ -2393,7 +2408,7 @@ JSON5 文档、程序化配置或跨字段约束不合法时抛出的稳定异�
 | `message` | `str` | 是 | `-` | 位置或关键字 | 面向用户的调整说明，包含请求步长、控制周期、实际步长、每周期步数和步数变化。 |
 | `adjustment` | `object \| None` | 否 | `None` | 仅关键字 | 只读调整映射（与 SimulationConfig.time_step_adjustment 相同），键为 requested_time_step、requested_steps、requested_end_time、control_period、time_step、control_steps_per_period、steps、end_time 和 rule；None 表示未附带详情。 |
 
-输出：`ALB.TimeStepAdjustedWarning`。构造一个可由 warnings 模块发出或捕获的 TimeStepAdjustedWarning；它不是 ALBError，不会中断构造。
+输出：`ALB.TimeStepAdjustedWarning`。构造一个可由 warnings 模块发出或捕获的 TimeStepAdjustedWarning；它不是 ALBError，默认不中断构造。用 warnings filter 提升为异常时，SimulationConfig 构造被拒绝且转子保持不变。
 
 示例：[控制器采样周期与步长调整](#example-simulation_control_period)。
 

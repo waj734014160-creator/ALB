@@ -519,6 +519,12 @@
         "simulation_from_file",
         "simulation_programmatic"
       ],
+      "raises": [
+        {
+          "type": "ConfigurationError",
+          "when": "rotor.dt 已不等于 config.time_step：共享转子被另一个 SimulationConfig 因控制周期重新离散，应为每个配置使用独立转子对象。"
+        }
+      ],
       "members": {
         "config": {
           "summary": "读取本次仿真的不可变输入和拓扑。",
@@ -547,7 +553,7 @@
             },
             {
               "type": "SimulationError",
-              "when": "物理、history、recorder 或 observer 阶段失败；partial_result 可能包含已提交历史。"
+              "when": "物理、history、recorder 或 observer 阶段失败，包括 ROS2 stage 求力失败（Ros2StageError）和 reset 阶段 jacobian_state 与耦合状态长度不符；partial_result 可能包含已提交历史。"
             }
           ]
         }
@@ -557,7 +563,7 @@
       "summary": "一次转子-轴承耦合计算的不可变拓扑、时步、载荷、历史策略、耦合积分器和可选依赖。",
       "returns": "构造经过 rotor 能力、节点输出、本地时步一致性和控制周期校验的 SimulationConfig；需要调整步长时 time_step、steps、rotor 和 mounts 保存实际生效值。",
       "parameters": {
-        "rotor": "实现 RotorProtocol 且使用 dimensional 单位制的转子对象；integrator=\"ros2\" 时必须是连续时间 RossRotor。控制周期迫使步长调整时，同一对象原位重新离散并重置状态。",
+        "rotor": "实现 RotorProtocol 且使用 dimensional 单位制的转子对象；integrator=\"ros2\" 时必须是连续时间 RossRotor。控制周期迫使步长调整时，在发出 TimeStepAdjustedWarning 之后对同一对象原位重新离散并重置状态（需要 owner hook _retime_for_owner，RossRotor 提供）。每个配置应使用独立转子：被另一配置重新离散的共享转子会使本配置在构建仿真时报 ConfigurationError。",
         "mounts": "非空或按模型允许的 BearingMount 元组，节点不得重复。",
         "time_step": "请求的正全局量纲时间步，必须与 rotor.dt 一致；不能整除控制周期 Ts 时改为 Ts / ceil(Ts / time_step)（大于 Ts 时取 Ts）。",
         "steps": "请求的非负整数推进步数；步长调整时按请求结束时间重算为整数个控制周期。结果通常包含初始提交点。",
@@ -565,13 +571,13 @@
         "history": "已提交历史的保留策略。",
         "dependencies": "面向高级装配的可选依赖对象。",
         "integrator": "耦合积分器：\"staggered\"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 \"ros2\"（两级 Rosenbrock-W，同步计算轴承力）。",
-        "ros2": "可选 ALB.dynamics.Ros2Options，只能与 integrator=\"ros2\" 同时使用；None 使用默认冻结 Jacobian 选项。",
-        "initial_rotor_state": "可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限。"
+        "ros2": "可选 ALB.dynamics.Ros2Options，只能与 integrator=\"ros2\" 同时使用；None 使用默认冻结 Jacobian 选项。jacobian_state 短于转子状态，或在没有阀驱动主动轴承时不等于转子状态长度，构造时拒绝；有阀驱动主动轴承时完整耦合长度在 run() 的 reset 阶段检查。",
+        "initial_rotor_state": "可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限；校验后保存为浮点数元组，配置因此可做相等比较。"
       },
       "raises": [
         {
           "type": "ConfigurationError",
-          "when": "rotor.dt 或轴承局部 time_step 与请求步长不一致、多个不同控制周期不能被同一步长整除、需要调整步长但存在文件引用的 MultiPad 子瓦、integrator 名称非法，或 ROS2 遇到带热模型/不支持的轴承族及非连续转子。"
+          "when": "rotor.dt 或轴承局部 time_step 与请求步长不一致、多个不同控制周期不能被同一步长整除、需要调整步长但存在文件引用的 MultiPad 子瓦或转子缺少 _retime_for_owner、转子重新离散失败（在警告之后）、integrator 名称非法或 ros2 选项未配 integrator=\"ros2\"、initial_rotor_state 形状不符或含非有限值，或 ROS2 遇到带热模型的轴承、含主动或外部阀芯子瓦的 MultiPad、不支持的轴承族、非连续转子及长度不符的 jacobian_state。"
         },
         {
           "type": "TypeError",
@@ -610,7 +616,7 @@
         "rotor_displacement": "形状为 (n, ndof) 或策略过滤后的转子位移历史。",
         "rotor_velocity": "与 rotor_displacement 同形状的速度历史。",
         "bearing_force": "首维为 n 的挂载轴承二维力历史。",
-        "metadata": "完成状态、提交步数、history 模式等诊断。",
+        "metadata": "完成状态、提交步数、history 模式等诊断；ROS2、控制周期或 initial_rotor_state 运行另含 integrator、time_step、control_periods、time_step_adjustment、ros2_options 和 initial_rotor_state。",
         "convergence": "整次仿真的收敛或完成状态。"
       },
       "examples": [
@@ -628,7 +634,7 @@
           "parameters": {}
         },
         "write": {
-          "summary": "把仿真历史和诊断写入一个新的制品目录。",
+          "summary": "把仿真历史和诊断写入一个新的制品目录；控制周期和 ROS2 运行的嵌套只读元数据同样序列化为 JSON。",
           "returns": "返回 ArtifactManifest。",
           "parameters": {
             "path": "目标输出目录。"
@@ -637,8 +643,8 @@
       }
     },
     "TimeStepAdjustedWarning": {
-      "summary": "控制器采样周期迫使仿真步长调整时发出的 UserWarning，adjustment 属性记录请求值与实际值。",
-      "returns": "构造一个可由 warnings 模块发出或捕获的 TimeStepAdjustedWarning；它不是 ALBError，不会中断构造。",
+      "summary": "控制器采样周期迫使仿真步长调整时发出的 UserWarning，adjustment 属性记录请求值与实际值。它在全部校验通过后、转子原位重新离散之前发出。",
+      "returns": "构造一个可由 warnings 模块发出或捕获的 TimeStepAdjustedWarning；它不是 ALBError，默认不中断构造。用 warnings filter 提升为异常时，SimulationConfig 构造被拒绝且转子保持不变。",
       "parameters": {
         "message": "面向用户的调整说明，包含请求步长、控制周期、实际步长、每周期步数和步数变化。",
         "adjustment": "只读调整映射（与 SimulationConfig.time_step_adjustment 相同），键为 requested_time_step、requested_steps、requested_end_time、control_period、time_step、control_steps_per_period、steps、end_time 和 rule；None 表示未附带详情。"
@@ -716,6 +722,16 @@
       "examples": [
         "simulation_programmatic",
         "simulation_from_file"
+      ],
+      "raises": [
+        {
+          "type": "TypeError",
+          "when": "config 不是 SimulationConfig。"
+        },
+        {
+          "type": "ConfigurationError",
+          "when": "runtime 物化发现不一致的轴承边界，或 rotor.dt 已不等于 config.time_step（共享转子被另一个 SimulationConfig 因控制周期重新离散）。"
+        }
       ]
     },
     "load_bearing_config": {

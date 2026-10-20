@@ -74,9 +74,10 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
 [0.4.6 迁移说明](migrations/0.4.6.md)。主动轴承 `pid`/`fuzzy_pid` 可用
 `control.control_period` 声明控制器采样周期 `Ts`：控制器每 `m = Ts/h` 步采样并
 保持指令，物理组件仍共享同一步长。仿真步长不能整除 `Ts` 时改用
-`h' = Ts/ceil(Ts/h)`，同时重算步数、原位重新离散转子并发出
-`ALB.TimeStepAdjustedWarning`。`SimulationConfig(integrator="ros2")` 新增可选的
-两级 Rosenbrock-W 同步耦合积分器，带热模型的轴承不支持。修改前在 `df7336f`
+`h' = Ts/ceil(Ts/h)` 并重算步数，先发出 `ALB.TimeStepAdjustedWarning`，再原位重新
+离散转子；共享转子被另一配置重新离散后，原配置构建仿真时报 `ConfigurationError`。
+`SimulationConfig(integrator="ros2")` 新增可选的两级 Rosenbrock-W 同步耦合积分器，
+带热模型的轴承及含主动或外部阀芯子瓦的 `MultiPad` 不支持。修改前在 `df7336f`
 冻结了默认 staggered 路径参考
 `refs/coupling_default_path_0_4_6_reference_v1.json`/`.npz`，并以精确相等回归；
 默认路径的数值与结果元数据保持 0.4.5 不变。
@@ -98,8 +99,9 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
   整数倍。
 - 0.4.6 可选 ROS2 积分器：`time_grid.integrator: "ros2"` 或
   `SimulationConfig(integrator="ros2")`。缺省冻结 Jacobian，可按步数或控制周期
-  刷新；轴承力经无副作用 probe 同步计算。支持无热液膜、气膜、surrogate、
-  `MultiPad` 和无热主动轴承；默认 staggered 路径不变。
+  刷新；轴承力经无副作用 probe 同步计算。支持无热液膜、气膜、surrogate、子瓦
+  只含这些无热族（surrogate 限固定阀芯）的 `MultiPad` 和无热主动轴承；默认
+  staggered 路径不变。
 - 0.4.5 主动轴承阀配置支持 `second_order`、`static`、`transfer_function`。
   二阶模型使用 `natural_frequency_hz`、`damping_ratio` 和可选 `delay`。
 - 显式压力/温度网格支持 P1/P2/Q1/Q2，并共享网格、阶次和自由度。
@@ -119,7 +121,7 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
 | 历史正式发布 | 0.4.0、0.4.1、0.4.2 的机器验收状态均为 `passed`；只适用于各报告绑定的候选 |
 | 既有开发验证 | 文档压缩前记录的最后一次全套数值测试为 `492 passed, 13 skipped, 10 subtests passed`；该记录早于当前未提交修改，不是本次重跑结果 |
 | 类型基线文件 | `tools/validation/mypy_layer_baseline_0_4.json` 当前记录 23 个 strict target、352 条实现层诊断和 82 个文件/错误码组；本轮未重跑全项目类型基线门禁 |
-| 2026-10-20 0.4.6 文档 | 四类生成参考 `--check` 均通过（28 个根符号、189 个轴承字段行、38 个仿真字段行、3 个 namespace 页面）；`tests/unit/docs`、`tests/integration/docs`、三项配置/根 API 参考测试和文档示例 smoke 共 34 项通过；`mkdocs build --strict` 通过。只覆盖文档与生成参考，控制周期和 ROS2 的数值验证以对应 0.4.6 测试和报告为准 |
+| 2026-10-20 0.4.6 文档 | 四类生成参考 `--check` 均通过（28 个根符号、189 个轴承字段行、38 个仿真字段行、3 个 namespace 页面）；`tests/unit/docs`、`tests/integration/docs`、三项配置/根 API 参考测试和文档示例 smoke 共 34 项通过；`mkdocs build --strict` 通过。文档与代码一致性核对（HEAD `7d66218`）后重跑：四类 `--check` 通过，前述五组测试（不含示例 smoke）28 项通过，`mkdocs build --strict` 通过。只覆盖文档与生成参考，控制周期和 ROS2 的数值验证以对应 0.4.6 测试和报告为准 |
 | 2026-10-09 surrogate C4 | 新增参考回归 14 项与单元测试 28 项，全部通过。参考回归包括真实 M42/M35：`"c4"` 与 `ALBNNC4Canonical` 逐位相等，`"none"` 与修改前构建器逐位相等。邻近 surrogate/API/config/docs 套件 402 项通过；唯一失败 `test_public_site_contains_no_local_absolute_paths` 源自既有未提交的 `site/guides/analysis.md` 本机路径。生成参考检查与 `mkdocs build --strict` 均通过。ALB 环境未安装 mypy，本轮未做类型检查 |
 | 2026-10-09 谐波工具 | 59 项相关测试通过；25/50/100 Hz 冻结参考、两种供油投影、解析导数、复数结果保存和失败隔离均覆盖。API 严格类型及新实现层定向检查通过；最终 wheel 隔离计算通过，50 Hz 相对线性残差约 `9.97e-13`。这是当前工作树的功能验收，尚未形成固定 SHA 发布候选 |
 | 2026-10-06 文档清理 | 12 项文档与站点测试通过（含严格构建）；四类生成参考检查、4 项审计 CLI 导出检查及文档链接检查通过。未执行完整数值或固定 SHA 发布验收 |
@@ -162,11 +164,13 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
    `"c4"`；要复现旧的原网络结果时写 `"none"`。SURROGATE_TRAIN 后续打包第一象限模型时，
    应在 metadata 写入 `inference_symmetry`。C4 只适用于四瓦、阀芯指令轴随瓦旋转的对称轴承；
    坐标轴和原点处的 C4 边界误差保持原样。
-8. ROS2 首版拒绝热模型轴承。冻结 Jacobian 只影响稳定裕度：轴颈接近壁面时裕度
-   下降，打包 surrogate 在居中处存在平方根型刚度奇异，应设置 `jacobian_refresh`
-   或偏心 `jacobian_state`。外部 spool provider 采用每步零阶保持，只有分段常数
-   输出才保持二阶。默认路径参考仅保证当前记录环境下的精确相等，其他平台可能出现
-   舍入级差异，需按迁移说明用环境变量指向本地生成的参考对复核。
+8. ROS2 首版拒绝热模型轴承，以及含主动或外部阀芯子瓦的 `MultiPad`。冻结 Jacobian
+   只影响稳定裕度：轴颈接近壁面时裕度下降，打包 surrogate 在居中处存在平方根型
+   刚度奇异，应设置 `jacobian_refresh` 或偏心 `jacobian_state`。外部 spool provider
+   采用每步零阶保持，只有分段常数输出才保持二阶。默认路径参考仅保证当前记录环境下
+   的精确相等，其他平台可能出现舍入级差异，需按迁移说明用环境变量指向本地生成的
+   参考对复核。0.4.6 新行为参考的生成器已提交，但截至 2026-10-20 核对，参考对
+   `refs/ros2_control_period_0_4_6_reference_v1.*` 及其回归测试尚未提交。
 
 ## 外部工作与阅读入口
 
