@@ -155,8 +155,8 @@ Jacobian 缺省冻结，可通过 `jacobian_refresh` 按步数或控制周期刷
 surrogate、子瓦只含无热液膜/气膜/固定阀芯 surrogate 的 `MultiPad` 和无热主动轴承；
 带热模型的轴承及含主动或外部阀芯子瓦的 `MultiPad` 以 `ConfigurationError` 拒绝。
 外部 spool provider 每步采样并在步内保持，该通道一般为一阶。缺省
-`integrator="staggered"` 保持 0.4.5 数值路径和
-结果元数据，修改前参考见 `refs/coupling_default_path_0_4_6_reference_v1.json/.npz`。
+`integrator="staggered"` 保持 0.4.5 数值路径和结果元数据，修改前参考见
+`refs/coupling_default_path_0_4_6_reference_v1.json/.npz`。
 适用边界见 [0.4.6 迁移说明](migrations/0.4.6.md)。
 
 所有公开结果都是不可变对象，数组设为只读，并提供 `write(path)`。计算失败

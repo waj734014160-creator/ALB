@@ -69,10 +69,9 @@ steps' = m * ceil(T / Ts)      T = steps * h，m = Ts / h'
 `time_grid.jacobian_refresh` 只在 `"ros2"` 下接受：`null` 冻结整个运行的 Jacobian，
 正整数 `N` 每 `N` 步刷新一次，`"control_period"` 在任一阀驱动主动轴承（`pid`、
 `fuzzy_pid` 或 `uncontrolled`）的每个控制器采样时刻刷新，没有这类轴承时每步刷新。
-程序化入口用
-`SimulationConfig(integrator="ros2", ros2=ALB.dynamics.Ros2Options(...))` 设置同样的
-选项及 `jacobian_state`、中心差分步长，并可用 `initial_rotor_state` 给出完整初始
-转子状态；这两个状态向量都保存为浮点数元组。`jacobian_state` 短于转子状态，或在
+程序化入口用 `SimulationConfig(integrator="ros2", ros2=ALB.dynamics.Ros2Options(...))`
+设置同样的选项及 `jacobian_state`、中心差分步长，并可用 `initial_rotor_state` 给出
+完整初始转子状态；这两个状态向量都保存为浮点数元组。`jacobian_state` 短于转子状态，或在
 没有阀驱动主动轴承时不等于转子状态长度，构造时报 `ConfigurationError`；有阀驱动
 主动轴承时完整耦合长度在 `run()` 的 reset 阶段检查。
 
