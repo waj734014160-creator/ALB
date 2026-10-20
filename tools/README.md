@@ -4,7 +4,7 @@
 
 | 目录 | 用途 | 执行与输出边界 |
 | --- | --- | --- |
-| `analysis/` | 谐波线性化、网格独立性分析、供油收敛诊断 | 人工选择配置和输出目录；不能仅因脚本名称含 diagnose 就删除。 |
+| `analysis/` | 谐波线性化、网格独立性分析、供油收敛诊断、0.4.7 耦合积分器对比研究 | 人工选择配置和输出目录；不能仅因脚本名称含 diagnose 就删除。 |
 | `benchmarks/` | 行为核对后的性能比较 | 保留对应参考；不将计时替代数值验证。 |
 | `diagnostics/` | 热模型等局部诊断 | 人工触发，产物写入任务输出或临时目录。 |
 | `docs/` | API、配置和 namespace 文档生成 | 通过生成器更新文档；`--check` 用于漂移检查。 |
@@ -20,6 +20,7 @@
 
 - 谐波系数计算：`analysis/run_harmonic_linearization.py`，调用包内 `bearing.analysis.harmonic_linearize()`；可运行配置为 `analysis/thermal_harmonic_example.json5`，用法见[分析工作流](../docs/site/guides/analysis.md)。
 - 谐波时域复核：`manual/run_alb_harmonic_kcg_validation.py`。
+- 0.4.7 耦合积分器对比：`analysis/run_predictor_corrector_0_4_7_study.py`，在解析转子/轴承和小网格液膜上比较 staggered、ROS2 与预测-校正的误差、收敛阶、迭代次数和代价，输出 JSON（默认 `.cache/tmp/predictor_corrector_0_4_7_study.json`）；依赖 `tests/_support` 的解析测试替身，结论见 `docs/alb_0_4_7_predictor_corrector_report.md`。
 - 谐波力重建绘图：`manual/plot_alb_harmonic_time_response.py`。
 - LQG 演示与本地结果：`manual/control/LQG/`；结果仍按既有引用原位保留。
 - 配置探索：`manual/notebooks/bearing_config_exploration.ipynb`。

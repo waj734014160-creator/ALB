@@ -26,6 +26,11 @@
       "description": "只有 SimulationConfig(integrator=\"ros2\") 接受该选项；缺省冻结 Jacobian，jacobian_state 可给出静平衡等偏心状态。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。",
       "code": "import ALB\nfrom ALB.dynamics import Ros2Options\n\noptions = Ros2Options(\n    jacobian_refresh=\"control_period\",\n    jacobian_state=None,\n)\nconfig = ALB.SimulationConfig(\n    rotor=rotor,  # Continuous ALB.dynamics.RossRotor\n    mounts=(mount,),\n    time_step=2.0e-5,\n    steps=5000,\n    integrator=\"ros2\",\n    ros2=options,\n)\nprint(options.to_dict())"
     },
+    "predictor-corrector-options": {
+      "title": "配置预测-校正耦合积分器",
+      "description": "只有 SimulationConfig(integrator=\"predictor_corrector\") 接受该选项（0.4.7）；缺省迭代界面力并使用 Aitken 松弛，pece 每步恰好 1 次试算和 1 次提交。轴承保持黑箱，不需要导数。",
+      "code": "import ALB\nfrom ALB.dynamics import PredictorCorrectorOptions\n\noptions = PredictorCorrectorOptions(\n    mode=\"iterate\",\n    relaxation=\"iqn_ils\",\n    max_iterations=20,\n    on_nonconvergence=\"raise\",\n)\nconfig = ALB.SimulationConfig(\n    rotor=rotor,  # ALB.dynamics.RossRotor\n    mounts=(mount,),\n    time_step=2.0e-5,\n    steps=5000,\n    integrator=\"predictor_corrector\",\n    predictor_corrector=options,\n)\nprint(options.to_dict())"
+    },
     "ross-rotor": {
       "title": "包装已有 ROSS rotor",
       "description": "speed 使用 rad/s，dt 使用秒；输入、推进与读取状态是三个独立阶段。",
@@ -175,7 +180,7 @@
       "title": "Dynamics",
       "extra": "dynamics",
       "stability": "advanced",
-      "summary": "转子适配、自由度布局、耦合运行依赖和可选 ROS2 积分器选项的高级入口。",
+      "summary": "转子适配、自由度布局、耦合运行依赖、可选 ROS2 积分器选项和预测-校正积分器选项的高级入口。",
       "symbols": {
         "CouplingRuntimeDependencies": {
           "summary": "显式配置一个耦合 runtime 所拥有的 recorder、observer、run ID 和后提交失败策略。",
@@ -193,6 +198,34 @@
           ],
           "examples": ["coupling-dependencies"],
           "members": {}
+        },
+        "PredictorCorrectorOptions": {
+          "summary": "配置可选预测-校正分区耦合积分器（0.4.7）的迭代模式、力预测、界面松弛、收敛容差和不收敛策略。",
+          "parameters": {
+            "mode": "\"iterate\"（缺省）迭代界面力到容差或 max_iterations；\"pece\" 每步恰好 1 次试算和 1 次提交，不检查收敛，此时其余迭代选项只校验不起作用。",
+            "predictor": "\"linear\"（缺省）用 2 F_n - F_{n-1} 外推首次猜测（首步用 F_n）；\"constant\" 用 F_n，即 staggered 的首猜。",
+            "relaxation": "试算之间的界面力更新：\"aitken\"（缺省，动态 Aitken 松弛）、\"iqn_ils\"（最小二乘逆雅可比的界面拟牛顿）、\"constant\"（P + omega r）或 \"none\"（P = F~）。刚度大、阻尼大的油膜可能使不加松弛的迭代发散，应使用 aitken 或 iqn_ils。",
+            "omega": "constant 松弛因子，也是 aitken（首步首次更新，截断到 omega_bounds）和 iqn_ils 首次更新的因子；有限正数，缺省 0.5。",
+            "omega_bounds": "Aitken 因子的截断范围 (lower, upper)，0 < lower <= upper，缺省 (0.01, 1.5)。",
+            "iqn_reuse_steps": "IQN-ILS 复用前几步割线列的步数，缺省 0（不复用）。",
+            "rtol": "相对界面容差：||r||_inf <= rtol * max(||F~||_inf, max(||F_n||_inf, 1 N)) + atol；不宜小于轴承求解器自身的相对容差（FEM 液膜约 1e-6）。缺省 1e-6。",
+            "atol": "绝对界面容差，单位 N（转子域），缺省 1e-6；rtol 与 atol 不能同时为 0。",
+            "max_iterations": "每步最多试算次数，>= 1，缺省 20。",
+            "on_nonconvergence": "\"warn\"（缺省）提交最后一次迭代并每次运行发出一次 ALB.CouplingIterationWarning；\"raise\" 以 CouplingIterationError 封存该步失败，run() 包装为 SimulationError。"
+          },
+          "returns": "不可变、可比较且可哈希的 PredictorCorrectorOptions，可传给 SimulationConfig.predictor_corrector；只能与 integrator=\"predictor_corrector\" 同时使用。",
+          "raises": [
+            {"type": "ValueError", "when": "mode、predictor、relaxation 或 on_nonconvergence 不是允许值；omega 或 omega_bounds 不是有限正数或下界大于上界；rtol、atol 为负或同时为 0；max_iterations < 1 或 iqn_reuse_steps < 0。"},
+            {"type": "TypeError", "when": "数值选项不是实数，或计数选项不是整数。"}
+          ],
+          "examples": ["predictor-corrector-options"],
+          "members": {
+            "to_dict": {
+              "summary": "返回描述这些选项的原生元数据映射。",
+              "parameters": {},
+              "returns": "dict；额外的 unused_in_pece 列出 pece 模式下不起作用的字段，预测-校正运行写入 SimulationResult.metadata[\"predictor_corrector_options\"]。"
+            }
+          }
         },
         "Ros2Options": {
           "summary": "配置可选 ROS2 耦合积分器的 Jacobian 刷新策略、初始 Jacobian 求值状态和中心差分步长。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。",
@@ -224,7 +257,7 @@
             "rotor": "已经构造的 ross.Rotor；四/六自由度布局可映射节点 XY 力。",
             "speed": "ROSS 使用的角速度，单位 rad/s。",
             "dt": "积分时间步，单位 s；公开接口不修改它。仅当 SimulationConfig 因控制周期调整步长时，由 owner hook 对同一对象原位重新离散并重置状态。",
-            "discrete": "true 使用 ROSS 离散模型；false 使用一阶保持离散化的连续模型。ROS2 积分器只接受 false。"
+            "discrete": "true 使用 ROSS 离散模型；false 使用一阶保持离散化的连续模型。ROS2 积分器只接受 false；预测-校正积分器两者都接受。"
           },
           "returns": "RossRotor runtime；unit_system 固定为 dimensional。",
           "raises": [

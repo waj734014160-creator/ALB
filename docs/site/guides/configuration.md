@@ -158,6 +158,34 @@ ROS2 不支持带热模型的轴承，也不支持含主动或外部阀芯子瓦
 刷新；没有这类轴承时每步刷新。适用范围和其他选项见
 [0.4.6 迁移说明](../../migrations/0.4.6.md)。
 
+0.4.7 起可选 `integrator: "predictor_corrector"`。它保持轴承黑箱（不求导、不拆模型，
+支持热模型和主动轴承），每步迭代界面力后只提交一次。选项写在
+`time_grid.predictor_corrector` 中，只能与该积分器同时出现，省略时使用全部默认值：
+
+```json5
+time_grid: {
+  time_step: 2.0e-5,
+  steps: 50000,
+  integrator: "predictor_corrector",
+  predictor_corrector: {
+    mode: "iterate",            // "iterate" or "pece"
+    predictor: "linear",        // "linear" or "constant"
+    relaxation: "aitken",       // "aitken", "iqn_ils", "constant", or "none"
+    omega: 0.5,
+    omega_bounds: [0.01, 1.5],
+    iqn_reuse_steps: 0,
+    rtol: 1.0e-6,               // not below the bearing solver tolerance
+    atol: 1.0e-6,               // N
+    max_iterations: 20,
+    on_nonconvergence: "warn",  // "warn" or "raise"
+  },
+},
+```
+
+`mode: "pece"` 时其余迭代选项仍会校验但不起作用。`multi_pad` 内需要外部阀芯的子瓦
+会被拒绝。算法、存档/回退协议和能力边界见
+[0.4.7 迁移说明](../../migrations/0.4.7.md)。
+
 文件中的转子 Excel、bearing 配置和 disk-stream history 路径必须位于配置文件的资源根目录内。程序化构造的 `SimulationConfig` 还可以承载 adapter、spool provider、recorder 和 observer；这些 runtime object 不能写入 JSON5。
 
 完整字段、提交语义、数组形状和失败边界见[仿真配置参考](../../api/simulation_config_reference.md)。轴承与仿真的可复制文件集中在[完整示例](../examples.md)。

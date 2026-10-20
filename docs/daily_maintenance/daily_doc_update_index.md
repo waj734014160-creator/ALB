@@ -16,6 +16,8 @@
 | `ALB_MAIN/docs/adr/README.md` 与 `docs/adr/NNNN-*.md` | 管理跨模块、公共接口和验收语义的 Accepted/Proposed 决策及修订关系。 |
 | `ALB_MAIN/docs/adr/0009-controller-sampling-period-and-ros2-integrator.md` | 0.4.6 控制器采样周期对 ADR-0007 第 8 条的受限例外、步长调整规则、测量时刻差异和可选 ROS2 积分器边界。 |
 | `ALB_MAIN/docs/alb_0_4_6_ros2_control_period_report.md` | 0.4.6 ROS2 耦合积分器与控制器采样周期的实现、验证和数值结果报告。 |
+| `ALB_MAIN/docs/adr/0010-predictor-corrector-coupling-and-bearing-checkpoints.md` | 0.4.7 可选预测-校正分区耦合积分器、轴承存档/回退契约、与 ADR-0007/0009 的关系和显式状态模型的接入方式。 |
+| `ALB_MAIN/docs/alb_0_4_7_predictor_corrector_report.md` | 0.4.7 预测-校正积分器与轴承存档/回退协议的改动清单、调查结论、待确认事项和测试结果报告。 |
 | `ALB_MAIN/docs/alb_albnn_quickstart.md` | 快速构建 ALB 模型、加载 ALBNN packaged model，并说明常见输入输出契约。 |
 | `ALB_MAIN/docs/file_classification.md` | 文件组、归属边界、归档/删除策略。 |
 | `ALB_MAIN/docs/daily_maintenance/project_cleanup_YYYYMMDD.md` | 记录已授权处置、保留项和恢复入口。 |
@@ -67,6 +69,7 @@
 | `ALB_MAIN/docs/migrations/0.4.4.md` | 记录根 schema 版本入口、独立版本流和迁移边界。 |
 | `ALB_MAIN/docs/migrations/0.4.5.md` | 记录二阶 Hz、静态、任意传递函数、迁移规则和参考边界。 |
 | `ALB_MAIN/docs/migrations/0.4.6.md` | 记录 `control.control_period`、仿真步长调整与警告、ROS2 积分器选项、结果元数据、冻结参考和能力边界。 |
+| `ALB_MAIN/docs/migrations/0.4.7.md` | 记录预测-校正积分器、`time_grid.predictor_corrector` 选项、存档/回退协议、结果元数据、冻结参考和能力边界。 |
 | `ALB_MAIN/docs/migrations/0.2.0_external_consumer_audit.json` | declared 外部调用者的路径、哈希、旧 import 和迁移目标快照。 |
 | `ALB_MAIN/docs/migrations/0.2.0_paper_work_post_migration_audit.json` | PAPER_WORK 的 0.2 迁移后哈希、模型校验、验证摘要与保留边界。 |
 | `ALB_MAIN/docs/migrations/0.2.0_surrogate_train_post_migration_audit.json` | SURROGATE_TRAIN 的 0.2 迁移后提交、模型校验、验证摘要与保留边界。 |

@@ -8,7 +8,7 @@ ALB 将接口分为三个层级。网站只把明确承诺的层级作为 API re
 import ALB
 ```
 
-`ALB.__all__` 中的 28 个符号是 0.4.6 普通用户入口，覆盖版本元数据、配置、构建、计算、分析、仿真、结果、稳定异常和 `TimeStepAdjustedWarning`。该警告是 `UserWarning` 子类而不是 `ALBError`，只在控制器采样周期迫使仿真步长调整时发出。`ALB.__version__` 表示安装包版本，`ALB.SCHEMA_VERSION` 表示严格 JSON5 配置契约版本。首先查阅[根公开 API](../../api/public_api_reference.md)。
+`ALB.__all__` 中的 29 个符号是 0.4.7 普通用户入口，覆盖版本元数据、配置、构建、计算、分析、仿真、结果、稳定异常，以及 `TimeStepAdjustedWarning` 和 `CouplingIterationWarning` 两个警告。两者都是 `UserWarning` 子类而不是 `ALBError`：前者只在控制器采样周期迫使仿真步长调整时发出，后者只在预测-校正积分器的界面迭代未收敛且 `on_nonconvergence="warn"` 时于每次运行发出一次。`ALB.__version__` 表示安装包版本，`ALB.SCHEMA_VERSION` 表示严格 JSON5 配置契约版本。首先查阅[根公开 API](../../api/public_api_reference.md)。
 
 ## 高级用户：显式 namespace
 

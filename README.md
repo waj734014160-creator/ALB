@@ -61,7 +61,7 @@ E:/Anaconda2023/envs/ALB/python.exe tools/docs/generate_public_api_reference.py
 - `docs/adr/README.md`：公共接口和数值算法决策。
 - `docs/file_classification.md`：文件归属、生成物和清理约束。
 - `docs/remote_workstation_connection.md`：远程工作站稳定机制。
-- 迁移说明：[0.2.0](docs/migrations/0.2.0.md)、[0.4.0](docs/migrations/0.4.0.md)、[0.4.1](docs/migrations/0.4.1.md)、[0.4.2](docs/migrations/0.4.2.md)、[0.4.3](docs/migrations/0.4.3.md)、[0.4.4](docs/migrations/0.4.4.md)、[0.4.5](docs/migrations/0.4.5.md)、[0.4.6](docs/migrations/0.4.6.md)。
+- 迁移说明：[0.2.0](docs/migrations/0.2.0.md)、[0.4.0](docs/migrations/0.4.0.md)、[0.4.1](docs/migrations/0.4.1.md)、[0.4.2](docs/migrations/0.4.2.md)、[0.4.3](docs/migrations/0.4.3.md)、[0.4.4](docs/migrations/0.4.4.md)、[0.4.5](docs/migrations/0.4.5.md)、[0.4.6](docs/migrations/0.4.6.md)、[0.4.7](docs/migrations/0.4.7.md)。
 
 `SURROGATE_TRAIN` 与 `PAPER_WORK` 是独立项目。训练和论文任务记录可分别从
 各工作区的 `docs/` 查找；任务脚本与运行产物保留在所属项目。

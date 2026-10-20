@@ -93,6 +93,22 @@ ROS2 需要连续时间 `RossRotor`，支持无热模型的液膜、气膜、sur
 `"user-supplied"`，默认路径的元数据保持不变。`SimulationResult.write()` 可写出这些
 嵌套只读映射。完整适用边界见 [0.4.6 迁移说明](../migrations/0.4.6.md)。
 
+`"predictor_corrector"`（0.4.7）是保持轴承黑箱的预测-校正分区耦合：每步预测界面力，
+用“从已提交状态出发、不提交”的轴承试算校正并迭代到界面一致，最后每个轴承只提交
+一次，不需要导数，也不拆分模型。无副作用的轴承用 `probe_force` 试算；热模型、主动
+轴承及含它们的 `MultiPad` 通过存档/回退协议走正常生命周期试算并立即回退，控制器仍
+按提交次数每 `m` 次运行一次。选项写在 `time_grid.predictor_corrector`（只能与该积分器
+同时出现，省略时用全部默认值），程序化入口为
+`SimulationConfig(integrator="predictor_corrector",
+predictor_corrector=ALB.dynamics.PredictorCorrectorOptions(...))`。`mode: "pece"` 时其余
+迭代选项只校验不起作用。唯一拒绝的拓扑是 `MultiPad` 内需要外部阀芯的子瓦；转子需要
+提供 `_propagate_trial` 等 owner hook（连续或离散 `RossRotor`）。迭代未收敛时，
+`on_nonconvergence: "warn"` 提交最后一次迭代并在每次运行发出一次
+`ALB.CouplingIterationWarning`，`"raise"` 以 `SimulationError` 结束运行；试算失败时轴承
+先回到提交状态，再按失败封存契约报告。只有该积分器在结果元数据中额外写入
+`predictor_corrector_options` 和 `predictor_corrector_diagnostics`。完整说明见
+[0.4.7 迁移说明](../migrations/0.4.7.md)。
+
 ## 载荷
 
 - `static` 在一个节点施加固定 `[Fx, Fy]`，单位 N。

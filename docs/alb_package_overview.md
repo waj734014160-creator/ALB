@@ -61,10 +61,10 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 ```
 
 - `ALB.api` 是 0.4 用户 facade，负责严格配置、构建、分析、仿真、结果和稳定异常。
-- `ALB.contracts` 保存严格 DTO、单位、结果快照和内部领域协议。
+- `ALB.contracts` 保存严格 DTO、单位、结果快照和内部领域协议（含 0.4.7 的 `CheckpointableRuntimeProtocol`）。
 - `ALB.physics` 保存液膜、气膜、热、节流器和 `MultiPad` 数值实现。
 - `ALB.control` 保存 PID、FuzzyPID、阀和高级控制实现。
-- `ALB.dynamics` 保存转子、挂载 binding、提交型耦合 runtime 和可选 ROS2 积分器（`Ros2Options`）。
+- `ALB.dynamics` 保存转子、挂载 binding、提交型耦合 runtime、可选 ROS2 积分器（`Ros2Options`）和可选预测-校正积分器（`PredictorCorrectorOptions`）。
 - `ALB.surrogate` 保存 v0.4 模型包、NPZ scaler、推理 runtime 和训练公共组件。
 - `ALB.systems.alb` 只负责主动润滑轴承内部装配，不是普通用户入口。
 - `ALB.infrastructure` 保存 artifact writer、recorder、observer 和远程运行工具。
@@ -162,6 +162,27 @@ surrogate、子瓦只含无热液膜/气膜/固定阀芯 surrogate 的 `MultiPad
 `refs/coupling_default_path_0_4_6_reference_v1.json/.npz`。
 适用边界见 [0.4.6 迁移说明](migrations/0.4.6.md)。
 
+## 可选预测-校正耦合积分器与轴承存档协议（0.4.7）
+
+`SimulationConfig(integrator="predictor_corrector",
+predictor_corrector=ALB.dynamics.PredictorCorrectorOptions(...))` 或
+`spec.time_grid.integrator: "predictor_corrector"`（选项在
+`spec.time_grid.predictor_corrector`）选择预测-校正分区耦合
+（`ALB/dynamics/predictor_corrector.py`）。每步用纯函数 hook
+`RossRotor._propagate_trial`（与 `_propagate` 同一套公式）试算转子，从已提交状态试算
+全部轴承，按 Aitken、IQN-ILS、常数或无松弛迭代界面力，最后在校正状态上每个轴承只
+提交一次；`mode="pece"` 每步 1 次试算 + 1 次提交。轴承保持黑箱：无副作用的 runtime
+用 `probe_force` 试算，热模型、主动轴承及含它们的 `MultiPad` 实现
+`ALB.contracts.CheckpointableRuntimeProtocol`（`checkpoint()`/`restore(token)`），每次
+试算走正常生命周期后回退。存档机制在 `ALB/core/checkpoint.py`：runtime 列出持有时变
+状态的对象，快照保存其属性，容器与数组原地恢复；网格、FEM 组装和 torch 模块只引用。
+控制器按提交次数计数，因此控制周期语义不变。实现了存档协议的 spool provider 随试算
+调用并回退，其他 provider 每步保持。不收敛时按 `on_nonconvergence` 发出根符号
+`CouplingIterationWarning` 或以 `SimulationError` 结束；试算失败先回退再封存。只有该
+积分器写入 `predictor_corrector_options` 与 `predictor_corrector_diagnostics` 元数据。
+决策见 `docs/adr/0010-predictor-corrector-coupling-and-bearing-checkpoints.md`，适用边界见
+[0.4.7 迁移说明](migrations/0.4.7.md)。
+
 所有公开结果都是不可变对象，数组设为只读，并提供 `write(path)`。计算失败
 通过稳定异常携带密封 failure snapshot。仿真遇到提交后 recorder/observer
 异常时不会重算物理步骤；partial result 包含已真实提交的步骤，并分别报告
@@ -219,4 +240,6 @@ python tools/docs/generate_public_api_reference.py --check
 `refs/alb_0_4_3_guard_reference_v1.json/.npz`；正式发布门禁尚未生成。0.4.6
 默认耦合路径的修改前参考为 `refs/coupling_default_path_0_4_6_reference_v1.json/.npz`，
 由 `tools/reference/generate_coupling_default_path_0_4_6_reference.py` 在 `df7336f`
-上生成。0.3 的 F01-F66 manifest 仅保留为历史证据。
+上生成。0.4.7 修改前在 `9432c06` 冻结有状态轴承族的 staggered 参考
+`refs/coupling_staggered_pre_0_4_7_reference_v1.json/.npz`，新格式行为参考为
+`refs/predictor_corrector_0_4_7_reference_v1.json/.npz`。0.3 的 F01-F66 manifest 仅保留为历史证据。

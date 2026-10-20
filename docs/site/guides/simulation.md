@@ -55,6 +55,41 @@ ROS2 支持无热液膜、气膜、surrogate、子瓦只含无热液膜/气膜/�
 以 `ConfigurationError` 拒绝。`initial_rotor_state` 可对两种积分器给出完整初始转子
 状态，例如静平衡状态；它与 `Ros2Options.jacobian_state` 都保存为浮点数元组。
 
+### 预测-校正积分器（0.4.7）
+
+`integrator="predictor_corrector"` 在保持轴承黑箱的前提下消除轴承力的一步滞后：
+每步先预测界面力，再用“从已提交状态出发、不提交”的轴承试算校正，必要时迭代到
+界面一致，最后每个轴承只提交一次。它不需要导数，也不拆分模型，因此支持热模型、
+主动轴承（控制器和阀留在轴承内部）及其 `MultiPad`：
+
+```python
+from ALB.dynamics import PredictorCorrectorOptions
+
+simulation_config = ALB.SimulationConfig(
+    rotor=rotor,
+    mounts=(mount,),
+    time_step=2.0e-5,
+    steps=5000,
+    integrator="predictor_corrector",
+    predictor_corrector=PredictorCorrectorOptions(
+        mode="iterate",          # or "pece": one trial and one commit per step
+        relaxation="aitken",     # "iqn_ils", "constant", "none"
+        on_nonconvergence="warn",
+    ),
+)
+result = ALB.build_simulation(simulation_config).run()
+diagnostics = result.metadata["predictor_corrector_diagnostics"]
+print(diagnostics["iterations_per_step"], diagnostics["nonconverged_steps"])
+```
+
+无副作用的轴承用 `probe_force` 试算；热模型、主动轴承和含它们的 `MultiPad` 通过
+存档/回退协议（`ALB.contracts.CheckpointableRuntimeProtocol`）走正常生命周期试算，
+试算后立即回到提交状态，控制器仍按提交次数每 `m` 次运行一次。刚度大、阻尼大的油膜
+可能使不加松弛的迭代发散，此时保留默认 `"aitken"` 或改用 `"iqn_ils"`。迭代未收敛时，
+`"warn"` 提交最后一次迭代并在每次运行中发出一次 `ALB.CouplingIterationWarning`；
+`"raise"` 以 `SimulationError` 结束运行。唯一被拒绝的拓扑是 `MultiPad` 内需要外部阀芯
+的子瓦。完整说明见 [0.4.7 迁移说明](../../migrations/0.4.7.md)。
+
 主动轴承声明 `control.control_period` 时，控制器每 `m = Ts / time_step` 步采样一次。
 若 `time_step` 不能整除 `Ts`，构造 `SimulationConfig` 时步长改为
 `Ts / ceil(Ts / time_step)`，步数按请求结束时间向上取整到整数个控制周期，并发出

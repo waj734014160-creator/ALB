@@ -33,6 +33,7 @@ nav:
       - 包结构概览: alb_package_overview.md
   - 维护文档:
       - 文档贡献流程: site/contributing/docs.md
+      - 0.4.7 迁移说明: migrations/0.4.7.md
       - 0.4.6 迁移说明: migrations/0.4.6.md
       - 0.4.5 迁移说明: migrations/0.4.5.md
       - 0.4.4 迁移说明: migrations/0.4.4.md
@@ -41,6 +42,7 @@ nav:
 exclude_docs: |
   current_state.md
   alb_0_4_6_ros2_control_period_report.md
+  alb_0_4_7_predictor_corrector_report.md
   daily_maintenance/
   remote_workstation_connection.md
   run_index.md

@@ -26,11 +26,13 @@
 | [ADR-0007](0007-preserve-validated-numerical-algorithms.md) | Accepted | 接口重构保留已验证数值算法、双侧参考条件和 0.4.1 数值门禁 |
 | [ADR-0008](0008-servovalve-public-configuration.md) | Accepted | 0.4.5 二阶 Hz、静态与任意传递函数三类伺服阀公开配置 |
 | [ADR-0009](0009-controller-sampling-period-and-ros2-integrator.md) | Accepted（ROS2 部分功能不完善） | 0.4.6 控制器采样周期为仿真步整数倍的例外、步长调整规则与可选 ROS2 耦合积分器 |
+| [ADR-0010](0010-predictor-corrector-coupling-and-bearing-checkpoints.md) | Accepted（真实模型本地核对待完成） | 0.4.7 可选预测-校正分区耦合积分器与轴承存档/回退契约 |
 
 ADR-0006 替代 ADR-0001。ADR-0002 至 ADR-0005 的失败、提交、记录和单位原则
 继续约束 0.4 内部 runtime；当前用户接口以 `docs/interface_architecture.md` 和
 `docs/alb_albnn_quickstart.md` 为准。ADR-0007 补充 ADR-0006 的数值算法保留
 边界；ADR-0008 固定 0.4.5 的三类伺服阀配置。ADR-0009 为 ADR-0007 第 8 条
 增加控制器采样周期例外，物理组件仍共享同一步长；ROS2 只作为可选积分器加入，
-默认 staggered 路径继续按 ADR-0007 冻结并精确回归。Accepted 表示决策已采用，
-不等于发布验收已通过。
+默认 staggered 路径继续按 ADR-0007 冻结并精确回归。ADR-0010 在保持轴承黑箱的
+前提下增加可选预测-校正积分器和轴承存档/回退契约，修改前在 `9432c06` 冻结有状态
+轴承族的 staggered 参考。Accepted 表示决策已采用，不等于发布验收已通过。

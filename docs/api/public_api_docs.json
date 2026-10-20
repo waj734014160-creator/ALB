@@ -46,6 +46,11 @@
       "description": "默认 integrator=\"staggered\" 保持 0.4.5 数值路径。ROS2 需要连续时间 RossRotor 和可无副作用求力的轴承族；带热模型的轴承会被拒绝。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。",
       "code": "import ALB\nfrom ALB.dynamics import Ros2Options, RossRotor\n\nross_model = ...  # Constructed ross.Rotor\nrotor = RossRotor(ross_model, speed=2.0 * 3.141592653589793 * 50.0, dt=2.0e-5)\nbearing_config = ALB.load_bearing_config(\"configs/liquid_film.json5\")\nconfig = ALB.SimulationConfig(\n    rotor=rotor,\n    mounts=(ALB.BearingMount(config=bearing_config, node=0),),\n    time_step=2.0e-5,\n    steps=5000,\n    integrator=\"ros2\",\n    ros2=Ros2Options(jacobian_refresh=\"control_period\"),\n)\nresult = ALB.build_simulation(config).run()\nprint(result.metadata[\"integrator\"], result.metadata[\"ros2_options\"])"
     },
+    "simulation_predictor_corrector": {
+      "title": "选择预测-校正分区耦合积分器",
+      "description": "integrator=\"predictor_corrector\"（0.4.7）在保持轴承黑箱的前提下消除轴承力的一步滞后：每步迭代界面力，试算从已提交状态出发并回退，最后每个轴承只提交一次。热模型、主动轴承及其 MultiPad 通过存档/回退协议试算；不收敛时按 on_nonconvergence 发出 CouplingIterationWarning 或以 SimulationError 结束。",
+      "code": "import warnings\n\nimport ALB\nfrom ALB.dynamics import PredictorCorrectorOptions, RossRotor\n\nross_model = ...  # Constructed ross.Rotor\nrotor = RossRotor(ross_model, speed=2.0 * 3.141592653589793 * 50.0, dt=2.0e-5)\nbearing_config = ALB.load_bearing_config(\"configs/thermal_liquid_film.json5\")\nconfig = ALB.SimulationConfig(\n    rotor=rotor,\n    mounts=(ALB.BearingMount(config=bearing_config, node=0),),\n    time_step=2.0e-5,\n    steps=5000,\n    integrator=\"predictor_corrector\",\n    predictor_corrector=PredictorCorrectorOptions(relaxation=\"aitken\"),\n)\nwith warnings.catch_warnings(record=True) as caught:\n    warnings.simplefilter(\"always\", ALB.CouplingIterationWarning)\n    result = ALB.build_simulation(config).run()\n\ndiagnostics = result.metadata[\"predictor_corrector_diagnostics\"]\nprint(diagnostics[\"iterations_per_step\"], diagnostics[\"nonconverged_steps\"])\nprint(any(issubclass(item.category, ALB.CouplingIterationWarning) for item in caught))"
+    },
     "history_policy": {
       "title": "选择仿真历史保留策略",
       "description": "默认 memory 保存全部提交步；长任务可以显式降采样、环形缓存或流式写盘。",
@@ -417,6 +422,17 @@
       ],
       "members": {}
     },
+    "CouplingIterationWarning": {
+      "summary": "预测-校正积分器的界面迭代在 max_iterations 内未收敛时发出的 UserWarning（0.4.7）。只在 on_nonconvergence=\"warn\" 时、每次运行第一次不收敛的步发出一次；该步提交最后一次迭代，不收敛步数与最大残差记入 predictor_corrector_diagnostics。",
+      "returns": "构造一个可由 warnings 模块发出或捕获的 CouplingIterationWarning；它不是 ALBError，默认不中断仿真。用 warnings filter 提升为异常时，该步按耦合失败封存，run() 以 SimulationError 结束。",
+      "parameters": {
+        "args": "传给 Python Warning 的消息，包含试算次数、时间和最终界面残差。"
+      },
+      "examples": [
+        "simulation_predictor_corrector"
+      ],
+      "members": {}
+    },
     "EllipseTrajectory": {
       "summary": "二维椭圆轨迹值对象，分别表达中心、半轴、遍历方向、时间相位和空间转角。",
       "returns": "构造经过有限值和形状校验的不可变椭圆轨迹。",
@@ -553,35 +569,36 @@
             },
             {
               "type": "SimulationError",
-              "when": "物理、history、recorder 或 observer 阶段失败，包括 ROS2 stage 求力失败（Ros2StageError）和 reset 阶段 jacobian_state 与耦合状态长度不符；partial_result 可能包含已提交历史。"
+              "when": "物理、history、recorder 或 observer 阶段失败，包括 ROS2 stage 求力失败（Ros2StageError）、预测-校正试算失败（CouplingTrialError，轴承已回到提交状态）或 on_nonconvergence=\"raise\" 时的界面迭代不收敛（CouplingIterationError）和 reset 阶段 jacobian_state 与耦合状态长度不符；partial_result 可能包含已提交历史。"
             }
           ]
         }
       }
     },
     "SimulationConfig": {
-      "summary": "一次转子-轴承耦合计算的不可变拓扑、时步、载荷、历史策略、耦合积分器和可选依赖。",
+      "summary": "一次转子-轴承耦合计算的不可变拓扑、时步、载荷、历史策略、耦合积分器及其选项和可选依赖。",
       "returns": "构造经过 rotor 能力、节点输出、本地时步一致性和控制周期校验的 SimulationConfig；需要调整步长时 time_step、steps、rotor 和 mounts 保存实际生效值。",
       "parameters": {
-        "rotor": "实现 RotorProtocol 且使用 dimensional 单位制的转子对象；integrator=\"ros2\" 时必须是连续时间 RossRotor。控制周期迫使步长调整时，在发出 TimeStepAdjustedWarning 之后对同一对象原位重新离散并重置状态（需要 owner hook _retime_for_owner，RossRotor 提供）。每个配置应使用独立转子：被另一配置重新离散的共享转子会使本配置在构建仿真时报 ConfigurationError。",
+        "rotor": "实现 RotorProtocol 且使用 dimensional 单位制的转子对象；integrator=\"ros2\" 时必须是连续时间 RossRotor；integrator=\"predictor_corrector\" 时需提供 _propagate_trial、_node_state_indices、_node_force_vector 和 _commit_integrated_state（连续或离散 RossRotor 均可）。控制周期迫使步长调整时，在发出 TimeStepAdjustedWarning 之后对同一对象原位重新离散并重置状态（需要 owner hook _retime_for_owner，RossRotor 提供）。每个配置应使用独立转子：被另一配置重新离散的共享转子会使本配置在构建仿真时报 ConfigurationError。",
         "mounts": "非空或按模型允许的 BearingMount 元组，节点不得重复。",
         "time_step": "请求的正全局量纲时间步，必须与 rotor.dt 一致；不能整除控制周期 Ts 时改为 Ts / ceil(Ts / time_step)（大于 Ts 时取 Ts）。",
         "steps": "请求的非负整数推进步数；步长调整时按请求结束时间重算为整数个控制周期。结果通常包含初始提交点。",
         "loads": "可选外载荷描述映射元组。",
         "history": "已提交历史的保留策略。",
         "dependencies": "面向高级装配的可选依赖对象。",
-        "integrator": "耦合积分器：\"staggered\"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 \"ros2\"（两级 Rosenbrock-W，同步计算轴承力）。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。",
+        "integrator": "耦合积分器：\"staggered\"（缺省，轴承力滞后一步，保持 0.4.5 路径）、\"ros2\"（两级 Rosenbrock-W，同步计算轴承力；0.4.6 中标记为功能不完善，实验性）或 \"predictor_corrector\"（0.4.7，保持轴承黑箱的预测-校正分区耦合，迭代界面力后每个轴承只提交一次）。正式计算缺省继续使用 staggered。",
         "ros2": "可选 ALB.dynamics.Ros2Options，只能与 integrator=\"ros2\" 同时使用；None 使用默认冻结 Jacobian 选项。jacobian_state 短于转子状态，或在没有阀驱动主动轴承时不等于转子状态长度，构造时拒绝；有阀驱动主动轴承时完整耦合长度在 run() 的 reset 阶段检查。",
-        "initial_rotor_state": "可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限；校验后保存为浮点数元组，配置因此可做相等比较。"
+        "initial_rotor_state": "可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限；校验后保存为浮点数元组，配置因此可做相等比较。",
+        "predictor_corrector": "可选 ALB.dynamics.PredictorCorrectorOptions，只能与 integrator=\"predictor_corrector\" 同时使用；None 使用全部默认选项（iterate、linear 预测、Aitken 松弛、rtol = atol = 1e-6、最多 20 次试算、不收敛时警告）。"
       },
       "raises": [
         {
           "type": "ConfigurationError",
-          "when": "rotor.dt 或轴承局部 time_step 与请求步长不一致、多个不同控制周期不能被同一步长整除、需要调整步长但存在文件引用的 MultiPad 子瓦或转子缺少 _retime_for_owner、转子重新离散失败（在警告之后）、integrator 名称非法或 ros2 选项未配 integrator=\"ros2\"、initial_rotor_state 形状不符或含非有限值，或 ROS2 遇到带热模型的轴承、含主动或外部阀芯子瓦的 MultiPad、不支持的轴承族、非连续转子及长度不符的 jacobian_state。"
+          "when": "rotor.dt 或轴承局部 time_step 与请求步长不一致、多个不同控制周期不能被同一步长整除、需要调整步长但存在文件引用的 MultiPad 子瓦或转子缺少 _retime_for_owner、转子重新离散失败（在警告之后）、integrator 名称非法、ros2 选项未配 integrator=\"ros2\" 或 predictor_corrector 选项未配 integrator=\"predictor_corrector\"、initial_rotor_state 形状不符或含非有限值，或 ROS2 遇到带热模型的轴承、含主动或外部阀芯子瓦的 MultiPad、不支持的轴承族、非连续转子及长度不符的 jacobian_state；预测-校正遇到缺少 owner hook 的转子或 MultiPad 内需要外部阀芯的子瓦。"
         },
         {
           "type": "TypeError",
-          "when": "ros2 不是 Ros2Options 或 None，rotor 不满足 RotorProtocol，或 history、dependencies 类型不满足契约。"
+          "when": "ros2 不是 Ros2Options 或 None、predictor_corrector 不是 PredictorCorrectorOptions 或 None，rotor 不满足 RotorProtocol，或 history、dependencies 类型不满足契约。"
         }
       ],
       "fields": {
@@ -592,7 +609,8 @@
         "simulation_programmatic",
         "simulation_from_file",
         "simulation_control_period",
-        "simulation_ros2"
+        "simulation_ros2",
+        "simulation_predictor_corrector"
       ],
       "members": {}
     },

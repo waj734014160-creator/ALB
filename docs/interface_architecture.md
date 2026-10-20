@@ -168,7 +168,7 @@ E:/Anaconda2023/envs/ALB/python.exe -m pytest -q
 E:/Anaconda2023/envs/ALB/python.exe tools/validation/run_layered_mypy.py
 ```
 
-以上是开发验证入口，应按改动范围选用。版本化验收工具必须与候选版本匹配，不能将 0.4.2 工具直接用于当前 0.4.6 HEAD。
+以上是开发验证入口，应按改动范围选用。版本化验收工具必须与候选版本匹配，不能将 0.4.2 工具直接用于当前 0.4.7 HEAD。
 
 发布验收必须从固定 SHA 建立 detached worktree，连续构建两个相同 wheel，
 审计 wheel 内容、隔离安装并执行主仓库及声明外部消费者 smoke。
