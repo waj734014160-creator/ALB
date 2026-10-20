@@ -551,6 +551,16 @@ def _ros2_support_issue(config: BearingConfig, path: str) -> str | None:
         return None
     if family == "multi_pad":
         for child_path, child, _ in _multi_pad_children(config, path):
+            if child.family == "active_lubricated":
+                return (
+                    f"{child_path} is an active bearing inside multi_pad; its "
+                    "controller and valve states cannot be integrated there"
+                )
+            if child.control_mode == "external_spool":
+                return (
+                    f"{child_path} needs an external spool inside multi_pad, "
+                    "which has no spool provider"
+                )
             issue = _ros2_support_issue(child, child_path)
             if issue is not None:
                 return issue

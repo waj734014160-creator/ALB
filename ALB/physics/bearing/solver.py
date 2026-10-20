@@ -807,8 +807,19 @@ class _MixedFilmRuntimeMixin:
             raise ValueError(
                 "hybrid bearing input unit_system does not match runtime"
             )
-        self._prepare_raw(dto)
-        return validate_bearing_output(self._solve_raw())
+        model = self.main_model
+        history_lengths = {
+            name: len(history)
+            for name in ("_save_p", "_save_h")
+            if isinstance(history := getattr(model, name, None), list)
+        }
+        try:
+            self._prepare_raw(dto)
+            return validate_bearing_output(self._solve_raw())
+        finally:
+            # Optional pressure/thickness histories keep committed solves only.
+            for name, length in history_lengths.items():
+                del getattr(model, name)[length:]
 
     def step(self, dto: BearingInput) -> BearingOutput:
         """Compose input, evaluation, and output without committing time."""

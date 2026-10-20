@@ -2363,6 +2363,11 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
     for the spatially varying viscosity.
     """
 
+    # The thermal state (temperature, viscosity field, transient memory) is
+    # not a side-effect-free function of the rotor state. Opt out explicitly
+    # so __getattr__ does not forward the inner isothermal probe_force.
+    probe_force = None
+
     unit_system = "nondimensional"
     input_dto_type = BearingInput
 

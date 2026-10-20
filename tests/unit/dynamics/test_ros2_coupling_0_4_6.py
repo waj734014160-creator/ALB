@@ -495,3 +495,62 @@ def test_integrator_arguments_are_validated() -> None:
             binding,
             ros2_options=Ros2Options(),
         )
+
+
+def test_thermal_runtime_does_not_forward_isothermal_probe() -> None:
+    """Thermal wrappers forward attributes to their film; probing must not."""
+
+    import ALB
+    from ALB.api.building import build_runtime
+    from ALB.contracts import ForceProbeProtocol
+
+    runtime = build_runtime(
+        ALB.BearingConfig(
+            {
+                "family": "liquid_film",
+                "unit_system": "dimensional",
+                "time_step": 1.0e-3,
+                "node": 0,
+                "film": {"circumferential_elements": 5, "axial_elements": 3},
+                "restrictors": None,
+                "thermal": {"transient_enabled": False},
+            }
+        )
+    )
+    assert runtime.probe_force is None
+    assert not isinstance(runtime, ForceProbeProtocol)
+    with pytest.raises(TypeError, match="side"):
+        _run(runtime, time_step=1.0e-3, end_time=1.0e-3, integrator="ros2")
+
+
+def test_active_bearing_inside_multi_pad_is_rejected_for_ros2() -> None:
+    import ALB
+    from tools.reference.generate_coupling_default_path_0_4_6_reference import (
+        PID_CONTROL,
+        SinglePlant as ReferencePlant,
+        active_spec,
+        liquid_film_spec,
+    )
+
+    time_step = 2.0e-5
+    child = active_spec(PID_CONTROL, time_step)
+    for key in ("time_step", "node", "unit_system"):
+        child.pop(key)
+    multi_pad = ALB.BearingConfig(
+        {
+            "family": "multi_pad",
+            "unit_system": "dimensional",
+            "time_step": time_step,
+            "node": 0,
+            "pads": [liquid_film_spec(time_step), child],
+        }
+    )
+    rotor = RossRotor(ReferencePlant(), speed=1.0, dt=time_step)
+    with pytest.raises(ALB.ConfigurationError, match="active bearing inside multi_pad"):
+        ALB.SimulationConfig(
+            rotor=rotor,
+            mounts=(ALB.BearingMount(multi_pad, 0),),
+            time_step=time_step,
+            steps=1,
+            integrator="ros2",
+        )
