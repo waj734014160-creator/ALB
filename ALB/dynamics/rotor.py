@@ -1,5 +1,6 @@
 ﻿# -- coding: utf-8 --
 import copy
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -492,7 +493,7 @@ class RossRotor:
             raise ValueError("node-force mapping requires a four- or six-DOF layout")
         return _nodeforce2array(self._rotor.ndof, self._dof_layout, force, node)
 
-    def _propagate_trial(self, x0, force0, force1) -> np.ndarray:
+    def _propagate_trial(self, x0: Any, force0: Any, force1: Any) -> Any:
         """Return the state one step after ``x0`` without changing the rotor.
 
         Owner-only hook for the predictor-corrector coupled integrator (ALB
@@ -507,13 +508,17 @@ class RossRotor:
 
         state = np.asarray(x0, dtype=float)
         current_force = np.asarray(force1, dtype=float)
+        state_matrix: Any = self._a
         if self._discrete:
-            return self._a.dot(state) + self._b.dot(current_force)
+            input_matrix: Any = self._b
+            return state_matrix.dot(state) + input_matrix.dot(current_force)
         previous_force = np.asarray(force0, dtype=float)
+        previous_operator: Any = self._Bd0
+        current_operator: Any = self._Bd1
         return (
-            np.dot(state, self._a)
-            + np.dot(previous_force, self._Bd0)
-            + np.dot(current_force, self._Bd1)
+            np.dot(state, state_matrix)
+            + np.dot(previous_force, previous_operator)
+            + np.dot(current_force, current_operator)
         )
 
     def _commit_integrated_state(self, t, state, force) -> np.ndarray:

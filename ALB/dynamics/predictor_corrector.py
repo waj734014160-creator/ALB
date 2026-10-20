@@ -127,6 +127,12 @@ class CouplingTrialError(RuntimeError):
     """
 
 
+def _as_vector(value: Any) -> FloatArray:
+    """Return ``value`` as a flat float64 array (no copy for float64 input)."""
+
+    return np.asarray(value, dtype=np.float64).reshape(-1)
+
+
 def _positive_finite(value: object, name: str) -> float:
     if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
         raise TypeError(f"{name} must be a real number")
@@ -317,8 +323,9 @@ class FixedPointUpdate:
 
         if self.omega is None:
             return np.array(trial, dtype=float, copy=True)
-        return np.asarray(guess, dtype=float) + self.omega * np.asarray(
-            residual, dtype=float
+        return _as_vector(
+            np.asarray(guess, dtype=float)
+            + self.omega * np.asarray(residual, dtype=float)
         )
 
     def end_step(self) -> None:
@@ -382,7 +389,7 @@ class AitkenRelaxation:
         self.omega_min = min(self.omega_min, omega)
         self.omega_max = max(self.omega_max, omega)
         self._previous_residual = current.copy()
-        return np.asarray(guess, dtype=float).reshape(-1) + omega * current
+        return _as_vector(np.asarray(guess, dtype=float).reshape(-1) + omega * current)
 
     def end_step(self) -> None:
         """Finish the current step; the last factor is carried over."""
@@ -401,7 +408,7 @@ def _filtered_least_squares(
     matrix: FloatArray,
     rhs: FloatArray,
     tolerance: float,
-) -> tuple[FloatArray, FloatArray] | None:
+) -> tuple[FloatArray, npt.NDArray[np.intp]] | None:
     """Solve ``min ||V c - rhs||`` dropping nearly dependent columns.
 
     Columns are ordered newest first. Repeatedly QR-factorize ``V`` and drop
@@ -474,8 +481,9 @@ class IQNILSAccelerator:
         self._residuals.append(current_residual)
         self._trials.append(current_trial)
         if len(self._residuals) == 1:
-            return np.asarray(guess, dtype=float).reshape(-1) + (
-                self.omega * current_residual
+            return _as_vector(
+                np.asarray(guess, dtype=float).reshape(-1)
+                + self.omega * current_residual
             )
         v_columns, w_columns = self._current_columns()
         for old_v, old_w in self._history:
@@ -490,12 +498,13 @@ class IQNILSAccelerator:
         solved = _filtered_least_squares(v_matrix, -current_residual, tolerance)
         if solved is None:
             self.dropped_columns += len(v_columns)
-            return np.asarray(guess, dtype=float).reshape(-1) + (
-                self.omega * current_residual
+            return _as_vector(
+                np.asarray(guess, dtype=float).reshape(-1)
+                + self.omega * current_residual
             )
         coefficients, keep = solved
         self.dropped_columns += len(v_columns) - int(keep.size)
-        return current_trial + w_matrix[:, keep] @ coefficients
+        return _as_vector(current_trial + w_matrix[:, keep] @ coefficients)
 
     def end_step(self) -> None:
         """Store this step's secant columns for optional reuse."""

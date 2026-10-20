@@ -2181,7 +2181,7 @@ class FilmSystem(BaseSystem):
             self._result = pd.DataFrame(columns=list(self._temp_res.keys()))
         self._result.loc[self._result.shape[0]] = list(self._temp_res.values())
 
-    def _checkpoint_components(self) -> list:
+    def _checkpoint_components(self) -> list[object]:
         """Return the objects that hold this film system's time-varying state.
 
         Bearing runtimes use this list for checkpoint/restore (ALB 0.4.7):
@@ -2197,7 +2197,7 @@ class FilmSystem(BaseSystem):
         not captured.
         """
 
-        components: list = [self]
+        components: list[object] = [self]
         model = self.main_model
         if model is not None:
             components.append(model)

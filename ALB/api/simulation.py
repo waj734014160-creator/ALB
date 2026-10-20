@@ -667,7 +667,7 @@ class SimulationConfig:
     loads: tuple[Mapping[str, Any], ...] = ()
     history: HistoryPolicy = HistoryPolicy()
     dependencies: CouplingRuntimeDependencies | None = None
-    integrator: Literal["staggered", "ros2"] = "staggered"
+    integrator: Literal["staggered", "ros2", "predictor_corrector"] = "staggered"
     ros2: Ros2Options | None = None
     initial_rotor_state: Any = None
     predictor_corrector: PredictorCorrectorOptions | None = None
