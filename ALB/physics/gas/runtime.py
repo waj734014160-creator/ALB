@@ -13,6 +13,7 @@ from ALB.contracts import (
     result_snapshot,
 )
 from ALB.contracts.numeric import FloatArray
+from ALB.core.checkpoint import RuntimeCheckpoint, require_checkpoint_token
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
 from ALB.core.validation import validate_bearing_output
@@ -183,6 +184,30 @@ class GasFilmRuntime:
             # Optional pressure/thickness histories keep committed solves only.
             for name, length in history_lengths.items():
                 del getattr(model, name)[length:]
+
+    def checkpoint(self) -> RuntimeCheckpoint:
+        """Return an opaque token of the committed gas-film state (0.4.7).
+
+        The token covers the lifecycle, latest output/result/convergence, and
+        every gas-solver component (film model, nodes, thickness, foil
+        coupling, post-processing cache, optional save histories). It lets a
+        multi-pad that also contains stateful pads run checkpointed trials;
+        a standalone gas film is trialled through ``probe_force``.
+        """
+
+        return RuntimeCheckpoint(
+            self,
+            [
+                self,
+                self._lifecycle,
+                *self._solver._checkpoint_components(),
+            ],
+        )
+
+    def restore(self, token: object) -> None:
+        """Restore the state captured by :meth:`checkpoint`."""
+
+        require_checkpoint_token(token).restore(self)
 
     def step(self, dto: BearingInput) -> BearingOutput:
         """Compose input, evaluate, and output."""

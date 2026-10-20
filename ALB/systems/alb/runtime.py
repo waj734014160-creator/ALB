@@ -6,6 +6,7 @@ import numpy as np
 from scipy import sparse as sp
 from scipy.sparse import linalg as sl
 
+from ALB.core.checkpoint import RuntimeCheckpoint, require_checkpoint_token
 from ALB.core.component import BaseSimpleModel
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
@@ -673,6 +674,80 @@ class ALB:
                 ).reshape(2)
             )
         return np.sum(np.array(forces), axis=0)
+
+    @property
+    def probe_force_supported(self) -> bool:
+        """Return whether every pad provides a usable ``probe_force``.
+
+        Thermal pads keep temperature state and opt out of probing, so a
+        direct-spool bearing with thermal pads must be trialled through
+        :meth:`checkpoint` instead (ALB 0.4.7).
+        """
+
+        return all(
+            callable(getattr(pad, "probe_force", None)) for pad in self._pads
+        )
+
+    def _valve_components(self, valve: Any) -> list[Any]:
+        """Return the objects holding one servovalve's time-varying state."""
+
+        model = getattr(valve, "main_model", None)
+        return [
+            valve,
+            getattr(valve, "_lifecycle", None),
+            model,
+            getattr(model, "_lifecycle", None),
+            *getattr(valve, "simple_models", ()),
+        ]
+
+    def checkpoint(self) -> RuntimeCheckpoint:
+        """Return an opaque token of the committed active-bearing state.
+
+        Added in ALB 0.4.7 so the predictor-corrector integrator can run the
+        complete black-box evaluation (controller, valves, restrictors, pads)
+        as a trial and roll it back. The token captures:
+
+        * this runtime: lifecycle, latched kinematics, sampling counter
+          ``_control_counter``, held command ``_held_command``, control
+          switch, latest force/output/result/convergence (and the direct
+          spool of external-spool variants);
+        * the controller: integral and derivative memory, committed error,
+          latest command, lifecycle, and its result log;
+        * every dynamic and static servovalve: lifecycle, spool, and the
+          state-space model states, first-order-hold input memory, and
+          time/input/output histories;
+        * every restrictor attached to the valves (spool opening, flows,
+          rolling convergence buffer);
+        * every pad through its own token (film or thermal state).
+
+        Because a trial is rolled back, it never advances the controller
+        sampling counter: the controller still runs exactly once every
+        ``control_steps_per_period`` committed evaluations.
+        """
+
+        components: list[Any] = [self, self._lifecycle]
+        controller = self._controller
+        if controller is not None:
+            components.extend(
+                [controller, getattr(controller, "_lifecycle", None)]
+            )
+        for valve in (*self._servovalves, *(self.static_sv or ())):
+            components.extend(self._valve_components(valve))
+        children = []
+        for pad in self._pads:
+            checkpoint = getattr(pad, "checkpoint", None)
+            if not callable(checkpoint):
+                raise TypeError(
+                    f"active-bearing pad {type(pad).__name__} does not "
+                    "support checkpoint()/restore()"
+                )
+            children.append((pad, checkpoint()))
+        return RuntimeCheckpoint(self, components, children)
+
+    def restore(self, token: object) -> None:
+        """Restore the state captured by :meth:`checkpoint`."""
+
+        require_checkpoint_token(token).restore(self)
 
     def calc_is_finished(self):
         """Return the cached completion state without querying child solvers."""

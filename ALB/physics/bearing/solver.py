@@ -26,6 +26,7 @@ from ALB.contracts import (
     UnitSystem,
     result_snapshot,
 )
+from ALB.core.checkpoint import RuntimeCheckpoint, require_checkpoint_token
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
 from ALB.core.validation import get_unit_system, validate_bearing_output
@@ -821,6 +822,32 @@ class _MixedFilmRuntimeMixin:
             for name, length in history_lengths.items():
                 del getattr(model, name)[length:]
 
+    def checkpoint(self) -> RuntimeCheckpoint:
+        """Return an opaque token of the committed film state (ALB 0.4.7).
+
+        The token captures the lifecycle, latest output/result/convergence,
+        and every film-system component listed by
+        ``FilmSystem._checkpoint_components`` (film model arguments and
+        iterates, node pressure/thickness/viscosity ratio, thickness model,
+        post-processing cache, restrictor buffers, optional save histories).
+        Solves cold-start from the current thickness, so the uncaptured
+        element and global matrices are scratch. ``restore`` therefore makes
+        a following evaluation bit-for-bit equal to one without trials.
+        """
+
+        return RuntimeCheckpoint(
+            self,
+            [
+                *FilmSystem._checkpoint_components(cast(FilmSystem, self)),
+                self._lifecycle,
+            ],
+        )
+
+    def restore(self, token: object) -> None:
+        """Restore the state captured by :meth:`checkpoint`."""
+
+        require_checkpoint_token(token).restore(self)
+
     def step(self, dto: BearingInput) -> BearingOutput:
         """Compose input, evaluation, and output without committing time."""
 
@@ -1221,6 +1248,48 @@ class MultiPad:
                 )
             forces.append(np.asarray(probe(dto), dtype=float).reshape(2))
         return np.sum(forces, axis=0)
+
+    @property
+    def probe_force_supported(self) -> bool:
+        """Return whether every child provides a usable ``probe_force``.
+
+        ``probe_force`` exists on every multi-pad, but it only works when all
+        children are side-effect-free. Coupled integrators use this flag to
+        choose between probing and checkpointed trials (ALB 0.4.7).
+        """
+
+        for bearing in self._children:
+            probe = getattr(bearing, "probe_force", None)
+            if not callable(probe):
+                return False
+            if not bool(getattr(bearing, "probe_force_supported", True)):
+                return False
+        return True
+
+    def checkpoint(self) -> RuntimeCheckpoint:
+        """Return an opaque token of the composite and every child state.
+
+        Each child must implement ``checkpoint()``/``restore()``; a child
+        without them raises ``TypeError``.
+        """
+
+        children = []
+        for bearing in self._children:
+            checkpoint = getattr(bearing, "checkpoint", None)
+            if not callable(checkpoint) or not callable(
+                getattr(bearing, "restore", None)
+            ):
+                raise TypeError(
+                    f"MultiPad child {type(bearing).__name__} does not "
+                    "support checkpoint()/restore()"
+                )
+            children.append((bearing, checkpoint()))
+        return RuntimeCheckpoint(self, [self, self._lifecycle], children)
+
+    def restore(self, token: object) -> None:
+        """Restore the composite and children from :meth:`checkpoint`."""
+
+        require_checkpoint_token(token).restore(self)
 
     def step(self, dto: BearingInput) -> BearingOutput:
         """Compose input, evaluation, and output for one local calculation."""

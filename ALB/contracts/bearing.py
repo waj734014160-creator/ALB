@@ -168,6 +168,47 @@ class SampledActuatorBearingProtocol(Protocol):
 
 
 @runtime_checkable
+class CheckpointableRuntimeProtocol(Protocol):
+    """Runtime whose complete committed state can be saved and restored.
+
+    The predictor-corrector coupled integrator (ALB 0.4.7) evaluates such a
+    runtime several times per step through its normal ``input`` /
+    ``evaluate`` / ``output`` lifecycle ("trials") and must leave no trace of
+    them. ``checkpoint()`` returns an opaque token of the committed state and
+    ``restore(token)`` puts the runtime back into exactly that state, so that
+    ``checkpoint -> any number of trials -> restore -> evaluate`` gives
+    bit-for-bit the same output, result snapshot, histories, and internal
+    memory as ``evaluate`` without the trials.
+
+    Requirements:
+
+    * Completeness: the token covers every state that influences later
+      results, for example thermal fields and viscosity caches, controller
+      integral/derivative memory, sampling counters and held commands, valve
+      states, restrictor iteration buffers, lifecycle state, latest output,
+      latest result and convergence status, and optional pressure/thickness
+      histories or post-processing logs.
+    * Only time-varying state is captured. Meshes, FEM assemblies, and torch
+      modules are referenced, never deep-copied.
+    * ``restore`` accepts only tokens created by the same runtime and may be
+      called several times with one token. It also works after a trial
+      failed, returning the runtime from ``FAILED`` to its committed state.
+    * Composite runtimes (multi-pad, active bearings, thermal wrappers)
+      delegate to the tokens of their children.
+
+    Runtimes with an explicit state (for example a state-space surrogate with
+    a hidden vector or an LSTM with ``(h, c)``) implement the protocol by
+    copying that state into the token.
+    """
+
+    def checkpoint(self) -> object:
+        """Return an opaque token of the current committed state."""
+
+    def restore(self, token: object) -> None:
+        """Restore the state captured by ``token`` from this runtime."""
+
+
+@runtime_checkable
 class BearingCoefficientProtocol(Protocol):
     """Optional local-linear coefficient capability."""
 
@@ -189,6 +230,7 @@ __all__ = [
     "BearingProtocol",
     "BearingRuntimeProtocol",
     "BearingUnitAdapterProtocol",
+    "CheckpointableRuntimeProtocol",
     "DirectSpoolBearingRuntimeProtocol",
     "ForceProbeProtocol",
     "SampledActuatorBearingProtocol",

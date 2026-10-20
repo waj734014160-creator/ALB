@@ -17,6 +17,7 @@ from ALB.contracts import (
     result_snapshot,
 )
 from ALB.contracts.numeric import FloatArray, finite_real_array
+from ALB.core.checkpoint import RuntimeCheckpoint, require_checkpoint_token
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
 
@@ -222,6 +223,23 @@ class SurrogateBearingRuntime:
         if force.shape != (2,):
             raise ValueError("packaged surrogate force must contain two values")
         return force
+
+    def checkpoint(self) -> RuntimeCheckpoint:
+        """Return an opaque token of the committed lifecycle state (0.4.7).
+
+        The packaged model is stateless (its latest input row is overwritten
+        by every inference), so the token covers the lifecycle, the latest
+        output/result/convergence, and the pending input only; the torch
+        model is referenced, never copied. It lets a multi-pad that also
+        contains stateful pads run checkpointed trials.
+        """
+
+        return RuntimeCheckpoint(self, [self, self._lifecycle])
+
+    def restore(self, token: object) -> None:
+        """Restore the state captured by :meth:`checkpoint`."""
+
+        require_checkpoint_token(token).restore(self)
 
     def step(self, dto: Any) -> BearingOutput:
         """Compose input, evaluate, and output."""

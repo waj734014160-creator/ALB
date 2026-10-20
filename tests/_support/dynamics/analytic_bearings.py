@@ -162,13 +162,33 @@ class DirectSpoolAnalyticBearing(AnalyticBearing):
 
 
 class LinearSpoolProvider:
-    """Spool provider ``s = clip(-gain * x)`` recording every sample."""
+    """Spool provider ``s = clip(-gain * x)`` recording every sample.
+
+    Since ALB 0.4.7 it also implements ``checkpoint()``/``restore()``, so the
+    predictor-corrector integrator calls it with every trial input and rolls
+    it back; ``samples`` then lists committed samples only, while
+    ``evaluations`` counts every call including trials.
+    """
 
     def __init__(self, gain: float) -> None:
         self.gain = float(gain)
         self.samples: list[float] = []
+        self.evaluations = 0
         self._output: ValveOutput | None = None
         self._pending: tuple[StepContext, BearingInput] | None = None
+
+    def checkpoint(self) -> object:
+        """Return a copy of the committed provider state."""
+
+        return (len(self.samples), self._output, self._pending)
+
+    def restore(self, token: object) -> None:
+        """Return to the state captured by :meth:`checkpoint`."""
+
+        length, output, pending = token  # type: ignore[misc]
+        del self.samples[length:]
+        self._output = output
+        self._pending = pending
 
     def input(self, context: StepContext, bearing_input: BearingInput) -> None:
         self._pending = (context, bearing_input)
@@ -177,12 +197,24 @@ class LinearSpoolProvider:
         assert self._pending is not None
         context, bearing_input = self._pending
         self.samples.append(context.time)
+        self.evaluations += 1
         spool = np.clip(-self.gain * np.asarray(bearing_input.displacement), -1.0, 1.0)
         self._output = ValveOutput(spool, context.time, UnitSystem.NONDIMENSIONAL)
 
     def output(self) -> ValveOutput:
         assert self._output is not None
         return self._output
+
+
+class OpaqueLinearSpoolProvider(LinearSpoolProvider):
+    """The same spool law without ``checkpoint()``/``restore()``.
+
+    The predictor-corrector integrator then samples it once per committed
+    step and holds its spool over the next step's trials (first order).
+    """
+
+    checkpoint = None  # type: ignore[assignment]
+    restore = None  # type: ignore[assignment]
 
 
 class ActuatedAnalyticBearing(AnalyticBearing):

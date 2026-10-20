@@ -30,6 +30,7 @@ from ALB.contracts import (
     UnitSystem,
     result_snapshot,
 )
+from ALB.core.checkpoint import RuntimeCheckpoint, require_checkpoint_token
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.fem.base import BasePostProcess
 from ALB.core.lifecycle import RuntimeLifecycle
@@ -3583,6 +3584,36 @@ class NodimThermalHydroBearing(BearingDecoratorBase):
         if self._failure is None:
             raise RuntimeError("no thermal bearing failure is available")
         return self._failure
+
+    def checkpoint(self) -> RuntimeCheckpoint:
+        """Return an opaque token of the committed thermal-bearing state.
+
+        Added in ALB 0.4.7 for checkpointed trials of the predictor-corrector
+        integrator. The token captures the wrapper (transient temperature
+        memory ``_temperature_prev``, the latest thermal record
+        ``_last_thermal`` with its viscosity field, the film grid, lifecycle,
+        latest output, result and convergence status), the thermal
+        post-processing record, and the thermal configuration (whose
+        ``heat_partition`` a continuation schedule changes temporarily). The
+        wrapped film runtime contributes its own token, including the node
+        viscosity ratios. Every coupled solve starts from the reference
+        viscosity and rebuilds the thermal mesh from the current film, so
+        ``restore`` makes the next evaluation bit-for-bit equal to one
+        without trials. The scikit-fem thermal model holds only its
+        configuration and is not copied.
+        """
+
+        bearing = self.bearing
+        return RuntimeCheckpoint(
+            self,
+            [self, self._lifecycle, self.post_process, self.config],
+            [(bearing, bearing.checkpoint())],
+        )
+
+    def restore(self, token: object) -> None:
+        """Restore the state captured by :meth:`checkpoint`."""
+
+        require_checkpoint_token(token).restore(self)
 
     @property
     def thermal_state(self):

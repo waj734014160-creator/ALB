@@ -2181,6 +2181,41 @@ class FilmSystem(BaseSystem):
             self._result = pd.DataFrame(columns=list(self._temp_res.keys()))
         self._result.loc[self._result.shape[0]] = list(self._temp_res.values())
 
+    def _checkpoint_components(self) -> list:
+        """Return the objects that hold this film system's time-varying state.
+
+        Bearing runtimes use this list for checkpoint/restore (ALB 0.4.7):
+        the system itself (iteration status, temporary and committed result
+        tables), the main film model (arguments, latest pressure iterates,
+        residual, optional pressure/thickness save histories) with its
+        adaptive damping controller and every film node (pressure, thickness,
+        viscosity ratio), the thickness model, the output post-processing
+        cache, and every auxiliary simple model with its children
+        (restrictors and their rolling iteration buffers, foil coupling).
+        Element matrices and the global matrix assembly are solver scratch
+        that every solve rebuilds from the current thickness, so they are
+        not captured.
+        """
+
+        components: list = [self]
+        model = self.main_model
+        if model is not None:
+            components.append(model)
+            components.append(getattr(model, "_adaptive_damp", None))
+            nodes = getattr(model, "nodes", None)
+            if isinstance(nodes, dict):
+                components.extend(nodes.values())
+        components.append(getattr(self, "thickness", None))
+        output = getattr(self, "_output", None)
+        components.append(output)
+        components.append(getattr(output, "post_process", None))
+        for simple_model in self.simple_models:
+            components.append(simple_model)
+            components.extend(getattr(simple_model, "_simple_models", ()) or ())
+        components.append(getattr(self, "_foil_model", None))
+        components.append(getattr(self, "_thermal_model", None))
+        return components
+
 
 class FilmBoundary(BaseBoundary):
     def __init__(self, **boundary_args):
