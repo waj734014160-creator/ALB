@@ -40,8 +40,9 @@ result = bearing.calculate(displacement=(0.0, 0.0), time=0.0)
   `EquilibriumOptions`；需要独立持有静平衡模型时可直接构造
   `EquilibriumSolver(bearing)`。
 - 不可变结果：`BearingResult`、`AnalysisResult` 和 `SimulationResult`。
-- 稳定错误：`ALBError`、`ConfigurationError`、`BuildError`、
-  `CalculationError` 和 `SimulationError`。
+- 稳定错误与警告：`ALBError`、`ConfigurationError`、`BuildError`、
+  `CalculationError` 和 `SimulationError`；控制器采样周期迫使仿真步长调整时
+  发出 `TimeStepAdjustedWarning`（`UserWarning` 子类，不属于 `ALBError`）。
 
 ## 模块图
 
@@ -63,7 +64,7 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 - `ALB.contracts` 保存严格 DTO、单位、结果快照和内部领域协议。
 - `ALB.physics` 保存液膜、气膜、热、节流器和 `MultiPad` 数值实现。
 - `ALB.control` 保存 PID、FuzzyPID、阀和高级控制实现。
-- `ALB.dynamics` 保存转子、挂载 binding 和提交型耦合 runtime。
+- `ALB.dynamics` 保存转子、挂载 binding、提交型耦合 runtime 和可选 ROS2 积分器（`Ros2Options`）。
 - `ALB.surrogate` 保存 v0.4 模型包、NPZ scaler、推理 runtime 和训练公共组件。
 - `ALB.systems.alb` 只负责主动润滑轴承内部装配，不是普通用户入口。
 - `ALB.infrastructure` 保存 artifact writer、recorder、observer 和远程运行工具。
@@ -85,7 +86,7 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 ## 配置与结果
 
 0.4 JSON5 文档固定使用 `schema_version: "0.4.0"`、`kind`、可选
-`includes` 和 `spec`。0.4.5 可通过根入口 `ALB.SCHEMA_VERSION` 读取该契约版本，
+`includes` 和 `spec`。自 0.4.4 起可通过根入口 `ALB.SCHEMA_VERSION` 读取该契约版本，
 无需从内部配置模块导入或把它与 `ALB.__version__` 混同。`BearingConfig` 不可变，`with_overrides()` 与
 `sweep()` 每次都重新执行完整校验。
 
@@ -104,7 +105,7 @@ ALB.infrastructure 只承载持久化、记录和远程等副作用边界
 孔所在单元的原生形函数守恒分配。该选择贯通量纲/无量纲装配和主动轴承解析
 线性化；普通 `liquid_film` 节流孔不接受此字段。
 
-0.4.5 的主动轴承公开阀配置接受 `second_order`、`static` 和
+自 0.4.5 起，主动轴承公开阀配置接受 `second_order`、`static` 和
 `transfer_function`。二阶阀直接使用 `natural_frequency_hz`、
 `damping_ratio` 和可选 `delay`；静态阀是无参数、无记忆的单位增益模型；
 传递函数阀直接使用按连续时间 `s` 降幂排列的 `numerator` / `denominator`
@@ -129,6 +130,30 @@ bearing-local 步长，构建器在物理 runtime 创建前递归检查 `MultiPa
 残差使用防下溢/溢出的模长门禁，但普通量级继续使用原二范数结果。JSON5
 拒绝重复键及字符串、布尔或浮点数到整数的静默转换；surrogate fixed spool
 与 external spool 共用 `[-1, 1]` 归一化边界。
+
+## 控制器采样周期（0.4.6）
+
+主动轴承的 `pid` 与 `fuzzy_pid` 可在 `control.control_period` 声明控制器采样周期
+`Ts`，单位与 `time_step` 相同。控制器每 `m = Ts / time_step` 次求值运行一次，
+其余求值保持指令；PID/模糊 PID 内部离散化使用 `Ts`。转子、mount、`MultiPad`、
+阀和热模型仍共享同一步长，这是 ADR-0009 对 ADR-0007 第 8 条的受限例外
+（`docs/adr/0009-controller-sampling-period-and-ros2-integrator.md`）。不写该字段时与 0.4.5 逐位一致。独立轴承要求
+`Ts` 为 `time_step` 的整数倍；`SimulationConfig` 在不能整除时保持 `Ts`，改用
+`h' = Ts / ceil(Ts / h)`，按请求结束时间重算整数个控制周期的步数，原位重新离散
+同一转子对象，并发出 `TimeStepAdjustedWarning`。实际值保存在
+`SimulationConfig.time_step_adjustment` 和 `control_periods` 中。
+
+## 可选 ROS2 耦合积分器（0.4.6）
+
+`SimulationConfig(integrator="ros2", ros2=ALB.dynamics.Ros2Options(...))` 或
+`spec.time_grid.integrator: "ros2"` 选择两级 Rosenbrock-W 积分器。它在 stage 状态
+通过无副作用 probe 同步计算轴承力；对任意 Jacobian 二阶，对精确 Jacobian L-稳定。
+Jacobian 缺省冻结，可通过 `jacobian_refresh` 按步数或控制周期刷新。主动轴承的阀
+状态并入耦合状态，控制器在 Jacobian 之外按采样周期运行。支持无热液膜、气膜、
+surrogate、由它们组成的 `MultiPad` 和无热主动轴承；带热模型的轴承以
+`ConfigurationError` 拒绝。缺省 `integrator="staggered"` 保持 0.4.5 数值路径和
+结果元数据，修改前参考见 `refs/coupling_default_path_0_4_6_reference_v1.json/.npz`。
+适用边界见 [0.4.6 迁移说明](migrations/0.4.6.md)。
 
 所有公开结果都是不可变对象，数组设为只读，并提供 `write(path)`。计算失败
 通过稳定异常携带密封 failure snapshot。仿真遇到提交后 recorder/observer
@@ -184,5 +209,7 @@ python tools/docs/generate_public_api_reference.py --check
 `docs/migrations/0.4.1_test_map.json` 为历史数值证据；0.4.2 审阅修复以
 `tools/validation/release_feature_manifest_0_4_2.json` 和
 `docs/migrations/0.4.2_test_map.json` 为准。0.4.3 的有效路径参考为
-`refs/alb_0_4_3_guard_reference_v1.json/.npz`；正式发布门禁尚未生成。0.3 的
-F01-F66 manifest 仅保留为历史证据。
+`refs/alb_0_4_3_guard_reference_v1.json/.npz`；正式发布门禁尚未生成。0.4.6
+默认耦合路径的修改前参考为 `refs/coupling_default_path_0_4_6_reference_v1.json/.npz`，
+由 `tools/reference/generate_coupling_default_path_0_4_6_reference.py` 在 `df7336f`
+上生成。0.3 的 F01-F66 manifest 仅保留为历史证据。

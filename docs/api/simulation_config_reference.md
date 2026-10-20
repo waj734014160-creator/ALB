@@ -70,7 +70,10 @@ steps' = m * ceil(T / Ts)      T = steps * h，m = Ts / h'
 ROS2 需要连续时间 `RossRotor`，支持无热模型的液膜、气膜、surrogate（固定或外部
 阀芯）、由这些子瓦组成的 `MultiPad`，以及无热模型的主动轴承（`pid`、`fuzzy_pid`、
 `uncontrolled` 和 `external_spool`）。带热模型的轴承在构造时以 `ConfigurationError`
-拒绝。外部 spool provider 每步在已提交状态采样一次并在该步内零阶保持。
+拒绝。外部 spool provider 每步在已提交状态采样一次并在该步内零阶保持。staggered
+路径的控制器在 `t_k` 采样上一步提交的状态，阀输入在相邻求值间一阶保持插值；ROS2
+在 `t_k` 采样该时刻提交的状态，阀指令为零阶保持。因此同一 `Ts` 下两种积分器的受控
+响应只在 `O(h)` 意义下一致。
 
 只有 `integrator="ros2"`、声明了控制周期或给出 `initial_rotor_state` 时，
 `SimulationResult.metadata` 才额外包含 `integrator`、`time_step`、`control_periods`、

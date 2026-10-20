@@ -52,7 +52,7 @@
 | public API、包级导出或跨模块边界 | `docs/alb_package_overview.md`、`docs/interface_architecture.md` |
 | 用户示例和生成参考 | `docs/api/README.md`、`docs/alb_albnn_quickstart.md` |
 | 数值算法、提交、recorder 或单位契约 | `docs/adr/README.md` 中适用决策 |
-| 版本迁移 | `docs/migrations/` 中相应版本说明，当前开发接口包括 0.4.3、0.4.4、0.4.5 |
+| 版本迁移 | `docs/migrations/` 中相应版本说明，当前开发接口包括 0.4.3、0.4.4、0.4.5、0.4.6 |
 | 资产归属与清理 | `docs/file_classification.md` |
 | run 编号与状态归属 | `docs/run_index.md` |
 | 远程连接、启动和监控 | `docs/remote_workstation_connection.md` |

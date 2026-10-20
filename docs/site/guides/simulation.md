@@ -26,6 +26,36 @@ simulation_config = ALB.SimulationConfig(
 result = ALB.build_simulation(simulation_config).run()
 ```
 
+## 积分器与控制器采样
+
+缺省 `integrator="staggered"`：轴承力按上一提交状态计算、滞后一步，数值路径与
+0.4.5 相同。`integrator="ros2"` 选择两级 Rosenbrock-W 积分器，在 stage 状态同步
+计算轴承力，需要连续时间 `ALB.dynamics.RossRotor`：
+
+```python
+from ALB.dynamics import Ros2Options
+
+simulation_config = ALB.SimulationConfig(
+    rotor=rotor,
+    mounts=(mount,),
+    time_step=2.0e-5,
+    steps=5000,
+    integrator="ros2",
+    ros2=Ros2Options(jacobian_refresh="control_period"),
+)
+```
+
+ROS2 支持无热液膜、气膜、surrogate、由它们组成的 `MultiPad` 和无热主动轴承；带热
+模型的轴承以 `ConfigurationError` 拒绝。`initial_rotor_state` 可对两种积分器给出
+完整初始转子状态，例如静平衡状态。
+
+主动轴承声明 `control.control_period` 时，控制器每 `m = Ts / time_step` 步采样一次。
+若 `time_step` 不能整除 `Ts`，构造 `SimulationConfig` 时步长改为
+`Ts / ceil(Ts / time_step)`，步数按请求结束时间向上取整到整数个控制周期，并发出
+`ALB.TimeStepAdjustedWarning`。构造后应读取 `simulation_config.time_step`、`steps`
+和 `time_step_adjustment` 的实际值；同一转子对象会被原位重新离散。完整边界见
+[0.4.6 迁移说明](../../migrations/0.4.6.md)。
+
 ## 载荷
 
 | type | 必填字段 | 主要可选字段 |
@@ -41,6 +71,6 @@ result = ALB.build_simulation(simulation_config).run()
 - `memory`：保留选定的全部采样。
 - `ring_buffer`：只保留最近 `capacity` 个采样。
 - `disk_stream`：写入 `directory`，对应内存数组为空。
-- `downsample=N`：保留提交索引能被 N 整除的采样，包括初始索引 0。
+- `downsample=N`：保留提交索引能被 N 整除的采样，包括初始索引 0。步长被控制周期调整后，`downsample` 和 `capacity` 仍按索引计数。
 
 `steps` 表示初始提交点之后的 advance 次数，因此默认 memory history 有 `steps + 1` 个时间点。simulation 是 one-shot；需要重跑时重新构建。

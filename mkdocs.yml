@@ -40,6 +40,7 @@ nav:
 
 exclude_docs: |
   current_state.md
+  alb_0_4_6_ros2_control_period_report.md
   daily_maintenance/
   remote_workstation_connection.md
   run_index.md

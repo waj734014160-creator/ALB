@@ -20,7 +20,7 @@ profile 使用 `kind: "bearing_profile"`。include 按顺序合并，本地 `spe
 
 ## 主动轴承伺服阀
 
-0.4.5 的主动轴承接受三种阀配置。标准二阶阀直接使用 Hz：
+自 0.4.5 起，主动轴承接受三种阀配置。标准二阶阀直接使用 Hz：
 
 ```json5
 valve: {
@@ -52,6 +52,38 @@ valve: {
 `transfer_function` 的分子已经包含增益及任何有理延迟近似，不能再额外设置
 `delay`。旧字段 `response_time`、`third_order_time_constant` 以及旧模型名
 `third_order` 均由严格配置边界拒绝；`static` 只允许 `model` 字段。
+
+## 控制器采样周期
+
+真实数字控制器以固定周期 `Ts` 采样。0.4.6 起，`pid` 与 `fuzzy_pid` 可在
+`control` 中声明 `control_period`，单位与 `time_step` 相同（量纲轴承为 s）：
+
+```json5
+spec: {
+  family: "active_lubricated",
+  unit_system: "dimensional",
+  time_step: 2.0e-5,
+  control: {
+    mode: "pid",
+    frequency_hz: 50.0,
+    sensor_angles_deg: [45.0, 135.0],
+    gains: { kp: 1.0, ki: 0.0, kd: 0.0, feedforward: 0.0 },
+    control_period: 1.0e-3,
+  },
+  // film, restrictors, tank, valve, ...
+}
+```
+
+控制器每 `m = Ts / time_step = 50` 次求值运行一次，其余求值保持指令；阀、液膜和
+转子仍按 `time_step` 推进。省略该字段时与 0.4.5 相同，控制器逐步运行。
+
+- 独立轴承要求 `Ts` 恰为 `time_step` 的整数倍，否则构建前报 `ConfigurationError`。
+  采样按求值次数计数，因此独立调用 `calculate()` 时应按 `time_step` 推进时间。
+- 在仿真中，若全局步长 `h` 不能整除 `Ts`，`SimulationConfig` 保持 `Ts`，改用
+  `h' = Ts / ceil(Ts / h)`，按请求结束时间重算整数个控制周期的步数，并发出
+  `ALB.TimeStepAdjustedWarning`。实际值可从 `config.time_step`、`config.steps` 和
+  `config.time_step_adjustment` 读取。
+- 其他控制模式不接受该字段。
 
 ## 程序化 override 与 sweep
 
@@ -102,6 +134,22 @@ cases = config.sweep(
   },
 }
 ```
+
+`time_grid` 还可选择耦合积分器。缺省 `integrator: "staggered"` 保持 0.4.5
+的数值路径；`"ros2"` 使用两级 Rosenbrock-W 方法同步计算轴承力，并可设置
+Jacobian 刷新策略：
+
+```json5
+time_grid: {
+  time_step: 2.0e-5,
+  steps: 50000,
+  integrator: "ros2",
+  jacobian_refresh: "control_period",  // null, positive integer N, or "control_period"
+},
+```
+
+ROS2 不支持带热模型的轴承，构造时会以 `ConfigurationError` 拒绝。适用范围和其他
+选项见 [0.4.6 迁移说明](../../migrations/0.4.6.md)。
 
 文件中的转子 Excel、bearing 配置和 disk-stream history 路径必须位于配置文件的资源根目录内。程序化构造的 `SimulationConfig` 还可以承载 adapter、spool provider、recorder 和 observer；这些 runtime object 不能写入 JSON5。
 
