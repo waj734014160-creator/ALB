@@ -781,6 +781,35 @@ class _MixedFilmRuntimeMixin:
         assert self._latest_output is not None
         return self._latest_output
 
+    def probe_force(self, dto: BearingInput) -> np.ndarray:
+        """Return the film force for ``dto`` without publishing a result.
+
+        The native solver cold-starts every solve from the current film
+        thickness, so the force is a function of the input alone. The
+        lifecycle, latest output, and result snapshot of the last committed
+        evaluation are left unchanged; only solver scratch buffers (node
+        pressures and thickness, and the restrictor iteration buffer that
+        seeds the first convergence test of the next solve) are overwritten.
+        """
+
+        if self._lifecycle.state is not LifecycleState.READY:
+            raise RuntimeError(
+                f"{type(self).__name__} must be ready before probe_force()"
+            )
+        if not isinstance(dto, BearingInput):
+            raise TypeError("hybrid bearing input must be BearingInput")
+        expected = (
+            UnitSystem.NONDIMENSIONAL
+            if self._hybrid_nodim
+            else UnitSystem.DIMENSIONAL
+        )
+        if dto.unit_system is not expected:
+            raise ValueError(
+                "hybrid bearing input unit_system does not match runtime"
+            )
+        self._prepare_raw(dto)
+        return validate_bearing_output(self._solve_raw())
+
     def step(self, dto: BearingInput) -> BearingOutput:
         """Compose input, evaluation, and output without committing time."""
 
@@ -1157,6 +1186,30 @@ class MultiPad:
         self._lifecycle.require_output()
         assert self._latest_output is not None
         return self._latest_output
+
+    def probe_force(self, dto: BearingInput) -> np.ndarray:
+        """Return the summed child force without publishing any result.
+
+        Every child must provide its own side-effect-free ``probe_force``;
+        thermal or other stateful children raise ``TypeError``.
+        """
+
+        if self._lifecycle.state is not LifecycleState.READY:
+            raise RuntimeError("MultiPad must be ready before probe_force()")
+        if not isinstance(dto, BearingInput):
+            raise TypeError("MultiPad input must be BearingInput")
+        if dto.unit_system is not self.unit_system:
+            raise ValueError("MultiPad input unit_system does not match runtime")
+        forces = []
+        for bearing in self._children:
+            probe = getattr(bearing, "probe_force", None)
+            if not callable(probe):
+                raise TypeError(
+                    f"MultiPad child {type(bearing).__name__} cannot evaluate "
+                    "force without side effects"
+                )
+            forces.append(np.asarray(probe(dto), dtype=float).reshape(2))
+        return np.sum(forces, axis=0)
 
     def step(self, dto: BearingInput) -> BearingOutput:
         """Compose input, evaluation, and output for one local calculation."""

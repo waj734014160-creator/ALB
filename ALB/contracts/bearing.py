@@ -110,6 +110,64 @@ class BearingUnitAdapterProtocol(Protocol):
 
 
 @runtime_checkable
+class ForceProbeProtocol(Protocol):
+    """Bearing runtime that can evaluate force without side effects.
+
+    ``probe_force`` returns the two-component force for one bearing-local DTO
+    (``BearingInput`` or, for direct-spool runtimes, ``DirectSpoolBearingInput``)
+    in the runtime's own units. It must not publish lifecycle output, replace
+    the latest committed result, or advance any time-integrated state, so a
+    coupled integrator may call it at intermediate stage states (ROS2).
+    Solver scratch buffers may be overwritten.
+    """
+
+    def probe_force(self, dto: Any) -> npt.NDArray[np.float64]:
+        """Return the force for ``dto`` without committing anything."""
+
+
+@runtime_checkable
+class SampledActuatorBearingProtocol(Protocol):
+    """Active bearing exposing its sampled controller and actuator dynamics.
+
+    A coupled integrator that owns the actuator states uses these hooks: it
+    samples the controller every ``control_steps_per_period`` steps, holds the
+    returned command, integrates each actuator channel's continuous
+    state-space model (bearing-local time units), and evaluates the bearing
+    force for the resulting spool opening without side effects.
+    """
+
+    @property
+    def control_steps_per_period(self) -> int:
+        """Return the simulation steps per controller sample."""
+
+    def actuator_state_space(
+        self,
+    ) -> tuple[
+        tuple[
+            npt.NDArray[np.float64],
+            npt.NDArray[np.float64],
+            npt.NDArray[np.float64],
+            npt.NDArray[np.float64],
+        ],
+        ...,
+    ]:
+        """Return continuous ``(A, B, C, D)`` for every actuator channel."""
+
+    def sample_actuator_command(
+        self,
+        dto: BearingInput,
+    ) -> npt.NDArray[np.float64]:
+        """Run the controller once for the measured state; return the command."""
+
+    def probe_force_with_spool(
+        self,
+        dto: BearingInput,
+        spool: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
+        """Return the force for an explicit spool opening without side effects."""
+
+
+@runtime_checkable
 class BearingCoefficientProtocol(Protocol):
     """Optional local-linear coefficient capability."""
 
@@ -132,5 +190,7 @@ __all__ = [
     "BearingRuntimeProtocol",
     "BearingUnitAdapterProtocol",
     "DirectSpoolBearingRuntimeProtocol",
+    "ForceProbeProtocol",
+    "SampledActuatorBearingProtocol",
     "SpoolCommandProviderProtocol",
 ]

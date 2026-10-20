@@ -52,7 +52,9 @@ class PID(BaseSimpleModel):
         self.ki_nodim = self.ki / t0
         self.info = pd.DataFrame(columns=["kp", "ki", "kd", "ki_nodim", "kd_nodim"])
         self.info.loc[0] = [self.kp, self.ki, self.kd, self.ki_nodim, self.kd_nodim]
-        self.dt = pid_config.dt
+        # The discrete PID law uses the controller sampling period Ts; it
+        # equals the simulation step unless ``control_period`` is configured.
+        self.dt = pid_config.sample_period
         self.error = None
         self.delta_error = None
         self.inp = None
@@ -186,6 +188,12 @@ class PID(BaseSimpleModel):
         """Return the current strict runtime state."""
 
         return self._lifecycle.state
+
+    @property
+    def sample_period(self) -> float:
+        """Return the controller sampling period ``Ts`` used by the PID law."""
+
+        return float(self.dt)
 
     def decrete_pid(self, error, delta_error):
         """

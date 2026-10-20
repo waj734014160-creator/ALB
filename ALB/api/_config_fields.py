@@ -812,6 +812,18 @@ CONTROL_FIELDS: dict[str, ConfigField] = {
         default_description="50.0 for pid; 5.0 for fuzzy_pid",
         applicability=("pid", "fuzzy_pid"),
     ),
+    "control_period": _field(
+        "s (bearing-local time unit)",
+        "Controller sampling period Ts; the controller updates every "
+        "Ts/time_step steps and holds its command in between.",
+        value_type="number or null", default=None,
+        default_description="None means Ts equals time_step",
+        constraint=(
+            "None or finite > 0; a standalone bearing requires an integer "
+            "multiple of time_step, a simulation adjusts time_step"
+        ),
+        applicability=("pid", "fuzzy_pid"),
+    ),
     "sensor_angles_deg": _field(
         "deg", "Two sensor directions used by PID/fuzzy PID.",
         value_type="array[number, 2]", default=(45.0, 135.0),
@@ -976,6 +988,8 @@ SIMULATION_ROTOR_FIELDS: dict[str, ConfigField] = {
 SIMULATION_TIME_GRID_FIELDS: dict[str, ConfigField] = {
     "time_step": _field("s", "Global dimensional integration time step.", value_type="number", required=True, constraint="finite and > 0"),
     "steps": _field("count", "Advances after the initial committed state.", value_type="integer", required=True, constraint=">= 0"),
+    "integrator": _field("name", "Coupled rotor-bearing integration scheme; ros2 evaluates bearing forces synchronously.", value_type="string", default="staggered", choices=("staggered", "ros2")),
+    "jacobian_refresh": _field("steps or name", "ROS2 Jacobian refresh: null keeps J frozen, N refreshes every N steps, control_period refreshes at each controller sample.", value_type="integer, 'control_period', or null", default=None, constraint="only with integrator='ros2'; integer >= 1"),
 }
 SIMULATION_MOUNT_FIELDS: dict[str, ConfigField] = {
     "bearing": _field("relative file", "Bearing JSON5 document resolved from the simulation directory.", value_type="string", required=True, constraint="nonempty relative path"),

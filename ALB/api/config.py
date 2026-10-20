@@ -374,6 +374,14 @@ def _validate_active_sections(spec: Mapping[str, Any]) -> None:
         raise ConfigurationError(
             "spec.control.gains is accepted only when mode is pid"
         )
+    control_period = control.get("control_period")
+    if control_period is not None:
+        if mode not in {"pid", "fuzzy_pid"}:
+            raise ConfigurationError(
+                "spec.control.control_period is accepted only when mode is "
+                "pid or fuzzy_pid"
+            )
+        _positive_float(control_period, "spec.control.control_period")
 
     restrictors = _require_mapping(
         spec.get("restrictors"),

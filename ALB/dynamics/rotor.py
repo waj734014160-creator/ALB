@@ -151,6 +151,18 @@ class UnbalancedExcitation(BaseExcitation):
         self.results.loc[self.results.shape[0]] = [t, force]
         return force
 
+    def force_at(self, t):
+        """Return the force at time ``t`` without recording it.
+
+        ``__call__`` appends every evaluation to ``results``; integrators that
+        evaluate intermediate stage times use this side-effect-free variant.
+        """
+
+        force = self._calc_force(self._phase, t, self._m, self._freq, self._e)
+        if self._no_step_set:
+            force = force * self._no_step(t)
+        return force
+
     def _calc_amp(self, m, freq, e):
         """
         Amplitude model: A=(2*pi*f)^2*m*e.
@@ -407,6 +419,101 @@ class RossRotor:
         """
 
         return float(self._dt)
+
+    def with_time_step(self, dt) -> "RossRotor":
+        """Return a fresh wrapper of the same ROSS rotor at another step.
+
+        The ROSS model, speed, and continuous/discrete selection are reused;
+        the discretization is rebuilt for ``dt`` and the new wrapper starts
+        from the reset state. ``SimulationConfig`` uses this when it adapts the
+        simulation step to a controller sampling period.
+        """
+
+        return type(self)(self._rotor, self._speed, dt, discrete=self._discrete)
+
+    def continuous_system(self) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Return copies of the continuous ROSS ``(A, B, C, D)`` matrices.
+
+        The state is the ROSS ordering ``[q, dq/dt]`` and the input is the
+        global load vector. Discrete wrappers have no continuous model and
+        raise ``ValueError``.
+        """
+
+        if self._discrete:
+            raise ValueError("a discrete RossRotor has no continuous system")
+        return tuple(  # type: ignore[return-value]
+            np.array(matrix, dtype=float, copy=True)
+            for matrix in (self._sys.A, self._sys.B, self._sys.C, self._sys.D)
+        )
+
+    def node_state_indices(self, node) -> tuple[np.ndarray, np.ndarray]:
+        """Return state indices of x/y displacement and velocity per node.
+
+        Both arrays have shape ``(nodes, 2)``; they index the same state used
+        by :meth:`current_state` (displacement in m, velocity in m/s).
+        """
+
+        if self._dof_layout is None:
+            raise ValueError(
+                "node-state extraction requires a four- or six-DOF layout"
+            )
+        ndof = int(self._rotor.ndof)
+        nodes = normalize_node_indices(node)
+        displacement = np.asarray(
+            [
+                [
+                    self._dof_layout.global_index(int(value), axis, ndof)
+                    for axis in ("x", "y")
+                ]
+                for value in nodes
+            ],
+            dtype=np.int64,
+        ).reshape(-1, 2)
+        return displacement, displacement + ndof
+
+    def node_force_vector(self, force, node) -> np.ndarray:
+        """Map per-node ``[Fx, Fy]`` pairs to one global load vector.
+
+        This is the mapping used by :meth:`input_force2node`; it does not
+        latch anything.
+        """
+
+        if self._dof_layout is None:
+            raise ValueError("node-force mapping requires a four- or six-DOF layout")
+        return _nodeforce2array(self._rotor.ndof, self._dof_layout, force, node)
+
+    def _commit_integrated_state(self, t, state, force) -> np.ndarray:
+        """Commit one state integrated by the owning coupled runtime.
+
+        ``state`` is the complete ROSS state at time ``t`` and ``force`` the
+        global load vector acting at that time. The method uses the same
+        time check, lifecycle phases, and history bookkeeping as
+        :meth:`advance`, so ``output()`` and ``results()`` stay consistent.
+        """
+
+        self._lifecycle.require_input_slot()
+        time = self._check_time(t)
+        current_force = finite_real_vector(
+            force, "rotor force", int(self._rotor.ndof)
+        )
+        next_state = finite_real_array(
+            state, "integrated rotor state", shape=np.shape(self._xk0)
+        )
+        self._t.append(time)
+        self._force1 = current_force
+        self._state_ready = False
+        self._lifecycle.latch()
+        with self._lifecycle.evaluation():
+            self._xk1 = next_state.copy()
+            self._force0 = self._force1
+            self._yout = np.squeeze(
+                np.dot(self._xk1, np.transpose(self._c))
+            ) + np.squeeze(np.dot(self._force1, np.transpose(self._d)))
+            self._xk0 = self._xk1
+            self._xout = self._xk0
+            self._state_ready = True
+            self._commit_state()
+        return self._xk1.copy()
 
     def continuesys(self):
         """Discretize the ROSS continuous model for first-order held loads.

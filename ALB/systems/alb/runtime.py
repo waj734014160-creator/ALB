@@ -9,6 +9,8 @@ from scipy.sparse import linalg as sl
 from ALB.core.component import BaseSimpleModel
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
+from ALB.core.time import control_steps_per_period
+from ALB.core.validation import limit_signal
 from ALB.physics.bearing.solver import (
     four_pads_bearings,
     nodim_four_pads_bearings,
@@ -58,6 +60,22 @@ _NODIM_ALB_REQUIRED_KEYS = [
     "cq2",
 ]
 _NODIM_ALB_PAD_MAIN_KEYS = {"lambda_value", "lr", "lx", "lz", "nx", "nz", "bias"}
+
+def _control_steps_per_period(alb_config) -> int:
+    """Return the validated number of evaluations per controller sample."""
+
+    controller_config = getattr(alb_config, "controller_config", None)
+    period = getattr(controller_config, "control_period", None)
+    if controller_config is None or period is None:
+        return 1
+    steps = control_steps_per_period(period, alb_config.dt)
+    if steps is None:
+        raise ValueError(
+            "controller control_period must be an integer multiple of the "
+            f"active-bearing dt {alb_config.dt!r}; got {period!r}"
+        )
+    return steps
+
 
 class ALB:
     """Active lubricated bearing with a strict DTO lifecycle."""
@@ -113,6 +131,9 @@ class ALB:
         self._control_enabled = (
             alb_config.control_mode in {"pid", "fuzzy_pid"}
         )
+        self._control_steps = _control_steps_per_period(alb_config)
+        self._control_counter = 0
+        self._held_command: np.ndarray | None = None
         self._t_on: float | None = None
         self._switch = self._control_enabled
         self._lifecycle = RuntimeLifecycle(
@@ -158,6 +179,18 @@ class ALB:
 
         return self._convergence_status
 
+    @property
+    def control_steps_per_period(self) -> int:
+        """Return ``m = Ts / dt``, the evaluations per controller sample.
+
+        ``1`` reproduces the historical behavior in which the controller runs
+        on every evaluation. Larger values hold the controller command for
+        ``m`` consecutive evaluations (zero-order hold) while the valves keep
+        advancing with ``dt``.
+        """
+
+        return self._control_steps
+
     def _initialize_children(self) -> None:
         for pad in self._pads:
             reset = getattr(pad, "_reset_for_owner", None)
@@ -187,6 +220,8 @@ class ALB:
         self._uxyt = None
         self._uxy_nodim = None
         self._uxyt_nodim = None
+        self._control_counter = 0
+        self._held_command = None
         try:
             self._initialize_children()
         except BaseException as exc:
@@ -267,10 +302,7 @@ class ALB:
     ) -> tuple[np.ndarray, float]:
         """Execute the historical child calculation order exactly once."""
 
-        if self._switch:
-            self._uv = self._control_process(self._uxy_nodim, self._uxyt_nodim, self._t)
-        else:
-            self._uv = np.zeros(2)
+        self._uv = self._sampled_control_command(static=static)
         if static:
             sv = self.static_sv
             self._initialize_children()
@@ -498,6 +530,44 @@ class ALB:
                 f"owner reinitialize it before {action}"
             )
 
+    def _require_ready(self, action: str) -> None:
+        if self._lifecycle.state is not LifecycleState.READY:
+            raise RuntimeError(
+                f"{type(self).__name__} must be ready before {action}"
+            )
+
+    def _sampled_control_command(self, *, static: bool) -> np.ndarray:
+        """Return the controller command for the latched input.
+
+        With one evaluation per control period, or for static linearization
+        samples, the controller runs on every call exactly as before 0.4.6.
+        Otherwise it runs only when the evaluation counter is a multiple of
+        ``m`` and the previous command is held in between. A disabled
+        controller (``turn_on_at`` not reached) commands zero.
+        """
+
+        if static or self._control_steps == 1:
+            if not static:
+                self._control_counter += 1
+            if self._switch:
+                return self._control_process(
+                    self._uxy_nodim, self._uxyt_nodim, self._t
+                )
+            return np.zeros(2)
+        sample = self._control_counter % self._control_steps == 0
+        self._control_counter += 1
+        if not self._switch:
+            self._held_command = np.zeros(2)
+            return np.zeros(2)
+        if sample or self._held_command is None:
+            self._held_command = np.asarray(
+                self._control_process(
+                    self._uxy_nodim, self._uxyt_nodim, self._t
+                ),
+                dtype=float,
+            ).copy()
+        return self._held_command.copy()
+
     def _control_process(self, uxy: np.ndarray, uxyt: np.ndarray, t: np.float64):
         """Return one controller command, or zero when no controller is installed."""
         uv = np.dot(self._gxy, uxy) + np.dot(self._gxyt, uxyt)
@@ -505,6 +575,94 @@ class ALB:
         if self._controller is not None:
             return run_controller_step(self._controller, t, uv - u0)
         return np.zeros_like(uv)
+
+    def actuator_state_space(self) -> tuple[tuple[np.ndarray, ...], ...]:
+        """Return continuous ``(A, B, C, D)`` for each servovalve channel.
+
+        Matrices use the valve time unit (seconds for dimensional bearings,
+        bearing-local time for nondimensional ones). A static valve has no
+        states and only a feedthrough ``D``.
+        """
+
+        channels = []
+        for servovalve in self._servovalves:
+            model = servovalve.main_model
+            channels.append(
+                tuple(
+                    np.array(matrix, dtype=float, copy=True)
+                    for matrix in (model.A, model.B, model.C, model.D)
+                )
+            )
+        return tuple(channels)
+
+    def sample_actuator_command(self, dto: BearingInput) -> np.ndarray:
+        """Run one controller sample for ``dto`` and return the valve command.
+
+        This is the sampled-control hook used by an integrator that owns the
+        valve states (ROS2). It applies the same control switch, sensor
+        transform, and nondimensional scaling as :meth:`evaluate` and limits
+        the command to ``[-1, 1]`` exactly as the valve input does. It does not
+        publish bearing output.
+        """
+
+        self._require_ready("sampling the controller")
+        self._latch_bearing_input(dto)
+        if self._switch:
+            command = self._control_process(
+                self._uxy_nodim, self._uxyt_nodim, self._t
+            )
+        else:
+            command = np.zeros(2)
+        return np.asarray(limit_signal(np.asarray(command, dtype=float)), dtype=float)
+
+    def probe_force_with_spool(
+        self,
+        dto: BearingInput,
+        spool: np.ndarray,
+    ) -> np.ndarray:
+        """Return the pad force for an explicit spool opening.
+
+        The spool is published to the restrictors through each valve's
+        direct-spool port (no valve dynamics are advanced) and every pad is
+        evaluated through its side-effect-free ``probe_force``. Lifecycle and
+        result snapshots of this runtime are unchanged.
+        """
+
+        self._require_ready("probing force")
+        if not isinstance(dto, BearingInput):
+            raise TypeError("bearing input must be BearingInput")
+        if dto.unit_system is not self.unit_system:
+            raise ValueError("bearing input unit_system does not match runtime")
+        values = np.asarray(spool, dtype=float).reshape(-1)
+        if values.shape != (len(self._servovalves),):
+            raise ValueError("spool must contain one value per servovalve")
+        for servovalve, value in zip(self._servovalves, values):
+            servovalve.set_spool(value)
+        return self._probe_pads(dto)
+
+    def _probe_pads(self, dto: BearingInput) -> np.ndarray:
+        forces = []
+        for pad in self._pads:
+            probe = getattr(pad, "probe_force", None)
+            if not callable(probe):
+                raise TypeError(
+                    f"active-bearing pad {type(pad).__name__} cannot evaluate "
+                    "force without side effects"
+                )
+            forces.append(
+                np.asarray(
+                    probe(
+                        BearingInput(
+                            dto.displacement,
+                            dto.velocity,
+                            dto.time,
+                            self.unit_system,
+                        )
+                    ),
+                    dtype=float,
+                ).reshape(2)
+            )
+        return np.sum(np.array(forces), axis=0)
 
     def calc_is_finished(self):
         """Return the cached completion state without querying child solvers."""
@@ -591,6 +749,13 @@ class ALBSV(ALB):
         self.evaluate()
         return self.output()
 
+    def probe_force(self, dto: DirectSpoolBearingInput) -> np.ndarray:
+        """Return the force for one direct-spool DTO without side effects."""
+
+        if not isinstance(dto, DirectSpoolBearingInput):
+            raise TypeError("direct spool input must be DirectSpoolBearingInput")
+        return self.probe_force_with_spool(dto.bearing, dto.spool.spool)
+
 class NodimALB(ALB):
     """ALB assembled from nondimensional pads and driven by nondimensional states."""
 
@@ -627,10 +792,7 @@ class NodimALB(ALB):
     ) -> tuple[np.ndarray, float]:
         if not nodim:
             raise ValueError("NodimALB only evaluates nondimensional force")
-        if self._switch:
-            self._uv = self._control_process(self._uxy_nodim, self._uxyt_nodim, self._t)
-        else:
-            self._uv = np.zeros(2)
+        self._uv = self._sampled_control_command(static=static)
         if static:
             sv = self.static_sv
             self._initialize_children()
@@ -720,5 +882,12 @@ class NodimALBSV(NodimALB):
         self.input(dto)
         self.evaluate()
         return self.output()
+
+    def probe_force(self, dto: DirectSpoolBearingInput) -> np.ndarray:
+        """Return the force for one direct-spool DTO without side effects."""
+
+        if not isinstance(dto, DirectSpoolBearingInput):
+            raise TypeError("direct spool input must be DirectSpoolBearingInput")
+        return self.probe_force_with_spool(dto.bearing, dto.spool.spool)
 
 __all__ = ['ALB', 'ALBSV', 'NodimALB', 'NodimALBSV']

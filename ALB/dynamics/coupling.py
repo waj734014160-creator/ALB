@@ -38,6 +38,7 @@ from .coupling_runtime import (
     coupling_snapshot,
 )
 from .bindings import CoupledBearingBinding, CouplingRuntimeDependencies
+from .ros2 import INTEGRATORS, Ros2CouplingIntegrator, Ros2Options
 from ALB.core.numerics.arrays import vertical_stack_nonempty
 from ALB.core.observers import ObserverDispatcher
 from ALB.contracts.dynamics import _validate_coupled_rotor_output
@@ -54,7 +55,20 @@ class _RotorBearingStepRuntime:
         """
         options:
             save_path:default="./rotor_bearing_couple"
+            integrator: "staggered" (default) or "ros2"
+            ros2_options: optional Ros2Options for integrator="ros2"
         """
+        integrator = kwargs.get("integrator", "staggered")
+        if integrator not in INTEGRATORS:
+            raise ValueError("integrator must be 'staggered' or 'ros2'")
+        ros2_options = kwargs.get("ros2_options")
+        if ros2_options is not None and not isinstance(ros2_options, Ros2Options):
+            raise TypeError("ros2_options must be Ros2Options or None")
+        if ros2_options is not None and integrator != "ros2":
+            raise ValueError("ros2_options require integrator='ros2'")
+        self._integrator = integrator
+        self._ros2_options = ros2_options
+        self._ros2: Ros2CouplingIntegrator | None = None
         self.rotor = rotor
         if any(
             not isinstance(binding, CoupledBearingBinding)
@@ -158,6 +172,7 @@ class _RotorBearingStepRuntime:
                 ),
                 "phase": phase,
                 "component": "rotor-bearing coupling",
+                "integrator": self._integrator,
                 "error_type": type(error).__name__,
                 "message": sanitize_exception_message(error),
                 "physical_step_committed": False,
@@ -191,6 +206,10 @@ class _RotorBearingStepRuntime:
             },
             {
                 "run_id": self._run_id,
+                "integrator": self._integrator,
+                "ros2": (
+                    None if self._ros2 is None else self._ros2.diagnostics()
+                ),
                 "committed_step_index": (
                     None if context is None else context.step_index
                 ),
@@ -511,27 +530,30 @@ class _RotorBearingStepRuntime:
                 self.rotor.output(self._bnode_links),
                 len(self._bnode_links),
             )
-            self._forcef0 = []
-            adapter_metadata = []
-            for num, binding in enumerate(self.bindings):
-                rp_uxy = self._rp["uxy"][num]
-                rp_uxyt = self._rp["uxyt"][num]
-                force, metadata = self._evaluate_bearing(
-                    binding,
-                    rp_uxy,
-                    rp_uxyt,
-                    StepContext(
-                        0,
-                        initial_time,
-                        self._time_iter.dt,
-                        UnitSystem.DIMENSIONAL,
-                    ),
-                )
-                self._forcef0.append(force)
-                if metadata is not None:
-                    adapter_metadata.append(metadata)
-            self._adapter_metadata = tuple(adapter_metadata)
-            self._forcef0 = np.array(self._forcef0)
+            if self._integrator == "ros2":
+                self._reset_ros2(initial_time)
+            else:
+                self._forcef0 = []
+                adapter_metadata = []
+                for num, binding in enumerate(self.bindings):
+                    rp_uxy = self._rp["uxy"][num]
+                    rp_uxyt = self._rp["uxyt"][num]
+                    force, metadata = self._evaluate_bearing(
+                        binding,
+                        rp_uxy,
+                        rp_uxyt,
+                        StepContext(
+                            0,
+                            initial_time,
+                            self._time_iter.dt,
+                            UnitSystem.DIMENSIONAL,
+                        ),
+                    )
+                    self._forcef0.append(force)
+                    if metadata is not None:
+                        adapter_metadata.append(metadata)
+                self._adapter_metadata = tuple(adapter_metadata)
+                self._forcef0 = np.array(self._forcef0)
             self._forcen0 = vertical_stack_nonempty(
                 [np.array(self._forceu0), np.array(self._forcef0)]
             )
@@ -619,65 +641,10 @@ class _RotorBearingStepRuntime:
         self._runtime.latch(context)
         try:
             with self._runtime.evaluation():
-                ts = context.time
-                self._ts = ts
-                uxy_n1 = self._rp["uxy"]
-                uxyt_n1 = self._rp["uxyt"]
-                self._forceu1 = vertical_stack_nonempty(
-                    [force(ts) for force in self.forces]
-                )
-                self._forcef1 = []
-                adapter_metadata = []
-                for num, binding in enumerate(self.bindings):
-                    force, metadata = self._evaluate_bearing(
-                        binding,
-                        uxy_n1[num],
-                        uxyt_n1[num],
-                        context,
-                    )
-                    self._forcef1.append(force)
-                    if metadata is not None:
-                        adapter_metadata.append(metadata)
-                self._forcef1 = np.array(self._forcef1)
-                self._adapter_metadata = tuple(adapter_metadata)
-
-                self._forcen0 = vertical_stack_nonempty((self._forceu0, self._forcef0))
-                self._forcen1 = vertical_stack_nonempty((self._forceu1, self._forcef1))
-                rotor_load = RotorLoadInput(
-                    force=self._forcen1,
-                    previous_force=self._forcen0,
-                    node_links=tuple(
-                        int(value) for value in np.asarray(self._fnode_links)
-                    ),
-                    time=ts,
-                    unit_system=UnitSystem.DIMENSIONAL,
-                )
-                input_load = getattr(self.rotor, "input_load", None)
-                if callable(input_load):
-                    input_load(rotor_load)
+                if self._integrator == "ros2":
+                    candidate = self._advance_ros2(context)
                 else:
-                    self.rotor.input_force2node(
-                        ts,
-                        rotor_load.force,
-                        rotor_load.node_links,
-                        force0=rotor_load.previous_force,
-                    )
-                self.rotor.advance()
-                self._rp = _validate_coupled_rotor_output(
-                    self.rotor.output(self._bnode_links),
-                    len(self._bnode_links),
-                )
-                self._forcen0 = self._forcen1
-                self._forceu0 = self._forceu1
-                self._forcef0 = self._forcef1
-
-                candidate = coupling_snapshot(
-                    self._rp,
-                    self._forcef1,
-                    self._forcen1,
-                    context,
-                    unit_adapters=self._adapter_metadata,
-                )
+                    candidate = self._advance_staggered(context)
                 if self._dependencies.recorder is not None:
                     validate_recordable_bundle(candidate)
                 self._runtime.commit(context)
@@ -690,6 +657,188 @@ class _RotorBearingStepRuntime:
             self._seal_failure(context, "advance", exc)
             raise
         return self.output()
+
+    def _ros2_commit_bearing(
+        self,
+        context: StepContext,
+        metadata_by_index: dict[int, dict[str, object]],
+    ):
+        """Return the ROS2 commit callback for pure and direct-spool bearings.
+
+        These bearings are committed through the same lifecycle path as the
+        staggered integrator (including spool-provider sampling).
+        """
+
+        def commit(index: int, displacement, velocity) -> np.ndarray:
+            force, metadata = self._evaluate_bearing(
+                self.bindings[index],
+                displacement,
+                velocity,
+                context,
+            )
+            if metadata is not None:
+                metadata_by_index[index] = metadata
+            return force
+
+        return commit
+
+    def _ros2_adapter_metadata(
+        self,
+        context: StepContext,
+        metadata_by_index: dict[int, dict[str, object]],
+    ) -> tuple[dict[str, object], ...]:
+        """Return unit-adapter descriptors in binding order."""
+
+        metadata = []
+        for index, binding in enumerate(self.bindings):
+            adapter = binding.unit_adapter
+            if adapter is None:
+                continue
+            descriptor = metadata_by_index.get(index)
+            if descriptor is None:
+                descriptor = adapter.scales.descriptor(
+                    applied_transform="bearing_to_rotor",
+                    global_context=context,
+                    bearing_local_context=adapter.rotor_context_to_bearing(
+                        context
+                    ),
+                )
+            metadata.append(descriptor)
+        return tuple(metadata)
+
+    def _reset_ros2(self, initial_time: float) -> None:
+        """Build the ROS2 integrator and commit the step-zero bearing forces."""
+
+        load_links = np.asarray(self._fnode_links)[
+            : len(np.asarray(self._fnode_links)) - len(self._bnode_links)
+        ]
+        self._ros2 = Ros2CouplingIntegrator(
+            self.rotor,
+            self.bindings,
+            self.forces,
+            load_links,
+            self._time_iter.dt,
+            self._ros2_options,
+        )
+        context = StepContext(
+            0,
+            initial_time,
+            self._time_iter.dt,
+            UnitSystem.DIMENSIONAL,
+        )
+        metadata_by_index: dict[int, dict[str, object]] = {}
+        self._forcef0 = np.array(
+            self._ros2.reset(
+                initial_time,
+                self._ros2_commit_bearing(context, metadata_by_index),
+            )
+        )
+        self._adapter_metadata = self._ros2_adapter_metadata(
+            context,
+            metadata_by_index,
+        )
+
+    def _advance_ros2(self, context: StepContext) -> ResultBundle:
+        """Advance one synchronous ROS2 step and build the step snapshot."""
+
+        if self._ros2 is None:
+            raise RuntimeError("ROS2 integrator is not initialized")
+        ts = context.time
+        self._ts = ts
+        metadata_by_index: dict[int, dict[str, object]] = {}
+        rotor_state, bearing_forces, load_forces, global_force = (
+            self._ros2.advance(
+                ts,
+                context.step_index,
+                self._ros2_commit_bearing(context, metadata_by_index),
+            )
+        )
+        self.rotor._commit_integrated_state(ts, rotor_state, global_force)
+        self._rp = _validate_coupled_rotor_output(
+            self.rotor.output(self._bnode_links),
+            len(self._bnode_links),
+        )
+        self._forceu1 = vertical_stack_nonempty([load_forces])
+        self._forcef1 = np.array(bearing_forces)
+        self._adapter_metadata = self._ros2_adapter_metadata(
+            context,
+            metadata_by_index,
+        )
+        self._forcen1 = vertical_stack_nonempty((self._forceu1, self._forcef1))
+        self._forcen0 = self._forcen1
+        self._forceu0 = self._forceu1
+        self._forcef0 = self._forcef1
+        return coupling_snapshot(
+            self._rp,
+            self._forcef1,
+            self._forcen1,
+            context,
+            unit_adapters=self._adapter_metadata,
+        )
+
+    def _advance_staggered(self, context: StepContext) -> ResultBundle:
+        """Advance one staggered step: lagged bearing force, exact rotor."""
+
+        ts = context.time
+        self._ts = ts
+        uxy_n1 = self._rp["uxy"]
+        uxyt_n1 = self._rp["uxyt"]
+        self._forceu1 = vertical_stack_nonempty(
+            [force(ts) for force in self.forces]
+        )
+        self._forcef1 = []
+        adapter_metadata = []
+        for num, binding in enumerate(self.bindings):
+            force, metadata = self._evaluate_bearing(
+                binding,
+                uxy_n1[num],
+                uxyt_n1[num],
+                context,
+            )
+            self._forcef1.append(force)
+            if metadata is not None:
+                adapter_metadata.append(metadata)
+        self._forcef1 = np.array(self._forcef1)
+        self._adapter_metadata = tuple(adapter_metadata)
+
+        self._forcen0 = vertical_stack_nonempty((self._forceu0, self._forcef0))
+        self._forcen1 = vertical_stack_nonempty((self._forceu1, self._forcef1))
+        rotor_load = RotorLoadInput(
+            force=self._forcen1,
+            previous_force=self._forcen0,
+            node_links=tuple(
+                int(value) for value in np.asarray(self._fnode_links)
+            ),
+            time=ts,
+            unit_system=UnitSystem.DIMENSIONAL,
+        )
+        input_load = getattr(self.rotor, "input_load", None)
+        if callable(input_load):
+            input_load(rotor_load)
+        else:
+            self.rotor.input_force2node(
+                ts,
+                rotor_load.force,
+                rotor_load.node_links,
+                force0=rotor_load.previous_force,
+            )
+        self.rotor.advance()
+        self._rp = _validate_coupled_rotor_output(
+            self.rotor.output(self._bnode_links),
+            len(self._bnode_links),
+        )
+        self._forcen0 = self._forcen1
+        self._forceu0 = self._forceu1
+        self._forcef0 = self._forcef1
+
+        candidate = coupling_snapshot(
+            self._rp,
+            self._forcef1,
+            self._forcen1,
+            context,
+            unit_adapters=self._adapter_metadata,
+        )
+        return candidate
 
     def output(self) -> ResultBundle:
         """Read the most recent completed coupled result without advancing."""

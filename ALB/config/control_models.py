@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field, fields
 from numbers import Real
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -18,6 +18,21 @@ def _finite_real(name: str, value: object) -> float:
     if not np.isfinite(result):
         raise ValueError(f"{name} must be finite")
     return result
+
+
+def _optional_control_period(value: object) -> Optional[float]:
+    """Return ``None`` or one finite positive controller sampling period.
+
+    ``control_period`` is the real controller sampling period ``Ts`` in the
+    controller time unit. ``None`` keeps the historical behavior ``Ts = dt``.
+    """
+
+    if value is None:
+        return None
+    period = _finite_real("control_period", value)
+    if period <= 0.0:
+        raise ValueError("control_period must be > 0")
+    return period
 
 
 def _polynomial(name: str, value) -> tuple[float, ...]:
@@ -126,6 +141,7 @@ class PIDConfig(ConfigData):
     uf: float = 0.0
     freq: float = 50
     sensor_angles: np.ndarray = field(default_factory=lambda: np.array([45, 135]))
+    control_period: Optional[float] = None
 
     def __post_init__(self):
         if self.dt <= 0:
@@ -134,6 +150,13 @@ class PIDConfig(ConfigData):
             raise ValueError("freq must be > 0")
         if self.kp < 0 or self.ki < 0 or self.kd < 0:
             raise ValueError("kp, ki and kd must be >= 0")
+        self.control_period = _optional_control_period(self.control_period)
+
+    @property
+    def sample_period(self) -> float:
+        """Return the controller sampling period ``Ts`` (``dt`` when unset)."""
+
+        return self.dt if self.control_period is None else self.control_period
 
 @dataclass
 class LQGConfig(ConfigData):
@@ -198,6 +221,16 @@ class FuzzyPIDConfig(ConfigData):
     kd_range: list = field(default_factory=lambda: [0, 1, 0.01])
     rule_path: str = "../fuzzy_rule.csv"
     sensor_angles: list = field(default_factory=lambda: [45, 135])
+    control_period: Optional[float] = None
+
+    def __post_init__(self):
+        self.control_period = _optional_control_period(self.control_period)
+
+    @property
+    def sample_period(self) -> float:
+        """Return the controller sampling period ``Ts`` (``dt`` when unset)."""
+
+        return self.dt if self.control_period is None else self.control_period
 
 __all__ = [
     'SecondOrderServoConfig',

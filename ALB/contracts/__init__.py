@@ -6,6 +6,8 @@ from .bearing import (
     BearingRuntimeProtocol,
     BearingUnitAdapterProtocol,
     DirectSpoolBearingRuntimeProtocol,
+    ForceProbeProtocol,
+    SampledActuatorBearingProtocol,
     SpoolCommandProviderProtocol,
 )
 from .block import (
@@ -87,6 +89,8 @@ __all__ = [
     "ControlOutput",
     "DirectSpoolBearingInput",
     "DirectSpoolBearingRuntimeProtocol",
+    "ForceProbeProtocol",
+    "SampledActuatorBearingProtocol",
     "SpoolCommandProviderProtocol",
     "DIGEST_ALGORITHM",
     "ControllerProtocol",

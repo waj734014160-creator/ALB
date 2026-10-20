@@ -25,6 +25,7 @@ from ALB.config.hydraulics_models import (
 )
 from ALB.config.system_models import ALBConfig, NodimALBConfig
 from ALB.config.thermal_models import ThermalConfig
+from ALB.core.time import control_steps_per_period
 from ALB.physics.bearing.solver import MultiPad, _build_liquid_film_runtime
 from ALB.physics.gas.runtime import GasFilmRuntime
 from ALB.physics.thermal.solver import (
@@ -238,6 +239,7 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
                 control_source.get("sensor_angles_deg", [45.0, 135.0]),
                 dtype=float,
             ),
+            control_period=_control_period(control_source),
         )
     elif mode == "fuzzy_pid":
         rule_path = str(control_source.get("rule_path", "fuzzy_rules.csv"))
@@ -268,6 +270,7 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
             sensor_angles=_plain(
                 control_source.get("sensor_angles_deg", [45.0, 135.0])
             ),
+            control_period=_control_period(control_source),
         )
     else:
         controller = None
@@ -310,7 +313,29 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
                 f"{path} must equal bearing time_step {expected_dt!r}; "
                 f"got {value!r}"
             )
+    controller_config = resolved.controller_config
+    if (
+        controller_config is not None
+        and controller_config.control_period is not None
+        and control_steps_per_period(
+            controller_config.control_period,
+            expected_dt,
+        )
+        is None
+    ):
+        raise ValueError(
+            "active.controller.control_period must be an integer multiple "
+            f"of bearing time_step {expected_dt!r}; got "
+            f"{controller_config.control_period!r}"
+        )
     return resolved
+
+
+def _control_period(control: Mapping[str, Any]) -> float | None:
+    """Return the optional controller sampling period of one control section."""
+
+    value = control.get("control_period")
+    return None if value is None else float(value)
 
 
 def _validate_runtime_time_steps(
@@ -377,6 +402,147 @@ def _validate_runtime_time_steps(
             path=child_path,
             active_paths=child_active_paths,
         )
+
+
+def _multi_pad_children(
+    config: BearingConfig,
+    path: str,
+) -> list[tuple[str, BearingConfig, bool]]:
+    """Return ``(path, config, is_file_reference)`` for each multi-pad child.
+
+    Inline children inherit ``time_step``, ``node``, and ``unit_system`` from
+    the parent exactly as runtime materialization does.
+    """
+
+    pads = config.spec["pads"]
+    assert isinstance(pads, tuple)
+    children: list[tuple[str, BearingConfig, bool]] = []
+    for index, item in enumerate(pads):
+        child_path = f"{path}.pads[{index}]"
+        if isinstance(item, str):
+            if config.resource_root is None:
+                raise ConfigurationError(
+                    f"{child_path} requires a source document resource root"
+                )
+            child = load_bearing_config((config.resource_root / item).resolve())
+            children.append((child_path, child, True))
+        elif isinstance(item, Mapping):
+            child_spec = _plain(item)
+            child_spec.setdefault("time_step", config.spec["time_step"])
+            child_spec.setdefault("node", config.spec.get("node"))
+            child_spec.setdefault("unit_system", config.unit_system)
+            child = BearingConfig(child_spec, resource_root=config.resource_root)
+            children.append((child_path, child, False))
+        else:
+            raise ConfigurationError(f"{child_path} is not a bearing config")
+    return children
+
+
+def _control_period_declarations(
+    config: BearingConfig,
+    path: str,
+) -> list[tuple[str, float]]:
+    """Return every configured controller sampling period in one tree.
+
+    Values are expressed in the bearing-local time unit of ``time_step``.
+    """
+
+    if config.family == "active_lubricated":
+        control = config.spec["control"]
+        assert isinstance(control, Mapping)
+        period = control.get("control_period")
+        if period is not None and control.get("mode") in {"pid", "fuzzy_pid"}:
+            return [(f"{path}.control.control_period", float(period))]
+        return []
+    if config.family != "multi_pad":
+        return []
+    declarations: list[tuple[str, float]] = []
+    for child_path, child, _ in _multi_pad_children(config, path):
+        declarations.extend(_control_period_declarations(child, child_path))
+    return declarations
+
+
+def _retime_spec(
+    spec: dict[str, Any],
+    time_step: float,
+    path: str,
+) -> dict[str, Any]:
+    """Replace ``time_step`` in one thawed spec and its inline children."""
+
+    spec["time_step"] = time_step
+    if spec.get("family") != "multi_pad":
+        return spec
+    pads = spec.get("pads", [])
+    for index, item in enumerate(pads):
+        child_path = f"{path}.pads[{index}]"
+        if isinstance(item, str):
+            raise ConfigurationError(
+                f"{child_path} is a file-referenced pad whose time_step cannot "
+                "be adjusted automatically; choose a simulation time_step "
+                "that divides control_period exactly"
+            )
+        if isinstance(item, dict):
+            declared = "time_step" in item
+            if item.get("family") == "multi_pad":
+                _retime_spec(item, time_step, child_path)
+                if not declared:
+                    # Keep inheriting the parent step as before.
+                    del item["time_step"]
+            elif declared:
+                item["time_step"] = time_step
+    return spec
+
+
+def _retime_bearing_config(
+    config: BearingConfig,
+    time_step: float,
+    *,
+    path: str,
+) -> BearingConfig:
+    """Return a revalidated copy using another bearing-local ``time_step``.
+
+    Inline multi-pad children that declare their own ``time_step`` are
+    updated as well; children that inherit it keep inheriting. Controller
+    ``control_period`` values are kept because they describe the real
+    controller.
+    """
+
+    document = config.to_dict()
+    spec = _retime_spec(document["spec"], float(time_step), path)
+    return BearingConfig(
+        spec,
+        source_path=config.source_path,
+        resource_root=config.resource_root,
+    )
+
+
+def _ros2_support_issue(config: BearingConfig, path: str) -> str | None:
+    """Return why a bearing tree cannot use the ROS2 integrator, if any.
+
+    ROS2 evaluates bearing forces at intermediate stage states, so each force
+    must be a side-effect-free function of displacement, velocity, spool
+    opening, and time. Thermal models keep temperature or viscosity state
+    between evaluations (inertia and the transient energy equation) and are
+    therefore rejected in the first ROS2 release.
+    """
+
+    family = config.family
+    if family in {"liquid_film", "active_lubricated"}:
+        if config.spec.get("thermal") is not None:
+            return (
+                f"{path} uses a thermal model whose temperature/viscosity "
+                "state is not a side-effect-free function of the rotor state"
+            )
+        return None
+    if family in {"gas_film", "surrogate"}:
+        return None
+    if family == "multi_pad":
+        for child_path, child, _ in _multi_pad_children(config, path):
+            issue = _ros2_support_issue(child, child_path)
+            if issue is not None:
+                return issue
+        return None
+    return f"{path} family {family!r} is not supported by the ros2 integrator"
 
 
 def _build_runtime(config: BearingConfig) -> object:

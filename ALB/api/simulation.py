@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
+import math
 import os
+import warnings
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -24,6 +26,10 @@ from ALB.contracts import (
     result_snapshot,
 )
 from ALB.core.diagnostics import sanitize_exception_message
+from ALB.core.time import (
+    control_steps_per_period,
+    fit_time_step_to_control_period,
+)
 from ALB.core.validation import strict_nonnegative_integer
 from ALB.contracts.dynamics import _validate_coupled_rotor_output
 from ALB.dynamics.bindings import CouplingRuntimeDependencies
@@ -31,6 +37,7 @@ from ALB.dynamics.coupling_runtime import (
     PostCommitObserverError,
     PostCommitRecordingError,
 )
+from ALB.dynamics.ros2 import INTEGRATORS, Ros2Options
 
 from ._config_fields import (
     GRAVITY_LOAD_FIELDS,
@@ -57,7 +64,11 @@ from .config import (
     _thaw,
     load_bearing_config,
 )
-from .errors import ConfigurationError, SimulationError
+from .errors import (
+    ConfigurationError,
+    SimulationError,
+    TimeStepAdjustedWarning,
+)
 from .results import SimulationResult
 
 
@@ -234,6 +245,248 @@ class HistoryPolicy:
         object.__setattr__(self, "fields", fields)
 
 
+def _local_time_step(
+    mount: BearingMount,
+    index: int,
+    time_step: float,
+) -> float:
+    """Return the bearing-local step produced for one global ``time_step``."""
+
+    if mount.unit_adapter is None:
+        return time_step
+    try:
+        local_context = mount.unit_adapter.rotor_context_to_bearing(
+            StepContext(0, 0.0, time_step, UnitSystem.DIMENSIONAL)
+        )
+    except Exception as exc:
+        raise ConfigurationError(
+            f"mounts[{index}].unit_adapter could not convert "
+            f"simulation time_step: {exc}"
+        ) from exc
+    if not isinstance(local_context, StepContext):
+        raise ConfigurationError(
+            f"mounts[{index}].unit_adapter must return StepContext"
+        )
+    if local_context.unit_system.value != mount.config.unit_system:
+        raise ConfigurationError(
+            f"mounts[{index}].unit_adapter local unit_system must "
+            "match the bearing config"
+        )
+    local_step = float(local_context.dt)
+    if not np.isfinite(local_step) or local_step <= 0.0:
+        raise ConfigurationError(
+            f"mounts[{index}].unit_adapter produced an invalid "
+            "bearing-local time_step"
+        )
+    return local_step
+
+
+def _validate_integrator(
+    integrator: object,
+    options: object,
+) -> str:
+    """Validate the integrator name and its optional ROS2 options."""
+
+    if integrator not in INTEGRATORS:
+        raise ConfigurationError(
+            "integrator must be 'staggered' or 'ros2'"
+        )
+    if options is not None and not isinstance(options, Ros2Options):
+        raise TypeError("ros2 must be Ros2Options or None")
+    if options is not None and integrator != "ros2":
+        raise ConfigurationError(
+            "ros2 options are accepted only with integrator='ros2'"
+        )
+    return str(integrator)
+
+
+def _validate_ros2_topology(
+    rotor: RotorProtocol,
+    mounts: Sequence[BearingMount],
+) -> None:
+    """Reject rotors and bearing families that ROS2 cannot integrate."""
+
+    from .building import _ros2_support_issue
+
+    continuous = getattr(rotor, "continuous_system", None)
+    commit = getattr(rotor, "_commit_integrated_state", None)
+    if not callable(continuous) or not callable(commit):
+        raise ConfigurationError(
+            "integrator='ros2' requires a rotor exposing continuous_system() "
+            "and _commit_integrated_state(), such as a continuous RossRotor"
+        )
+    try:
+        continuous()
+    except ValueError as exc:
+        raise ConfigurationError(
+            f"integrator='ros2' requires a continuous rotor model: {exc}"
+        ) from exc
+    for index, mount in enumerate(mounts):
+        issue = _ros2_support_issue(mount.config, f"mounts[{index}].config")
+        if issue is not None:
+            raise ConfigurationError(
+                f"integrator='ros2' cannot integrate this bearing: {issue}. "
+                "Use integrator='staggered' for this topology."
+            )
+
+
+def _adjustment_message(adjustment: Mapping[str, Any]) -> str:
+    """Return the user-facing warning text for one step adjustment."""
+
+    return (
+        "simulation time_step "
+        f"{adjustment['requested_time_step']!r} s is not an integer divisor "
+        f"of control_period {adjustment['control_period']!r} s; using "
+        f"time_step {adjustment['time_step']!r} s with "
+        f"{adjustment['control_steps_per_period']} step(s) per control "
+        f"period and {adjustment['steps']} steps instead of "
+        f"{adjustment['requested_steps']} (end time "
+        f"{adjustment['end_time']!r} s, requested "
+        f"{adjustment['requested_end_time']!r} s)"
+    )
+
+
+def _enforce_control_periods(
+    rotor: RotorProtocol,
+    mounts: tuple[BearingMount, ...],
+    time_step: float,
+    steps: int,
+) -> tuple[
+    RotorProtocol,
+    tuple[BearingMount, ...],
+    float,
+    int,
+    tuple[Mapping[str, Any], ...],
+    Mapping[str, Any] | None,
+]:
+    """Make every controller period an integer multiple of the global step.
+
+    Controller periods ``Ts`` come from ``control.control_period`` in each
+    mounted bearing tree and are converted to global time through the mount's
+    unit adapter. Without periods, or when ``time_step`` already divides each
+    ``Ts`` (``|r - round(r)| <= 1e-9 r``), nothing changes. Otherwise ``Ts`` is
+    kept and the step becomes ``h' = Ts / ceil(Ts / h)`` (``Ts`` if ``h > Ts``);
+    the step count is recomputed from the requested end time and rounded up to
+    whole control periods. The rotor and every bearing config are rebuilt for
+    ``h'`` so that all physical components share it (ADR-0009).
+    """
+
+    from .building import _control_period_declarations, _retime_bearing_config
+
+    declarations: list[dict[str, Any]] = []
+    for index, mount in enumerate(mounts):
+        local_step = _local_time_step(mount, index, time_step)
+        time_scale = time_step / local_step
+        for path, local_period in _control_period_declarations(
+            mount.config,
+            f"mounts[{index}].config",
+        ):
+            declarations.append(
+                {
+                    "mount": index,
+                    "path": path,
+                    "local_control_period": local_period,
+                    "control_period": local_period * time_scale,
+                }
+            )
+    if not declarations:
+        return rotor, mounts, time_step, steps, (), None
+
+    def describe(step: float) -> tuple[Mapping[str, Any], ...]:
+        return tuple(
+            cast(
+                Mapping[str, Any],
+                _freeze(
+                    {
+                        **item,
+                        "control_steps_per_period": control_steps_per_period(
+                            item["control_period"],
+                            step,
+                        ),
+                    }
+                ),
+            )
+            for item in declarations
+        )
+
+    if all(
+        control_steps_per_period(item["control_period"], time_step) is not None
+        for item in declarations
+    ):
+        return rotor, mounts, time_step, steps, describe(time_step), None
+
+    periods = [float(item["control_period"]) for item in declarations]
+    reference_period = periods[0]
+    if any(
+        not math.isclose(period, reference_period, rel_tol=1.0e-9, abs_tol=0.0)
+        for period in periods[1:]
+    ):
+        raise ConfigurationError(
+            "time_step must divide every control_period exactly when "
+            "several different control periods are configured; automatic "
+            "time-step adjustment supports one control period "
+            f"(found {sorted(set(periods))!r})"
+        )
+    adjusted_step, control_steps = fit_time_step_to_control_period(
+        reference_period,
+        time_step,
+    )
+    requested_end_time = steps * time_step
+    periods_count = math.ceil(
+        requested_end_time / reference_period - 1.0e-9
+    )
+    adjusted_steps = max(0, periods_count) * control_steps
+    with_time_step = getattr(rotor, "with_time_step", None)
+    if not callable(with_time_step):
+        raise ConfigurationError(
+            f"time_step {time_step!r} must be adjusted to {adjusted_step!r} "
+            "to divide control_period, but the rotor does not provide "
+            "with_time_step(dt); choose time_step = control_period / m"
+        )
+    adjusted_rotor = with_time_step(adjusted_step)
+    retimed: list[BearingMount] = []
+    for index, mount in enumerate(mounts):
+        retimed.append(
+            BearingMount(
+                _retime_bearing_config(
+                    mount.config,
+                    _local_time_step(mount, index, adjusted_step),
+                    path=f"mounts[{index}].config",
+                ),
+                mount.node,
+                unit_adapter=mount.unit_adapter,
+                spool_provider=mount.spool_provider,
+            )
+        )
+    adjustment = cast(
+        Mapping[str, Any],
+        _freeze(
+            {
+                "requested_time_step": time_step,
+                "requested_steps": steps,
+                "requested_end_time": requested_end_time,
+                "control_period": reference_period,
+                "time_step": adjusted_step,
+                "control_steps_per_period": control_steps,
+                "steps": adjusted_steps,
+                "end_time": adjusted_steps * adjusted_step,
+                "rule": (
+                    "h' = Ts / ceil(Ts / h), or h' = Ts when h > Ts; "
+                    "steps = m * ceil(T / Ts)"
+                ),
+            }
+        ),
+    )
+    return (
+        adjusted_rotor,
+        tuple(retimed),
+        adjusted_step,
+        adjusted_steps,
+        describe(adjusted_step),
+        adjustment,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class SimulationConfig:
     """Validate immutable inputs for one dimensional rotor simulation.
@@ -270,6 +523,16 @@ class SimulationConfig:
     loads: tuple[Mapping[str, Any], ...] = ()
     history: HistoryPolicy = HistoryPolicy()
     dependencies: CouplingRuntimeDependencies | None = None
+    integrator: Literal["staggered", "ros2"] = "staggered"
+    ros2: Ros2Options | None = None
+    control_periods: tuple[Mapping[str, Any], ...] = field(
+        default=(),
+        init=False,
+    )
+    time_step_adjustment: Mapping[str, Any] | None = field(
+        default=None,
+        init=False,
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.rotor, RotorProtocol):
@@ -305,54 +568,30 @@ class SimulationConfig:
                 "rotor.dt must equal simulation time_step "
                 f"{time_step!r}; got {normalized_rotor_time_step!r}"
             )
+        integrator = _validate_integrator(self.integrator, self.ros2)
+        steps = strict_nonnegative_integer(self.steps, "steps")
         from .building import _validate_runtime_time_steps
 
+        rotor: RotorProtocol = self.rotor
+        (
+            rotor,
+            mounts,
+            time_step,
+            steps,
+            control_periods,
+            adjustment,
+        ) = _enforce_control_periods(rotor, mounts, time_step, steps)
         for index, mount in enumerate(mounts):
-            expected_local_step = time_step
-            if mount.unit_adapter is not None:
-                try:
-                    local_context = (
-                        mount.unit_adapter.rotor_context_to_bearing(
-                            StepContext(
-                                0,
-                                0.0,
-                                time_step,
-                                UnitSystem.DIMENSIONAL,
-                            )
-                        )
-                    )
-                except Exception as exc:
-                    raise ConfigurationError(
-                        f"mounts[{index}].unit_adapter could not convert "
-                        f"simulation time_step: {exc}"
-                    ) from exc
-                if not isinstance(local_context, StepContext):
-                    raise ConfigurationError(
-                        f"mounts[{index}].unit_adapter must return StepContext"
-                    )
-                if local_context.unit_system.value != mount.config.unit_system:
-                    raise ConfigurationError(
-                        f"mounts[{index}].unit_adapter local unit_system must "
-                        "match the bearing config"
-                    )
-                expected_local_step = float(local_context.dt)
-                if (
-                    not np.isfinite(expected_local_step)
-                    or expected_local_step <= 0.0
-                ):
-                    raise ConfigurationError(
-                        f"mounts[{index}].unit_adapter produced an invalid "
-                        "bearing-local time_step"
-                    )
             _validate_runtime_time_steps(
                 mount.config,
-                expected_local_step,
+                _local_time_step(mount, index, time_step),
                 path=f"mounts[{index}].config",
             )
-        strict_nonnegative_integer(self.steps, "steps")
+        if integrator == "ros2":
+            _validate_ros2_topology(rotor, mounts)
         try:
             _validate_coupled_rotor_output(
-                self.rotor.output(nodes),
+                rotor.output(nodes),
                 len(nodes),
                 label="rotor.output(nodes)",
             )
@@ -373,9 +612,22 @@ class SimulationConfig:
             raise TypeError(
                 "dependencies must be CouplingRuntimeDependencies or None"
             )
+        object.__setattr__(self, "rotor", rotor)
         object.__setattr__(self, "mounts", mounts)
         object.__setattr__(self, "time_step", time_step)
+        object.__setattr__(self, "steps", steps)
         object.__setattr__(self, "loads", loads)
+        object.__setattr__(self, "integrator", integrator)
+        object.__setattr__(self, "control_periods", control_periods)
+        object.__setattr__(self, "time_step_adjustment", adjustment)
+        if adjustment is not None:
+            warnings.warn(
+                TimeStepAdjustedWarning(
+                    _adjustment_message(adjustment),
+                    adjustment=adjustment,
+                ),
+                stacklevel=3,
+            )
 
 
 class RotorBearingSimulation:
@@ -446,6 +698,9 @@ class RotorBearingSimulation:
         kwargs: dict[str, object] = {}
         if self._config.dependencies is not None:
             kwargs["dependencies"] = self._config.dependencies
+        if self._config.integrator != "staggered":
+            kwargs["integrator"] = self._config.integrator
+            kwargs["ros2_options"] = self._config.ros2
         coupling = _RotorBearingStepRuntime(
             cast(Any, self._config.rotor),
             TimeIterDt(self._config.time_step, self._config.steps),
@@ -761,6 +1016,7 @@ class RotorBearingSimulation:
                     "coupling_failure_available": (
                         coupling_failure is not None
                     ),
+                    **self._time_metadata(),
                 },
             )
 
@@ -881,6 +1137,24 @@ class RotorBearingSimulation:
         self._last_result = result
         return result
 
+    def _time_metadata(self) -> dict[str, Any]:
+        """Return integrator, step, and control-period run metadata."""
+
+        config = self._config
+        return {
+            "integrator": config.integrator,
+            "time_step": config.time_step,
+            "control_periods": config.control_periods,
+            "time_step_adjustment": config.time_step_adjustment,
+            "ros2_options": (
+                None
+                if config.integrator != "ros2"
+                else _freeze(
+                    (config.ros2 or Ros2Options()).to_dict()
+                )
+            ),
+        }
+
     def _to_result(
         self,
         snapshots: Sequence[Any],
@@ -926,6 +1200,7 @@ class RotorBearingSimulation:
                 "history_path": (
                     None if stream_root is None else str(stream_root)
                 ),
+                **self._time_metadata(),
             },
             convergence=ConvergenceStatus(
                 residual=0.0,
@@ -1078,6 +1353,25 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
         time_grid.get("time_step"),
         "spec.time_grid.time_step",
     )
+    integrator = time_grid.get("integrator", "staggered")
+    if integrator not in INTEGRATORS:
+        raise ConfigurationError(
+            "spec.time_grid.integrator must be 'staggered' or 'ros2'"
+        )
+    jacobian_refresh = time_grid.get("jacobian_refresh")
+    ros2_options: Ros2Options | None = None
+    if integrator == "ros2":
+        if jacobian_refresh is not None and jacobian_refresh != "control_period":
+            jacobian_refresh = _require_integer(
+                jacobian_refresh,
+                "spec.time_grid.jacobian_refresh",
+                minimum=1,
+            )
+        ros2_options = Ros2Options(jacobian_refresh=jacobian_refresh)
+    elif jacobian_refresh is not None:
+        raise ConfigurationError(
+            "spec.time_grid.jacobian_refresh requires integrator='ros2'"
+        )
     from ALB.dynamics.rotor import rotor0
 
     rotor = rotor0(  # type: ignore[no-untyped-call]
@@ -1193,6 +1487,8 @@ def load_simulation_config(path: str | Path) -> SimulationConfig:
         ),
         loads=tuple(_thaw(load) for load in loads_raw),
         history=history,
+        integrator=integrator,
+        ros2=ros2_options,
     )
 
 

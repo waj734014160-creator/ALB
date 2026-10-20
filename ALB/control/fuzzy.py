@@ -62,6 +62,7 @@ class FuzzyPID(PID):
             freq=fuzzy_pid_config.freq,
             sensor_angles=fuzzy_pid_config.sensor_angles,
             dt=fuzzy_pid_config.dt,
+            control_period=fuzzy_pid_config.control_period,
         )
         super().__init__(pid_config, *args, **kwargs)
         error_range = fuzzy_pid_config.error_range

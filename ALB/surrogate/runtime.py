@@ -16,7 +16,7 @@ from ALB.contracts import (
     UnitSystem,
     result_snapshot,
 )
-from ALB.contracts.numeric import finite_real_array
+from ALB.contracts.numeric import FloatArray, finite_real_array
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
 
@@ -185,6 +185,43 @@ class SurrogateBearingRuntime:
         self._lifecycle.require_output()
         assert self._latest_output is not None
         return self._latest_output
+
+    def probe_force(self, dto: Any) -> FloatArray:
+        """Return the packaged force for ``dto`` without publishing a result.
+
+        The packaged model is stateless, so the force depends only on
+        displacement, velocity, and spool opening. Lifecycle and result
+        snapshots of the last committed evaluation are unchanged.
+        """
+
+        if self._lifecycle.state is not LifecycleState.READY:
+            raise RuntimeError(
+                "SurrogateBearingRuntime must be ready before probe_force()"
+            )
+        if not isinstance(dto, self.input_dto_type):
+            raise TypeError("surrogate probe input has the wrong DTO type")
+        bearing = dto.bearing if isinstance(dto, DirectSpoolBearingInput) else dto
+        if bearing.unit_system is not self.unit_system:
+            raise ValueError("surrogate input unit_system does not match runtime")
+        spool = (
+            dto.spool.spool
+            if isinstance(dto, DirectSpoolBearingInput)
+            else self._fixed_spool
+        )
+        nodim = self.unit_system is UnitSystem.NONDIMENSIONAL
+        self._model.input(
+            bearing.displacement,
+            bearing.velocity,
+            spool,
+            nodim=nodim,
+        )
+        force = finite_real_array(
+            self._model.output(nodim=nodim),
+            "surrogate force",
+        ).reshape(-1)
+        if force.shape != (2,):
+            raise ValueError("packaged surrogate force must contain two values")
+        return force
 
     def step(self, dto: Any) -> BearingOutput:
         """Compose input, evaluate, and output."""

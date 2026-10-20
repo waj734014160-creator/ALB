@@ -67,10 +67,32 @@ class SimulationError(ALBError, RuntimeError):
         self.failure_snapshot: ResultBundle | None = None
 
 
+class TimeStepAdjustedWarning(UserWarning):
+    """The simulation step was changed to fit the controller sampling period.
+
+    A coupled simulation requires the controller period ``Ts`` to be an integer
+    multiple ``m`` of the physical step ``h``. When the requested step does not
+    satisfy this, ``Ts`` is kept (it is a property of the real controller) and
+    the step becomes ``h' = Ts / ceil(Ts / h)`` (or ``Ts`` when ``h > Ts``). The
+    message and :attr:`adjustment` report the requested step, ``Ts``, ``h'``,
+    ``m``, and the requested and adjusted step counts.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        adjustment: object | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.adjustment = adjustment
+
+
 __all__ = [
     "ALBError",
     "BuildError",
     "CalculationError",
     "ConfigurationError",
     "SimulationError",
+    "TimeStepAdjustedWarning",
 ]

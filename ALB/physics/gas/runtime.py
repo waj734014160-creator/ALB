@@ -12,6 +12,7 @@ from ALB.contracts import (
     UnitSystem,
     result_snapshot,
 )
+from ALB.contracts.numeric import FloatArray
 from ALB.core.diagnostics import sanitize_exception_message
 from ALB.core.lifecycle import RuntimeLifecycle
 from ALB.core.validation import validate_bearing_output
@@ -146,6 +147,30 @@ class GasFilmRuntime:
         self._lifecycle.require_output()
         assert self._latest_output is not None
         return self._latest_output
+
+    def probe_force(self, dto: BearingInput) -> FloatArray:
+        """Return the gas-film force for ``dto`` without publishing a result.
+
+        The gas solver resets its pressure and foil state before every solve
+        and takes the squeeze term from the velocity input, so the force is a
+        function of the input alone. Lifecycle and result snapshots are kept.
+        """
+
+        if self._lifecycle.state is not LifecycleState.READY:
+            raise RuntimeError("GasFilmRuntime must be ready before probe_force()")
+        if not isinstance(dto, BearingInput):
+            raise TypeError("gas-film input must be BearingInput")
+        if dto.unit_system is not UnitSystem.DIMENSIONAL:
+            raise ValueError("gas-film runtime requires dimensional input")
+        self._solver.input(  # type: ignore[no-untyped-call]
+            dto.displacement,
+            dto.velocity,
+            t=dto.time,
+            nodim=False,
+        )
+        return validate_bearing_output(
+            self._solver.output(nodim=False)  # type: ignore[no-untyped-call]
+        )
 
     def step(self, dto: BearingInput) -> BearingOutput:
         """Compose input, evaluate, and output."""
