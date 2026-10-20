@@ -96,7 +96,7 @@ SUPG 稳定化参数在生产基态冻结；温度入口和供油冷源分支在
 也可直接使用命令行工具，输出目录必须尚不存在：
 
 ```powershell
-E:/Anaconda2023/envs/ALB/python.exe tools/analysis/run_harmonic_linearization.py `
+python tools/analysis/run_harmonic_linearization.py `
   --config tools/analysis/thermal_harmonic_example.json5 `
   --operating-point 0.00001 -0.00006 --frequency-hz 50 `
   --spool -0.08838834764831843 -0.12374368670764582 `
