@@ -464,9 +464,10 @@ def _plan_control_periods(
         time_step,
     )
     requested_end_time = steps * time_step
-    periods_count = math.ceil(
-        requested_end_time / reference_period - 1.0e-9
-    )
+    period_ratio = requested_end_time / reference_period
+    # Round up to whole control periods; the relative tolerance keeps an end
+    # time that is already a multiple of Ts from gaining an extra period.
+    periods_count = math.ceil(period_ratio - 1.0e-9 * max(1.0, period_ratio))
     adjusted_steps = max(0, periods_count) * control_steps
     if not callable(getattr(rotor, "_retime_for_owner", None)):
         raise ConfigurationError(
