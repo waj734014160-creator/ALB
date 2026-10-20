@@ -4,18 +4,18 @@
 
 ## 当前快照
 
-最近本地核对: 2026-10-09，本轮范围为热耦合谐波线性化工具、相关数值回归和安装包调用。本文区分当前工作树、历史发布和局部验证。
+最近本地核对: 2026-10-20，本轮范围为 0.4.6 控制器采样周期、可选 ROS2 耦合积分器及其文档。本文区分当前工作树、历史发布和局部验证。
 
 | 项目 | 当前事实 |
 | --- | --- |
-| 开发分支 | `codex/alb-0.4.5` |
-| 当前 HEAD | `aafb9fc8e099aa8191a7a12293787ec5ed6ac6b9` |
-| 包版本 | `re-alb 0.4.5`，导入名 `ALB`，最低 Python 3.10 |
+| 开发分支 | `claude/alb-0.4.6` |
+| 当前 HEAD | 本轮文档编写时为 `@@HEAD@@`；0.4.6 文档与生成参考修改在其上尚未提交 |
+| 包版本 | `re-alb 0.4.6`，导入名 `ALB`，最低 Python 3.10 |
 | 配置与模型包格式 | JSON5 schema 和 surrogate package 仍为 `0.4.0` |
-| 发布边界 | 最新已有固定候选正式验收的版本为 `v0.4.2`；0.4.3 至 0.4.5 仍属开发边界 |
-| 工作树 | 存在先于本次文档维护的热求解、配置说明、测试和 Claude 配置修改；未提交内容不计入固定发布候选 |
+| 发布边界 | 最新已有固定候选正式验收的版本为 `v0.4.2`；0.4.3 至 0.4.6 仍属开发边界 |
+| 工作树 | 0.4.6 实现已分提交；本轮文档、生成参考和部分 0.4.6 测试仍在工作树中，未提交内容不计入固定发布候选 |
 
-当前工作重点包含 0.4.5 接口和压力-热耦合契约维护，以及独立热记忆代理接口。
+当前工作重点包含 0.4.6 控制周期与 ROS2 耦合积分器、压力-热耦合契约维护，以及独立热记忆代理接口。
 2026-09-06 完成文档与代理规则维护；该次文档检查不代表当前未提交数值实现已完成验收。
 
 2026-09-23 新增冻结 M35 基线的热记忆 MLP、显式状态预测、安全模型包及
@@ -69,6 +69,18 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
 现有 M35/M42 配置需补写 `symmetry: "c4"`。修改前冻结的参考见
 `refs/surrogate_c4_builder_reference_v1.json`/`.npz`。
 
+2026-10-20 形成 0.4.6 开发版本，依据见
+[ADR-0009](adr/0009-controller-sampling-period-and-ros2-integrator.md) 和
+[0.4.6 迁移说明](migrations/0.4.6.md)。主动轴承 `pid`/`fuzzy_pid` 可用
+`control.control_period` 声明控制器采样周期 `Ts`：控制器每 `m = Ts/h` 步采样并
+保持指令，物理组件仍共享同一步长。仿真步长不能整除 `Ts` 时改用
+`h' = Ts/ceil(Ts/h)`，同时重算步数、原位重新离散转子并发出
+`ALB.TimeStepAdjustedWarning`。`SimulationConfig(integrator="ros2")` 新增可选的
+两级 Rosenbrock-W 同步耦合积分器，带热模型的轴承不支持。修改前在 `df7336f`
+冻结了默认 staggered 路径参考
+`refs/coupling_default_path_0_4_6_reference_v1.json`/`.npz`，并以精确相等回归；
+默认路径的数值与结果元数据保持 0.4.5 不变。
+
 ## 已实现的主要边界
 
 - 根 namespace 提供严格配置、构建、`Bearing.calculate()`、独立分析、
@@ -79,6 +91,15 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
   mixed-film 直接复用原生 FilmSystem 数值方法，薄 mixin 负责生命周期与结果。
 - simulation 在运行前检查转子、mount、嵌套 MultiPad 和物化组件的 local
   `time_step`，区分物理提交、历史记录与 post-commit 完整性。
+- 0.4.6 控制器采样周期：只有 PID/模糊 PID 可按 `control.control_period` 以
+  仿真步整数倍采样（ADR-0007 第 8 条的受限例外）。仿真在必要时把步长调整为
+  `Ts/ceil(Ts/h)`，结束时间向上取整到整数个控制周期，并通过警告、
+  `SimulationConfig.time_step_adjustment` 和结果 metadata 报告；独立轴承要求精确
+  整数倍。
+- 0.4.6 可选 ROS2 积分器：`time_grid.integrator: "ros2"` 或
+  `SimulationConfig(integrator="ros2")`。缺省冻结 Jacobian，可按步数或控制周期
+  刷新；轴承力经无副作用 probe 同步计算。支持无热液膜、气膜、surrogate、
+  `MultiPad` 和无热主动轴承；默认 staggered 路径不变。
 - 0.4.5 主动轴承阀配置支持 `second_order`、`static`、`transfer_function`。
   二阶模型使用 `natural_frequency_hz`、`damping_ratio` 和可选 `delay`。
 - 显式压力/温度网格支持 P1/P2/Q1/Q2，并共享网格、阶次和自由度。
@@ -119,7 +140,7 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
 
 ## 当前风险与下一步
 
-1. 0.4.5 尚未形成固定 SHA 正式发布候选。若发布，先处理工作树归属、完成对应
+1. 0.4.6 尚未形成固定 SHA 正式发布候选。若发布，先处理工作树归属、完成对应
    manifest/test map 和验收工具，再执行固定候选验收；不移动历史标签。
 2. 谐波分析和倾瓦等能力的既有适用边界，以 API 文档及
    [ADR-0007](adr/0007-preserve-validated-numerical-algorithms.md) 为准。
@@ -140,6 +161,11 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
    `"c4"`；要复现旧的原网络结果时写 `"none"`。SURROGATE_TRAIN 后续打包第一象限模型时，
    应在 metadata 写入 `inference_symmetry`。C4 只适用于四瓦、阀芯指令轴随瓦旋转的对称轴承；
    坐标轴和原点处的 C4 边界误差保持原样。
+8. ROS2 首版拒绝热模型轴承。冻结 Jacobian 只影响稳定裕度：轴颈接近壁面时裕度
+   下降，打包 surrogate 在居中处存在平方根型刚度奇异，应设置 `jacobian_refresh`
+   或偏心 `jacobian_state`。外部 spool provider 采用每步零阶保持，只有分段常数
+   输出才保持二阶。默认路径参考仅保证当前记录环境下的精确相等，其他平台可能出现
+   舍入级差异，需按迁移说明用环境变量指向本地生成的参考对复核。
 
 ## 外部工作与阅读入口
 
@@ -148,7 +174,7 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
   网格任务入口和实际进度以该工作区记录为准。
 - [用户手册](alb_albnn_quickstart.md)、[远程操作](remote_workstation_connection.md)、
   [文件归属](file_classification.md)、[文档路径索引](daily_maintenance/daily_doc_update_index.md)。
-- 当前开发接口迁移: [0.4.3](migrations/0.4.3.md)、[0.4.4](migrations/0.4.4.md)、[0.4.5](migrations/0.4.5.md)。
+- 当前开发接口迁移: [0.4.3](migrations/0.4.3.md)、[0.4.4](migrations/0.4.4.md)、[0.4.5](migrations/0.4.5.md)、[0.4.6](migrations/0.4.6.md)。
 - 公共用户站点: <https://waj734014160-creator.github.io/ALB/>。
   最近保存的发布记录对应源提交 `30b42fcc6bb667d0b0cdb1b2b5ebb62cdb1b28c7`；
   本次未核验线上最新部署。
