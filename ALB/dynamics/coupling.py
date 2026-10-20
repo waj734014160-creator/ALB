@@ -68,6 +68,12 @@ class _RotorBearingStepRuntime:
             raise ValueError("ros2_options require integrator='ros2'")
         self._integrator = integrator
         self._ros2_options = ros2_options
+        initial_state = kwargs.get("initial_rotor_state")
+        self._initial_rotor_state = (
+            None
+            if initial_state is None
+            else np.array(initial_state, dtype=float, copy=True)
+        )
         self._ros2: Ros2CouplingIntegrator | None = None
         self.rotor = rotor
         if any(
@@ -172,7 +178,11 @@ class _RotorBearingStepRuntime:
                 ),
                 "phase": phase,
                 "component": "rotor-bearing coupling",
-                "integrator": self._integrator,
+                **(
+                    {}
+                    if self._integrator == "staggered"
+                    else {"integrator": self._integrator}
+                ),
                 "error_type": type(error).__name__,
                 "message": sanitize_exception_message(error),
                 "physical_step_committed": False,
@@ -206,9 +216,17 @@ class _RotorBearingStepRuntime:
             },
             {
                 "run_id": self._run_id,
-                "integrator": self._integrator,
-                "ros2": (
-                    None if self._ros2 is None else self._ros2.diagnostics()
+                **(
+                    {}
+                    if self._integrator == "staggered"
+                    else {
+                        "integrator": self._integrator,
+                        "ros2": (
+                            None
+                            if self._ros2 is None
+                            else self._ros2.diagnostics()
+                        ),
+                    }
                 ),
                 "committed_step_index": (
                     None if context is None else context.step_index
@@ -502,7 +520,10 @@ class _RotorBearingStepRuntime:
             if not self.bindings:
                 raise ValueError("rotor-bearing coupling requires at least one binding")
             initial_time = time_values[0]
-            self.rotor._reset_for_owner()
+            if self._initial_rotor_state is None:
+                self.rotor._reset_for_owner()
+            else:
+                self.rotor._reset_for_owner(self._initial_rotor_state.copy())
             for binding in self.bindings:
                 reset = getattr(binding.bearing, "_reset_for_owner", None)
                 if not callable(reset):

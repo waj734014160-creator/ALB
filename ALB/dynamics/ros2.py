@@ -79,29 +79,37 @@ class Ros2Options:
         controller sampling instant. Refreshing never changes the order of
         accuracy, only the stability margin and the cost.
     jacobian_state
-        Optional complete rotor state vector (ROSS ``[q, dq/dt]`` ordering)
-        at which the initial ``J`` is evaluated, for example a static
-        equilibrium obtained with the existing equilibrium analysis. ``None``
-        uses the simulation initial state. Actuator states start at zero.
+        Optional state at which the initial ``J`` is evaluated, for example a
+        static equilibrium obtained with the existing equilibrium analysis.
+        Either the complete rotor state (ROSS ``[q, dq/dt]`` ordering; the
+        actuator states of active bearings are then taken as zero) or the
+        complete coupled state ``[rotor state, actuator states]``. ``None``
+        uses the simulation initial state. Controller commands are the ones
+        sampled at the initial state. Packaged surrogates have a
+        square-root-type stiffness singularity at the centred journal, so an
+        off-centre ``jacobian_state`` gives them a better frozen ``J``.
     relative_step, displacement_step, velocity_step, spool_step
         Central-difference steps used when a bearing cannot provide an
         automatic-differentiation force. Each perturbation is
         ``max(relative_step * |value|, floor)`` with the floor given in rotor
         units: metres for displacement, metres per second for velocity, and
-        normalized spool units for spool opening. The defaults (``1e-4``,
-        ``1e-8`` m, ``1e-5`` m/s and ``1e-4``) are large compared with the
-        iterative film-solver noise yet small compared with typical bearing
-        clearances (tens of micrometres), so truncation and noise errors in
-        ``J`` stay far below what affects stability. ``J`` never affects the
-        order of accuracy of a W-method.
+        normalized spool units for spool opening. The defaults (``1e-3``,
+        ``1e-7`` m, ``1e-4`` m/s and ``1e-3``) keep the stencil about three
+        orders of magnitude below typical clearances (tens of micrometres),
+        so truncation error is negligible, while staying well above the
+        iterative noise of film and restrictor solves (the restrictor
+        coupling stops at a relative tolerance of ``1e-3``, which can change
+        the stopping iteration between the two stencil points). ``J`` only
+        affects the stability margin, never the order of accuracy of a
+        W-method.
     """
 
     jacobian_refresh: int | Literal["control_period"] | None = None
     jacobian_state: Any = None
-    relative_step: float = 1.0e-4
-    displacement_step: float = 1.0e-8
-    velocity_step: float = 1.0e-5
-    spool_step: float = 1.0e-4
+    relative_step: float = 1.0e-3
+    displacement_step: float = 1.0e-7
+    velocity_step: float = 1.0e-4
+    spool_step: float = 1.0e-3
 
     def __post_init__(self) -> None:
         refresh = self.jacobian_refresh
@@ -228,6 +236,10 @@ class Ros2Stepper:
 # ---------------------------------------------------------------------------
 # Coupled rotor-bearing integration
 # ---------------------------------------------------------------------------
+
+
+class Ros2StageError(RuntimeError):
+    """A ROS2 intermediate-stage bearing force could not be evaluated."""
 
 
 def _central_difference(
@@ -515,8 +527,15 @@ class _BindingForceModel:
             if self.kind == "actuated"
             else None
         )
+        blocks = None
         if callable(self.torch_force):
-            k_x, k_v, k_s = self._autodiff_jacobian(displacement, velocity, time, spool)
+            blocks = self._autodiff_jacobian(displacement, velocity, time, spool)
+            if not all(np.all(np.isfinite(block)) for block in blocks):
+                # Feature maps such as sqrt(|x|) are not differentiable at the
+                # centred journal; fall back to central differences there.
+                blocks = None
+        if blocks is not None:
+            k_x, k_v, k_s = blocks
         else:
             k_x = _central_difference(
                 lambda value: self.probe(value, velocity, time, actuator_state, spool),
@@ -640,7 +659,7 @@ class Ros2CouplingIntegrator:
         self.bindings = bindings
         self.options = options if options is not None else Ros2Options()
         self.time_step = _positive_float(time_step, "time_step")
-        a, b, _, _ = rotor.continuous_system()
+        a, b, _, _ = rotor._continuous_system()
         self._a = np.asarray(a, dtype=float)
         self._b = np.asarray(b, dtype=float)
         self._rotor_states = int(self._a.shape[0])
@@ -650,7 +669,7 @@ class Ros2CouplingIntegrator:
         self.models = tuple(
             _BindingForceModel(binding, self.time_step) for binding in bindings
         )
-        displacement_idx, velocity_idx = rotor.node_state_indices(self._bearing_nodes)
+        displacement_idx, velocity_idx = rotor._node_state_indices(self._bearing_nodes)
         self._displacement_idx = np.asarray(displacement_idx, dtype=np.int64)
         self._velocity_idx = np.asarray(velocity_idx, dtype=np.int64)
         self._bearing_map = self._force_map(self._bearing_nodes)
@@ -681,7 +700,7 @@ class Ros2CouplingIntegrator:
             unit = np.zeros((count, 2))
             unit[index // 2, index % 2] = 1.0
             columns.append(
-                np.asarray(self.rotor.node_force_vector(unit, nodes), dtype=float)
+                np.asarray(self.rotor._node_force_vector(unit, nodes), dtype=float)
             )
         return np.column_stack(columns)
 
@@ -692,7 +711,7 @@ class Ros2CouplingIntegrator:
             return np.zeros((0, 2)), np.zeros(self._b.shape[1])
         stacked = np.vstack([_load_vector(load, time) for load in self._loads])
         return stacked, np.asarray(
-            self.rotor.node_force_vector(stacked, self._load_node_links),
+            self.rotor._node_force_vector(stacked, self._load_node_links),
             dtype=float,
         )
 
@@ -720,14 +739,21 @@ class Ros2CouplingIntegrator:
     def _stage_rhs(self, state: FloatArray, time: float, load_vector: FloatArray) -> FloatArray:
         """Evaluate ``f(z, t)`` with side-effect-free bearing probes."""
 
-        forces = np.vstack(
-            [
-                model.probe(*self._node_kinematics(state, index), time, state[part])
-                for index, (model, part) in enumerate(zip(self.models, self._slices))
-            ]
-        )
+        forces = []
+        for index, (model, part) in enumerate(zip(self.models, self._slices)):
+            displacement, velocity = self._node_kinematics(state, index)
+            try:
+                forces.append(model.probe(displacement, velocity, time, state[part]))
+            except Exception as exc:
+                raise Ros2StageError(
+                    f"ROS2 stage-2 force evaluation of bearing {index} failed "
+                    f"at the predicted state (displacement {displacement!r}) "
+                    f"and time {time!r}: {exc}. A frozen Jacobian may "
+                    "underestimate the stiffness near the bearing wall; use "
+                    "a smaller time_step or Ros2Options.jacobian_refresh"
+                ) from exc
         self.rhs_evaluations += 1
-        return self._assemble(state, forces, load_vector)
+        return self._assemble(state, np.vstack(forces), load_vector)
 
     # -- Jacobian --------------------------------------------------------------
 
@@ -788,14 +814,18 @@ class Ros2CouplingIntegrator:
         jacobian_state = state
         if self.options.jacobian_state is not None:
             supplied = np.asarray(self.options.jacobian_state, dtype=float)
-            if supplied.shape != (self._rotor_states,):
-                raise ValueError(
-                    "Ros2Options.jacobian_state must have one value per rotor state "
-                    f"({self._rotor_states})"
+            if supplied.shape == (self._rotor_states,):
+                jacobian_state = np.concatenate(
+                    [supplied, np.zeros(self.size - self._rotor_states)]
                 )
-            jacobian_state = np.concatenate(
-                [supplied, np.zeros(self.size - self._rotor_states)]
-            )
+            elif supplied.shape == (self.size,):
+                jacobian_state = supplied.copy()
+            else:
+                raise ValueError(
+                    "Ros2Options.jacobian_state must contain the rotor state "
+                    f"({self._rotor_states} values) or the coupled state "
+                    f"({self.size} values)"
+                )
         self._stepper = Ros2Stepper(
             self.time_step,
             self.jacobian(jacobian_state, self._time),
@@ -912,6 +942,7 @@ __all__ = [
     "ROS2_GAMMA",
     "Ros2CouplingIntegrator",
     "Ros2Options",
+    "Ros2StageError",
     "Ros2Stepper",
     "ros2_stability_function",
 ]

@@ -420,23 +420,33 @@ class RossRotor:
 
         return float(self._dt)
 
-    def with_time_step(self, dt) -> "RossRotor":
-        """Return a fresh wrapper of the same ROSS rotor at another step.
+    def _retime_for_owner(self, dt) -> None:
+        """Rebuild the discretization for a new step and reset the state.
 
-        The ROSS model, speed, and continuous/discrete selection are reused;
-        the discretization is rebuilt for ``dt`` and the new wrapper starts
-        from the reset state. ``SimulationConfig`` uses this when it adapts the
-        simulation step to a controller sampling period.
+        Owner-only hook used by ``SimulationConfig`` when a controller
+        sampling period forces a smaller simulation step. The same wrapper
+        object is kept so callers that read rotor results after a run see the
+        integrated history. ``dt`` must be finite and positive.
         """
 
-        return type(self)(self._rotor, self._speed, dt, discrete=self._discrete)
+        step = float(dt)
+        if not np.isfinite(step) or step <= 0.0:
+            raise ValueError("rotor dt must be finite and > 0")
+        self._lifecycle.fail()
+        self._dt = step
+        self._sys = self._rotor._lti(self._speed)
+        if self._discrete:
+            self.discretesys()
+        else:
+            self.continuesys()
+        self._reset_for_owner()
 
-    def continuous_system(self) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def _continuous_system(self) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Return copies of the continuous ROSS ``(A, B, C, D)`` matrices.
 
-        The state is the ROSS ordering ``[q, dq/dt]`` and the input is the
-        global load vector. Discrete wrappers have no continuous model and
-        raise ``ValueError``.
+        Owner-only hook for the ROS2 coupled integrator. The state is the
+        ROSS ordering ``[q, dq/dt]`` and the input is the global load vector.
+        Discrete wrappers have no continuous model and raise ``ValueError``.
         """
 
         if self._discrete:
@@ -446,7 +456,7 @@ class RossRotor:
             for matrix in (self._sys.A, self._sys.B, self._sys.C, self._sys.D)
         )
 
-    def node_state_indices(self, node) -> tuple[np.ndarray, np.ndarray]:
+    def _node_state_indices(self, node) -> tuple[np.ndarray, np.ndarray]:
         """Return state indices of x/y displacement and velocity per node.
 
         Both arrays have shape ``(nodes, 2)``; they index the same state used
@@ -471,7 +481,7 @@ class RossRotor:
         ).reshape(-1, 2)
         return displacement, displacement + ndof
 
-    def node_force_vector(self, force, node) -> np.ndarray:
+    def _node_force_vector(self, force, node) -> np.ndarray:
         """Map per-node ``[Fx, Fy]`` pairs to one global load vector.
 
         This is the mapping used by :meth:`input_force2node`; it does not

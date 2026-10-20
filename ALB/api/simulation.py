@@ -308,13 +308,20 @@ def _validate_ros2_topology(
 
     from .building import _ros2_support_issue
 
-    continuous = getattr(rotor, "continuous_system", None)
-    commit = getattr(rotor, "_commit_integrated_state", None)
-    if not callable(continuous) or not callable(commit):
+    hooks = (
+        "_continuous_system",
+        "_node_state_indices",
+        "_node_force_vector",
+        "_commit_integrated_state",
+    )
+    missing = [name for name in hooks if not callable(getattr(rotor, name, None))]
+    if missing:
         raise ConfigurationError(
-            "integrator='ros2' requires a rotor exposing continuous_system() "
-            "and _commit_integrated_state(), such as a continuous RossRotor"
+            "integrator='ros2' requires a rotor providing the owner hooks "
+            f"{', '.join(hooks)} (missing {', '.join(missing)}), such as a "
+            "continuous RossRotor"
         )
+    continuous = getattr(rotor, "_continuous_system")
     try:
         continuous()
     except ValueError as exc:
@@ -328,6 +335,31 @@ def _validate_ros2_topology(
                 f"integrator='ros2' cannot integrate this bearing: {issue}. "
                 "Use integrator='staggered' for this topology."
             )
+
+
+def _initial_rotor_state(rotor: RotorProtocol, value: Any) -> Any:
+    """Validate an optional complete initial rotor state vector."""
+
+    if value is None:
+        return None
+    try:
+        state = np.array(value, dtype=float, copy=True)
+    except (TypeError, ValueError) as exc:
+        raise ConfigurationError(
+            "initial_rotor_state must be a real vector"
+        ) from exc
+    current = np.asarray(rotor.current_state(), dtype=float).reshape(-1)
+    if state.shape != current.shape:
+        raise ConfigurationError(
+            "initial_rotor_state must match the complete rotor state shape "
+            f"{current.shape}; got {state.shape}"
+        )
+    if not np.all(np.isfinite(state)):
+        raise ConfigurationError(
+            "initial_rotor_state must contain finite values"
+        )
+    state.setflags(write=False)
+    return state
 
 
 def _adjustment_message(adjustment: Mapping[str, Any]) -> str:
@@ -346,13 +378,12 @@ def _adjustment_message(adjustment: Mapping[str, Any]) -> str:
     )
 
 
-def _enforce_control_periods(
+def _plan_control_periods(
     rotor: RotorProtocol,
     mounts: tuple[BearingMount, ...],
     time_step: float,
     steps: int,
 ) -> tuple[
-    RotorProtocol,
     tuple[BearingMount, ...],
     float,
     int,
@@ -367,8 +398,9 @@ def _enforce_control_periods(
     ``Ts`` (``|r - round(r)| <= 1e-9 r``), nothing changes. Otherwise ``Ts`` is
     kept and the step becomes ``h' = Ts / ceil(Ts / h)`` (``Ts`` if ``h > Ts``);
     the step count is recomputed from the requested end time and rounded up to
-    whole control periods. The rotor and every bearing config are rebuilt for
-    ``h'`` so that all physical components share it (ADR-0009).
+    whole control periods. Every bearing config is rebuilt for ``h'``; the
+    caller retimes the rotor in place after all validation has passed so all
+    physical components share ``h'`` (ADR-0009).
     """
 
     from .building import _control_period_declarations, _retime_bearing_config
@@ -390,7 +422,7 @@ def _enforce_control_periods(
                 }
             )
     if not declarations:
-        return rotor, mounts, time_step, steps, (), None
+        return mounts, time_step, steps, (), None
 
     def describe(step: float) -> tuple[Mapping[str, Any], ...]:
         return tuple(
@@ -413,7 +445,7 @@ def _enforce_control_periods(
         control_steps_per_period(item["control_period"], time_step) is not None
         for item in declarations
     ):
-        return rotor, mounts, time_step, steps, describe(time_step), None
+        return mounts, time_step, steps, describe(time_step), None
 
     periods = [float(item["control_period"]) for item in declarations]
     reference_period = periods[0]
@@ -436,14 +468,12 @@ def _enforce_control_periods(
         requested_end_time / reference_period - 1.0e-9
     )
     adjusted_steps = max(0, periods_count) * control_steps
-    with_time_step = getattr(rotor, "with_time_step", None)
-    if not callable(with_time_step):
+    if not callable(getattr(rotor, "_retime_for_owner", None)):
         raise ConfigurationError(
             f"time_step {time_step!r} must be adjusted to {adjusted_step!r} "
             "to divide control_period, but the rotor does not provide "
-            "with_time_step(dt); choose time_step = control_period / m"
+            "_retime_for_owner(dt); choose time_step = control_period / m"
         )
-    adjusted_rotor = with_time_step(adjusted_step)
     retimed: list[BearingMount] = []
     for index, mount in enumerate(mounts):
         retimed.append(
@@ -478,7 +508,6 @@ def _enforce_control_periods(
         ),
     )
     return (
-        adjusted_rotor,
         tuple(retimed),
         adjusted_step,
         adjusted_steps,
@@ -525,13 +554,16 @@ class SimulationConfig:
     dependencies: CouplingRuntimeDependencies | None = None
     integrator: Literal["staggered", "ros2"] = "staggered"
     ros2: Ros2Options | None = None
+    initial_rotor_state: Any = None
     control_periods: tuple[Mapping[str, Any], ...] = field(
         default=(),
         init=False,
+        compare=False,
     )
     time_step_adjustment: Mapping[str, Any] | None = field(
         default=None,
         init=False,
+        compare=False,
     )
 
     def __post_init__(self) -> None:
@@ -573,14 +605,22 @@ class SimulationConfig:
         from .building import _validate_runtime_time_steps
 
         rotor: RotorProtocol = self.rotor
+        # The requested configuration must already share one step (ADR-0007
+        # rule 8) before a controller period may adjust that step.
+        for index, mount in enumerate(mounts):
+            _validate_runtime_time_steps(
+                mount.config,
+                _local_time_step(mount, index, time_step),
+                path=f"mounts[{index}].config",
+                check_control_period=False,
+            )
         (
-            rotor,
             mounts,
             time_step,
             steps,
             control_periods,
             adjustment,
-        ) = _enforce_control_periods(rotor, mounts, time_step, steps)
+        ) = _plan_control_periods(rotor, mounts, time_step, steps)
         for index, mount in enumerate(mounts):
             _validate_runtime_time_steps(
                 mount.config,
@@ -589,6 +629,7 @@ class SimulationConfig:
             )
         if integrator == "ros2":
             _validate_ros2_topology(rotor, mounts)
+        initial_state = _initial_rotor_state(rotor, self.initial_rotor_state)
         try:
             _validate_coupled_rotor_output(
                 rotor.output(nodes),
@@ -612,6 +653,20 @@ class SimulationConfig:
             raise TypeError(
                 "dependencies must be CouplingRuntimeDependencies or None"
             )
+        if adjustment is not None:
+            # Retime last so a rejected configuration never mutates the rotor.
+            try:
+                rotor._retime_for_owner(time_step)  # type: ignore[attr-defined]
+            except (TypeError, ValueError) as exc:
+                raise ConfigurationError(
+                    f"rotor could not be retimed to time_step {time_step!r}: "
+                    f"{exc}"
+                ) from exc
+            if float(rotor.dt) != time_step:
+                raise ConfigurationError(
+                    "rotor.dt must equal the adjusted simulation time_step "
+                    f"{time_step!r}; got {rotor.dt!r}"
+                )
         object.__setattr__(self, "rotor", rotor)
         object.__setattr__(self, "mounts", mounts)
         object.__setattr__(self, "time_step", time_step)
@@ -620,6 +675,7 @@ class SimulationConfig:
         object.__setattr__(self, "integrator", integrator)
         object.__setattr__(self, "control_periods", control_periods)
         object.__setattr__(self, "time_step_adjustment", adjustment)
+        object.__setattr__(self, "initial_rotor_state", initial_state)
         if adjustment is not None:
             warnings.warn(
                 TimeStepAdjustedWarning(
@@ -701,6 +757,8 @@ class RotorBearingSimulation:
         if self._config.integrator != "staggered":
             kwargs["integrator"] = self._config.integrator
             kwargs["ros2_options"] = self._config.ros2
+        if self._config.initial_rotor_state is not None:
+            kwargs["initial_rotor_state"] = self._config.initial_rotor_state
         coupling = _RotorBearingStepRuntime(
             cast(Any, self._config.rotor),
             TimeIterDt(self._config.time_step, self._config.steps),
@@ -1141,6 +1199,13 @@ class RotorBearingSimulation:
         """Return integrator, step, and control-period run metadata."""
 
         config = self._config
+        if (
+            config.integrator == "staggered"
+            and not config.control_periods
+            and config.initial_rotor_state is None
+        ):
+            # The 0.4.5 default path keeps its exact metadata contract.
+            return {}
         return {
             "integrator": config.integrator,
             "time_step": config.time_step,
@@ -1152,6 +1217,11 @@ class RotorBearingSimulation:
                 else _freeze(
                     (config.ros2 or Ros2Options()).to_dict()
                 )
+            ),
+            "initial_rotor_state": (
+                None
+                if config.initial_rotor_state is None
+                else "user-supplied"
             ),
         }
 

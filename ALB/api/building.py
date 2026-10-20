@@ -131,7 +131,11 @@ def _liquid_restrictors(
     )
 
 
-def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
+def _active_config(
+    config: BearingConfig,
+    *,
+    check_control_period: bool = True,
+) -> ALBConfig | NodimALBConfig:
     nodim = config.unit_system == "nondimensional"
     pad = (
         _nondimensional_pad(config)
@@ -315,7 +319,8 @@ def _active_config(config: BearingConfig) -> ALBConfig | NodimALBConfig:
             )
     controller_config = resolved.controller_config
     if (
-        controller_config is not None
+        check_control_period
+        and controller_config is not None
         and controller_config.control_period is not None
         and control_steps_per_period(
             controller_config.control_period,
@@ -344,8 +349,15 @@ def _validate_runtime_time_steps(
     *,
     path: str,
     active_paths: frozenset[Path] = frozenset(),
+    check_control_period: bool = True,
 ) -> None:
-    """Validate one bearing-local step across every materialized child."""
+    """Validate one bearing-local step across every materialized child.
+
+    ``check_control_period=False`` checks only the shared-step rule (ADR-0007
+    rule 8). Simulations use it on the requested configuration before a
+    controller period forces a step adjustment, so a mismatched bearing
+    ``time_step`` is still reported instead of being silently retimed.
+    """
 
     actual = float(config.spec["time_step"])
     if actual != expected:
@@ -355,7 +367,7 @@ def _validate_runtime_time_steps(
         )
     try:
         if config.family == "active_lubricated":
-            _active_config(config)
+            _active_config(config, check_control_period=check_control_period)
         elif (
             config.family == "liquid_film"
             and config.spec.get("thermal") is not None
@@ -401,6 +413,7 @@ def _validate_runtime_time_steps(
             expected,
             path=child_path,
             active_paths=child_active_paths,
+            check_control_period=check_control_period,
         )
 
 

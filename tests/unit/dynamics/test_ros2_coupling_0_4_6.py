@@ -24,6 +24,7 @@ from ALB.dynamics.coupling import _RotorBearingStepRuntime
 from ALB.dynamics.ros2 import (
     ROS2_GAMMA,
     Ros2Options,
+    Ros2StageError,
     Ros2Stepper,
     ros2_stability_function,
 )
@@ -335,6 +336,20 @@ def test_jacobian_state_must_match_rotor_state_size() -> None:
         )
 
 
+def test_jacobian_state_accepts_rotor_or_coupled_state() -> None:
+    rotor_state = np.zeros(8)
+    rotor_state[1] = -2.0e-4
+    for supplied in (rotor_state, np.concatenate([rotor_state, [0.1, -0.1]])):
+        runtime, _ = _run(
+            _actuated(2),
+            time_step=1.0e-3,
+            end_time=2.0e-3,
+            integrator="ros2",
+            options=Ros2Options(jacobian_state=supplied),
+        )
+        assert runtime._ros2.diagnostics()["jacobian_evaluations"] == 1
+
+
 # ---------------------------------------------------------------------------
 # Sampled control and spool inputs
 # ---------------------------------------------------------------------------
@@ -437,8 +452,9 @@ class _FailingBearing(AnalyticBearing):
 
 def test_stage_failure_is_sealed_without_publishing_the_step() -> None:
     bearing = _FailingBearing(linear_law(1.0e4, 10.0))
-    with pytest.raises(FloatingPointError):
+    with pytest.raises(Ros2StageError, match="stage-2") as caught:
         _run(bearing, time_step=1.0e-3, end_time=0.005, integrator="ros2")
+    assert isinstance(caught.value.__cause__, FloatingPointError)
 
 
 def test_failure_snapshot_records_integrator() -> None:
@@ -452,7 +468,7 @@ def test_failure_snapshot_records_integrator() -> None:
     )
     runtime._reset_for_owner()
     committed = []
-    with pytest.raises(FloatingPointError):
+    with pytest.raises(Ros2StageError):
         for index in range(1, 6):
             committed.append(
                 runtime.advance(
