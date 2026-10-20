@@ -1017,8 +1017,10 @@ class PredictorCorrectorCouplingIntegrator:
             for trial in self.trials:
                 trial.end_step()
             accelerator.end_step()
-        self.trial_iterations += iterations
-        self.iteration_histogram[iterations] += 1
+            # Count the completed trials on every exit path, so the failure
+            # diagnostics of a step that raised still match the evaluations.
+            self.trial_iterations += iterations
+            self.iteration_histogram[iterations] += 1
         final_residual = _inf_norm(residual)
         self.max_final_residual = max(self.max_final_residual, final_residual)
         if not converged:
@@ -1064,9 +1066,10 @@ class PredictorCorrectorCouplingIntegrator:
 
         steps = self.steps
         counts = sorted(self.iteration_histogram.items())
-        # Steps whose interface iteration finished: the committed steps plus,
-        # under on_nonconvergence="raise", the non-converged step that ended
-        # the run. The iteration statistics are taken over these steps.
+        # Attempted steps: the committed steps plus a step that ended the
+        # run (non-convergence under on_nonconvergence="raise", or a failed
+        # trial, counted with its completed trials). The iteration
+        # statistics are taken over these steps.
         iterated_steps = sum(int(number) for _, number in counts)
         ratio_count = self._ratio_count
         omega_range = (

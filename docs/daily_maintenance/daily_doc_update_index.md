@@ -114,6 +114,8 @@
 | `ALB_MAIN/docs/migrations/0.4.0_release_acceptance.json` | 0.4 固定实现候选的可复现 wheel、pytest、mypy、资源、隔离安装和外部消费者 smoke 门禁。 |
 | `ALB_MAIN/refs/coupling_default_path_0_4_6_reference_v1.*` | 在未修改的 `df7336f` 上冻结的 0.4.5 默认 staggered 耦合路径参考，含数组、结果元数据和数值环境。 |
 | `ALB_MAIN/refs/ros2_control_period_0_4_6_reference_v1.*` | 由完成后的 0.4.6 实现生成的 ROS2、采样控制和自动步长调整新行为参考。 |
+| `ALB_MAIN/refs/coupling_staggered_pre_0_4_7_reference_v1.*` | 在未修改的 `9432c06` 上冻结的 staggered 参考：热液膜（瞬态/稳态）、带热主动 PID、多瓦和外部阀芯轴承，含数组、结果快照数值和数值环境。 |
+| `ALB_MAIN/refs/predictor_corrector_0_4_7_reference_v1.*` | 由完成后的 0.4.7 实现（`a1eb59b`）生成的预测-校正新行为参考。 |
 | `ALB_MAIN/refs/full_repo_refactor_addendum_v1/` | 从重构前隔离源码生成的 thermal direct/Newton/transient 不可覆盖补充参考。 |
 | `ALB_MAIN/refs/thermal_harmonic_migration_v1.*` 与 `thermal_harmonic_projection_v1.*` | 从原始解析脚本分别冻结的旧热源坐标和修正后热源坐标参考，含来源哈希、配置及三个频率的系数和各瓦基态。 |
 | `ALB_MAIN/outputs/thermal_harmonic_integration_20261008/verification.json` | 热耦合谐波工具的当前工作树、参考差异、相关测试、定向类型检查及最终 wheel 隔离计算证据。 |

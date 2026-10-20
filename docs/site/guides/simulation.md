@@ -52,8 +52,8 @@ simulation_config = ALB.SimulationConfig(
 
 ROS2 支持无热液膜、气膜、surrogate、子瓦只含无热液膜/气膜/固定阀芯 surrogate 的
 `MultiPad` 和无热主动轴承；带热模型的轴承，以及含主动或外部阀芯子瓦的 `MultiPad`，
-以 `ConfigurationError` 拒绝。`initial_rotor_state` 可对两种积分器给出完整初始转子
-状态，例如静平衡状态；它与 `Ros2Options.jacobian_state` 都保存为浮点数元组。
+以 `ConfigurationError` 拒绝。`initial_rotor_state` 可对全部三种积分器给出完整初始
+转子状态，例如静平衡状态；它与 `Ros2Options.jacobian_state` 都保存为浮点数元组。
 
 ### 预测-校正积分器（0.4.7）
 

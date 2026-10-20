@@ -180,6 +180,18 @@ def _liquid_with_restrictors() -> dict[str, Any]:
     return spec
 
 
+def _liquid_with_save_histories() -> dict[str, Any]:
+    spec = _liquid_with_restrictors()
+    spec["film"] = {**spec["film"], "save_pressure": True, "save_thickness": True}
+    return spec
+
+
+def _pid_with_control_period() -> dict[str, Any]:
+    # m = 3: the controller samples every third evaluation and holds the
+    # command (``_held_command``) in between.
+    return active_spec({**copy.deepcopy(PID_CONTROL), "control_period": 3 * TIME_STEP})
+
+
 def _thermal_external_spool() -> dict[str, Any]:
     spec = external_spool_spec()
     spec["thermal"] = {"transient_enabled": True}
@@ -187,29 +199,33 @@ def _thermal_external_spool() -> dict[str, Any]:
 
 
 FAMILIES: dict[str, tuple[Callable[[], Any], int]] = {
-    # name: (factory, steps of the A4 sequence). The sequence has 20 steps;
-    # families with four thermal pads use 4 steps to bound the test time.
+    # name: (factory, steps of the A4 sequence; 20 unless noted).
     "liquid_film": (_config_runtime(liquid_film_spec()), 20),
     "liquid_film_restrictors": (_config_runtime(_liquid_with_restrictors()), 20),
+    "liquid_film_save_histories": (_config_runtime(_liquid_with_save_histories()), 20),
     "thermal_transient": (_config_runtime(thermal_liquid_spec(True)), 20),
     "thermal_steady": (_config_runtime(thermal_liquid_spec(False)), 20),
     "active_pid": (_config_runtime(active_spec(copy.deepcopy(PID_CONTROL))), 20),
+    "active_pid_control_period": (_config_runtime(_pid_with_control_period()), 20),
     "active_fuzzy_pid": (
         _config_runtime(active_spec(copy.deepcopy(FUZZY_CONTROL)), FUZZY_RULE_ROOT),
         20,
     ),
     "active_uncontrolled": (_config_runtime(active_spec({"mode": "uncontrolled"})), 20),
-    "active_pid_thermal": (_config_runtime(thermal_active_spec()), 4),
-    "external_spool_thermal": (_config_runtime(_thermal_external_spool()), 4),
+    "active_pid_thermal": (_config_runtime(thermal_active_spec()), 20),
+    "external_spool_thermal": (_config_runtime(_thermal_external_spool()), 20),
     "nondimensional_active_pid": (
         _config_runtime(_nondimensional_active_spec("pid", thermal=False)),
         20,
     ),
     "nondimensional_external_spool_thermal": (
         _config_runtime(_nondimensional_active_spec("external_spool", thermal=True)),
+        # This small nondimensional transient thermal model stops converging
+        # at the fifth input of ``_dto`` even without any trial, so its A4
+        # sequence covers the first four steps.
         4,
     ),
-    "multi_pad_children": (_config_runtime(multi_pad_spec()), 6),
+    "multi_pad_children": (_config_runtime(multi_pad_spec()), 20),
     "gas_film": (_config_runtime(_gas_spec()), 20),
     "surrogate_fixed_spool": (_surrogate_runtime, 20),
     "memory_double": (
@@ -425,6 +441,42 @@ def test_spool_provider_double_rolls_back_samples() -> None:
     assert provider.samples == [0.0]
     assert provider.evaluations == 4
     assert provider.output() is committed
+
+
+def test_spool_provider_double_matches_an_undisturbed_twin() -> None:
+    """Three rolled-back trials per step keep a 20-step provider sequence."""
+
+    from ALB.contracts import StepContext
+
+    disturbed, twin = LinearSpoolProvider(gain=500.0), LinearSpoolProvider(gain=500.0)
+
+    def sample(provider: LinearSpoolProvider, step: int, scale: float = 1.0) -> Any:
+        time = step * 1.0e-3
+        provider.input(
+            StepContext(step, time, 1.0e-3, UnitSystem.DIMENSIONAL),
+            BearingInput(
+                scale * np.array([1.0e-4 * np.cos(0.4 * step), 2.0e-4]),
+                np.zeros(2),
+                time,
+                UnitSystem.DIMENSIONAL,
+            ),
+        )
+        provider.evaluate()
+        return provider.output()
+
+    for step in range(20):
+        if step > 0:
+            token = disturbed.checkpoint()
+            for scale in (1.3, 0.7, -0.5):
+                try:
+                    sample(disturbed, step, scale)
+                finally:
+                    disturbed.restore(token)
+        committed, reference = sample(disturbed, step), sample(twin, step)
+        np.testing.assert_array_equal(committed.spool, reference.spool)
+        assert committed.time == reference.time
+    assert disturbed.samples == twin.samples
+    assert disturbed.evaluations == twin.evaluations + 3 * 19
 
 
 def test_multi_pad_rejects_children_without_checkpoint() -> None:

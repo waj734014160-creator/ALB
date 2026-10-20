@@ -43,6 +43,7 @@ from tests._support.simulation_0_4_6 import (
 from tools.reference.generate_coupling_staggered_pre_0_4_7_reference import (
     external_spool_spec,
     multi_pad_spec,
+    thermal_active_spec,
     thermal_liquid_spec,
 )
 
@@ -259,6 +260,41 @@ def test_external_spool_bearing_uses_its_provider(provider_type, spool_trials) -
     assert diagnostics["spool_trials"] == (spool_trials,)
     assert diagnostics["trial_modes"] == ("probe",)
     np.testing.assert_allclose(provider.samples, np.arange(5) * H)
+
+
+@pytest.mark.parametrize("variant", ["active_pid", "external_spool"])
+def test_active_bearings_with_thermal_pads_run_through_checkpoints(variant: str) -> None:
+    """Active-bearing and thermal-pad tokens compose inside the integrator."""
+
+    provider = None
+    if variant == "active_pid":
+        mount = ALB.BearingMount(_config(thermal_active_spec()), 0)
+        spool_trials: tuple[str | None, ...] = (None,)
+    else:
+        spec = external_spool_spec()
+        spec["thermal"] = {"transient_enabled": True}
+        provider = LinearSpoolProvider(gain=2.0e4)
+        mount = ALB.BearingMount(_config(spec), 0, spool_provider=provider)
+        spool_trials = ("provider_checkpoint",)
+    config = ALB.SimulationConfig(
+        rotor=ross_rotor(),
+        mounts=(mount,),
+        time_step=H,
+        steps=2,
+        integrator=PC,
+    )
+    result = ALB.build_simulation(config).run()
+    diagnostics = result.metadata["predictor_corrector_diagnostics"]
+    assert result.metadata["complete"] is True
+    assert diagnostics["trial_modes"] == ("checkpoint",)
+    assert diagnostics["spool_trials"] == spool_trials
+    assert diagnostics["steps"] == 2
+    assert diagnostics["nonconverged_steps"] == 0
+    assert np.all(np.isfinite(result.bearing_force))
+    if provider is not None:
+        # Trials are rolled back: only the committed samples remain.
+        np.testing.assert_allclose(provider.samples, np.arange(3) * H)
+        assert provider.evaluations > len(provider.samples)
 
 
 # ---------------------------------------------------------------------------

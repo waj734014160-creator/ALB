@@ -528,17 +528,61 @@ def test_stiff_damper_plain_iteration_does_not_converge_and_warns_once() -> None
 
 def test_stiff_damper_nonconvergence_raise_seals_the_step() -> None:
     bearing = AnalyticBearing(linear_law(3.0e4, STIFF_DAMPING))
+    rotor = RossRotor(SinglePlant(), speed=1.0, dt=1.0e-3)
+    runtime = _RotorBearingStepRuntime(
+        rotor,
+        TimeIterDt(1.0e-3, 3),
+        CoupledBearingBinding(bearing, node_link=0),
+        integrator=PC,
+        predictor_corrector_options=PredictorCorrectorOptions(
+            relaxation="none",
+            max_iterations=8,
+            on_nonconvergence="raise",
+        ),
+    )
+    runtime.add_static_force(STATIC_FORCE, 0)
+    runtime._reset_for_owner()
     with pytest.raises(CouplingIterationError):
-        _run(
-            bearing,
-            time_step=1.0e-3,
-            end_time=3.0e-3,
-            options=PredictorCorrectorOptions(
-                relaxation="none",
-                max_iterations=8,
-                on_nonconvergence="raise",
-            ),
-        )
+        for index in range(1, 4):
+            runtime.advance(
+                StepContext(index, 1.0e-3 * index, 1.0e-3, UnitSystem.DIMENSIONAL)
+            )
+    snapshot = runtime.failure_snapshot()
+    assert snapshot.metadata["integrator"] == PC
+    assert snapshot.metadata["phase"] == "advance"
+    assert snapshot.metadata["physical_step_committed"] is False
+    assert snapshot.metadata["error_type"] == "CouplingIterationError"
+    with pytest.raises(RuntimeError, match="invalid"):
+        runtime.output()
+    # The step that ended the run is counted with its eight trials.
+    diagnostics = runtime._pc.diagnostics()
+    assert diagnostics["nonconverged_steps"] == 1
+    assert diagnostics["trial_iterations"] == bearing.probes
+    assert dict(diagnostics["iterations_per_step"]["histogram"])[8] == 1
+
+
+def test_warn_commits_the_last_iterate() -> None:
+    """One trial without convergence commits exactly the PECE step."""
+
+    states, forces = [], []
+    for options in (
+        PredictorCorrectorOptions(mode="pece"),
+        PredictorCorrectorOptions(rtol=0.0, atol=1.0e-12, max_iterations=1),
+    ):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            runtime = _run(
+                _hardening(),
+                time_step=1.0e-3,
+                end_time=0.02,
+                options=options,
+            )
+        issued = [item for item in caught if issubclass(item.category, CouplingIterationWarning)]
+        assert len(issued) == (0 if options.mode == "pece" else 1)
+        states.append(_state(runtime))
+        forces.append(np.asarray(runtime._pc._forces).copy())
+    np.testing.assert_array_equal(states[0], states[1])
+    np.testing.assert_array_equal(forces[0], forces[1])
 
 
 @pytest.mark.parametrize("relaxation", ["aitken", "iqn_ils"])
@@ -677,6 +721,55 @@ def test_trial_failure_restores_the_bearing_and_seals_the_step() -> None:
     assert snapshot.metadata["attempted_context"]["step_index"] == len(committed) + 1
     with pytest.raises(RuntimeError, match="invalid"):
         runtime.output()
+    # Completed trials of the failed step are counted as well.
+    diagnostics = runtime._pc.diagnostics()
+    histogram = dict(diagnostics["iterations_per_step"]["histogram"])
+    assert sum(histogram.values()) == len(committed) + 1
+    assert sum(trials * steps for trials, steps in histogram.items()) == (
+        diagnostics["trial_iterations"]
+    )
+
+
+@pytest.mark.parametrize("mode", ["pece", "iterate"])
+def test_two_bearings_are_trialled_on_the_same_rotor_state(mode: str) -> None:
+    """Jacobi update with two bindings matches one bearing with the summed law."""
+
+    steps = 20
+    time_step = 1.0e-3
+
+    def run(bearings: tuple[AnalyticBearing, ...]) -> _RotorBearingStepRuntime:
+        rotor = RossRotor(SinglePlant(), speed=1.0, dt=time_step)
+        runtime = _RotorBearingStepRuntime(
+            rotor,
+            TimeIterDt(time_step, steps),
+            *(CoupledBearingBinding(bearing, node_link=0) for bearing in bearings),
+            integrator=PC,
+            predictor_corrector_options=PredictorCorrectorOptions(mode=mode),
+        )
+        runtime.add_static_force(STATIC_FORCE, 0)
+        runtime.add_unbalance(node_link=0, **UNBALANCE)
+        runtime._reset_for_owner()
+        for index in range(1, steps + 1):
+            runtime.advance(
+                StepContext(index, time_step * index, time_step, UnitSystem.DIMENSIONAL)
+            )
+        return runtime
+
+    pair = (
+        AnalyticBearing(linear_law(1.0e4, 10.0)),
+        AnalyticBearing(linear_law(2.0e4, 30.0)),
+    )
+    split = run(pair)
+    single = run((AnalyticBearing(linear_law(3.0e4, 40.0)),))
+    diagnostics = split._pc.diagnostics()
+    assert diagnostics["trial_evaluations"] == 2 * diagnostics["trial_iterations"]
+    assert diagnostics["commit_evaluations"] == 2 * diagnostics["commits"]
+    for bearing in pair:
+        assert bearing.probes == diagnostics["trial_iterations"]
+        assert bearing.evaluations == steps + 1
+    if mode == "pece":
+        assert diagnostics["trial_iterations"] == steps
+    np.testing.assert_allclose(_state(split), _state(single), rtol=1.0e-7, atol=1.0e-12)
 
 
 def test_non_finite_trial_force_is_a_sealed_failure() -> None:

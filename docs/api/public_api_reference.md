@@ -1881,7 +1881,7 @@ print(bundle.metadata["schema"], manifest)
 | `rotor_displacement` | `FloatArray` | 是 | `-` | 位置或关键字 | 形状为 (n, ndof) 或策略过滤后的转子位移历史。 |
 | `rotor_velocity` | `FloatArray` | 是 | `-` | 位置或关键字 | 与 rotor_displacement 同形状的速度历史。 |
 | `bearing_force` | `FloatArray` | 是 | `-` | 位置或关键字 | 首维为 n 的挂载轴承二维力历史。 |
-| `metadata` | `Mapping[str, Any]` | 是 | `-` | 位置或关键字 | 完成状态、提交步数、history 模式等诊断；ROS2、控制周期或 initial_rotor_state 运行另含 integrator、time_step、control_periods、time_step_adjustment、ros2_options 和 initial_rotor_state。 |
+| `metadata` | `Mapping[str, Any]` | 是 | `-` | 位置或关键字 | 完成状态、提交步数、history 模式等诊断；ROS2、预测-校正、控制周期或 initial_rotor_state 运行另含 integrator、time_step、control_periods、time_step_adjustment、ros2_options 和 initial_rotor_state，预测-校正运行还含 predictor_corrector_options 和 predictor_corrector_diagnostics。 |
 | `convergence` | `ConvergenceStatus` | 否 | `ConvergenceStatus(residual=0.0, converged=True, iterations=None, message='')` | 位置或关键字 | 整次仿真的收敛或完成状态。 |
 
 输出：`ALB.SimulationResult`。构造 SimulationResult；普通用户通常从 RotorBearingSimulation.run() 获得。
@@ -1911,7 +1911,7 @@ print(bundle.metadata["schema"], manifest)
 | `rotor_displacement` | `FloatArray` | `-` | 形状为 (n, ndof) 或策略过滤后的转子位移历史。 |
 | `rotor_velocity` | `FloatArray` | `-` | 与 rotor_displacement 同形状的速度历史。 |
 | `bearing_force` | `FloatArray` | `-` | 首维为 n 的挂载轴承二维力历史。 |
-| `metadata` | `Mapping[str, Any]` | `-` | 完成状态、提交步数、history 模式等诊断；ROS2、控制周期或 initial_rotor_state 运行另含 integrator、time_step、control_periods、time_step_adjustment、ros2_options 和 initial_rotor_state。 |
+| `metadata` | `Mapping[str, Any]` | `-` | 完成状态、提交步数、history 模式等诊断；ROS2、预测-校正、控制周期或 initial_rotor_state 运行另含 integrator、time_step、control_periods、time_step_adjustment、ros2_options 和 initial_rotor_state，预测-校正运行还含 predictor_corrector_options 和 predictor_corrector_diagnostics。 |
 | `convergence` | `ConvergenceStatus` | `ConvergenceStatus(residual=0.0, converged=True, iterations=None, message='')` | 整次仿真的收敛或完成状态。 |
 
 公开成员：

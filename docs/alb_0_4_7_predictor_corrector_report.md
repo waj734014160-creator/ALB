@@ -3,7 +3,7 @@
 - 分支：`claude/alb-0.4.7`，自 `origin/claude/alb-0.4.6` 末端 `51cce0b` 分出（见第 3 节第 1 条）。
 - 第一个提交 `ad212c8 test: freeze pre-0.4.7 staggered paths of stateful bearings` 只做修改前参考冻结（参考在未修改的 `9432c06` 上生成），之后才开始功能修改。
 - 本报告由云端会话生成；数值环境、命令和结果均为实际执行记录，未执行项单独说明。
-- **结论概要：** 新增可选积分器 `integrator="predictor_corrector"`，保持轴承黑箱（不求导、不拆模型），支持热模型和主动轴承；在全部解析算例上为二阶（staggered 一阶），刚性算例中 Aitken 与 IQN-ILS 在 4 次试算内收敛。staggered、ROS2 和全部既有参考逐位不变。真实模型（M42 代理、hb34 FEM 液膜、热模型、本地热记忆与 LSTM 代理）的核对待用户本地完成。
+- **结论概要：** 新增可选积分器 `integrator="predictor_corrector"`，保持轴承黑箱（不求导、不拆模型），支持热模型和主动轴承；在线性、硬化、记忆解析算例及 `m = 1` 的采样主动解析算例上为二阶（staggered 一阶），`m > 1` 时受阀的一阶保持插值限制降为一阶（第 2.2 节）；刚性算例中 Aitken 与 IQN-ILS 在 4 次试算内收敛。staggered、ROS2 和全部既有参考逐位不变。真实模型（M42 代理、hb34 FEM 液膜、热模型、本地热记忆与 LSTM 代理）的核对待用户本地完成。
 
 ## 1. 改动清单
 
@@ -12,17 +12,17 @@
 | 文件 | 改动 |
 | --- | --- |
 | `ALB/dynamics/predictor_corrector.py`（新） | `PredictorCorrectorOptions`（第 2.5 节默认值，冻结 dataclass，`to_dict()` 含 `unused_in_pece`）；迭代更新 `FixedPointUpdate`（`none`/`constant`）、`AitkenRelaxation`、`IQNILSAccelerator`（QR 最小二乘，`|R_ii| < 1e-10 ‖r‖` 列丢弃，可选跨步复用）；试算适配器 `_BearingTrial`（`probe` 或 `checkpoint`，外部阀芯 `provider_checkpoint` 或 `held_per_step`）；耦合积分器 `PredictorCorrectorCouplingIntegrator`（第 2.2 节流程、Jacobi 更新、诊断计数）；`CouplingIterationWarning`、`CouplingIterationError`、`CouplingTrialError`。 |
-| `ALB/dynamics/coupling.py` | `_RotorBearingStepRuntime` 接受 `integrator="predictor_corrector"` 与 `predictor_corrector_options`；新增 `_reset_predictor_corrector()`、`_advance_predictor_corrector()` 和失败快照中的诊断。`_advance_staggered()` 与 ROS2 路径语句不变。 |
+| `ALB/dynamics/coupling.py` | `_RotorBearingStepRuntime` 接受 `integrator="predictor_corrector"` 与 `predictor_corrector_options`；新增 `_reset_predictor_corrector()`、`_advance_predictor_corrector()`，以及 `diagnostic_snapshot()` 中的 `predictor_corrector` 诊断。`_advance_staggered()` 与 ROS2 路径语句不变。 |
 | `ALB/dynamics/rotor.py` | `RossRotor._propagate_trial(x0, force0, force1)`：与 `_propagate` 同一套公式（连续模型一阶保持精确离散，离散模型照搬 `_run_discrete`），不改动对象状态；`_propagate` 语句不变。 |
 | `ALB/dynamics/ros2.py` | `INTEGRATORS` 增加 `"predictor_corrector"`，ROS2 代码不变。 |
-| `ALB/core/checkpoint.py`（新） | 组件快照工具：`ComponentSnapshot`、`capture_components()`、`RuntimeCheckpoint(owner, components, children)`、`require_checkpoint_token()`。快照保存时变对象的属性字典，字典、列表、数组原地恢复以保持共享引用一致；网格、FEM 组装对象、torch 模型只保留引用。 |
+| `ALB/core/checkpoint.py`（新） | 组件快照工具：`ComponentSnapshot`、`capture_components()`、`RuntimeCheckpoint(owner, components, children)`、`require_checkpoint_token()`。快照保存时变对象的属性字典，字典（递归到字典值）、列表、集合、数组原地恢复以保持共享引用一致；网格、FEM 组装对象、torch 模型只保留引用。 |
 | `ALB/contracts/bearing.py`、`ALB/contracts/__init__.py` | 新契约 `CheckpointableRuntimeProtocol`（`checkpoint() -> object`、`restore(token) -> None`）。 |
 | `ALB/physics/film/solver.py` | `FilmSystem._checkpoint_components()`：模型参数、压力迭代、节点场、膜厚模型、后处理、节流器缓冲与可选保存历史。 |
 | `ALB/physics/bearing/solver.py` | 液膜混合 runtime 的 `checkpoint()`/`restore()`；`MultiPad.probe_force_supported`、`checkpoint()`/`restore()`（委托子瓦）。 |
 | `ALB/physics/thermal/solver.py` | 热包装（量纲/无量纲、稳态/瞬态）的 `checkpoint()`/`restore()`：`_temperature_prev`、`_last_thermal`、热网格与后处理记录，以及内部液膜令牌。 |
 | `ALB/physics/gas/runtime.py`、`ALB/surrogate/runtime.py` | 气膜与代理 runtime 的 `checkpoint()`/`restore()`（供多瓦委托）。 |
-| `ALB/systems/alb/runtime.py` | 主动轴承 `ALB`/`NodimALB`/`ALBSV`/`NodimALBSV`：`probe_force_supported`、`checkpoint()`/`restore()`（控制器记忆、`_control_counter`、`_held_command`、阀状态与一阶保持输入记忆、节流器、各瓦令牌、生命周期）。 |
-| `ALB/api/simulation.py` | `SimulationConfig.integrator` 增加 `"predictor_corrector"`、新字段 `predictor_corrector`；转子 owner hook 与拓扑校验；文件配置 `time_grid.predictor_corrector`；只在新格式下写入 `predictor_corrector_options`、`predictor_corrector_diagnostics`。 |
+| `ALB/systems/alb/runtime.py` | 主动轴承 `ALB`/`NodimALB`/`ALBSV`/`NodimALBSV`：`probe_force_supported`、`checkpoint()`/`restore()`（控制器记忆、`_control_counter`、`_held_command`、阀状态与一阶保持输入记忆、节流器、各瓦令牌、生命周期；控制器自身实现协议时委托给控制器）。 |
+| `ALB/api/simulation.py` | `SimulationConfig.integrator` 增加 `"predictor_corrector"`、新字段 `predictor_corrector`；转子 owner hook 与拓扑校验；文件配置 `time_grid.predictor_corrector`；只在新格式下向结果元数据和失败快照元数据（`build_failure_snapshot`）写入 `predictor_corrector_options`、`predictor_corrector_diagnostics`。 |
 | `ALB/api/building.py` | `_predictor_corrector_support_issue()`：唯一拒绝 `multi_pad` 内的外部阀芯子瓦，写明配置路径。 |
 | `ALB/api/_config_fields.py` | `SIMULATION_PREDICTOR_CORRECTOR_FIELDS`（10 个字段，配置参考分组 `time_grid_predictor_corrector`）。 |
 | `ALB/api/errors.py`、`ALB/api/__init__.py`、`ALB/__init__.py`、`ALB/dynamics/__init__.py` | 根符号 `CouplingIterationWarning`（共 29 个），高级导出 `ALB.dynamics.PredictorCorrectorOptions`；`__version__ = "0.4.7"`。 |
@@ -36,9 +36,9 @@
 | `tests/regression/api/test_coupling_staggered_pre_0_4_7_reference.py` | 上述 5 例精确相等。 |
 | `tools/reference/generate_predictor_corrector_0_4_7_reference.py`、`refs/predictor_corrector_0_4_7_reference_v1.json/.npz` | 由完成后的实现（`a1eb59b`）生成的新行为参考：液膜 iterate、液膜 PECE、瞬态热液膜、采样主动 PID（`Ts = 3.5h`，IQN-ILS）、外部阀芯（held）、记忆解析轴承、硬化解析轴承（IQN-ILS）。 |
 | `tests/regression/dynamics/test_predictor_corrector_0_4_7_reference.py` | 新行为参考 7 例精确相等（数组与诊断元数据）。 |
-| `tests/unit/physics/test_bearing_checkpoint_0_4_7.py` | 存档/回退契约（69 项），17 个族/替身 × {3 次试算后回退与孪生对象逐位相同、A4 式 20 步每步插 2 次试算、失败试算后回退的生命周期}，以及协议实现、令牌绑定、provider 回退、热包装不转发、多瓦子瓦缺协议拒绝、液膜失败试算回退。 |
-| `tests/unit/dynamics/test_predictor_corrector_0_4_7.py` | 积分器核心（44 项）：选项校验、Aitken 两步得不动点、IQN-ILS 迭代次数 ≤ 维数 + 2、线性轴承对矩阵指数精确解（误差比约 4，staggered 约 2）、硬化轴承自收敛并与 ROS2/staggered 收敛到同一解、记忆轴承（ROS2 拒绝）、采样主动轴承控制器计数、刚性算例、求值计数、不收敛 warn/raise、试算失败回退、非有限值、离散转子、`_propagate_trial` 与 `_propagate` 逐位一致。 |
-| `tests/unit/api/test_predictor_corrector_simulation_0_4_7.py` | 公开 API 层（28 项）：真实小网格瞬态热液膜运行与诊断字段、选项与拓扑校验（含路径）、文件配置解析、控制周期组合、默认/ROS2 元数据键集合不变、`write()`、失败封存与 `partial_result`、主动/外部阀芯/多瓦。 |
+| `tests/unit/physics/test_bearing_checkpoint_0_4_7.py` | 存档/回退契约（80 项）：18 个族/替身（含开启压力/膜厚保存历史的液膜、`control_period` 为 3 步的主动 PID）× {协议实现、3 次试算后回退与孪生对象逐位相同、A4 式序列每步插 2 次试算（20 步，见第 3 节第 14 条）、失败试算后回退的生命周期}，以及令牌绑定、热包装不转发、`LinearSpoolProvider` 回退与 20 步孪生比较、多瓦子瓦缺协议拒绝、液膜失败试算回退、嵌套字典（历史列表字典、`defaultdict`、自引用字典）原地恢复、控制器自带协议时的委托。 |
+| `tests/unit/dynamics/test_predictor_corrector_0_4_7.py` | 积分器核心（48 项）：选项校验、Aitken 两步得不动点、IQN-ILS 迭代次数 ≤ 维数 + 2、线性轴承对矩阵指数精确解（误差比约 4，staggered 约 2）、硬化轴承自收敛并与 ROS2/staggered 收敛到同一解、记忆轴承（ROS2 拒绝）、采样主动轴承控制器计数、刚性算例、求值计数、两个轴承的 Jacobi 试算与计数、不收敛 warn（与 PECE 逐位相同，即提交最后一次迭代）/raise（封存、运行时失效、诊断计入失败步）、试算失败回退与计数、非有限值、多瓦子瓦缺协议在 reset 时拒绝、离散转子、`_propagate_trial` 与 `_propagate` 逐位一致。 |
+| `tests/unit/api/test_predictor_corrector_simulation_0_4_7.py` | 公开 API 层（30 项）：真实小网格瞬态热液膜运行与诊断字段、选项与拓扑校验（含路径）、文件配置解析、控制周期组合、默认/ROS2 元数据键集合不变、`write()`、失败封存与 `partial_result`、主动/外部阀芯/多瓦、带热主动 PID 与带热外部阀芯（可存档 provider）。 |
 | `tests/_support/dynamics/memory_bearings.py`（新） | `MemoryAnalyticBearing`（刚度向偏心相关平衡值一阶松弛，指数衰减 + 输入梯形二阶推进，只在提交时更新，`probe_force=None`）和 `SampledActiveAnalyticBearing`（采样控制器 + 一阶阀，阀输入可选一阶保持或零阶保持）。 |
 | `tests/_support/dynamics/analytic_bearings.py` | `LinearSpoolProvider` 实现存档协议并计数；新增 `OpaqueLinearSpoolProvider`（无协议，覆盖 held 情形）。 |
 | `tests/_support/state_fingerprint.py`（新） | 递归状态指纹，用于核对存档覆盖是否完整。 |
@@ -76,7 +76,7 @@
 | `multi_pad` 内外部阀芯子瓦 | — | — | **拒绝**（`ConfigurationError`，写明 `mounts[i].config.pads[j]` 路径）：复合体没有 spool provider |
 | 外部阀芯 provider | 实现协议：每次试算用试算输入调用，与轴承一起回退（`provider_checkpoint`）；未实现：提交时采样一次，下一步试算保持（`held_per_step`，一阶） | `LinearSpoolProvider`：内部状态与计数 | 满足（测试替身） |
 
-带热模型的主动轴承由“主动轴承存档 + 热子瓦存档”组合直接支持，已测试（`active_pid_thermal`、`external_spool_thermal`、`nondimensional_external_spool_thermal` 三族的契约测试，以及 0.4.7 参考中的 `thermal_transient`）。元素矩阵和全局装配矩阵每次求解都从当前膜厚重建，属于求解器临时量，不存档；状态指纹核对显示除这类临时量外没有残余差异。
+带热模型的主动轴承由“主动轴承存档 + 热子瓦存档”组合直接支持，已测试：`active_pid_thermal`、`external_spool_thermal`、`nondimensional_external_spool_thermal` 三族的契约测试，以及 API 层 `test_active_bearings_with_thermal_pads_run_through_checkpoints`（带热主动 PID 与带热外部阀芯 + 可存档 provider 经预测-校正运行，`trial_modes == ("checkpoint",)`）。元素矩阵和全局装配矩阵每次求解都从当前膜厚重建，属于求解器临时量，不存档；状态指纹核对显示除这类临时量外没有残余差异。
 
 ### 2.2 主动轴承黑箱内的阀（第 2 条）
 
@@ -108,7 +108,7 @@
 - 每次试算都从已提交状态把热场推进一次（后向欧拉，模型自身的时间离散），然后回退；提交时再推进一次。这是热模型自身的时间离散，与耦合精度无关；收敛后，提交时的轴颈输入与最后一次试算的输入只差界面容差量级。
 - 全部步收敛，无不收敛步；iterate 的事后一致性残差最大 5.6e-7 N，PECE 为 1.26 N（合力约 79 N）。
 - 10 步后轴承力：staggered `[0.300, 81.70]` N，iterate `[0.249, 79.31]` N，PECE `[0.249, 79.33]` N；起始瞬态中 staggered 的一步滞后误差约 3%。
-- 存档令牌在小网格上约 0.5～5 ms，相对 FEM 求解可忽略；代价主要来自试算次数。
+- 存档与回退的代价：小网格主动 PID 在第 0 步存档约 3.4 ms、每次回退约 1.4 ms，第 3000 步约 6.2 ms 与 2.2 ms；瞬态热液膜约 0.9 ms 与 0.3 ms（并行负载下测得，单步求值约 80～230 ms）。令牌复制控制器、阀、液膜结果等追加式历史，因此代价随已提交步数线性增长，整次运行的累计代价随步数二次增长；按上述斜率外推到 2.4 万步，每步约增加 50 ms，在 FEM 求解为主的算例中仍是次要项，代价主要来自试算次数（见第 3 节第 17 条）。
 
 无热小网格液膜（`h = 2e-5 s`、40 步，探测试算）：Aitken 每步 2.3 次试算、最大 4 次，耗时为 staggered 的 1.84 倍；`none` 4.8 次、最大 8 次，3.35 倍；PECE 1.67 倍。
 
@@ -130,7 +130,7 @@
 | 方案 | `c = 2000`（ρ≈0.5） | `c = 8000`（ρ≈2） | `c = 20000`（ρ≈5） |
 | --- | --- | --- | --- |
 | `none` | 均值 10.8、最大 20 次（2 步达到上限，`warn` 提交） | 发散（`FloatingPointError`） | 发散（`FloatingPointError`） |
-| `constant`（ω = 0.5） | 均值 6.3、最大 12 次 | 均值 10.1、最大 20 次（3 步不收敛） | 发散（不收敛后提交，下一步力非有限，`ValueError`） |
+| `constant`（ω = 0.5） | 均值 6.3、最大 12 次 | 均值 10.1、最大 20 次（3 步不收敛） | 发散：前 40 步均不收敛并按 `warn` 提交（只警告一次），力逐步增大，第 41 步提交时力非有限（输出 DTO 校验 `ValueError`） |
 | `aitken` | 均值 2.1、最大 4 次，ω ∈ [0.50, 0.67] | 均值 2.1、最大 4 次，ω ∈ [0.33, 0.50] | 均值 2.4、最大 4 次，ω ∈ [0.17, 0.50] |
 | `iqn_ils` | 均值 3.1、最大 4 次 | 均值 3.1、最大 4 次 | 均值 3.4、最大 4 次 |
 | PECE | 稳定，误差 2.6e-3（iterate 2.2e-3） | **失稳**（误差 2e46） | **失稳**（误差 3e90） |
@@ -168,26 +168,27 @@ Aitken 收敛到的 ω 与最优值 `1/(1+ρ)`（0.67、0.33、0.17）一致；�
 1. **起点提交。** 任务指定起点 `9432c06`，但 `origin/claude/alb-0.4.6` 末端是 `51cce0b`（在 `9432c06` 之后只改 docstring 和文档，把 ROS2 标为功能不完善）。分支从 `51cce0b` 分出以保留该标记；修改前参考在未改动的 `9432c06` 上生成（两者 Python 运行代码相同）。
 2. **格式名和选项。** 格式名 `"predictor_corrector"`；选项默认值与任务第 2.5 节完全相同；文件配置位置为 `spec.time_grid.predictor_corrector`，只能与该积分器同时出现，省略或 `null` 用全部默认值。
 3. **PECE 下的迭代选项。** 选择“校验但忽略”：`mode="pece"` 时 `relaxation`、`omega`、`omega_bounds`、`iqn_reuse_steps`、`rtol`、`atol`、`max_iterations`、`on_nonconvergence` 仍校验，不起作用，`to_dict()["unused_in_pece"]` 列出这些字段，docstring 和迁移说明写明。另一方案是对非默认值报错。
-4. **存档协议命名。** `ALB.contracts.CheckpointableRuntimeProtocol`（`checkpoint()`/`restore(token)`），令牌为不透明对象，只能回退到创建它的 runtime，可重复回退。另新增只读属性 `probe_force_supported`（`MultiPad` 与主动轴承），用于报告子瓦是否都可探测。
-5. **既不能探测也不能存档的 runtime。** 自定义 runtime 若既无可用 `probe_force` 也无协议，在 reset 时以 `TypeError` 拒绝（不是 `ConfigurationError`，因为在配置阶段无法看到自定义 runtime 的能力）；随包族在配置阶段全部通过。ROS2 对此类 runtime 的行为不变。
+4. **存档协议命名。** `ALB.contracts.CheckpointableRuntimeProtocol`（`checkpoint()`/`restore(token)`），令牌为不透明对象，只能回退到创建它的 runtime，可重复回退。另新增只读属性 `probe_force_supported`（`MultiPad` 与主动轴承），用于报告子瓦是否都可探测。主动轴承的控制器若自身实现 `checkpoint()`/`restore()`，存档委托给控制器，否则按组件快照保存控制器属性（含历史列表字典）。
+5. **既不能探测也不能存档的 runtime。** 自定义 runtime 若既无可用 `probe_force` 也无协议，在 reset 时以 `TypeError` 拒绝（不是 `ConfigurationError`，因为在配置阶段无法看到自定义 runtime 的能力）；子瓦不支持存档的程序化复合体（多瓦、主动轴承）同样在 reset 时拒绝，而不是拖到第一步；随包族在配置阶段全部通过。ROS2 对此类 runtime 的行为不变。
 6. **做不到逐位契约的情形。** 协议本身对全部随包族逐位满足。唯一例外在探测路径：带液膜节流器的无热液膜按任务要求用 `probe_force` 试算，探测会覆盖节流器滚动缓冲，只影响下一次提交求解的停止迭代次数，差异在求解容差内（与 0.4.6 ROS2 相同）。若需要逐位，可把这类液膜改走存档路径（代价约为一次令牌复制），请确认。
 7. **未实现存档的 provider。** 与 ROS2 相同，提交时采样一次，下一步试算保持，阀芯通道一阶；诊断中记为 `spool_trials: "held_per_step"`，docstring 与迁移说明已写明。
 8. **阀指令插值。** 见第 2.2 节建议：`m > 1` 时改为采样时刻跳变的零阶保持可恢复二阶，但会改变既有控制周期数值，需单独立项。本次未改。
 9. **离散转子输出。** 预测-校正支持离散 `RossRotor`；其 `results()`/`result_uxy()` 输出与提交状态对齐，而 staggered 离散路径输出上一步状态。已写入迁移说明。
-10. **外部载荷日志。** 与 ROS2 相同，外部载荷用不写日志的 `force_at`，`UnbalancedExcitation.results` 不记录预测-校正运行的载荷。
-11. **IQN-ILS 细节。** `iqn_reuse_steps > 0` 时，前几步的列只在本步 `k >= 1` 时并入最小二乘（`k = 0` 仍用 `omega` 松弛），与任务公式的 `k = 0` 行一致；最小二乘最多保留界面维数个最新列；所有列都被丢弃时退回 `omega` 松弛。
+10. **外部载荷日志。** 与 ROS2 相同，步进中的外部载荷用不写日志的 `force_at`，`UnbalancedExcitation.results` 只记录 reset 时 `t0` 的初始载荷（staggered 每步记录）。
+11. **IQN-ILS 细节。** `iqn_reuse_steps > 0` 时，前几步的列只在本步 `k >= 1` 时并入最小二乘（`k = 0` 仍用 `omega` 松弛），与任务公式的 `k = 0` 行一致；最小二乘最多保留界面维数个最新列；所有列都被丢弃时退回 `omega` 松弛。列丢弃阈值按任务公式取 `1e-10 ‖r^k‖`；代码评审指出该阈值随残差趋零，收敛末段可能保留近似相关的列，可改为相对 `max|R_ii|` 的阈值。本次按任务公式实现，未改。
 12. **警告与异常的位置。** `CouplingIterationWarning` 定义在 `ALB/dynamics/predictor_corrector.py`，由 `ALB.api.errors` 再导出为根符号（与 `TimeStepAdjustedWarning` 不同，后者定义在 `ALB.api.errors`），以免 `ALB.dynamics` 依赖 `ALB.api`。`CouplingIterationError`、`CouplingTrialError` 不进入公开 API，`run()` 把它们包装为 `SimulationError`。
 13. **参考生成脚本依赖测试替身。** `tools/reference/generate_predictor_corrector_0_4_7_reference.py` 从 `tests/_support` 导入解析转子与记忆轴承，并复用 0.4.6 ROS2 生成脚本中的解析对象，以保证参考与单元测试使用同一模型。
-14. **热主动轴承的 A4 测试步数。** 契约测试中 A4 式序列默认 20 步；带热的主动族和无量纲热族为控制运行时间用 4 步（其余族 20 步）。
+14. **A4 测试步数。** 契约测试中 A4 式序列对 17 个族/替身为 20 步；`nondimensional_external_spool_thermal` 为 4 步，因为该小网格无量纲瞬态热模型在不插入任何试算时也在第 5 个输入处热迭代不收敛（模型自身的问题，与存档无关）。
 15. **分层 mypy。** 未改动发布门禁基线 `tools/validation/mypy_layer_baseline_0_4.json`（在 0.4.6 起点已过期）；本次的精确增量见第 5.4 节。
 16. **发布动作。** 未打 tag，未写发布验收记录，未修改 `.github/workflows/`。是否把 0.4.7 分支纳入文档自动发布、是否做正式发布验收，由用户决定。
+17. **存档代价随运行长度增长。** 通用组件快照复制追加式历史（阀的 `ts`/`u`/`yout`/`xout`、控制器结果表、液膜结果表、节流器记录、可选保存历史），单次存档/回退为 O(已提交步数)。本次保持“完整复制”以确保逐位契约，未做按长度截断的优化（需要逐类确认哪些历史只追加）。若长时程运行中成为瓶颈，可作为后续优化立项。
 
 ## 4. 本地核对建议
 
 - M42 准稳态代理：`SimulationConfig(integrator="predictor_corrector", initial_rotor_state=x_eq, ...)`，先用默认 Aitken；每转 400 步与 staggered 细步长解或 ROS2（每 20 步重算 `J`）比较幅值误差，同时查看 `predictor_corrector_diagnostics` 的 `iterations_per_step` 与 `nonconverged_steps`。
 - hb34 FEM 液膜：关注 `nonconverged_steps`、`max_final_residual` 与 `residual_ratio.max`。若力在网格尺度上的跳变导致迭代来回振荡，可先确认 `rtol` 不小于求解器容差，再比较 `"iqn_ils"`；不收敛步在 `warn` 下提交最后一次迭代并只警告一次。
 - 热模型与本地热记忆/LSTM 代理：按 ADR-0010“显式状态模型的接入方式”实现 `checkpoint()`/`restore()` 后可直接使用；建议先用 `tests/unit/physics/test_bearing_checkpoint_0_4_7.py` 的三类契约测试（3 次试算后回退与孪生对象逐位相同、A4 式序列、失败试算后回退）核对实现。
-- 跨平台复核参考：在 `9432c06` 上运行 `tools/reference/generate_coupling_staggered_pre_0_4_7_reference.py --json <file> --npz <file>` 生成本地修改前参考，在本分支用 `generate_predictor_corrector_0_4_7_reference.py` 生成新行为参考，分别设置 `ALB_COUPLING_STAGGERED_PRE_0_4_7_NPZ`/`_JSON` 与 `ALB_PREDICTOR_CORRECTOR_0_4_7_NPZ`/`_JSON` 运行回归测试；仓库中提交的参考不重新生成。
+- 跨平台复核参考：把本分支的 `tools/reference/generate_coupling_staggered_pre_0_4_7_reference.py` 复制到 `9432c06` 的检出中，用 `--json <file> --npz <file>` 生成本地修改前参考，在本分支用 `generate_predictor_corrector_0_4_7_reference.py` 生成新行为参考，分别设置 `ALB_COUPLING_STAGGERED_PRE_0_4_7_NPZ`/`_JSON` 与 `ALB_PREDICTOR_CORRECTOR_0_4_7_NPZ`/`_JSON` 运行回归测试；仓库中提交的参考不重新生成。
 
 ## 5. 测试实际执行结果
 

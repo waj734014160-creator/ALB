@@ -87,7 +87,7 @@ ROS2 需要连续时间 `RossRotor`，支持无热模型的液膜、气膜、sur
 在 `t_k` 采样该时刻提交的状态，阀指令为零阶保持。因此同一 `Ts` 下两种积分器的受控
 响应只在 `O(h)` 意义下一致。
 
-只有 `integrator="ros2"`、声明了控制周期或给出 `initial_rotor_state` 时，
+只有 `integrator` 为 `"ros2"` 或 `"predictor_corrector"`、声明了控制周期或给出 `initial_rotor_state` 时，
 `SimulationResult.metadata` 才额外包含 `integrator`、`time_step`、`control_periods`、
 `time_step_adjustment`、`ros2_options` 和 `initial_rotor_state`；用户状态向量只记录为
 `"user-supplied"`，默认路径的元数据保持不变。`SimulationResult.write()` 可写出这些

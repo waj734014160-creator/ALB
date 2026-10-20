@@ -40,7 +40,7 @@ print(result.fx, result.fy)
 
 - [安装与能力组件](site/getting-started/installation.md)：选择 core 或 optional extra。
 - [配置字段参考](api/bearing_config_reference.md)：查询字段、单位、默认值和约束。
-- [根公开 API](api/public_api_reference.md)：查询 28 个稳定符号的真实签名。
+- [根公开 API](api/public_api_reference.md)：查询 29 个稳定符号的真实签名。
 - [公开接口边界](site/concepts/public-api-policy.md)：了解普通入口、高级 namespace 和内部实现的区别。
 
 !!! info "文档范围"
