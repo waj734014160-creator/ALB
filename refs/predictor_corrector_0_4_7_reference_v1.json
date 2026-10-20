@@ -1,0 +1,985 @@
+{
+  "cases": {
+    "active_pid_control_period": {
+      "arrays": {
+        "active_pid_control_period.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            17,
+            1,
+            2
+          ]
+        },
+        "active_pid_control_period.controller_outputs": {
+          "dtype": "float64",
+          "shape": [
+            5,
+            2
+          ]
+        },
+        "active_pid_control_period.controller_times": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "active_pid_control_period.rotor_displacement": {
+          "dtype": "float64",
+          "shape": [
+            17,
+            1,
+            2
+          ]
+        },
+        "active_pid_control_period.rotor_final_state": {
+          "dtype": "float64",
+          "shape": [
+            8
+          ]
+        },
+        "active_pid_control_period.rotor_velocity": {
+          "dtype": "float64",
+          "shape": [
+            17,
+            1,
+            2
+          ]
+        },
+        "active_pid_control_period.time": {
+          "dtype": "float64",
+          "shape": [
+            17
+          ]
+        }
+      },
+      "bearing_spec": {
+        "control": {
+          "control_period": 7.000000000000001e-05,
+          "frequency_hz": 50.0,
+          "gains": {
+            "feedforward": 0.0,
+            "kd": 0.01,
+            "ki": 0.5,
+            "kp": 1.0
+          },
+          "mode": "pid",
+          "sensor_angles_deg": [
+            45.0,
+            135.0
+          ]
+        },
+        "family": "active_lubricated",
+        "film": {
+          "axial_elements": 3,
+          "circumferential_elements": 5,
+          "max_iterations": 20,
+          "solver_tolerance": 1e-06
+        },
+        "node": 0,
+        "restrictors": {
+          "discharge_coefficient": 0.6,
+          "orifice_diameter": 0.002,
+          "orifice_length": 0.02,
+          "positions": [
+            [
+              0.5,
+              0.25
+            ],
+            [
+              0.5,
+              0.5
+            ],
+            [
+              0.5,
+              0.75
+            ]
+          ],
+          "valve_area": 1.22e-06
+        },
+        "tank": {
+          "depth_ratio": 2.0,
+          "x_range": [
+            0.49,
+            0.51
+          ],
+          "z_range": [
+            0.2,
+            0.8
+          ]
+        },
+        "thermal": null,
+        "time_step": 2e-05,
+        "transforms": {},
+        "unit_system": "dimensional",
+        "valve": {
+          "damping_ratio": 0.7,
+          "delay": 0.0,
+          "model": "second_order",
+          "natural_frequency_hz": 166.0
+        }
+      },
+      "result_metadata": {
+        "committed_steps": 17,
+        "complete": true,
+        "control_periods": [
+          {
+            "control_period": 7.000000000000001e-05,
+            "control_steps_per_period": 4,
+            "local_control_period": 7.000000000000001e-05,
+            "mount": 0,
+            "path": "mounts[0].config.control.control_period"
+          }
+        ],
+        "history_complete": true,
+        "history_downsample": 1,
+        "history_fields": [
+          "rotor_displacement",
+          "rotor_velocity",
+          "bearing_force"
+        ],
+        "history_mode": "memory",
+        "history_path": null,
+        "initial_rotor_state": null,
+        "integrator": "predictor_corrector",
+        "post_commit_complete": true,
+        "predictor_corrector_diagnostics": {
+          "aitken_omega_range": null,
+          "commit_evaluations": 17,
+          "commits": 17,
+          "integrator": "predictor_corrector",
+          "iterations_per_step": {
+            "histogram": [
+              [
+                3,
+                15
+              ],
+              [
+                4,
+                1
+              ]
+            ],
+            "max": 4,
+            "mean": 3.0625
+          },
+          "max_consistency_residual": 1.4403431033649383e-05,
+          "max_final_residual": 7.226291741424529e-05,
+          "nonconverged_steps": 0,
+          "residual_ratio": {
+            "count": 33,
+            "max": 0.4051924953375175,
+            "mean": 0.19659608731171152
+          },
+          "spool_trials": [
+            null
+          ],
+          "steps": 16,
+          "trial_evaluations": 49,
+          "trial_iterations": 49,
+          "trial_modes": [
+            "checkpoint"
+          ]
+        },
+        "predictor_corrector_options": {
+          "atol": 1e-06,
+          "iqn_reuse_steps": 0,
+          "max_iterations": 20,
+          "mode": "iterate",
+          "omega": 0.5,
+          "omega_bounds": [
+            0.01,
+            1.5
+          ],
+          "on_nonconvergence": "warn",
+          "predictor": "linear",
+          "relaxation": "iqn_ils",
+          "rtol": 1e-06,
+          "unused_in_pece": []
+        },
+        "requested_steps": 17,
+        "ros2_options": null,
+        "time_step": 1.7500000000000002e-05,
+        "time_step_adjustment": {
+          "control_period": 7.000000000000001e-05,
+          "control_steps_per_period": 4,
+          "end_time": 0.00028000000000000003,
+          "requested_end_time": 0.00024000000000000003,
+          "requested_steps": 12,
+          "requested_time_step": 2e-05,
+          "rule": "h' = Ts / ceil(Ts / h), or h' = Ts when h > Ts; steps = m * ceil(T / Ts)",
+          "steps": 16,
+          "time_step": 1.7500000000000002e-05
+        }
+      },
+      "warnings": [
+        {
+          "category": "TimeStepAdjustedWarning",
+          "message": "simulation time_step 2e-05 s is not an integer divisor of control_period 7.000000000000001e-05 s; using time_step 1.7500000000000002e-05 s with 4 step(s) per control period and 16 steps instead of 12 (end time 0.00028000000000000003 s, requested 0.00024000000000000003 s)"
+        }
+      ]
+    },
+    "external_spool_held": {
+      "arrays": {
+        "external_spool_held.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            11,
+            1,
+            2
+          ]
+        },
+        "external_spool_held.provider_samples": {
+          "dtype": "float64",
+          "shape": [
+            11
+          ]
+        },
+        "external_spool_held.rotor_displacement": {
+          "dtype": "float64",
+          "shape": [
+            11,
+            1,
+            2
+          ]
+        },
+        "external_spool_held.rotor_final_state": {
+          "dtype": "float64",
+          "shape": [
+            8
+          ]
+        },
+        "external_spool_held.rotor_velocity": {
+          "dtype": "float64",
+          "shape": [
+            11,
+            1,
+            2
+          ]
+        },
+        "external_spool_held.time": {
+          "dtype": "float64",
+          "shape": [
+            11
+          ]
+        }
+      },
+      "bearing_spec": {
+        "control": {
+          "mode": "external_spool"
+        },
+        "family": "active_lubricated",
+        "film": {
+          "axial_elements": 3,
+          "circumferential_elements": 5,
+          "max_iterations": 20,
+          "solver_tolerance": 1e-06
+        },
+        "node": 0,
+        "restrictors": {
+          "discharge_coefficient": 0.6,
+          "orifice_diameter": 0.002,
+          "orifice_length": 0.02,
+          "positions": [
+            [
+              0.5,
+              0.25
+            ],
+            [
+              0.5,
+              0.5
+            ],
+            [
+              0.5,
+              0.75
+            ]
+          ],
+          "valve_area": 1.22e-06
+        },
+        "tank": {
+          "depth_ratio": 2.0,
+          "x_range": [
+            0.49,
+            0.51
+          ],
+          "z_range": [
+            0.2,
+            0.8
+          ]
+        },
+        "thermal": null,
+        "time_step": 2e-05,
+        "transforms": {},
+        "unit_system": "dimensional",
+        "valve": {
+          "damping_ratio": 0.7,
+          "delay": 0.0,
+          "model": "second_order",
+          "natural_frequency_hz": 166.0
+        }
+      },
+      "result_metadata": {
+        "committed_steps": 11,
+        "complete": true,
+        "control_periods": [],
+        "history_complete": true,
+        "history_downsample": 1,
+        "history_fields": [
+          "rotor_displacement",
+          "rotor_velocity",
+          "bearing_force"
+        ],
+        "history_mode": "memory",
+        "history_path": null,
+        "initial_rotor_state": null,
+        "integrator": "predictor_corrector",
+        "post_commit_complete": true,
+        "predictor_corrector_diagnostics": {
+          "aitken_omega_range": [
+            0.5,
+            0.8234259869811851
+          ],
+          "commit_evaluations": 11,
+          "commits": 11,
+          "integrator": "predictor_corrector",
+          "iterations_per_step": {
+            "histogram": [
+              [
+                4,
+                9
+              ],
+              [
+                5,
+                1
+              ]
+            ],
+            "max": 5,
+            "mean": 4.1
+          },
+          "max_consistency_residual": 7.047312872864051,
+          "max_final_residual": 3.264935109470457e-05,
+          "nonconverged_steps": 0,
+          "residual_ratio": {
+            "count": 31,
+            "max": 0.39164885753536627,
+            "mean": 0.02645340966400781
+          },
+          "spool_trials": [
+            "held_per_step"
+          ],
+          "steps": 10,
+          "trial_evaluations": 41,
+          "trial_iterations": 41,
+          "trial_modes": [
+            "probe"
+          ]
+        },
+        "predictor_corrector_options": {
+          "atol": 1e-06,
+          "iqn_reuse_steps": 0,
+          "max_iterations": 20,
+          "mode": "iterate",
+          "omega": 0.5,
+          "omega_bounds": [
+            0.01,
+            1.5
+          ],
+          "on_nonconvergence": "warn",
+          "predictor": "linear",
+          "relaxation": "aitken",
+          "rtol": 1e-06,
+          "unused_in_pece": []
+        },
+        "requested_steps": 11,
+        "ros2_options": null,
+        "time_step": 2e-05,
+        "time_step_adjustment": null
+      },
+      "warnings": []
+    },
+    "hardening_iqn_ils": {
+      "arrays": {
+        "hardening_iqn_ils.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            401,
+            1,
+            2
+          ]
+        },
+        "hardening_iqn_ils.rotor_state_history": {
+          "dtype": "float64",
+          "shape": [
+            400,
+            8
+          ]
+        }
+      },
+      "diagnostics": {
+        "aitken_omega_range": null,
+        "commit_evaluations": 401,
+        "commits": 401,
+        "integrator": "predictor_corrector",
+        "iterations_per_step": {
+          "histogram": [
+            [
+              3,
+              400
+            ]
+          ],
+          "max": 3,
+          "mean": 3.0
+        },
+        "max_consistency_residual": 7.66053886991358e-12,
+        "max_final_residual": 2.5025155281355183e-09,
+        "nonconverged_steps": 0,
+        "options": {
+          "atol": 1e-06,
+          "iqn_reuse_steps": 0,
+          "max_iterations": 20,
+          "mode": "iterate",
+          "omega": 0.5,
+          "omega_bounds": [
+            0.01,
+            1.5
+          ],
+          "on_nonconvergence": "warn",
+          "predictor": "linear",
+          "relaxation": "iqn_ils",
+          "rtol": 1e-06,
+          "unused_in_pece": []
+        },
+        "residual_ratio": {
+          "count": 800,
+          "max": 0.498673052021919,
+          "mean": 0.24920987677558493
+        },
+        "spool_trials": [
+          null
+        ],
+        "steps": 400,
+        "trial_evaluations": 1200,
+        "trial_iterations": 1200,
+        "trial_modes": [
+          "probe"
+        ]
+      }
+    },
+    "liquid_film_iterate": {
+      "arrays": {
+        "liquid_film_iterate.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            41,
+            1,
+            2
+          ]
+        },
+        "liquid_film_iterate.rotor_displacement": {
+          "dtype": "float64",
+          "shape": [
+            41,
+            1,
+            2
+          ]
+        },
+        "liquid_film_iterate.rotor_final_state": {
+          "dtype": "float64",
+          "shape": [
+            8
+          ]
+        },
+        "liquid_film_iterate.rotor_velocity": {
+          "dtype": "float64",
+          "shape": [
+            41,
+            1,
+            2
+          ]
+        },
+        "liquid_film_iterate.time": {
+          "dtype": "float64",
+          "shape": [
+            41
+          ]
+        }
+      },
+      "bearing_spec": {
+        "family": "liquid_film",
+        "film": {
+          "axial_elements": 3,
+          "circumferential_elements": 5,
+          "eccentricity": 0.0,
+          "max_iterations": 20,
+          "solver_tolerance": 1e-06
+        },
+        "node": 0,
+        "restrictors": null,
+        "thermal": null,
+        "time_step": 2e-05,
+        "unit_system": "dimensional"
+      },
+      "result_metadata": {
+        "committed_steps": 41,
+        "complete": true,
+        "control_periods": [],
+        "history_complete": true,
+        "history_downsample": 1,
+        "history_fields": [
+          "rotor_displacement",
+          "rotor_velocity",
+          "bearing_force"
+        ],
+        "history_mode": "memory",
+        "history_path": null,
+        "initial_rotor_state": null,
+        "integrator": "predictor_corrector",
+        "post_commit_complete": true,
+        "predictor_corrector_diagnostics": {
+          "aitken_omega_range": [
+            0.5,
+            0.9224831074166332
+          ],
+          "commit_evaluations": 41,
+          "commits": 41,
+          "integrator": "predictor_corrector",
+          "iterations_per_step": {
+            "histogram": [
+              [
+                2,
+                30
+              ],
+              [
+                3,
+                9
+              ],
+              [
+                4,
+                1
+              ]
+            ],
+            "max": 4,
+            "mean": 2.275
+          },
+          "max_consistency_residual": 7.555595510050361e-06,
+          "max_final_residual": 7.91001630556995e-05,
+          "nonconverged_steps": 0,
+          "residual_ratio": {
+            "count": 51,
+            "max": 0.44904608586589406,
+            "mean": 0.010634988430268754
+          },
+          "spool_trials": [
+            null
+          ],
+          "steps": 40,
+          "trial_evaluations": 91,
+          "trial_iterations": 91,
+          "trial_modes": [
+            "probe"
+          ]
+        },
+        "predictor_corrector_options": {
+          "atol": 1e-06,
+          "iqn_reuse_steps": 0,
+          "max_iterations": 20,
+          "mode": "iterate",
+          "omega": 0.5,
+          "omega_bounds": [
+            0.01,
+            1.5
+          ],
+          "on_nonconvergence": "warn",
+          "predictor": "linear",
+          "relaxation": "aitken",
+          "rtol": 1e-06,
+          "unused_in_pece": []
+        },
+        "requested_steps": 41,
+        "ros2_options": null,
+        "time_step": 2e-05,
+        "time_step_adjustment": null
+      },
+      "warnings": []
+    },
+    "liquid_film_pece": {
+      "arrays": {
+        "liquid_film_pece.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            41,
+            1,
+            2
+          ]
+        },
+        "liquid_film_pece.rotor_displacement": {
+          "dtype": "float64",
+          "shape": [
+            41,
+            1,
+            2
+          ]
+        },
+        "liquid_film_pece.rotor_final_state": {
+          "dtype": "float64",
+          "shape": [
+            8
+          ]
+        },
+        "liquid_film_pece.rotor_velocity": {
+          "dtype": "float64",
+          "shape": [
+            41,
+            1,
+            2
+          ]
+        },
+        "liquid_film_pece.time": {
+          "dtype": "float64",
+          "shape": [
+            41
+          ]
+        }
+      },
+      "bearing_spec": {
+        "family": "liquid_film",
+        "film": {
+          "axial_elements": 3,
+          "circumferential_elements": 5,
+          "eccentricity": 0.0,
+          "max_iterations": 20,
+          "solver_tolerance": 1e-06
+        },
+        "node": 0,
+        "restrictors": null,
+        "thermal": null,
+        "time_step": 2e-05,
+        "unit_system": "dimensional"
+      },
+      "result_metadata": {
+        "committed_steps": 41,
+        "complete": true,
+        "control_periods": [],
+        "history_complete": true,
+        "history_downsample": 1,
+        "history_fields": [
+          "rotor_displacement",
+          "rotor_velocity",
+          "bearing_force"
+        ],
+        "history_mode": "memory",
+        "history_path": null,
+        "initial_rotor_state": null,
+        "integrator": "predictor_corrector",
+        "post_commit_complete": true,
+        "predictor_corrector_diagnostics": {
+          "aitken_omega_range": null,
+          "commit_evaluations": 41,
+          "commits": 41,
+          "integrator": "predictor_corrector",
+          "iterations_per_step": {
+            "histogram": [
+              [
+                1,
+                40
+              ]
+            ],
+            "max": 1,
+            "mean": 1.0
+          },
+          "max_consistency_residual": 2.0708707273902967,
+          "max_final_residual": 20.321019757114605,
+          "nonconverged_steps": 0,
+          "residual_ratio": {
+            "count": 0,
+            "max": null,
+            "mean": null
+          },
+          "spool_trials": [
+            null
+          ],
+          "steps": 40,
+          "trial_evaluations": 40,
+          "trial_iterations": 40,
+          "trial_modes": [
+            "probe"
+          ]
+        },
+        "predictor_corrector_options": {
+          "atol": 1e-06,
+          "iqn_reuse_steps": 0,
+          "max_iterations": 20,
+          "mode": "pece",
+          "omega": 0.5,
+          "omega_bounds": [
+            0.01,
+            1.5
+          ],
+          "on_nonconvergence": "warn",
+          "predictor": "linear",
+          "relaxation": "aitken",
+          "rtol": 1e-06,
+          "unused_in_pece": [
+            "relaxation",
+            "omega",
+            "omega_bounds",
+            "iqn_reuse_steps",
+            "rtol",
+            "atol",
+            "max_iterations",
+            "on_nonconvergence"
+          ]
+        },
+        "requested_steps": 41,
+        "ros2_options": null,
+        "time_step": 2e-05,
+        "time_step_adjustment": null
+      },
+      "warnings": []
+    },
+    "memory_analytic": {
+      "arrays": {
+        "memory_analytic.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            401,
+            1,
+            2
+          ]
+        },
+        "memory_analytic.memory_history": {
+          "dtype": "float64",
+          "shape": [
+            401,
+            2
+          ]
+        },
+        "memory_analytic.rotor_state_history": {
+          "dtype": "float64",
+          "shape": [
+            400,
+            8
+          ]
+        }
+      },
+      "diagnostics": {
+        "aitken_omega_range": [
+          0.5,
+          0.9973531286352942
+        ],
+        "commit_evaluations": 401,
+        "commits": 401,
+        "integrator": "predictor_corrector",
+        "iterations_per_step": {
+          "histogram": [
+            [
+              2,
+              398
+            ],
+            [
+              3,
+              2
+            ]
+          ],
+          "max": 3,
+          "mean": 2.005
+        },
+        "max_consistency_residual": 5.072378428394586e-08,
+        "max_final_residual": 1.7795297519995756e-05,
+        "nonconverged_steps": 0,
+        "options": {
+          "atol": 1e-06,
+          "iqn_reuse_steps": 0,
+          "max_iterations": 20,
+          "mode": "iterate",
+          "omega": 0.5,
+          "omega_bounds": [
+            0.01,
+            1.5
+          ],
+          "on_nonconvergence": "warn",
+          "predictor": "linear",
+          "relaxation": "aitken",
+          "rtol": 1e-06,
+          "unused_in_pece": []
+        },
+        "residual_ratio": {
+          "count": 402,
+          "max": 0.4986730525361846,
+          "mean": 0.0013071732483349845
+        },
+        "spool_trials": [
+          null
+        ],
+        "steps": 400,
+        "trial_evaluations": 802,
+        "trial_iterations": 802,
+        "trial_modes": [
+          "checkpoint"
+        ]
+      }
+    },
+    "thermal_transient": {
+      "arrays": {
+        "thermal_transient.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            7,
+            1,
+            2
+          ]
+        },
+        "thermal_transient.final_temperature": {
+          "dtype": "float64",
+          "shape": [
+            24
+          ]
+        },
+        "thermal_transient.rotor_displacement": {
+          "dtype": "float64",
+          "shape": [
+            7,
+            1,
+            2
+          ]
+        },
+        "thermal_transient.rotor_final_state": {
+          "dtype": "float64",
+          "shape": [
+            8
+          ]
+        },
+        "thermal_transient.rotor_velocity": {
+          "dtype": "float64",
+          "shape": [
+            7,
+            1,
+            2
+          ]
+        },
+        "thermal_transient.time": {
+          "dtype": "float64",
+          "shape": [
+            7
+          ]
+        }
+      },
+      "bearing_spec": {
+        "family": "liquid_film",
+        "film": {
+          "axial_elements": 3,
+          "circumferential_elements": 5,
+          "eccentricity": 0.0,
+          "max_iterations": 20,
+          "solver_tolerance": 1e-06
+        },
+        "node": 0,
+        "restrictors": null,
+        "thermal": {
+          "transient_enabled": true
+        },
+        "time_step": 2e-05,
+        "unit_system": "dimensional"
+      },
+      "result_metadata": {
+        "committed_steps": 7,
+        "complete": true,
+        "control_periods": [],
+        "history_complete": true,
+        "history_downsample": 1,
+        "history_fields": [
+          "rotor_displacement",
+          "rotor_velocity",
+          "bearing_force"
+        ],
+        "history_mode": "memory",
+        "history_path": null,
+        "initial_rotor_state": null,
+        "integrator": "predictor_corrector",
+        "post_commit_complete": true,
+        "predictor_corrector_diagnostics": {
+          "aitken_omega_range": [
+            0.5,
+            0.9264879388899149
+          ],
+          "commit_evaluations": 7,
+          "commits": 7,
+          "integrator": "predictor_corrector",
+          "iterations_per_step": {
+            "histogram": [
+              [
+                3,
+                5
+              ],
+              [
+                4,
+                1
+              ]
+            ],
+            "max": 4,
+            "mean": 3.1666666666666665
+          },
+          "max_consistency_residual": 5.633764603579783e-07,
+          "max_final_residual": 7.478777820771332e-06,
+          "nonconverged_steps": 0,
+          "residual_ratio": {
+            "count": 13,
+            "max": 0.460323841057072,
+            "mean": 0.03726319723906365
+          },
+          "spool_trials": [
+            null
+          ],
+          "steps": 6,
+          "trial_evaluations": 19,
+          "trial_iterations": 19,
+          "trial_modes": [
+            "checkpoint"
+          ]
+        },
+        "predictor_corrector_options": {
+          "atol": 1e-06,
+          "iqn_reuse_steps": 0,
+          "max_iterations": 20,
+          "mode": "iterate",
+          "omega": 0.5,
+          "omega_bounds": [
+            0.01,
+            1.5
+          ],
+          "on_nonconvergence": "warn",
+          "predictor": "linear",
+          "relaxation": "aitken",
+          "rtol": 1e-06,
+          "unused_in_pece": []
+        },
+        "requested_steps": 7,
+        "ros2_options": null,
+        "time_step": 2e-05,
+        "time_step_adjustment": null
+      },
+      "warnings": []
+    }
+  },
+  "comparison": {
+    "arrays": "np.testing.assert_array_equal",
+    "metadata": "exact equality of the JSON case metadata",
+    "scope": "exact equality in the recorded environment; other platforms may differ at floating-point round-off level"
+  },
+  "environment": {
+    "alb": "0.4.7",
+    "control": "0.10.2",
+    "numpy": "1.24.3",
+    "pandas": "2.1.1",
+    "platform": "Linux-6.18.44-fc-v139-x86_64-with-glibc2.39",
+    "python": "3.10.20",
+    "ross-rotordynamics": "1.4.2",
+    "scikit-fem": "12.0.1",
+    "scikit-fuzzy": "0.5.0",
+    "scipy": "1.10.1",
+    "slycot": "0.7.1"
+  },
+  "generated_at": "2026-10-20T14:12:29.285792+00:00",
+  "purpose": "Freeze the new ALB 0.4.7 predictor-corrector coupling behavior (probe and checkpointed trials, PECE, Aitken and IQN-ILS, control periods, held spool providers).",
+  "schema": "alb.predictor-corrector-0.4.7-reference.v1",
+  "source_commit": "a1eb59b6c247855be54f6215e018da5b94cc9276",
+  "time_step": 2e-05
+}
