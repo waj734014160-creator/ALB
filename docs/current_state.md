@@ -169,8 +169,9 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
    刚度奇异，应设置 `jacobian_refresh` 或偏心 `jacobian_state`。外部 spool provider
    采用每步零阶保持，只有分段常数输出才保持二阶。默认路径参考仅保证当前记录环境下
    的精确相等，其他平台可能出现舍入级差异，需按迁移说明用环境变量指向本地生成的
-   参考对复核。0.4.6 新行为参考的生成器已提交，但截至 2026-10-20 核对，参考对
-   `refs/ros2_control_period_0_4_6_reference_v1.*` 及其回归测试尚未提交。
+   参考对复核。0.4.6 新行为参考 `refs/ros2_control_period_0_4_6_reference_v1.*`
+   由完成后的实现（`7b97f41`）生成，回归测试为
+   `tests/regression/dynamics/test_ros2_control_period_0_4_6_reference.py`。
 
 ## 外部工作与阅读入口
 

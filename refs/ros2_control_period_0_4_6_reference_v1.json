@@ -1,0 +1,521 @@
+{
+  "cases": {
+    "adjusted_time_step": {
+      "arrays": {
+        "adjusted_time_step.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            13,
+            1,
+            2
+          ]
+        },
+        "adjusted_time_step.rotor_displacement": {
+          "dtype": "float64",
+          "shape": [
+            13,
+            1,
+            2
+          ]
+        },
+        "adjusted_time_step.rotor_final_state": {
+          "dtype": "float64",
+          "shape": [
+            8
+          ]
+        },
+        "adjusted_time_step.rotor_velocity": {
+          "dtype": "float64",
+          "shape": [
+            13,
+            1,
+            2
+          ]
+        },
+        "adjusted_time_step.time": {
+          "dtype": "float64",
+          "shape": [
+            13
+          ]
+        }
+      },
+      "result_metadata": {
+        "committed_steps": 13,
+        "complete": true,
+        "control_periods": [
+          {
+            "control_period": 0.0001,
+            "control_steps_per_period": 4,
+            "local_control_period": 0.0001,
+            "mount": 0,
+            "path": "mounts[0].config.control.control_period"
+          }
+        ],
+        "history_complete": true,
+        "history_downsample": 1,
+        "history_fields": [
+          "rotor_displacement",
+          "rotor_velocity",
+          "bearing_force"
+        ],
+        "history_mode": "memory",
+        "history_path": null,
+        "initial_rotor_state": null,
+        "integrator": "staggered",
+        "post_commit_complete": true,
+        "requested_steps": 13,
+        "ros2_options": null,
+        "time_step": 2.5e-05,
+        "time_step_adjustment": {
+          "control_period": 0.0001,
+          "control_steps_per_period": 4,
+          "end_time": 0.00030000000000000003,
+          "requested_end_time": 0.00030000000000000003,
+          "requested_steps": 10,
+          "requested_time_step": 3e-05,
+          "rule": "h' = Ts / ceil(Ts / h), or h' = Ts when h > Ts; steps = m * ceil(T / Ts)",
+          "steps": 12,
+          "time_step": 2.5e-05
+        }
+      },
+      "warnings": [
+        {
+          "category": "TimeStepAdjustedWarning",
+          "message": "simulation time_step 3e-05 s is not an integer divisor of control_period 0.0001 s; using time_step 2.5e-05 s with 4 step(s) per control period and 12 steps instead of 10 (end time 0.00030000000000000003 s, requested 0.00030000000000000003 s)"
+        }
+      ]
+    },
+    "ros2_active_pid_sampled": {
+      "arrays": {
+        "ros2_active_pid_sampled.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            25,
+            1,
+            2
+          ]
+        },
+        "ros2_active_pid_sampled.controller_outputs": {
+          "dtype": "float64",
+          "shape": [
+            7,
+            2
+          ]
+        },
+        "ros2_active_pid_sampled.controller_times": {
+          "dtype": "float64",
+          "shape": [
+            7
+          ]
+        },
+        "ros2_active_pid_sampled.rotor_displacement": {
+          "dtype": "float64",
+          "shape": [
+            25,
+            1,
+            2
+          ]
+        },
+        "ros2_active_pid_sampled.rotor_final_state": {
+          "dtype": "float64",
+          "shape": [
+            8
+          ]
+        },
+        "ros2_active_pid_sampled.rotor_velocity": {
+          "dtype": "float64",
+          "shape": [
+            25,
+            1,
+            2
+          ]
+        },
+        "ros2_active_pid_sampled.time": {
+          "dtype": "float64",
+          "shape": [
+            25
+          ]
+        }
+      },
+      "bearing_spec": {
+        "control": {
+          "control_period": 8e-05,
+          "frequency_hz": 50.0,
+          "gains": {
+            "feedforward": 0.0,
+            "kd": 0.01,
+            "ki": 0.5,
+            "kp": 1.0
+          },
+          "mode": "pid",
+          "sensor_angles_deg": [
+            45.0,
+            135.0
+          ]
+        },
+        "family": "active_lubricated",
+        "film": {
+          "axial_elements": 3,
+          "circumferential_elements": 5,
+          "max_iterations": 20,
+          "solver_tolerance": 1e-06
+        },
+        "node": 0,
+        "restrictors": {
+          "discharge_coefficient": 0.6,
+          "orifice_diameter": 0.002,
+          "orifice_length": 0.02,
+          "positions": [
+            [
+              0.5,
+              0.25
+            ],
+            [
+              0.5,
+              0.5
+            ],
+            [
+              0.5,
+              0.75
+            ]
+          ],
+          "valve_area": 1.22e-06
+        },
+        "tank": {
+          "depth_ratio": 2.0,
+          "x_range": [
+            0.49,
+            0.51
+          ],
+          "z_range": [
+            0.2,
+            0.8
+          ]
+        },
+        "thermal": null,
+        "time_step": 2e-05,
+        "transforms": {},
+        "unit_system": "dimensional",
+        "valve": {
+          "damping_ratio": 0.7,
+          "delay": 0.0,
+          "model": "second_order",
+          "natural_frequency_hz": 166.0
+        }
+      },
+      "result_metadata": {
+        "committed_steps": 25,
+        "complete": true,
+        "control_periods": [
+          {
+            "control_period": 8e-05,
+            "control_steps_per_period": 4,
+            "local_control_period": 8e-05,
+            "mount": 0,
+            "path": "mounts[0].config.control.control_period"
+          }
+        ],
+        "history_complete": true,
+        "history_downsample": 1,
+        "history_fields": [
+          "rotor_displacement",
+          "rotor_velocity",
+          "bearing_force"
+        ],
+        "history_mode": "memory",
+        "history_path": null,
+        "initial_rotor_state": null,
+        "integrator": "ros2",
+        "post_commit_complete": true,
+        "requested_steps": 25,
+        "ros2_options": {
+          "displacement_step": 1e-07,
+          "jacobian_refresh": null,
+          "jacobian_state": null,
+          "relative_step": 0.001,
+          "spool_step": 0.001,
+          "velocity_step": 0.0001
+        },
+        "time_step": 2e-05,
+        "time_step_adjustment": null
+      }
+    },
+    "ros2_analytic_hardening": {
+      "arrays": {
+        "ros2_analytic_hardening.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            401,
+            1,
+            2
+          ]
+        },
+        "ros2_analytic_hardening.rotor_state_history": {
+          "dtype": "float64",
+          "shape": [
+            400,
+            8
+          ]
+        }
+      },
+      "diagnostics": {
+        "actuator_states": 0,
+        "control_steps_per_period": [
+          1
+        ],
+        "direct_spool_hold": null,
+        "integrator": "ros2",
+        "jacobian_evaluations": 1,
+        "options": {
+          "displacement_step": 1e-07,
+          "jacobian_refresh": null,
+          "jacobian_state": null,
+          "relative_step": 0.001,
+          "spool_step": 0.001,
+          "velocity_step": 0.0001
+        },
+        "rhs_evaluations": 801,
+        "state_size": 8,
+        "w_factorizations": 1
+      }
+    },
+    "ros2_liquid_film": {
+      "arrays": {
+        "ros2_liquid_film.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            61,
+            1,
+            2
+          ]
+        },
+        "ros2_liquid_film.rotor_displacement": {
+          "dtype": "float64",
+          "shape": [
+            61,
+            1,
+            2
+          ]
+        },
+        "ros2_liquid_film.rotor_final_state": {
+          "dtype": "float64",
+          "shape": [
+            8
+          ]
+        },
+        "ros2_liquid_film.rotor_velocity": {
+          "dtype": "float64",
+          "shape": [
+            61,
+            1,
+            2
+          ]
+        },
+        "ros2_liquid_film.time": {
+          "dtype": "float64",
+          "shape": [
+            61
+          ]
+        }
+      },
+      "result_metadata": {
+        "committed_steps": 61,
+        "complete": true,
+        "control_periods": [],
+        "history_complete": true,
+        "history_downsample": 1,
+        "history_fields": [
+          "rotor_displacement",
+          "rotor_velocity",
+          "bearing_force"
+        ],
+        "history_mode": "memory",
+        "history_path": null,
+        "initial_rotor_state": null,
+        "integrator": "ros2",
+        "post_commit_complete": true,
+        "requested_steps": 61,
+        "ros2_options": {
+          "displacement_step": 1e-07,
+          "jacobian_refresh": null,
+          "jacobian_state": null,
+          "relative_step": 0.001,
+          "spool_step": 0.001,
+          "velocity_step": 0.0001
+        },
+        "time_step": 2e-05,
+        "time_step_adjustment": null
+      }
+    },
+    "staggered_active_pid_sampled": {
+      "arrays": {
+        "staggered_active_pid_sampled.bearing_force": {
+          "dtype": "float64",
+          "shape": [
+            25,
+            1,
+            2
+          ]
+        },
+        "staggered_active_pid_sampled.controller_outputs": {
+          "dtype": "float64",
+          "shape": [
+            7,
+            2
+          ]
+        },
+        "staggered_active_pid_sampled.controller_times": {
+          "dtype": "float64",
+          "shape": [
+            7
+          ]
+        },
+        "staggered_active_pid_sampled.rotor_displacement": {
+          "dtype": "float64",
+          "shape": [
+            25,
+            1,
+            2
+          ]
+        },
+        "staggered_active_pid_sampled.rotor_final_state": {
+          "dtype": "float64",
+          "shape": [
+            8
+          ]
+        },
+        "staggered_active_pid_sampled.rotor_velocity": {
+          "dtype": "float64",
+          "shape": [
+            25,
+            1,
+            2
+          ]
+        },
+        "staggered_active_pid_sampled.time": {
+          "dtype": "float64",
+          "shape": [
+            25
+          ]
+        }
+      },
+      "bearing_spec": {
+        "control": {
+          "control_period": 8e-05,
+          "frequency_hz": 50.0,
+          "gains": {
+            "feedforward": 0.0,
+            "kd": 0.01,
+            "ki": 0.5,
+            "kp": 1.0
+          },
+          "mode": "pid",
+          "sensor_angles_deg": [
+            45.0,
+            135.0
+          ]
+        },
+        "family": "active_lubricated",
+        "film": {
+          "axial_elements": 3,
+          "circumferential_elements": 5,
+          "max_iterations": 20,
+          "solver_tolerance": 1e-06
+        },
+        "node": 0,
+        "restrictors": {
+          "discharge_coefficient": 0.6,
+          "orifice_diameter": 0.002,
+          "orifice_length": 0.02,
+          "positions": [
+            [
+              0.5,
+              0.25
+            ],
+            [
+              0.5,
+              0.5
+            ],
+            [
+              0.5,
+              0.75
+            ]
+          ],
+          "valve_area": 1.22e-06
+        },
+        "tank": {
+          "depth_ratio": 2.0,
+          "x_range": [
+            0.49,
+            0.51
+          ],
+          "z_range": [
+            0.2,
+            0.8
+          ]
+        },
+        "thermal": null,
+        "time_step": 2e-05,
+        "transforms": {},
+        "unit_system": "dimensional",
+        "valve": {
+          "damping_ratio": 0.7,
+          "delay": 0.0,
+          "model": "second_order",
+          "natural_frequency_hz": 166.0
+        }
+      },
+      "result_metadata": {
+        "committed_steps": 25,
+        "complete": true,
+        "control_periods": [
+          {
+            "control_period": 8e-05,
+            "control_steps_per_period": 4,
+            "local_control_period": 8e-05,
+            "mount": 0,
+            "path": "mounts[0].config.control.control_period"
+          }
+        ],
+        "history_complete": true,
+        "history_downsample": 1,
+        "history_fields": [
+          "rotor_displacement",
+          "rotor_velocity",
+          "bearing_force"
+        ],
+        "history_mode": "memory",
+        "history_path": null,
+        "initial_rotor_state": null,
+        "integrator": "staggered",
+        "post_commit_complete": true,
+        "requested_steps": 25,
+        "ros2_options": null,
+        "time_step": 2e-05,
+        "time_step_adjustment": null
+      }
+    }
+  },
+  "comparison": {
+    "arrays": "np.testing.assert_array_equal",
+    "scope": "exact equality in the recorded environment; other platforms may differ at floating-point round-off level"
+  },
+  "control_steps": 4,
+  "environment": {
+    "alb": "0.4.6",
+    "control": "0.10.2",
+    "numpy": "1.24.3",
+    "pandas": "2.1.1",
+    "platform": "Linux-6.18.44-fc-v139-x86_64-with-glibc2.39",
+    "python": "3.10.20",
+    "ross-rotordynamics": "1.4.2",
+    "scikit-fem": "12.0.1",
+    "scipy": "1.10.1",
+    "slycot": "0.7.1"
+  },
+  "generated_at": "2026-10-20T02:48:51.540618+00:00",
+  "purpose": "Freeze the new 0.4.6 ROS2 integrator and sampled-control behavior generated from the finished implementation.",
+  "schema": "alb.ros2-control-period-0.4.6-reference.v1",
+  "source_commit": "7b97f414c4c044243327fe787f2587024d62bce4",
+  "time_step": 2e-05
+}
