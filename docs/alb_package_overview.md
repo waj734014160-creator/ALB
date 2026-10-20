@@ -145,7 +145,10 @@ bearing-local 步长，构建器在物理 runtime 创建前递归检查 `MultiPa
 被重新离散的转子若仍由另一个按原步长校验的配置持有，构建该仿真时报
 `ConfigurationError`。
 
-## 可选 ROS2 耦合积分器（0.4.6）
+## 可选 ROS2 耦合积分器（0.4.6，功能不完善）
+
+该积分器在 0.4.6 标记为**功能不完善**（实验性）。正式计算继续使用默认 `staggered`；ROS2 结果应先与 staggered 细步长解或独立参考交叉核对。已知缺口见
+`docs/adr/0009-controller-sampling-period-and-ros2-integrator.md` 的“功能状态”一节。
 
 `SimulationConfig(integrator="ros2", ros2=ALB.dynamics.Ros2Options(...))` 或
 `spec.time_grid.integrator: "ros2"` 选择两级 Rosenbrock-W 积分器。它在 stage 状态

@@ -43,7 +43,7 @@
     },
     "simulation_ros2": {
       "title": "选择 ROS2 同步耦合积分器",
-      "description": "默认 integrator=\"staggered\" 保持 0.4.5 数值路径。ROS2 需要连续时间 RossRotor 和可无副作用求力的轴承族；带热模型的轴承会被拒绝。",
+      "description": "默认 integrator=\"staggered\" 保持 0.4.5 数值路径。ROS2 需要连续时间 RossRotor 和可无副作用求力的轴承族；带热模型的轴承会被拒绝。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。",
       "code": "import ALB\nfrom ALB.dynamics import Ros2Options, RossRotor\n\nross_model = ...  # Constructed ross.Rotor\nrotor = RossRotor(ross_model, speed=2.0 * 3.141592653589793 * 50.0, dt=2.0e-5)\nbearing_config = ALB.load_bearing_config(\"configs/liquid_film.json5\")\nconfig = ALB.SimulationConfig(\n    rotor=rotor,\n    mounts=(ALB.BearingMount(config=bearing_config, node=0),),\n    time_step=2.0e-5,\n    steps=5000,\n    integrator=\"ros2\",\n    ros2=Ros2Options(jacobian_refresh=\"control_period\"),\n)\nresult = ALB.build_simulation(config).run()\nprint(result.metadata[\"integrator\"], result.metadata[\"ros2_options\"])"
     },
     "history_policy": {
@@ -570,7 +570,7 @@
         "loads": "可选外载荷描述映射元组。",
         "history": "已提交历史的保留策略。",
         "dependencies": "面向高级装配的可选依赖对象。",
-        "integrator": "耦合积分器：\"staggered\"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 \"ros2\"（两级 Rosenbrock-W，同步计算轴承力）。",
+        "integrator": "耦合积分器：\"staggered\"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 \"ros2\"（两级 Rosenbrock-W，同步计算轴承力）。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。",
         "ros2": "可选 ALB.dynamics.Ros2Options，只能与 integrator=\"ros2\" 同时使用；None 使用默认冻结 Jacobian 选项。jacobian_state 短于转子状态，或在没有阀驱动主动轴承时不等于转子状态长度，构造时拒绝；有阀驱动主动轴承时完整耦合长度在 run() 的 reset 阶段检查。",
         "initial_rotor_state": "可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限；校验后保存为浮点数元组，配置因此可做相等比较。"
       },

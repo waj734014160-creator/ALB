@@ -596,7 +596,9 @@ class SimulationConfig:
     ``integrator`` selects ``"staggered"`` (default, bearing force lagged by
     one step, unchanged 0.4.5 path) or ``"ros2"`` (two-stage Rosenbrock-W
     with synchronous bearing forces, configured by ``ros2``, an
-    ``ALB.dynamics.Ros2Options``). ROS2 requires a continuous ``RossRotor``
+    ``ALB.dynamics.Ros2Options``). ROS2 is functionally incomplete
+    (experimental) in 0.4.6, so production runs should keep the default and
+    cross-check ROS2 results. ROS2 requires a continuous ``RossRotor``
     and bearings whose force is side-effect free; thermal bearings are
     rejected. ``initial_rotor_state`` optionally replaces the zero initial
     rotor state with a complete ROSS state vector, for example a static

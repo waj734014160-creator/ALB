@@ -137,7 +137,7 @@ cases = config.sweep(
 
 `time_grid` 还可选择耦合积分器。缺省 `integrator: "staggered"` 保持 0.4.5
 的数值路径；`"ros2"` 使用两级 Rosenbrock-W 方法同步计算轴承力，并可设置
-Jacobian 刷新策略：
+Jacobian 刷新策略（ROS2 在 0.4.6 标记为功能不完善，见下方提示）：
 
 ```json5
 time_grid: {
@@ -147,6 +147,11 @@ time_grid: {
   jacobian_refresh: "control_period",  // null, positive integer N, or "control_period"
 },
 ```
+
+!!! warning "功能不完善"
+    0.4.6 的 ROS2 积分器标记为功能不完善（实验性）：代理模型族未做数值收敛验证，
+    不支持热模型轴承，外部阀芯 provider 通道只有一阶精度，冻结 Jacobian 没有自适应刷新。
+    正式计算继续使用默认 `staggered`；ROS2 结果应先与 staggered 细步长解或独立参考交叉核对。详见 [0.4.6 迁移说明](../../migrations/0.4.6.md)。
 
 ROS2 不支持带热模型的轴承，也不支持含主动或外部阀芯子瓦的 `multi_pad`，构造时会以
 `ConfigurationError` 拒绝。`"control_period"` 在阀驱动主动轴承的每个控制器采样时刻

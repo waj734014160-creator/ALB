@@ -6,7 +6,7 @@
 
 - 包版本：`0.4.6`
 - 公开符号数：`28`
-- 接口表面摘要：`sha256:3be7c99f3811c6f2`
+- 接口表面摘要：`sha256:94e26612b0aae4f2`
 - 重新生成：`python tools/docs/generate_public_api_reference.py`
 - 一致性检查：`python tools/docs/generate_public_api_reference.py --check`
 
@@ -31,7 +31,7 @@
 | `EquilibriumOptions` | 类 | 静平衡求解器的不可变参数集合，控制迭代、容差、阻尼、Jacobian 和停滞回退。 | `ALB/api/analysis.py:197` |
 | `EquilibriumSolver` | 类 | 直接接收一个已构造 Bearing，并使用既有静平衡算法求载荷平衡。 | `ALB/api/analysis.py:496` |
 | `HistoryPolicy` | 类 | 控制仿真已提交历史的字段筛选、降采样、环形缓存或磁盘流式写入。 | `ALB/api/simulation.py:185` |
-| `RotorBearingSimulation` | 类 | 拓扑不可变的一次性转子-轴承耦合仿真 facade。 | `ALB/api/simulation.py:749` |
+| `RotorBearingSimulation` | 类 | 拓扑不可变的一次性转子-轴承耦合仿真 facade。 | `ALB/api/simulation.py:751` |
 | `SCHEMA_VERSION` | 常量 | bearing 与 simulation JSON5 接受的 schema 版本字符串，独立于 re-alb 包版本。 | `-` |
 | `SimulationConfig` | 类 | 一次转子-轴承耦合计算的不可变拓扑、时步、载荷、历史策略、耦合积分器和可选依赖。 | `ALB/api/simulation.py:550` |
 | `SimulationError` | 异常 | 耦合仿真失败时抛出的稳定异常，可携带截至最后真实提交点的部分结果。 | `ALB/api/errors.py:51` |
@@ -41,10 +41,10 @@
 | `__version__` | 常量 | 当前导入的 re-alb 包版本字符串。 | `-` |
 | `bearing_from_file` | 函数 | 读取严格 0.4 JSON5 轴承文档并一步构建可计算轴承。 | `ALB/api/bearing.py:290` |
 | `build_bearing` | 函数 | 从已验证的不可变配置构建一个可直接计算的轴承 facade。 | `ALB/api/bearing.py:258` |
-| `build_simulation` | 函数 | 从已验证的仿真配置构建一次性转子-轴承仿真对象。 | `ALB/api/simulation.py:1632` |
+| `build_simulation` | 函数 | 从已验证的仿真配置构建一次性转子-轴承仿真对象。 | `ALB/api/simulation.py:1634` |
 | `load_bearing_config` | 函数 | 读取严格 UTF-8 0.4 bearing 文档，安全合并受限 include 并完成校验。 | `ALB/api/config.py:878` |
-| `load_simulation_config` | 函数 | 读取严格 0.4 simulation 文档，并解析转子、挂载轴承、时间网格、载荷和历史策略。 | `ALB/api/simulation.py:1418` |
-| `simulation_from_file` | 函数 | 读取严格 JSON5 仿真文档并一步构建一次性仿真对象。 | `ALB/api/simulation.py:1657` |
+| `load_simulation_config` | 函数 | 读取严格 0.4 simulation 文档，并解析转子、挂载轴承、时间网格、载荷和历史策略。 | `ALB/api/simulation.py:1420` |
+| `simulation_from_file` | 函数 | 读取严格 JSON5 仿真文档并一步构建一次性仿真对象。 | `ALB/api/simulation.py:1659` |
 
 ## 示例库
 
@@ -263,7 +263,7 @@ for period in config.control_periods:
 <a id="example-simulation_ros2"></a>
 ### 选择 ROS2 同步耦合积分器
 
-默认 integrator="staggered" 保持 0.4.5 数值路径。ROS2 需要连续时间 RossRotor 和可无副作用求力的轴承族；带热模型的轴承会被拒绝。
+默认 integrator="staggered" 保持 0.4.5 数值路径。ROS2 需要连续时间 RossRotor 和可无副作用求力的轴承族；带热模型的轴承会被拒绝。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。
 
 ```python
 import ALB
@@ -1609,7 +1609,7 @@ print(bundle.metadata["schema"], manifest)
 
 拓扑不可变的一次性转子-轴承耦合仿真 facade。
 
-源码：`ALB/api/simulation.py:749`。
+源码：`ALB/api/simulation.py:751`。
 
 输入：
 
@@ -1638,7 +1638,7 @@ print(bundle.metadata["schema"], manifest)
     ``latest_result`` only after successful completion.
     ```
 
-源码：`ALB/api/simulation.py:749`。
+源码：`ALB/api/simulation.py:751`。
 
 公开成员：
 
@@ -1646,7 +1646,7 @@ print(bundle.metadata["schema"], manifest)
 
 读取本次仿真的不可变输入和拓扑。
 
-源码：`ALB/api/simulation.py:768`。
+源码：`ALB/api/simulation.py:770`。
 
 输出：`SimulationConfig`。返回 SimulationConfig。
 
@@ -1662,7 +1662,7 @@ print(bundle.metadata["schema"], manifest)
 
 读取最近一次完整或失败前已提交的历史，不触发运行。
 
-源码：`ALB/api/simulation.py:778`。
+源码：`ALB/api/simulation.py:780`。
 
 输出：`SimulationResult`。返回 SimulationResult。
 
@@ -1690,7 +1690,7 @@ print(bundle.metadata["schema"], manifest)
 
 执行一次耦合仿真，并按 HistoryPolicy 保留真实提交快照。
 
-源码：`ALB/api/simulation.py:858`。
+源码：`ALB/api/simulation.py:860`。
 
 输入：
 
@@ -1733,7 +1733,7 @@ print(bundle.metadata["schema"], manifest)
 | `loads` | `tuple[Mapping[str, Any], ...]` | 否 | `()` | 位置或关键字 | 可选外载荷描述映射元组。 |
 | `history` | `HistoryPolicy` | 否 | `HistoryPolicy(mode='memory', fields=('rotor_displacement', 'rotor_velocity', 'bearing_force'), downsample=1, capacity=None, directory=None)` | 位置或关键字 | 已提交历史的保留策略。 |
 | `dependencies` | `CouplingRuntimeDependencies \| None` | 否 | `None` | 位置或关键字 | 面向高级装配的可选依赖对象。 |
-| `integrator` | `Literal['staggered', 'ros2']` | 否 | `'staggered'` | 位置或关键字 | 耦合积分器："staggered"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 "ros2"（两级 Rosenbrock-W，同步计算轴承力）。 |
+| `integrator` | `Literal['staggered', 'ros2']` | 否 | `'staggered'` | 位置或关键字 | 耦合积分器："staggered"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 "ros2"（两级 Rosenbrock-W，同步计算轴承力）。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。 |
 | `ros2` | `Ros2Options \| None` | 否 | `None` | 位置或关键字 | 可选 ALB.dynamics.Ros2Options，只能与 integrator="ros2" 同时使用；None 使用默认冻结 Jacobian 选项。jacobian_state 短于转子状态，或在没有阀驱动主动轴承时不等于转子状态长度，构造时拒绝；有阀驱动主动轴承时完整耦合长度在 run() 的 reset 阶段检查。 |
 | `initial_rotor_state` | `Any` | 否 | `None` | 位置或关键字 | 可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限；校验后保存为浮点数元组，配置因此可做相等比较。 |
 
@@ -1798,7 +1798,9 @@ print(bundle.metadata["schema"], manifest)
     ``integrator`` selects ``"staggered"`` (default, bearing force lagged by
     one step, unchanged 0.4.5 path) or ``"ros2"`` (two-stage Rosenbrock-W
     with synchronous bearing forces, configured by ``ros2``, an
-    ``ALB.dynamics.Ros2Options``). ROS2 requires a continuous ``RossRotor``
+    ``ALB.dynamics.Ros2Options``). ROS2 is functionally incomplete
+    (experimental) in 0.4.6, so production runs should keep the default and
+    cross-check ROS2 results. ROS2 requires a continuous ``RossRotor``
     and bearings whose force is side-effect free; thermal bearings are
     rejected. ``initial_rotor_state`` optionally replaces the zero initial
     rotor state with a complete ROSS state vector, for example a static
@@ -1818,7 +1820,7 @@ print(bundle.metadata["schema"], manifest)
 | `loads` | `tuple[Mapping[str, Any], ...]` | `()` | 可选外载荷描述映射元组。 |
 | `history` | `HistoryPolicy` | `HistoryPolicy(mode='memory', fields=('rotor_displacement', 'rotor_velocity', 'bearing_force'), downsample=1, capacity=None, directory=None)` | 已提交历史的保留策略。 |
 | `dependencies` | `CouplingRuntimeDependencies \| None` | `None` | 面向高级装配的可选依赖对象。 |
-| `integrator` | `Literal['staggered', 'ros2']` | `'staggered'` | 耦合积分器："staggered"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 "ros2"（两级 Rosenbrock-W，同步计算轴承力）。 |
+| `integrator` | `Literal['staggered', 'ros2']` | `'staggered'` | 耦合积分器："staggered"（缺省，轴承力滞后一步，保持 0.4.5 路径）或 "ros2"（两级 Rosenbrock-W，同步计算轴承力）。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。 |
 | `ros2` | `Ros2Options \| None` | `None` | 可选 ALB.dynamics.Ros2Options，只能与 integrator="ros2" 同时使用；None 使用默认冻结 Jacobian 选项。jacobian_state 短于转子状态，或在没有阀驱动主动轴承时不等于转子状态长度，构造时拒绝；有阀驱动主动轴承时完整耦合长度在 run() 的 reset 阶段检查。 |
 | `initial_rotor_state` | `Any` | `None` | 可选完整 ROSS 转子状态向量 [q, dq/dt]，例如静平衡状态；None 保持零初始状态。形状必须与 rotor.current_state() 一致且全部有限；校验后保存为浮点数元组，配置因此可做相等比较。 |
 | `control_periods` | `tuple[Mapping[str, Any], ...]` | `()` | 只读元组：每个声明的控制周期对应一个映射，包含 mount、配置路径、局部周期、全局周期和每周期步数 m。 |
@@ -2072,7 +2074,7 @@ print(bundle.metadata["schema"], manifest)
 
 从已验证的仿真配置构建一次性转子-轴承仿真对象。
 
-源码：`ALB/api/simulation.py:1632`。
+源码：`ALB/api/simulation.py:1634`。
 
 输入：
 
@@ -2115,7 +2117,7 @@ print(bundle.metadata["schema"], manifest)
         If runtime materialization detects an inconsistent bearing boundary.
     ```
 
-源码：`ALB/api/simulation.py:1632`。
+源码：`ALB/api/simulation.py:1634`。
 
 ### `ALB.load_bearing_config(path: 'str | Path') -> 'BearingConfig'`
 
@@ -2161,7 +2163,7 @@ print(bundle.metadata["schema"], manifest)
 
 读取严格 0.4 simulation 文档，并解析转子、挂载轴承、时间网格、载荷和历史策略。
 
-源码：`ALB/api/simulation.py:1418`。
+源码：`ALB/api/simulation.py:1420`。
 
 输入：
 
@@ -2215,13 +2217,13 @@ print(bundle.metadata["schema"], manifest)
     those advanced runtime objects are required.
     ```
 
-源码：`ALB/api/simulation.py:1418`。
+源码：`ALB/api/simulation.py:1420`。
 
 ### `ALB.simulation_from_file(path: 'str | Path') -> 'RotorBearingSimulation'`
 
 读取严格 JSON5 仿真文档并一步构建一次性仿真对象。
 
-源码：`ALB/api/simulation.py:1657`。
+源码：`ALB/api/simulation.py:1659`。
 
 输入：
 
@@ -2260,7 +2262,7 @@ print(bundle.metadata["schema"], manifest)
         Propagated from configuration loading and optional resource construction.
     ```
 
-源码：`ALB/api/simulation.py:1657`。
+源码：`ALB/api/simulation.py:1659`。
 
 ## 稳定异常
 

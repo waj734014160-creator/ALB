@@ -1,5 +1,11 @@
 """Two-stage Rosenbrock-W (ROS2) integration core for coupled simulations.
 
+Status: functionally incomplete (experimental) in ALB 0.4.6. The packaged
+surrogate family has only interface-level coverage, thermal bearings are not
+supported, spool providers are held per step (first order in that path), and
+the frozen Jacobian has no adaptive refresh. Production runs should keep the
+default staggered integrator; cross-check ROS2 results before relying on them.
+
 The method follows Verwer, Spee, Blom and Hundsdorfer (SIAM J. Sci. Comput.,
 1999, 20(4): 1456-1480). For ``dz/dt = f(z, t)`` one step of size ``h`` is::
 
@@ -69,6 +75,9 @@ def _positive_float(value: object, name: str) -> float:
 @dataclass(frozen=True, slots=True)
 class Ros2Options:
     """Configure the optional ROS2 coupled integrator.
+
+    The ROS2 integrator is functionally incomplete (experimental) in ALB
+    0.4.6; see the module docstring for the known gaps.
 
     Parameters
     ----------

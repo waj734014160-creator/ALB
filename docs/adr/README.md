@@ -25,7 +25,7 @@
 | [ADR-0006](0006-alb-0-4-no-legacy-friendly-api.md) | Accepted | 0.4 无 legacy、友好 facade、严格配置、不可变 simulation 和发布门禁 |
 | [ADR-0007](0007-preserve-validated-numerical-algorithms.md) | Accepted | 接口重构保留已验证数值算法、双侧参考条件和 0.4.1 数值门禁 |
 | [ADR-0008](0008-servovalve-public-configuration.md) | Accepted | 0.4.5 二阶 Hz、静态与任意传递函数三类伺服阀公开配置 |
-| [ADR-0009](0009-controller-sampling-period-and-ros2-integrator.md) | Accepted | 0.4.6 控制器采样周期为仿真步整数倍的例外、步长调整规则与可选 ROS2 耦合积分器 |
+| [ADR-0009](0009-controller-sampling-period-and-ros2-integrator.md) | Accepted（ROS2 部分功能不完善） | 0.4.6 控制器采样周期为仿真步整数倍的例外、步长调整规则与可选 ROS2 耦合积分器 |
 
 ADR-0006 替代 ADR-0001。ADR-0002 至 ADR-0005 的失败、提交、记录和单位原则
 继续约束 0.4 内部 runtime；当前用户接口以 `docs/interface_architecture.md` 和

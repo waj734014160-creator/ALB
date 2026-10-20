@@ -5,7 +5,7 @@
 > **高级 API。** 转子适配、自由度布局、耦合运行依赖和可选 ROS2 积分器选项的高级入口。
 
 - 显式导出数：`4`
-- 源码合同摘要：`sha256:94cd08e9667c92f6`
+- 源码合同摘要：`sha256:a8797ba47e4139ff`
 - 对应规则：中文语义元数据必须与源码参数、公开成员和英文 docstring 同步通过生成门禁。
 
 ## 安装
@@ -25,7 +25,7 @@ from ALB.dynamics import CouplingRuntimeDependencies, Ros2Options, RossRotor, Ro
 | 符号 | 类别 | 用途 | 源码 |
 | --- | --- | --- | --- |
 | `CouplingRuntimeDependencies` | 类 | 显式配置一个耦合 runtime 所拥有的 recorder、observer、run ID 和后提交失败策略。 | `ALB/dynamics/bindings.py:41` |
-| `Ros2Options` | 类 | 配置可选 ROS2 耦合积分器的 Jacobian 刷新策略、初始 Jacobian 求值状态和中心差分步长。 | `ALB/dynamics/ros2.py:70` |
+| `Ros2Options` | 类 | 配置可选 ROS2 耦合积分器的 Jacobian 刷新策略、初始 Jacobian 求值状态和中心差分步长。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。 | `ALB/dynamics/ros2.py:76` |
 | `RossRotor` | 类 | 把已有 ross.Rotor 包装成输入、推进和输出显式分离的量纲 ALB 转子 runtime。 | `ALB/dynamics/rotor.py:334` |
 | `RotorDofLayout` | 类 | 声明一个节点的平移/转动局部索引，并提供唯一的节点到全局 DOF 映射。 | `ALB/dynamics/rotor_layout.py:22` |
 
@@ -52,7 +52,7 @@ dependencies = CouplingRuntimeDependencies(
 <a id="example-ros2-options"></a>
 ### 配置 ROS2 耦合积分器
 
-只有 SimulationConfig(integrator="ros2") 接受该选项；缺省冻结 Jacobian，jacobian_state 可给出静平衡等偏心状态。
+只有 SimulationConfig(integrator="ros2") 接受该选项；缺省冻结 Jacobian，jacobian_state 可给出静平衡等偏心状态。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。
 
 ```python
 import ALB
@@ -168,10 +168,10 @@ x_index = layout.global_index(node=3, direction="x", total_dof=60)
 
 ### `ALB.dynamics.Ros2Options(jacobian_refresh: int | Literal['control_period'] | None = None, jacobian_state: Any = None, relative_step: float = 0.001, displacement_step: float = 1e-07, velocity_step: float = 0.0001, spool_step: float = 0.001)`
 
-配置可选 ROS2 耦合积分器的 Jacobian 刷新策略、初始 Jacobian 求值状态和中心差分步长。
+配置可选 ROS2 耦合积分器的 Jacobian 刷新策略、初始 Jacobian 求值状态和中心差分步长。0.4.6 中 ROS2 标记为功能不完善（实验性），正式计算继续使用 staggered。
 
 - 类别：`class`
-- 源码：`ALB/dynamics/ros2.py:70`
+- 源码：`ALB/dynamics/ros2.py:76`
 - 返回标注：`Ros2Options`
 
 输入：
@@ -200,6 +200,9 @@ x_index = layout.global_index(node=3, direction="x", total_dof=60)
 ??? note "源码 docstring（英文原文）"
     ```text
     Configure the optional ROS2 coupled integrator.
+
+    The ROS2 integrator is functionally incomplete (experimental) in ALB
+    0.4.6; see the module docstring for the known gaps.
 
     Parameters
     ----------
@@ -255,7 +258,7 @@ x_index = layout.global_index(node=3, direction="x", total_dof=60)
 返回描述这些选项的原生元数据映射。
 
 - 类别：`method`
-- 源码：`ALB/dynamics/ros2.py:153`
+- 源码：`ALB/dynamics/ros2.py:162`
 - 返回标注：`dict[str, object]`
 
 输入：

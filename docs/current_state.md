@@ -97,7 +97,7 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
   `Ts/ceil(Ts/h)`，结束时间向上取整到整数个控制周期，并通过警告、
   `SimulationConfig.time_step_adjustment` 和结果 metadata 报告；独立轴承要求精确
   整数倍。
-- 0.4.6 可选 ROS2 积分器：`time_grid.integrator: "ros2"` 或
+- 0.4.6 可选 ROS2 积分器（**功能不完善**，实验性；正式计算仍用默认 staggered）：`time_grid.integrator: "ros2"` 或
   `SimulationConfig(integrator="ros2")`。缺省冻结 Jacobian，可按步数或控制周期
   刷新；轴承力经无副作用 probe 同步计算。支持无热液膜、气膜、surrogate、子瓦
   只含这些无热族（surrogate 限固定阀芯）的 `MultiPad` 和无热主动轴承；默认
@@ -164,7 +164,8 @@ ALB 数值源码和冻结参考保持清理前字节；处置清单、恢复入�
    `"c4"`；要复现旧的原网络结果时写 `"none"`。SURROGATE_TRAIN 后续打包第一象限模型时，
    应在 metadata 写入 `inference_symmetry`。C4 只适用于四瓦、阀芯指令轴随瓦旋转的对称轴承；
    坐标轴和原点处的 C4 边界误差保持原样。
-8. ROS2 首版拒绝热模型轴承，以及含主动或外部阀芯子瓦的 `MultiPad`。冻结 Jacobian
+8. ROS2 积分器在 0.4.6 标记为功能不完善（实验性）。代理模型族未做数值收敛验证，
+   尚未与论文降阶模型 RK4 解交叉核对。ROS2 首版拒绝热模型轴承，以及含主动或外部阀芯子瓦的 `MultiPad`。冻结 Jacobian
    只影响稳定裕度：轴颈接近壁面时裕度下降，打包 surrogate 在居中处存在平方根型
    刚度奇异，应设置 `jacobian_refresh` 或偏心 `jacobian_state`。外部 spool provider
    采用每步零阶保持，只有分段常数输出才保持二阶。默认路径参考仅保证当前记录环境下

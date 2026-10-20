@@ -3,6 +3,20 @@
 - 分支：`claude/alb-0.4.6`，起点 `df7336f`（与 `codex/alb-0.4.5` 末端相同）。
 - 第一个提交 `60e2642 test: freeze pre-0.4.6 default coupling path` 只做默认路径参考冻结，之后才开始功能修改。
 - 本报告由云端会话生成；数值环境、命令和结果均为实际执行记录，未执行项单独说明。
+- **功能状态：** 按用户决定，0.4.6 的 ROS2 耦合积分器标记为**功能不完善**（实验性）。控制器采样周期、步长强制调整和默认 staggered 路径不受此标记影响。
+
+## 0. ROS2 功能状态：功能不完善
+
+ROS2 已实现并通过第 5 节的验证，但在 0.4.6 中不作为完整功能发布。已知缺口：
+
+1. 代理模型（ALBNN）族的 ROS2 路径只做了接口层验证，没有用训练好的模型做数值收敛验证；内置轴承族都没有 `torch_force`，雅可比全部由中心差分得到。
+2. 不支持带热模型（含稳态热）的轴承，也不支持含主动或外部阀芯子瓦的 `multi_pad`；带内部时变状态的族如何并入耦合状态尚未设计。
+3. 外部阀芯 provider 每步零阶保持，阀芯随状态连续变化时该通道只有一阶精度。
+4. 冻结 `J` 没有自适应刷新，轴颈接近壁面时稳定裕度下降；主动轴承的 `J` 默认取阀芯状态为零。
+5. ROS2 运行期间主动轴承 runtime 自身不发布 output 和 result snapshot。
+6. 尚未用论文降阶模型与 RK4 交叉核对，两份 0.4.6 参考也未在 Windows 环境复核。
+
+正式计算继续使用默认 `staggered`；ROS2 结果应先与 staggered 细步长解或独立参考交叉核对。该标记已同步到 ADR-0009（“功能状态”一节、ADR 索引）、`docs/migrations/0.4.6.md`、`docs/current_state.md`、`docs/alb_package_overview.md`、配置与仿真指南、配置/API 参考的人工说明，以及 `ALB/dynamics/ros2.py`、`Ros2Options`、`SimulationConfig` 的 docstring 和 `time_grid.integrator` 字段说明。运行时行为未改变，没有新增警告。
 
 ## 1. 改动清单
 

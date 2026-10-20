@@ -66,6 +66,8 @@ steps' = m * ceil(T / Ts)      T = steps * h，m = Ts / h'
 `time_grid.integrator` 缺省为 `"staggered"`：轴承力滞后一步、转子精确推进，结果与
 0.4.5 默认路径逐位一致。`"ros2"` 选择可选的两级 Rosenbrock-W 积分器，在两个 stage
 状态同步计算轴承力，转子状态和主动轴承阀状态组成一个耦合状态；它不替代默认算法。
+0.4.6 中 ROS2 标记为**功能不完善**（实验性），正式计算继续使用 `staggered`，已知缺口见
+0.4.6 迁移说明。
 `time_grid.jacobian_refresh` 只在 `"ros2"` 下接受：`null` 冻结整个运行的 Jacobian，
 正整数 `N` 每 `N` 步刷新一次，`"control_period"` 在任一阀驱动主动轴承（`pid`、
 `fuzzy_pid` 或 `uncontrolled`）的每个控制器采样时刻刷新，没有这类轴承时每步刷新。

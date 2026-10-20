@@ -28,6 +28,11 @@ result = ALB.build_simulation(simulation_config).run()
 
 ## 积分器与控制器采样
 
+!!! warning "功能不完善"
+    0.4.6 的 ROS2 积分器标记为功能不完善（实验性）：代理模型族未做数值收敛验证，
+    不支持热模型轴承，外部阀芯 provider 通道只有一阶精度，冻结 Jacobian 没有自适应刷新。
+    正式计算继续使用默认 `staggered`；ROS2 结果应先与 staggered 细步长解或独立参考交叉核对。详见 [0.4.6 迁移说明](../../migrations/0.4.6.md)。
+
 缺省 `integrator="staggered"`：轴承力按上一提交状态计算、滞后一步，数值路径与
 0.4.5 相同。`integrator="ros2"` 选择两级 Rosenbrock-W 积分器，在 stage 状态同步
 计算轴承力，需要连续时间 `ALB.dynamics.RossRotor`：

@@ -988,7 +988,7 @@ SIMULATION_ROTOR_FIELDS: dict[str, ConfigField] = {
 SIMULATION_TIME_GRID_FIELDS: dict[str, ConfigField] = {
     "time_step": _field("s", "Global dimensional integration time step.", value_type="number", required=True, constraint="finite and > 0"),
     "steps": _field("count", "Advances after the initial committed state.", value_type="integer", required=True, constraint=">= 0"),
-    "integrator": _field("name", "Coupled rotor-bearing integration scheme; ros2 evaluates bearing forces synchronously.", value_type="string", default="staggered", choices=("staggered", "ros2")),
+    "integrator": _field("name", "Coupled rotor-bearing integration scheme; ros2 evaluates bearing forces synchronously and is functionally incomplete (experimental) in 0.4.6.", value_type="string", default="staggered", choices=("staggered", "ros2")),
     "jacobian_refresh": _field("steps or name", "ROS2 Jacobian refresh: null keeps J frozen, N refreshes every N steps, control_period refreshes at each controller sample.", value_type="integer, 'control_period', or null", default=None, constraint="only with integrator='ros2'; integer >= 1"),
 }
 SIMULATION_MOUNT_FIELDS: dict[str, ConfigField] = {
