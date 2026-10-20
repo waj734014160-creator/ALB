@@ -53,11 +53,27 @@
 
 ## 3. 需要用户确认的事项（均已按默认方案实施）
 
-（待补充）
+1. **控制周期字段的命名和位置。** 采用任务默认方案：公开字段 `spec.control.control_period`（仅 `pid`/`fuzzy_pid`，单位与该轴承 `time_step` 相同，量纲制为 s），原生配置为 `PIDConfig.control_period`、`FuzzyPIDConfig.control_period`（`None` 表示 `Ts = dt`）。`PIDConfig.dt` 仍表示仿真步长，因此 ADR-0007 第 8 条“物化控制器 dt 等于 time_step”的检查保持不变。
+2. **步长调整的结束时间。** 调整后步数取 `m * ceil(T/Ts)`（带 `1e-9` 相对容差），结束时间 `T' >= T` 且 `T' < T + Ts`；`T` 为 `Ts` 整数倍时总时长不变。若希望改为四舍五入或截断，请确认。
+3. **转子对象就地重离散。** 调整步长时保持用户转子对象不变（`config.rotor is rotor`），原位重建离散矩阵并重置状态；警告在重离散之前发出。副作用是同一个转子对象不能被另一个仍按原步长校验的 `SimulationConfig` 继续使用，构建时以 `ConfigurationError` 明确拒绝。另一种方案是为调整后的配置创建新转子对象。
+4. **多个控制周期。** 允许多个不同 `Ts`，但只有当 `h` 同时整除全部 `Ts` 时才通过；需要调整时只支持单一 `Ts`，否则 `ConfigurationError`。
+5. **文件引用的 `multi_pad` 子瓦。** 需要调整步长时无法改写外部文件中的 `time_step`，以 `ConfigurationError` 拒绝（提示改用 `time_step = Ts/m`）；内联子瓦会被重建。
+6. **ROS2 首版覆盖的轴承族。** 见第 2 节：无热液膜、气膜、代理模型（固定/外部阀芯）、由它们组成的多瓦、无热主动轴承（`pid`/`fuzzy_pid`/`uncontrolled` 拆分阀芯状态；`external_spool` 走 provider）。热模型、多瓦内的主动或外部阀芯子瓦拒绝。外部阀芯 provider 每步在提交状态采样一次并在步内保持，因此当 provider 指令随状态连续变化时阀芯通道为一阶（已用测试固定为约 2 的误差比）。
+7. **J 的默认求取位置。** 默认在仿真初始状态（缺省为零状态、指令为初始采样值、阀芯状态为零）。`Ros2Options.jacobian_state` 可给转子状态或完整耦合状态（含阀芯状态）。代理模型在轴颈居中处有平方根型刚度奇异点，建议给出偏心（如静平衡）状态。所有内置族目前都用中心差分；自动微分仅在 runtime 提供 `torch_force` 时启用（现有 ALBNN 推理路径经 pandas/sklearn 预处理且在 `no_grad` 下，无法直接求导）。
+8. **默认积分格式。** 保持 `"staggered"`，ROS2 需显式选择（`SimulationConfig(integrator="ros2")` 或 `spec.time_grid.integrator`）。是否把默认切换为 ROS2 由用户决定；切换会改变默认路径数值，需要按 ADR-0007 第 6 条单独立项。
+9. **“一拍计算延迟”等控制器实现选项。** 本次未实现。当前语义：ROS2 在 `t_k` 用该时刻提交状态采样，指令右连续；staggered 在第 `k` 步使用第 `k-1` 步状态（与轴承力滞后一致），阀模型对输入做一阶保持插值。
+10. **新增可选初始状态。** 为便于第 4 节的交叉核对，新增了任务未要求的 `SimulationConfig.initial_rotor_state`（默认 `None`，默认路径不变）。如不需要可移除。
+11. **新增元数据的出现条件。** 为保持默认路径结果契约（含 `result.write()` 的文件集合）不变，`integrator`、`control_periods`、`time_step_adjustment`、`ros2_options`、`initial_rotor_state` 只在 ROS2、配置控制周期或显式初始状态时写入结果元数据。
+12. **分层 mypy 基线。** `tools/validation/mypy_layer_baseline_0_4.json` 在 `df7336f` 已经过期（缺 3 个已存在文件），本次未改动该发布门禁文件。本次改动的精确增量：新增 `ALB/dynamics/ros2.py`（0 条诊断），`ALB/dynamics/rotor.py|assignment` 8 → 9；strict 层没有新增诊断。
+13. **发布动作。** 未打 tag，未写发布验收记录，未修改 `.github/workflows/`。`docs-pages.yml` 只在推送 `main` 和 `codex/alb-0.4.5` 时触发，是否把 0.4.6 分支纳入自动发布由用户决定。0.4.6 的正式发布验收是否进行，也请用户确认。
 
 ## 4. 本地交叉核对建议
 
-（待补充）
+用户计划在本地用论文第 4 章降阶模型核对（3000 r/min、kp = kd = 0.3、计入不平衡、从静平衡积分 3 转、每转 400 步，与 2 μs RK4 比较）。对应的 ALB 配置要点：
+
+- `SimulationConfig(integrator="ros2", ros2=ALB.dynamics.Ros2Options(jacobian_state=x_eq), initial_rotor_state=x_eq, time_step=(60/3000)/400, steps=1200, ...)`，其中 `x_eq` 为完整 ROSS 状态向量 `[q, dq/dt]` 形式的静平衡状态（用仓库现有静平衡算法求得，速度分量为零）。
+- 若控制器通过主动轴承配置实现，`control.control_period` 设为实际采样周期；若 PD 控制写在外部 spool provider 中，注意 provider 在每步提交状态采样、步内保持。
+- 跨平台比对 0.4.6 默认路径参考时，可在 `df7336f` 上用 `tools/reference/generate_coupling_default_path_0_4_6_reference.py --json <file> --npz <file>` 生成本地参考，并设置 `ALB_COUPLING_DEFAULT_PATH_0_4_6_NPZ`/`_JSON` 运行回归测试；仓库中提交的参考不重新生成。
 
 ## 5. 测试实际执行结果
 
