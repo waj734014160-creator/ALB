@@ -337,6 +337,27 @@ def _validate_ros2_topology(
             )
 
 
+def _validate_jacobian_state(
+    rotor: RotorProtocol,
+    options: Ros2Options | None,
+) -> None:
+    """Reject a ROS2 Jacobian state shorter than the rotor state.
+
+    The exact coupled length (rotor plus actuator states) is known only after
+    the bearing runtimes are built and is checked again at run reset.
+    """
+
+    if options is None or options.jacobian_state is None:
+        return
+    rotor_states = np.asarray(rotor.current_state(), dtype=float).size
+    supplied = int(np.asarray(options.jacobian_state).size)
+    if supplied < rotor_states:
+        raise ConfigurationError(
+            "ros2.jacobian_state must contain the complete rotor state "
+            f"({rotor_states} values) or the coupled state; got {supplied}"
+        )
+
+
 def _initial_rotor_state(rotor: RotorProtocol, value: Any) -> Any:
     """Validate an optional complete initial rotor state vector."""
 
@@ -653,6 +674,7 @@ class SimulationConfig:
             )
         if integrator == "ros2":
             _validate_ros2_topology(rotor, mounts)
+            _validate_jacobian_state(rotor, self.ros2)
         initial_state = _initial_rotor_state(rotor, self.initial_rotor_state)
         try:
             _validate_coupled_rotor_output(
@@ -678,6 +700,15 @@ class SimulationConfig:
                 "dependencies must be CouplingRuntimeDependencies or None"
             )
         if adjustment is not None:
+            # Warn before retiming: a warning escalated to an error then
+            # rejects the configuration without mutating the rotor.
+            warnings.warn(
+                TimeStepAdjustedWarning(
+                    _adjustment_message(adjustment),
+                    adjustment=adjustment,
+                ),
+                stacklevel=3,
+            )
             # Retime last so a rejected configuration never mutates the rotor.
             try:
                 rotor._retime_for_owner(time_step)  # type: ignore[attr-defined]
@@ -700,14 +731,6 @@ class SimulationConfig:
         object.__setattr__(self, "control_periods", control_periods)
         object.__setattr__(self, "time_step_adjustment", adjustment)
         object.__setattr__(self, "initial_rotor_state", initial_state)
-        if adjustment is not None:
-            warnings.warn(
-                TimeStepAdjustedWarning(
-                    _adjustment_message(adjustment),
-                    adjustment=adjustment,
-                ),
-                stacklevel=3,
-            )
 
 
 class RotorBearingSimulation:

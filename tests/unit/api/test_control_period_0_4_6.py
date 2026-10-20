@@ -776,10 +776,17 @@ class _IgnoringRetimeRotor(ProtocolRotor):
         (_IgnoringRetimeRotor, r"rotor\.dt must equal the adjusted"),
     ],
 )
-def test_failed_rotor_retime_is_a_configuration_error_without_warning(
+def test_failed_rotor_retime_is_a_configuration_error_after_the_warning(
     rotor_type: type,
     message: str,
 ) -> None:
+    """The adjustment is announced before the rotor is retimed.
+
+    Warning first lets a caller escalate ``TimeStepAdjustedWarning`` to an
+    error and reject the configuration before the rotor is mutated; a rotor
+    that then fails to retime still yields ``ConfigurationError``.
+    """
+
     with recorded_warnings() as caught:
         with pytest.raises(ALB.ConfigurationError, match=message):
             ALB.SimulationConfig(
@@ -789,7 +796,7 @@ def test_failed_rotor_retime_is_a_configuration_error_without_warning(
                 steps=20,
             )
 
-    assert adjustment_warnings(caught) == []
+    assert len(adjustment_warnings(caught)) == 1
 
 
 @pytest.mark.parametrize(
@@ -840,16 +847,9 @@ def test_rejected_configuration_never_retimes_the_rotor(
     assert rotor.dt == H
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "ALB/api/simulation.py SimulationConfig.__post_init__ retimes the "
-        "rotor in place before warnings.warn(TimeStepAdjustedWarning); when "
-        "the warning is escalated to an error the configuration is rejected "
-        "but rotor.dt has already changed to h'"
-    ),
-)
 def test_warning_escalated_to_error_leaves_the_rotor_untouched() -> None:
+    """The warning is emitted before the in-place retime of the rotor."""
+
     rotor = ross_rotor()
     with warnings.catch_warnings():
         warnings.simplefilter("error", ALB.TimeStepAdjustedWarning)

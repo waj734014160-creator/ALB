@@ -260,6 +260,16 @@ def test_unknown_integrator_is_a_configuration_error(integrator: object) -> None
         simulation_config(liquid_config(), steps=2, integrator=integrator)
 
 
+def test_short_jacobian_state_is_rejected_at_configuration() -> None:
+    with pytest.raises(ALB.ConfigurationError, match="jacobian_state"):
+        simulation_config(
+            liquid_config(),
+            steps=2,
+            integrator="ros2",
+            ros2=Ros2Options(jacobian_state=[0.0, 0.0]),
+        )
+
+
 def test_ros2_options_must_be_ros2_options() -> None:
     with pytest.raises(TypeError, match="Ros2Options"):
         simulation_config(
