@@ -22,16 +22,35 @@
 | `ALB/dynamics/coupling.py` | `_RotorBearingStepRuntime` 支持 `integrator="ros2"`、`ros2_options`、`initial_rotor_state`；交错格式代码仅提取为 `_advance_staggered()`，语句不变。 |
 | `ALB/dynamics/rotor.py` | `RossRotor._retime_for_owner()`（原对象就地重离散）、`_continuous_system()`、`_node_state_indices()`、`_node_force_vector()`、`_commit_integrated_state()`；`UnbalancedExcitation.force_at()`（不写日志的力计算）。 |
 | `ALB/contracts/bearing.py` | 新契约 `ForceProbeProtocol`、`SampledActuatorBearingProtocol`。 |
-| `ALB/physics/bearing/solver.py`、`ALB/physics/gas/runtime.py`、`ALB/surrogate/runtime.py` | 液膜、多瓦、气膜、代理模型的无副作用 `probe_force()`。 |
+| `ALB/physics/bearing/solver.py`、`ALB/physics/gas/runtime.py`、`ALB/surrogate/runtime.py` | 液膜、多瓦、气膜、代理模型的无副作用 `probe_force()`；探测不延长可选的压力/膜厚保存历史。 |
+| `ALB/physics/thermal/solver.py` | 热包装类显式声明 `probe_force = None`，避免 `__getattr__` 把内部等温膜的探测暴露出来。 |
+| `ALB/infrastructure/persistence/writers.py` | JSON 序列化支持嵌套的只读映射，使带控制周期的结果可以 `write()`。 |
 | `pyproject.toml`、`ALB/__init__.py` | 版本 0.4.6。 |
 
 ### 1.2 测试与参考
 
-（见第 5 节）
+| 文件 | 内容 |
+| --- | --- |
+| `tools/reference/generate_coupling_default_path_0_4_6_reference.py`、`refs/coupling_default_path_0_4_6_reference_v1.json/.npz` | 第一个提交在未修改的 `df7336f` 上冻结的默认路径参考：物理单节点转子 + 液膜、主动 PID、主动模糊 PID、小型真实 ROSS 转子 + 液膜，以及独立 PID/模糊 PID 序列；完整数组与环境元数据。 |
+| `tests/regression/api/test_coupling_default_path_0_4_6_reference.py` | 默认路径数组精确相等（5 例）+ 结果元数据冻结（4 例）。 |
+| `tools/reference/generate_ros2_control_period_0_4_6_reference.py`、`refs/ros2_control_period_0_4_6_reference_v1.json/.npz` | 由完成后的实现（`7b97f41`）生成的新行为参考：ROS2 液膜、ROS2 采样主动 PID、staggered 采样主动 PID、ROS2 解析硬化轴承、自动步长调整。 |
+| `tests/regression/dynamics/test_ros2_control_period_0_4_6_reference.py` | 新行为参考精确相等（5 例，数组与 case 元数据）。 |
+| `tests/unit/dynamics/test_ros2_coupling_0_4_6.py` | ROS2 核心与耦合：二阶性、线性轴承对矩阵指数精确解、非线性自收敛、交错格式一阶收敛、自动微分与差分一致、冻结/刷新 J、每步右端项次数、采样控制与阀状态、外部阀芯一阶保持、契约与失败封存、热包装与多瓦拒绝（24 项）。 |
+| `tests/unit/api/test_control_period_0_4_6.py` | 控制周期与步长强制（64 项）：整数倍通过、非整数倍调整与警告、`h > Ts`、总时长、每 `m` 步执行、PID/模糊 PID 用 `Ts`、配置校验、多周期、多瓦、转子钩子、默认路径元数据、`write()`、共享转子。 |
+| `tests/unit/api/test_ros2_simulation_0_4_6.py` | 公开 API 层 ROS2（41 项）：液膜/气膜、热模型拒绝、多瓦、主动 PID/模糊 PID、选项校验、初始状态、文件配置、失败契约、保存历史。 |
+| `tests/_support/dynamics/analytic_bearings.py`、`tests/_support/simulation_0_4_6.py` | 解析转子与轴承测试替身（线性、刚度随偏心增大、带采样控制器与一阶阀、外部阀芯与 provider）和公共构造工具。 |
+| 版本相关测试 | `tests/unit/api/test_public_api_0_4.py`、`tests/unit/test_public_api.py`、`tests/unit/api/test_simulation_time_step_0_4_1.py`、`tests/validation/test_optional_dependency_errors.py`、`tests/validation/test_release_0_4_1_gates.py`、`tests/validation/test_release_0_4_2_gates.py` 改为 0.4.6；`tests/unit/test_public_api.py` 增加 `TimeStepAdjustedWarning`。 |
+| 文档生成器计数 | `test_bearing_config_reference.py` 188 → 189 字段，`test_simulation_config_reference.py` 36 → 38 字段，`test_namespace_reference.py` 10 → 11 导出。 |
 
 ### 1.3 ADR、迁移说明与文档
 
-（见第 5 节）
+- 新增 `docs/adr/0009-controller-sampling-period-and-ros2-integrator.md`（ADR-0007 第 8 条的受限例外 + 可选 ROS2），同步 `docs/adr/README.md`。
+- 新增 `docs/migrations/0.4.6.md`（版本边界、控制周期、ROS2、数值参考、能力边界），`mkdocs.yml` 导航加入“0.4.6 迁移说明”，`README.md` 迁移列表加入 0.4.6。
+- 当前版本标识：`docs/index.md`、`docs/site/concepts/public-api-policy.md`（28 个根符号）、`docs/current_state.md`、`docs/alb_package_overview.md`、`docs/interface_architecture.md`、`docs/project_overview.md`。
+- 指南：`docs/site/guides/configuration.md`、`docs/site/guides/simulation.md`；索引：`docs/daily_maintenance/daily_doc_update_index.md`。
+- `docs/api/`：更新人工维护输入 `public_api_docs.json`、`namespace_reference_docs.json`、`config_reference_docs.json`、`*_reference_source.md`，用 `tools/docs/` 四个生成器重新生成；`tools/docs/_config_reference.py` 增加 `jacobian_refresh` 的值类型，`tools/docs/generate_public_api_reference.py` 支持 dataclass 中非构造参数的派生字段说明。
+- 本报告加入 `mkdocs.yml` 的 `exclude_docs`，不发布到公开站点（与 `current_state.md` 等项目记录一致）。
+- 历史版本号（`docs/migrations/0.4.5.md`、历史 ADR、发布记录）、`docs/site/contributing/docs.md` 的发布分支描述和 `.github/workflows/` 均未改动。
 
 ## 2. 轴承族调查结论（第五节第 3 条）
 
@@ -77,4 +96,43 @@
 
 ## 5. 测试实际执行结果
 
-（待补充）
+### 5.1 环境
+
+用户参考文件记录的环境为 Windows、Python 3.10.17、numpy 1.24.3、scipy 1.10.1、control 0.10.2、pandas 2.1.1、ross-rotordynamics 1.4.2。云端按此建立了 Linux 环境：Python 3.10.20、numpy 1.24.3、scipy 1.10.1、control 0.10.2（含 slycot 0.7.1，使状态空间实现与用户环境一致）、pandas 2.1.1、ross-rotordynamics 1.4.2、scikit-fem 12.0.1、torch 2.5.1+cpu。两份 0.4.6 参考都在该环境生成，并记录环境元数据。仓库已有的 Windows 生成精确参考在 Linux 上存在 1e-16～1e-12 量级舍入差异，因此部分既有回归测试在云端本来就失败；同理，本次参考在用户 Windows 环境中也可能出现舍入级差异，可按迁移说明用环境变量指向本地生成的参考对复核。
+
+### 5.2 全量测试与基线对比
+
+| 运行 | 命令 | 结果 |
+| --- | --- | --- |
+| 基线 `df7336f` | `python -m pytest -q -p no:warnings` | 49 failed, 574 passed, 4 skipped, 13 errors |
+| 最终 `53e31e6` | 同上 | 49 failed, 717 passed, 4 skipped, 13 errors |
+
+- 两次的失败/错误集合（62 项）**完全相同**，没有新增失败，也没有“意外修好”的项。它们都与环境有关：Windows 生成的精确参考在 Linux 上的舍入差异（servo、mixed film、surrogate C4、API 收敛、静平衡等回归），以及依赖兄弟项目 `../SURROGATE_TRAIN`、论文工作区或远程工作站的外部校验测试。
+- **差分哈希检查**：用一个 pytest 插件记录每个测试传给 `numpy.testing` 断言的“实际值”哈希，分别在 `df7336f` 和 `53e31e6` 上运行。149 个共有测试的实际值逐位相同（0 项差异），包括上述因平台舍入而无法通过的既有回归测试。这说明默认路径及其他既有路径的数值输出没有任何改变。
+- 新增 0.4.6 测试 143 项全部通过：默认路径回归 9 项、新行为回归 5 项、ROS2 耦合单元 24 项、控制周期 64 项、ROS2 公开 API 41 项。
+- 版本断言测试（第六节第 2 条所列 6 个文件）均通过；其中 `test_release_0_4_1_gates.py::test_numerical_reference_is_the_frozen_93dd63d_contract` 属于上述基线失败项。
+
+### 5.3 收敛与精度（分析轴承，无代理模型）
+
+| 算例 | 步长 | 结果 |
+| --- | --- | --- |
+| 线性轴承（常刚度、常阻尼）+ 静载 + 不平衡，对比增广矩阵指数精确解，`T = 0.1 s` | 1.25e-4 / 6.25e-5 / 3.125e-5 s | ROS2 相对误差 3.61e-3 / 1.00e-3 / 2.63e-4，误差比 3.60、3.82（二阶）；交错格式 1.16e-1 / 5.67e-2 / 2.80e-2，误差比 2.05、2.02（一阶） |
+| 刚度随偏心增大的硬化轴承，自收敛 | 2.5e-4 / 1.25e-4 / 6.25e-5 s | ROS2 相邻差之比 4.38 |
+| 同一非线性算例，交错格式对 ROS2 细步长解（1.5625e-5 s） | 1.25e-4 / 6.25e-5 / 3.125e-5 s | 误差 6.34e-1 / 2.72e-1 / 1.26e-1，比值 2.33、2.16（一阶，收敛到同一解）；ROS2 在 2.5e-4 s 时误差 2.31e-2，已小于交错格式最细步长 |
+| 带采样控制器与一阶阀的解析主动轴承，`Ts` 固定，`m` = 4/8/16 | 1e-3 / 5e-4 / 2.5e-4 s | 相邻差之比约 4（采样时刻落在步边界上时保持二阶） |
+| 外部阀芯 provider（阀芯随位移连续变化） | 2.5e-4 … 3.125e-5 s | 相邻差之比约 2.2（provider 每步保持，一阶；已文档化） |
+
+### 5.4 其他检查
+
+- `tools/docs/` 四个生成器 `--check`：公开 API 28 个符号、namespace 3 页、轴承配置 189 行、仿真配置 38 行，均无漂移。
+- `tests/unit/docs`、`tests/integration/docs` 及三个参考生成测试：28 passed（含“公开站点不含本地绝对路径”检查）；`mkdocs build --strict` 通过，构建结果中没有本地绝对路径。
+- 导入分层检查 `tests/validation/test_import_boundaries.py` 通过（`ALB.dynamics` 只通过 contracts 中的协议访问主动轴承，不依赖 `systems`/`control`）。
+- 分层 mypy：strict 层除两处既有错误（`ALB/api/config.py`，基线同样存在，与 mypy 版本有关）外无新增；覆盖层增量见第 3 节第 12 条。
+- 评审：实现前做了 4 个视角的设计评审（含逐项复核），实现后做了 3 轮独立代码评审和 1 轮文档一致性检查。评审发现的问题均已修复并有测试覆盖，包括：转子对象身份与校验顺序、默认路径元数据、热包装转发 `probe_force`、多瓦内主动子瓦、警告与重离散顺序、`write()` 序列化、共享转子、无执行器时的 J 刷新、数组字段的比较与哈希、`jacobian_state` 长度、外部阀芯一阶保持、气膜探测的保存历史。
+
+### 5.5 未执行或未覆盖的项
+
+- 未使用训练好的 ALBNN 代理模型（仓库中没有权重，按任务要求未下载）；代理模型族的 ROS2 路径只做了接口层验证，未做数值收敛验证。
+- 未在 Windows 环境运行；两份新参考在用户环境中的逐位一致性需本地复核。
+- 论文第 4 章降阶模型的 RK4 交叉核对不在云端进行（见第 4 节）。
+- 未运行发布验收脚本（`tools/validation/run_release_acceptance_*`），未打 tag。
